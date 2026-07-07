@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { db } from "@/lib/firebase";
+import { usePharmacyConfig } from "@/hooks/usePharmacyConfig";
 
 interface Symptom {
   id: string;
@@ -145,6 +147,8 @@ const MOCK_ASSESSMENTS: Assessment[] = [
 ];
 
 export default function PharmacistDashboard() {
+  const { profile: pharmacyProfile, isLoaded: pharmacyLoaded } = usePharmacyConfig();
+
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -168,6 +172,11 @@ export default function PharmacistDashboard() {
   // Click-to-copy copied key state
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
+  // Kroll Sandbox state
+  const [krollLoading, setKrollLoading] = useState<boolean>(false);
+  const [krollResult, setKrollResult] = useState<{ fhirBundle: object; krollSimulation: object } | null>(null);
+  const [krollError, setKrollError] = useState<string | null>(null);
+
   // Real-time listener setup with Firestore or localStorage polling fallback
   useEffect(() => {
     const hasFirebase = db !== null;
@@ -179,7 +188,7 @@ export default function PharmacistDashboard() {
           const { collection, query, where, onSnapshot, orderBy } = await import("firebase/firestore");
           const q = query(
             collection(db, "assessments"),
-            where("pharmacyId", "==", "PHARM-ONTARIO-1"),
+            where("pharmacyId", "==", pharmacyProfile.pharmacyId),
             orderBy("submittedAt", "desc")
           );
 
@@ -334,6 +343,27 @@ export default function PharmacistDashboard() {
     });
   };
 
+  // Kroll Sandbox: trigger FHIR bundle generation
+  const handleKrollSync = async (assessment: Assessment) => {
+    setKrollLoading(true);
+    setKrollResult(null);
+    setKrollError(null);
+    try {
+      const res = await fetch("/api/fhir", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assessment }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setKrollResult(data);
+    } catch (err: any) {
+      setKrollError(err.message || "Unknown error");
+    } finally {
+      setKrollLoading(false);
+    }
+  };
+
   // Clinical workflow checklist
   const WORKFLOW_CHECKLIST = [
     { label: "Obtained Patient Informed Consent", id: "consent" },
@@ -425,7 +455,28 @@ export default function PharmacistDashboard() {
 
   return (
     <div className="dashboard-layout animate-fade-in">
-      
+
+      {/* ── Top Nav Bar ─────────────────────────────────────────────────── */}
+      <div className="dashboard-topnav">
+        <div className="dashboard-topnav-brand">
+          <span className="dashboard-topnav-logo">⚕️</span>
+          <span className="dashboard-topnav-name">
+            {pharmacyLoaded ? pharmacyProfile.storeName : "AgentOMA"}
+          </span>
+        </div>
+        <div className="dashboard-topnav-links">
+          <Link href="/pharmacist/audit" className="dashboard-topnav-link">
+            🗂️ Audit Log
+          </Link>
+          <Link href="/pharmacist/settings" className="dashboard-topnav-link">
+            ⚙️ Settings
+          </Link>
+          <Link href="/" className="dashboard-topnav-link dashboard-topnav-link-muted">
+            ← Patient Portal
+          </Link>
+        </div>
+      </div>
+
       {/* ====================================================================
          PANEL 1: Real-Time Live Queue (Left Column)
          ==================================================================== */}
@@ -709,6 +760,7 @@ export default function PharmacistDashboard() {
             <p>Select a patient card to calculate Ministry billing values.</p>
           </div>
         ) : (
+          <>
           <div className="animate-slide-up" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
             
             <div>
@@ -959,6 +1011,65 @@ export default function PharmacistDashboard() {
             })()}
 
           </div>
+
+          {/* ── Kroll Sandbox ───────────────────────────────────────────── */}
+          <div className="kroll-sandbox-panel">
+            <div className="kroll-sandbox-header">
+              <div>
+                <strong className="kroll-sandbox-title">🔌 Kroll PMS Sandbox</strong>
+                <span className="kroll-sandbox-subtitle">HL7 FHIR R4 Bundle Preview</span>
+              </div>
+              <button
+                className={`btn btn-sm kroll-sync-btn ${krollLoading ? "loading" : ""}`}
+                onClick={() => handleKrollSync(selectedAssessment)}
+                disabled={krollLoading}
+              >
+                {krollLoading ? (
+                  <><span className="kroll-spinner" /> Generating…</>
+                ) : (
+                  <>⚡ Kroll Sync</>
+                )}
+              </button>
+            </div>
+
+            {krollError && (
+              <div className="kroll-error">
+                ⚠ API Error: {krollError}
+              </div>
+            )}
+
+            {krollResult && (
+              <>
+                <div className="kroll-handshake">
+                  <span className="kroll-handshake-dot" />
+                  <div>
+                    <div className="kroll-handshake-status">✓ Kroll PMS — Patient Accepted</div>
+                    <div className="kroll-handshake-ref">
+                      Ref: {(krollResult.krollSimulation as any).krollPatientRef} &nbsp;|&nbsp;
+                      {(krollResult.krollSimulation as any).transmittedAt
+                        ? new Date((krollResult.krollSimulation as any).transmittedAt).toLocaleTimeString()
+                        : "—"}
+                    </div>
+                  </div>
+                </div>
+                <div className="kroll-fhir-viewer">
+                  <div className="kroll-fhir-label">FHIR R4 Bundle (Read-Only Preview)</div>
+                  <pre className="kroll-fhir-pre">
+                    {JSON.stringify(krollResult.fhirBundle, null, 2)}
+                  </pre>
+                </div>
+              </>
+            )}
+
+            {!krollResult && !krollLoading && !krollError && (
+              <div className="kroll-idle">
+                Click <strong>Kroll Sync</strong> to generate the HL7 FHIR R4 bundle for this patient
+                and simulate the Kroll PMS handshake.
+              </div>
+            )}
+          </div>
+
+          </>
         )}
       </div>
 
