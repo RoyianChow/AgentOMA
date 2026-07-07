@@ -940,13 +940,15 @@ ul {
    7. Pharmacist Dashboard Layout
    -------------------------------------------------------------------------- */
 .dashboard-layout {
-  display: flex;
+  display: grid;
+  grid-template-columns: 320px 1fr 340px;
   height: calc(100vh - 4.5rem); /* viewport height minus navbar */
   overflow: hidden;
 }
 
 @media (max-width: 968px) {
   .dashboard-layout {
+    display: flex;
     flex-direction: column;
     height: auto;
     overflow: visible;
@@ -1467,4 +1469,93 @@ ul {
   font-size: 0.8rem;
   color: var(--text-secondary);
 }
+
+/* --------------------------------------------------------------------------
+   10. Urgency Urgency & Click-to-Copy Styles
+   -------------------------------------------------------------------------- */
+@keyframes pulseUrgent {
+  0% { border-color: rgba(239, 68, 68, 0.4); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.1); }
+  50% { border-color: rgba(239, 68, 68, 0.8); box-shadow: 0 0 8px 1px rgba(239, 68, 68, 0.2); }
+  100% { border-color: rgba(239, 68, 68, 0.4); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.1); }
+}
+
+.patient-card.urgent-highlight {
+  border-color: var(--danger) !important;
+  background-color: rgba(239, 68, 68, 0.03);
+  animation: pulseUrgent 2s infinite ease-in-out;
+}
+
+.patient-card.urgent-highlight:hover {
+  background-color: rgba(239, 68, 68, 0.06);
+}
+
+.red-flags-banner {
+  background-color: var(--danger-light);
+  border: 2px solid var(--danger);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  color: var(--danger-text);
+  font-weight: 700;
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  animation: slideUp var(--transition-normal);
+}
+
+.red-flags-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.copy-field-container {
+  display: flex;
+  align-items: center;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.5rem;
+  font-size: 0.85rem;
+  font-family: var(--font-mono);
+  position: relative;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.copy-btn-icon {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+}
+
+.copy-btn-icon:hover {
+  color: var(--primary);
+  background-color: var(--border-color);
+}
+
+.copy-success-tooltip {
+  position: absolute;
+  top: -2rem;
+  right: 0;
+  background-color: var(--text-primary);
+  color: var(--bg-secondary);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-family: var(--font-family);
+  animation: fadeIn 0.15s ease-out;
+  z-index: 10;
+}
+
 
