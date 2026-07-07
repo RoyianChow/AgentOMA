@@ -1557,4 +1557,10 @@ ul {
   z-index: 10;
 }
 
+/* Hide footer on full-screen dashboard pages to prevent overlapping */
+body:has(.dashboard-layout) .footer {
+  display: none !important;
+}
+
+
 
