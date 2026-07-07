@@ -117,7 +117,10 @@ export default function AssessmentPage() {
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
+  const [healthNumber, setHealthNumber] = useState("");
+  const [consentGiven, setConsentGiven] = useState(false);
   const [selectedAilmentId, setSelectedAilmentId] = useState("");
+  const [consultedIn365Days, setConsultedIn365Days] = useState<"yes" | "no">("no");
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -147,10 +150,28 @@ export default function AssessmentPage() {
     });
   };
 
+  const maskHealthNumber = (num: string) => {
+    const clean = num.replace(/[\s-]/g, "");
+    if (clean.length <= 4) return "****";
+    return "*".repeat(clean.length - 4) + clean.slice(-4);
+  };
+
   const handleNext = () => {
-    if (step === 1 && (!name || !age || !gender)) {
-      alert("Please fill in all patient details.");
-      return;
+    if (step === 1) {
+      if (!name || !age || !gender || !healthNumber) {
+        alert("Please fill in all patient details, including your Health Card Number.");
+        return;
+      }
+      const cleanHN = healthNumber.replace(/[\s-]/g, "");
+      const hnRegex = /^\d{10}[A-Za-z]{0,2}$/;
+      if (!hnRegex.test(cleanHN)) {
+        alert("Please enter a valid Ontario Health Card Number (10 digits plus optional 2-letter version code, e.g. 1234567890 AB).");
+        return;
+      }
+      if (!consentGiven) {
+        alert("Informed consent is required to proceed with this virtual assessment.");
+        return;
+      }
     }
     if (step === 2 && !selectedAilmentId) {
       alert("Please select an ailment.");
@@ -165,7 +186,7 @@ export default function AssessmentPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !age || !gender || !selectedAilmentId) return;
+    if (!name || !age || !gender || !selectedAilmentId || !healthNumber) return;
 
     setIsSubmitting(true);
 
@@ -185,9 +206,9 @@ export default function AssessmentPage() {
       triageLevel = "Referral";
       severity = "CRITICAL";
       aiSuggestion =
-        "WARNING: Red flag symptoms detected. The patient requires immediate medical referral. Do not treat with standard minor ailment protocols.";
+        "WARNING: Red flag symptoms detected. The patient requires immediate medical referral. Under Ontario guidelines, no minor ailment claim can be submitted for cases presenting with Red Flags.";
       recommendedActions = [
-        "Refer patient to the nearest Emergency Department or Urgent Care Centre",
+        "Refer patient to the nearest Emergency Department or Urgent Care Centre immediately",
         "Advise patient not to drive themselves if feeling unwell",
         "Provide emergency contact numbers (e.g. 999, 911)",
       ];
@@ -195,7 +216,7 @@ export default function AssessmentPage() {
       triageLevel = "Pharmacist Consult";
       severity = "MODERATE";
       aiSuggestion =
-        "Pharmacist review recommended. Symptoms indicate moderate severity. Suitable for OTC intervention after a face-to-face consultation.";
+        "Pharmacist review recommended. Symptoms indicate moderate severity. Suitable for OTC intervention after a face-to-face or compliant virtual consultation.";
       
       if (selectedAilmentId === "allergies") {
         recommendedActions = [
@@ -244,6 +265,9 @@ export default function AssessmentPage() {
       patientName: name,
       age: parseInt(age),
       gender: gender,
+      healthNumber: healthNumber.replace(/[\s-]/g, "").toUpperCase(),
+      consentGiven: true,
+      consultedIn365Days: consultedIn365Days,
       ailmentId: selectedAilmentId,
       ailmentName: currentAilment?.name || "",
       symptoms: selectedSymptoms.map((id) => {
@@ -369,7 +393,7 @@ export default function AssessmentPage() {
                 onChange={(e) => setName(e.target.value)}
               />
             </div>
-            <div className="options-grid" style={{ marginBottom: "1.5rem" }}>
+            <div className="options-grid" style={{ marginBottom: "1rem" }}>
               <div className="form-group">
                 <label className="form-label" htmlFor="patient-age">
                   Age (years)
@@ -400,6 +424,40 @@ export default function AssessmentPage() {
                 </select>
               </div>
             </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="health-number">
+                Ontario Health Card Number (OHIP / ODB Eligibility)
+              </label>
+              <input
+                id="health-number"
+                type="text"
+                className="form-input"
+                placeholder="10 digits plus optional 2-letter version code (e.g. 1234567890 AB)"
+                value={healthNumber}
+                onChange={(e) => setHealthNumber(e.target.value)}
+              />
+              <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "0.15rem" }}>
+                Mandatory for virtual service billing under Ontario guidelines.
+              </span>
+            </div>
+
+            <div className="form-group" style={{ flexDirection: "row", alignItems: "flex-start", gap: "0.75rem", marginTop: "1.5rem" }}>
+              <input
+                id="informed-consent"
+                type="checkbox"
+                className="symptom-checkbox"
+                style={{ marginTop: "0.2rem" }}
+                checked={consentGiven}
+                onChange={(e) => setConsentGiven(e.target.checked)}
+              />
+              <label htmlFor="informed-consent" className="symptom-label">
+                <strong>Patient Informed Consent</strong>
+                <span style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "0.15rem" }}>
+                  I consent to the collection of my clinical history and details to perform this virtual minor ailment assessment.
+                </span>
+              </label>
+            </div>
           </div>
         )}
 
@@ -423,6 +481,52 @@ export default function AssessmentPage() {
                 </div>
               ))}
             </div>
+
+            {selectedAilmentId && (
+              <div className="form-group" style={{ marginTop: "2rem", borderTop: "1px solid var(--border-color)", paddingTop: "1.5rem" }}>
+                <label className="form-label">
+                  Annual Assessment Limits Verification
+                </label>
+                <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "0.75rem" }}>
+                  Have you consulted a pharmacist or physician for this specific ailment in the last 365 days?
+                </p>
+                <div style={{ display: "flex", gap: "1.5rem", flexDirection: "column" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", cursor: "pointer" }}>
+                    <input
+                      type="radio"
+                      name="limit-check"
+                      checked={consultedIn365Days === "no"}
+                      onChange={() => setConsultedIn365Days("no")}
+                      style={{ accentColor: "var(--primary)", width: "1.1rem", height: "1.1rem" }}
+                    />
+                    No, this is my first assessment for this condition in 365 days.
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", cursor: "pointer" }}>
+                    <input
+                      type="radio"
+                      name="limit-check"
+                      checked={consultedIn365Days === "yes"}
+                      onChange={() => setConsultedIn365Days("yes")}
+                      style={{ accentColor: "var(--primary)", width: "1.1rem", height: "1.1rem" }}
+                    />
+                    Yes, I have received a consultation for this in the last 365 days.
+                  </label>
+                </div>
+                {consultedIn365Days === "yes" && (
+                  <div className="alert-box alert-box-info" style={{ marginTop: "1rem" }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="16" x2="12" y2="12" />
+                      <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                    <div>
+                      <strong>Note:</strong> Under Ontario rules, subsidized virtual claims are subject to maximum annual limits. 
+                      You can still submit, but the pharmacist will verify eligibility.
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -491,6 +595,15 @@ export default function AssessmentPage() {
               <div className="hero-card-item">
                 <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Patient Details</div>
                 <div style={{ fontWeight: 600 }}>{name}, {age} years ({gender})</div>
+              </div>
+
+              <div className="hero-card-item">
+                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Ontario Billing Eligibility</div>
+                <div style={{ fontWeight: 600, display: "flex", flexDirection: "column", gap: "0.25rem", fontSize: "0.9rem" }}>
+                  <div>Health Card Number: <span className="billing-pin-display">{maskHealthNumber(healthNumber)}</span></div>
+                  <div>Informed Consent: <span style={{ color: "var(--success-text)" }}>Given (Checked)</span></div>
+                  <div>Within 365-Day Claim Limit: <span>{consultedIn365Days === "yes" ? "⚠️ Needs verification (Prior consult reported)" : "✅ Yes (No prior consult)"}</span></div>
+                </div>
               </div>
 
               <div className="hero-card-item">
