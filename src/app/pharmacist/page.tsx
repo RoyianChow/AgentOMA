@@ -30,6 +30,18 @@ interface Assessment {
   aiSuggestion: string;
   recommendedActions: string[];
   submittedAt: string;
+  requiresReferral?: boolean;
+  referralReasons?: string[];
+  demographics?: {
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
+    gender: string;
+    healthCardNumber: string;
+    isOdbRecipient: boolean;
+    pastYearAssessmentAttempt: string;
+    ailmentType: string;
+  };
 }
 
 const MOCK_ASSESSMENTS: Assessment[] = [
@@ -44,7 +56,7 @@ const MOCK_ASSESSMENTS: Assessment[] = [
     healthNumber: "4192038102AB",
     consentGiven: true,
     consultedIn365Days: "no",
-    ailmentId: "allergies",
+    ailmentId: "RHINITIS",
     ailmentName: "Allergic Rhinitis (Allergies)",
     symptoms: [
       { id: "sneezing", label: "Frequent sneezing", isRedFlag: false },
@@ -61,7 +73,9 @@ const MOCK_ASSESSMENTS: Assessment[] = [
       "Counsel patient to keep windows closed during high pollen counts",
       "Wash hair and change clothes after returning from outdoors",
     ],
-    submittedAt: new Date(Date.now() - 3600000 * 0.1).toISOString(), // 6 minutes ago (recently submitted, pending)
+    submittedAt: new Date(Date.now() - 3600000 * 0.1).toISOString(),
+    requiresReferral: false,
+    referralReasons: [],
   },
   {
     id: "OMA-8172",
@@ -74,11 +88,11 @@ const MOCK_ASSESSMENTS: Assessment[] = [
     healthNumber: "1028301822CD",
     consentGiven: true,
     consultedIn365Days: "no",
-    ailmentId: "acid_reflux",
-    ailmentName: "Heartburn & Acid Reflux",
+    ailmentId: "GERD",
+    ailmentName: "Heartburn & Acid Reflux (GERD)",
     symptoms: [
       { id: "heartburn", label: "Burning sensation in chest or throat", isRedFlag: false },
-      { id: "red_flag_swallowing", label: "Pain or difficulty swallowing food (dysphagia)", isRedFlag: true },
+      { id: "hasDysphagia", label: "Pain or difficulty swallowing food (dysphagia)", isRedFlag: true },
     ],
     additionalNotes: "Have been having food get stuck in my throat for the past week. Painful to swallow hot drinks.",
     status: "GP Referral",
@@ -90,7 +104,9 @@ const MOCK_ASSESSMENTS: Assessment[] = [
       "Do not initiate PPI therapy until investigated (may mask severe disease)",
       "Provide patient with written referral letter outlining dysphagia symptoms",
     ],
-    submittedAt: new Date(Date.now() - 3600000 * 0.4).toISOString(), // 24 minutes ago (Trigger visual urgency flag >15min!)
+    submittedAt: new Date(Date.now() - 3600000 * 0.4).toISOString(),
+    requiresReferral: true,
+    referralReasons: ["Male patient selecting acid reflux indicators (ulcer override risk)", "Dysphagia: pain or difficulty swallowing food"],
   },
   {
     id: "OMA-1982",
@@ -103,8 +119,8 @@ const MOCK_ASSESSMENTS: Assessment[] = [
     healthNumber: "8821908210XY",
     consentGiven: true,
     consultedIn365Days: "yes",
-    ailmentId: "cold_flu",
-    ailmentName: "Cold, Cough & Flu Symptoms",
+    ailmentId: "RHINITIS",
+    ailmentName: "Allergic Rhinitis (Allergies)",
     symptoms: [
       { id: "sore_throat", label: "Pain or scratching feeling in throat", isRedFlag: false },
       { id: "cough", label: "Dry or chesty cough (no blood)", isRedFlag: false },
@@ -122,7 +138,9 @@ const MOCK_ASSESSMENTS: Assessment[] = [
       "Advise rest and high fluid intake",
       "Counsel on red flag signs (stiff neck, breathing trouble) which require emergency review",
     ],
-    submittedAt: new Date(Date.now() - 3600000 * 18).toISOString(), // 18 hours ago
+    submittedAt: new Date(Date.now() - 3600000 * 18).toISOString(),
+    requiresReferral: false,
+    referralReasons: [],
   },
 ];
 
@@ -215,7 +233,6 @@ export default function PharmacistDashboard() {
     };
 
     loadData();
-    // Poll every 2 seconds to simulate active socket/listener when submitting intake form on other tabs
     const interval = setInterval(loadData, 2000);
     return () => clearInterval(interval);
   };
@@ -243,7 +260,6 @@ export default function PharmacistDashboard() {
     try {
       localStorage.setItem("oma_assessments", JSON.stringify(updated));
       
-      // If Firebase configured, write update to database
       const hasFirebase = db !== null;
       if (hasFirebase) {
         const { doc, updateDoc } = require("firebase/firestore");
@@ -283,20 +299,6 @@ export default function PharmacistDashboard() {
     }
   };
 
-  const formatTime = (isoString: string) => {
-    try {
-      const date = new Date(isoString);
-      return (
-        date.toLocaleDateString(undefined, { month: "short", day: "numeric" }) +
-        " " +
-        date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
-      );
-    } catch (e) {
-      return isoString;
-    }
-  };
-
-  // Wait time calculation in minutes
   const getWaitTimeMinutes = (submittedAt: string) => {
     try {
       const diffMs = Date.now() - new Date(submittedAt).getTime();
@@ -306,12 +308,17 @@ export default function PharmacistDashboard() {
     }
   };
 
-  // DOB Formatter for Kroll (DD-MM-YYYY)
+  // DOB Formatter for Kroll (DD-MM-YYYY) - accepts YYYYMMDD and YYYY-MM-DD
   const formatDOBForKroll = (dobString: string) => {
     if (!dobString) return "";
-    const parts = dobString.split("-"); // YYYY-MM-DD
-    if (parts.length === 3) {
-      return `${parts[2]}-${parts[1]}-${parts[0]}`; // DD-MM-YYYY
+    if (dobString.includes("-")) {
+      const parts = dobString.split("-"); // YYYY-MM-DD
+      if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`; // DD-MM-YYYY
+      }
+    } else if (dobString.length === 8) {
+      // YYYYMMDD -> DD-MM-YYYY
+      return `${dobString.slice(6, 8)}-${dobString.slice(4, 6)}-${dobString.slice(0, 4)}`;
     }
     return dobString;
   };
@@ -337,10 +344,6 @@ export default function PharmacistDashboard() {
     { label: "Defined Follow-up Efficacy Parameters", id: "followup" },
   ];
 
-  const isChecklistComplete = (patientId: string) => {
-    return WORKFLOW_CHECKLIST.every((item) => checklistMap[`${patientId}-${item.id}`] === true);
-  };
-
   const toggleChecklistItem = (patientId: string, itemId: string) => {
     const key = `${patientId}-${itemId}`;
     setChecklistMap((prev) => ({
@@ -351,8 +354,7 @@ export default function PharmacistDashboard() {
 
   // Ontario virtual billing rules
   const getBillingEligibility = (assessment: Assessment) => {
-    const hasRedFlags = assessment.symptoms.some((s) => s.isRedFlag) || (assessment.gender === "Male" && assessment.ailmentId === "acid_reflux");
-    if (hasRedFlags) {
+    if (assessment.requiresReferral) {
       return { eligible: false, reason: "Complicating factor/Red Flag detected (Referral only, no claim allowed)" };
     }
     if (!assessment.healthNumber) {
@@ -369,27 +371,31 @@ export default function PharmacistDashboard() {
     const modality = isInsidePharmacy ? "In-Person" : "Virtual";
     const outcome = isRxIssued ? "Rx Issued" : "No Rx";
 
-    // Dynamic PIN calculations
+    // Dynamic PIN calculations supporting new uppercase AilmentType keys
     const pinMap: { [key: string]: { [mod: string]: { [out: string]: string } } } = {
-      allergies: {
+      RHINITIS: {
         "In-Person": { "Rx Issued": "99120151", "No Rx": "99120152" },
         Virtual: { "Rx Issued": "99120251", "No Rx": "99120252" }
       },
-      cold_flu: {
+      HERPES_LABIALIS: {
         "In-Person": { "Rx Issued": "99120153", "No Rx": "99120154" },
         Virtual: { "Rx Issued": "99120253", "No Rx": "99120254" }
       },
-      skin_rash: {
+      DERMATITIS: {
         "In-Person": { "Rx Issued": "99120155", "No Rx": "99120156" },
         Virtual: { "Rx Issued": "99120255", "No Rx": "99120256" }
       },
-      acid_reflux: {
+      GERD: {
         "In-Person": { "Rx Issued": "99120157", "No Rx": "99120158" },
         Virtual: { "Rx Issued": "99120257", "No Rx": "99120258" }
+      },
+      URINARY_TRACT_INFECTION: {
+        "In-Person": { "Rx Issued": "99120159", "No Rx": "99120160" },
+        Virtual: { "Rx Issued": "99120259", "No Rx": "99120260" }
       }
     };
 
-    const currentMap = pinMap[ailmentId] || pinMap["allergies"];
+    const currentMap = pinMap[ailmentId] || pinMap["RHINITIS"];
     return currentMap[modality][outcome];
   };
 
@@ -413,7 +419,7 @@ export default function PharmacistDashboard() {
           date: new Date().toLocaleTimeString(),
         },
       }));
-      handleStatusChange(assessment.id, "ARCHIVED"); // Moves to archived status, compliance audit leaves underlying data
+      handleStatusChange(assessment.id, "ARCHIVED");
     }, 1500);
   };
 
@@ -454,7 +460,7 @@ export default function PharmacistDashboard() {
             </svg>
           </div>
 
-          {/* Real-time Tabs: Pending, In Progress, Completed/Archived */}
+          {/* Real-time Tabs */}
           <div
             style={{
               display: "flex",
@@ -562,42 +568,34 @@ export default function PharmacistDashboard() {
         ) : (
           <div className="animate-slide-up" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
             
-            {/* Red Flag & Complicating Factor Alert Box */}
-            {(() => {
-              const isMaleReflux = selectedAssessment.gender === "Male" && selectedAssessment.ailmentId === "acid_reflux";
-              const hasRedFlags = selectedAssessment.symptoms.some((s) => s.isRedFlag);
-              
-              if (isMaleReflux) {
-                return (
-                  <div className="red-flags-banner">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ marginTop: "0.15rem" }}>
-                      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-                      <line x1="12" y1="9" x2="12" y2="13" />
-                      <line x1="12" y1="17" x2="12.01" y2="17" />
-                    </svg>
+            {/* Red Flag Alert Block */}
+            {selectedAssessment.requiresReferral && (
+              <div className="red-flags-banner">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ marginTop: "0.15rem" }}>
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+                <div>
+                  <div className="red-flags-title">CRITICAL: Referral Required</div>
+                  {selectedAssessment.referralReasons && selectedAssessment.referralReasons.length > 0 ? (
                     <div>
-                      <div className="red-flags-title">CRITICAL: Complicating factor detected</div>
-                      Patient is a male selecting acid reflux indicators. High cardiac/ulcer override risk. Patient requires immediate doctor referral. Do not prescribe.
+                      Complicating factors or Red Flags detected:
+                      <ul style={{ paddingLeft: "1.25rem", margin: "0.25rem 0 0 0", fontSize: "0.88rem" }}>
+                        {selectedAssessment.referralReasons.map((reason, idx) => (
+                          <li key={idx}>{reason}</li>
+                        ))}
+                      </ul>
+                      <span style={{ display: "block", marginTop: "0.5rem", fontWeight: 700 }}>
+                        Do not prescribe minor ailment therapy. Refer patient to primary care or emergency doctor.
+                      </span>
                     </div>
-                  </div>
-                );
-              } else if (hasRedFlags) {
-                return (
-                  <div className="red-flags-banner">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ marginTop: "0.15rem" }}>
-                      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-                      <line x1="12" y1="9" x2="12" y2="13" />
-                      <line x1="12" y1="17" x2="12.01" y2="17" />
-                    </svg>
-                    <div>
-                      <div className="red-flags-title">CRITICAL: Red Flag Symptoms Detected</div>
-                      Patient has checked red flag clinical exclusions. Do not treat under minor ailment protocol. Refer patient to Primary Doctor or Urgent Care.
-                    </div>
-                  </div>
-                );
-              }
-              return null;
-            })()}
+                  ) : (
+                    "Red Flag triggered under clinical triage rules. Patient requires immediate doctor referral. Do not prescribe."
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Assessment Header */}
             <div className="detail-section-card">
@@ -633,7 +631,7 @@ export default function PharmacistDashboard() {
               </div>
             </div>
 
-            {/* Patient Clinical History & Intake Form Results */}
+            {/* Patient Clinical History */}
             <div className="detail-section-card">
               <h3 style={{ borderBottom: "1px solid var(--border-color)", paddingBottom: "0.5rem", marginBottom: "0.75rem" }}>
                 Patient Symptoms Intake
@@ -669,7 +667,7 @@ export default function PharmacistDashboard() {
               </div>
             </div>
 
-            {/* Structured Pharmacist Documentation Block */}
+            {/* Structured Pharmacist Documentation */}
             <div className="detail-section-card">
               <h3 style={{ borderBottom: "1px solid var(--border-color)", paddingBottom: "0.5rem", marginBottom: "0.75rem" }}>
                 Pharmacist Documentation & Care Plan
@@ -713,7 +711,6 @@ export default function PharmacistDashboard() {
         ) : (
           <div className="animate-slide-up" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
             
-            {/* Title */}
             <div>
               <h3 style={{ fontSize: "1.15rem", borderBottom: "1px solid var(--border-color)", paddingBottom: "0.5rem" }}>
                 10-Second Billing Panel
@@ -721,7 +718,7 @@ export default function PharmacistDashboard() {
               <span className="ai-section-title" style={{ marginTop: "0.35rem", display: "block" }}>Ontario MOH Claims Gateway</span>
             </div>
 
-            {/* Click-to-Copy Action Elements */}
+            {/* Click-to-Copy Actions */}
             <div className="detail-section-card" style={{ padding: "1rem" }}>
               <strong style={{ fontSize: "0.8rem", color: "var(--text-secondary)", display: "block", marginBottom: "0.75rem" }}>
                 Kroll Transcription Helpers
@@ -776,7 +773,7 @@ export default function PharmacistDashboard() {
                       {copiedKey === "pin" ? <span className="copy-success-tooltip">Copied!</span> : null}
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25">
                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        <path d="M5 15H4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                       </svg>
                     </button>
                   </div>
@@ -786,8 +783,10 @@ export default function PharmacistDashboard() {
 
             {/* Smart Billing Indicators */}
             {(() => {
-              const isReferred = selectedAssessment.status === "GP Referral" || selectedAssessment.triageLevel === "Referral";
-              const isNonODB = !selectedAssessment.healthNumber.endsWith("AB") && !selectedAssessment.healthNumber.endsWith("CD"); // Mock ODB vs non-ODB based on ending
+              const isReferred = selectedAssessment.status === "GP Referral" || selectedAssessment.requiresReferral;
+              const isNonODB = selectedAssessment.demographics 
+                ? !selectedAssessment.demographics.isOdbRecipient 
+                : (!selectedAssessment.healthNumber.endsWith("AB") && !selectedAssessment.healthNumber.endsWith("CD"));
               
               if (isReferred || isNonODB) {
                 return (
@@ -813,7 +812,7 @@ export default function PharmacistDashboard() {
               return null;
             })()}
 
-            {/* Ontario Virtual Billing Calculator & HNS Submitter */}
+            {/* Billing Calculator */}
             {(() => {
               const billInfo = getBillingEligibility(selectedAssessment);
               const isSubmitted = billingResultMap[selectedAssessment.id] !== undefined;

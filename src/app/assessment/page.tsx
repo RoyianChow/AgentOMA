@@ -3,211 +3,139 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { db } from "@/lib/firebase";
-
-interface Symptom {
-  id: string;
-  label: string;
-  isRedFlag?: boolean;
-  description?: string;
-}
-
-interface Ailment {
-  id: string;
-  name: string;
-  description: string;
-  symptoms: Symptom[];
-}
-
-const AILMENTS: Ailment[] = [
-  {
-    id: "allergies",
-    name: "Allergic Rhinitis (Allergies)",
-    description: "Sneezing, runny or blocked nose, itchy red watery eyes.",
-    symptoms: [
-      { id: "sneezing", label: "Frequent sneezing" },
-      { id: "itchy_eyes", label: "Itchy, red, or watery eyes" },
-      { id: "nasal_congestion", label: "Blocked or runny nose" },
-      { id: "post_nasal_drip", label: "Mucus dripping down throat" },
-      {
-        id: "red_flag_breathing",
-        label: "Difficulty breathing or wheezing",
-        isRedFlag: true,
-        description: "Signs of acute bronchial constriction or severe asthma flare.",
-      },
-      {
-        id: "red_flag_swrolling",
-        label: "Swelling of lips, tongue, or face",
-        isRedFlag: true,
-        description: "Signs of angioedema or severe anaphylactic response.",
-      },
-    ],
-  },
-  {
-    id: "skin_rash",
-    name: "Mild Skin Conditions & Rashes",
-    description: "Dry, red, itchy skin rashes or localized dermatitis.",
-    symptoms: [
-      { id: "itching", label: "Mild to moderate skin itching" },
-      { id: "dryness", label: "Dry, scaly, or flaky skin patches" },
-      { id: "redness", label: "Mild redness or localized inflammation" },
-      { id: "hives", label: "Raised, itchy bumps (hives) limited to one area" },
-      {
-        id: "red_flag_blistering",
-        label: "Painful peeling, blistering, or open sores",
-        isRedFlag: true,
-        description: "Signs of severe drug reactions (SJS) or deep tissue infection.",
-      },
-      {
-        id: "red_flag_spread_fever",
-        label: "Rapidly spreading rash with fever or body chills",
-        isRedFlag: true,
-        description: "Potential systemic infection or cellulitis needing emergency care.",
-      },
-    ],
-  },
-  {
-    id: "cold_flu",
-    name: "Cold, Cough & Flu Symptoms",
-    description: "Sore throat, body aches, runny nose, cough, or mild fever.",
-    symptoms: [
-      { id: "sore_throat", label: "Pain or scratching feeling in throat" },
-      { id: "cough", label: "Dry or chesty cough (no blood)" },
-      { id: "congestion", label: "Sinus congestion or runny nose" },
-      { id: "aches", label: "Mild muscle aches or headache" },
-      {
-        id: "red_flag_neck_stiff",
-        label: "Severe headache with neck stiffness and light sensitivity",
-        isRedFlag: true,
-        description: "Warning indicators for Meningitis.",
-      },
-      {
-        id: "red_flag_chest_pain",
-        label: "Severe chest pain, coughing up blood, or rapid breathing",
-        isRedFlag: true,
-        description: "Indicators for pneumonia, pulmonary embolism, or cardiac event.",
-      },
-    ],
-  },
-  {
-    id: "acid_reflux",
-    name: "Heartburn & Acid Reflux",
-    description: "Burning chest pain after eating, regurgitation, bloating.",
-    symptoms: [
-      { id: "heartburn", label: "Burning sensation in chest or throat" },
-      { id: "regurgitation", label: "Sour taste in mouth from rising acid" },
-      { id: "bloating", label: "Mild stomach bloating or burping" },
-      { id: "nausea", label: "Mild nausea after meals" },
-      {
-        id: "red_flag_swallowing",
-        label: "Pain or difficulty swallowing food (dysphagia)",
-        isRedFlag: true,
-        description: "Could indicate esophageal narrowing or ulceration.",
-      },
-      {
-        id: "red_flag_bleeding",
-        label: "Vomiting blood or passing black, tarry stools",
-        isRedFlag: true,
-        description: "Signs of gastrointestinal bleeding requiring immediate treatment.",
-      },
-    ],
-  },
-];
+import { AILMENT_CONFIGS } from "@/config/ailments";
+import { AilmentType, ClinicalQuestion, QuestionChoice } from "@/types/assessment";
+import { buildClinicalValidationSchema } from "@/schemas/clinical";
 
 export default function AssessmentPage() {
   const [step, setStep] = useState(1);
+
+  // Demographic form states
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [dob, setDob] = useState("");
-  const [gender, setGender] = useState("");
+  const [dobInput, setDobInput] = useState(""); // captured as date input "YYYY-MM-DD"
+  const [gender, setGender] = useState<"F" | "M" | "U" | "">("");
   const [healthNumber, setHealthNumber] = useState("");
-  const [consentGiven, setConsentGiven] = useState(false);
-  const [selectedAilmentId, setSelectedAilmentId] = useState("");
-  const [consultedIn365Days, setConsultedIn365Days] = useState<"yes" | "no">("no");
-  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
+  const [isOdbRecipient, setIsOdbRecipient] = useState<boolean | null>(null);
+  const [pastYearAttempt, setPastYearAttempt] = useState<"YES" | "NO" | "NOT_SURE" | "">("");
+  const [selectedAilment, setSelectedAilment] = useState<AilmentType | "">("");
+
+  // Clinical answers state (dynamic keys based on question config)
+  const [clinicalAnswers, setClinicalAnswers] = useState<Record<string, any>>({});
   const [notes, setNotes] = useState("");
+
+  const [consentGiven, setConsentGiven] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [savedAssessmentId, setSavedAssessmentId] = useState("");
+  const [savedCaseId, setSavedCaseId] = useState("");
 
-  const currentAilment = AILMENTS.find((a) => a.id === selectedAilmentId);
+  // Get active config
+  const activeConfig = selectedAilment ? AILMENT_CONFIGS[selectedAilment] : null;
 
-  // Auto reset selected symptoms when ailment changes
+  // Reset clinical answers whenever selected ailment changes
   useEffect(() => {
-    setSelectedSymptoms([]);
-  }, [selectedAilmentId]);
+    setClinicalAnswers({});
+  }, [selectedAilment]);
 
-  const toggleSymptom = (symptomId: string) => {
-    setSelectedSymptoms((prev) =>
-      prev.includes(symptomId)
-        ? prev.filter((id) => id !== symptomId)
-        : [...prev, symptomId]
-    );
+  // Format DOB from date picker input "YYYY-MM-DD" to ministry "YYYYMMDD"
+  const getFormattedDOB = () => {
+    if (!dobInput) return "";
+    return dobInput.replace(/[-]/g, ""); // YYYYMMDD
+  };
+
+  // Format DOB from YYYYMMDD back to DD-MM-YYYY for display in reviews
+  const formatDOBForDisplay = (yyyyMMDD: string) => {
+    if (yyyyMMDD.length !== 8) return yyyyMMDD;
+    return `${yyyyMMDD.slice(6, 8)}-${yyyyMMDD.slice(4, 6)}-${yyyyMMDD.slice(0, 4)}`;
   };
 
   const calculatedAge = () => {
-    if (!dob) return 0;
+    if (!dobInput) return 0;
     const today = new Date();
-    const birthDate = new Date(dob);
-    let ageVal = today.getFullYear() - birthDate.getFullYear();
+    const birthDate = new Date(dobInput);
+    let age = today.getFullYear() - birthDate.getFullYear();
     const m = today.getMonth() - birthDate.getMonth();
     if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      ageVal--;
+      age--;
     }
-    return ageVal;
+    return age;
   };
 
-  const hasRedFlagsSelected = () => {
-    if (!currentAilment) return false;
-    
-    // Custom logic for complicating factors: Male patient selecting UTI symptoms
-    const isMaleUTI = gender === "Male" && selectedAilmentId === "acid_reflux"; // or other gender-ailment combo. UTI isn't explicitly in the 4 items, but Acid Reflux or Rashes could have gender red flags. Wait! Let's check for "complicating factor detected: e.g. male patient selecting UTI symptoms".
-    // We can also treat a male selecting "Heartburn & Acid Reflux" with swallowing difficulties or other custom criteria, but let's check for standard symptoms:
-    const selectedRedFlags = selectedSymptoms.some((id) => {
-      const sym = currentAilment.symptoms.find((s) => s.id === id);
-      return sym?.isRedFlag === true;
+  // Evaluates clinical boundaries in the background (Circuit Breaker)
+  const evaluateRedFlags = (): { requiresReferral: boolean; reasons: string[] } => {
+    if (!activeConfig) return { requiresReferral: false, reasons: [] };
+    const reasons: string[] = [];
+
+    // Demographic Hard Stop: Male sex UTI checks
+    if (selectedAilment === "URINARY_TRACT_INFECTION" && gender === "M") {
+      reasons.push("Male UTI (Excluded from minor ailments protocols)");
+    }
+
+    // Check Question specific flags
+    activeConfig.questions.forEach((q) => {
+      const answer = clinicalAnswers[q.id];
+      if (q.triggerRedFlagOnTrue && answer === true) {
+        reasons.push(q.label);
+      }
+      if (q.choices && typeof answer === "string") {
+        const choice = q.choices.find((c) => c.value === answer);
+        if (choice?.triggerRedFlag) {
+          reasons.push(`${q.label}: ${choice.label}`);
+        }
+      }
     });
 
-    // Let's create an explicit flag: Male + Skin Rash hives or Male + Allergies breathing, or simply any checked Red Flags.
-    // Also, to map the prompt's specific example ("a male patient selecting UTI symptoms"), we can trigger a complicating factor flag if gender === "Male" and selectedAilmentId is "allergies" (let's say) or if we add a general complicating factor flag.
-    // Let's implement it logically: if gender === "Male" and selectedAilmentId is "allergies" and severe breathing is selected, or if gender === "Male" and the user selects "Skin Rash" with fever.
-    // Actually, let's explicitly flag a Complicating Factor if gender === "Male" and they selected "acid_reflux" (or we can simulate a UTI as a hidden ailment, but let's map it: if gender === "Male" and the ailment is acid_reflux, or if they check a Red Flag).
-    // Let's return true if selectedRedFlags is true or if there is a complicating factor.
-    return selectedRedFlags;
-  };
-
-  const isComplicatingFactor = () => {
-    // Standard prompt example: male patient selecting UTI symptoms (we'll map it to Male patient selecting Allergic breathing or Acid Reflux dysphagia, or let's say Male + any ailment that pharmacist needs to refer).
-    // Let's define it explicitly: a Male patient selecting Acid Reflux (which has higher cardiac override risk) is considered a complicating factor.
-    return gender === "Male" && selectedAilmentId === "acid_reflux";
+    return {
+      requiresReferral: reasons.length > 0,
+      reasons,
+    };
   };
 
   const maskHealthNumber = (num: string) => {
-    const clean = num.replace(/[\s-]/g, "");
+    const clean = num.replace(/[\s-]/g, "").toUpperCase();
     if (clean.length <= 4) return "****";
     return "*".repeat(clean.length - 4) + clean.slice(-4);
   };
 
   const handleNext = () => {
     if (step === 1) {
-      if (!firstName || !lastName || !dob || !gender || !healthNumber) {
-        alert("Please fill in all patient details, including your Date of Birth and Health Card Number.");
+      if (!firstName || !lastName || !dobInput || !gender || !healthNumber || isOdbRecipient === null || !pastYearAttempt || !selectedAilment) {
+        alert("Please fill in all demographic details and select an ailment.");
         return;
       }
-      const cleanHN = healthNumber.replace(/[\s-]/g, "");
-      const hnRegex = /^\d{10}[A-Za-z]{0,2}$/;
+      
+      // Health Card Format check (10 digits plus optional 1-2 letters version code)
+      const cleanHN = healthNumber.replace(/[\s-]/g, "").toUpperCase();
+      const hnRegex = /^\d{10}[A-Z]{0,2}$/;
       if (!hnRegex.test(cleanHN)) {
-        alert("Please enter a valid Ontario Health Card Number (10 digits plus optional 2-letter version code, e.g. 1234567890 AB).");
+        alert("Please enter a valid Ontario Health Card (e.g. 10 digits plus 1-2 version letters like 1234567890 AB).");
         return;
       }
-      if (!consentGiven) {
-        alert("Informed consent is required to proceed with this virtual assessment.");
+
+      // DOB length check
+      const dobFormatted = getFormattedDOB();
+      if (dobFormatted.length !== 8) {
+        alert("Please enter a valid Date of Birth.");
         return;
       }
     }
-    if (step === 2 && !selectedAilmentId) {
-      alert("Please select an ailment.");
-      return;
+
+    if (step === 2 && activeConfig) {
+      // Validate dynamic questions using clinical schema parser
+      try {
+        const schema = buildClinicalValidationSchema(activeConfig.questions);
+        const parsed = schema.safeParse(clinicalAnswers);
+        if (!parsed.success) {
+          // Find first validation error
+          const firstErr = parsed.error.issues[0]?.message || "Please fill in all symptoms questions.";
+          alert(firstErr);
+          return;
+        }
+      } catch (err) {
+        console.error(err);
+      }
     }
+
     setStep((prev) => prev + 1);
   };
 
@@ -215,11 +143,11 @@ export default function AssessmentPage() {
     setStep((prev) => prev - 1);
   };
 
-  const saveToLocalStorage = (assessment: any) => {
+  const saveToLocalStorage = (payload: any) => {
     try {
       const existingRaw = localStorage.getItem("oma_assessments");
       const existing = existingRaw ? JSON.parse(existingRaw) : [];
-      localStorage.setItem("oma_assessments", JSON.stringify([assessment, ...existing]));
+      localStorage.setItem("oma_assessments", JSON.stringify([payload, ...existing]));
     } catch (err) {
       console.error("Error writing to localStorage", err);
     }
@@ -227,150 +155,113 @@ export default function AssessmentPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firstName || !lastName || !dob || !gender || !selectedAilmentId || !healthNumber) return;
+    if (!firstName || !lastName || !dobInput || !gender || !selectedAilment || !healthNumber || isOdbRecipient === null || !pastYearAttempt) return;
 
     setIsSubmitting(true);
 
-    const criticalFlag = hasRedFlagsSelected() || isComplicatingFactor();
-    const redFlagCount = selectedSymptoms.filter((id) =>
-      currentAilment?.symptoms.find((s) => s.id === id)?.isRedFlag
-    ).length;
-    const normalSymptomCount = selectedSymptoms.length - redFlagCount;
+    const { requiresReferral, reasons } = evaluateRedFlags();
+    const cleanHealthNumber = healthNumber.replace(/[\s-]/g, "").toUpperCase();
+    const dobFormatted = getFormattedDOB();
 
-    let triageLevel: "Referral" | "Pharmacist Consult" | "Self Care" = "Self Care";
-    let severity: "CRITICAL" | "MODERATE" | "MILD" = "MILD";
-    let aiSuggestion = "";
-    let recommendedActions: string[] = [];
-
-    if (criticalFlag) {
-      triageLevel = "Referral";
-      severity = "CRITICAL";
-      
-      if (isComplicatingFactor()) {
-        aiSuggestion = "CRITICAL: Complicating factor detected. Patient requires immediate doctor referral. Do not prescribe.";
-      } else {
-        aiSuggestion = "WARNING: Red flag symptoms detected. The patient requires immediate medical referral. Under Ontario guidelines, no minor ailment claim can be submitted for cases presenting with Red Flags.";
-      }
-      
-      recommendedActions = [
-        "Refer patient to the nearest Emergency Department or Primary Care Provider immediately",
-        "Explain to patient why virtual minor ailment treatment is not suitable",
-        "Provide emergency contact numbers (e.g. 999, 911)",
-      ];
-    } else if (normalSymptomCount >= 3 || notes.length > 50) {
-      triageLevel = "Pharmacist Consult";
-      severity = "MODERATE";
-      aiSuggestion =
-        "Pharmacist review recommended. Symptoms indicate moderate severity. Suitable for OTC intervention after a face-to-face or compliant virtual consultation.";
-      
-      if (selectedAilmentId === "allergies") {
-        recommendedActions = [
-          "Offer second-generation antihistamine (e.g. Cetirizine 10mg or Loratadine 10mg)",
-          "Recommend steroid nasal spray (e.g. Fluticasone propionate) if nasal symptoms dominate",
-          "Counsel on allergen avoidance (pollen tracking, washing hair after being outdoors)",
-        ];
-      } else if (selectedAilmentId === "skin_rash") {
-        recommendedActions = [
-          "Recommend mild topical hydrocortisone 1% cream (apply twice daily for max 7 days)",
-          "Offer emollient creams for dry patches",
-          "Advise to avoid perfumed soaps and triggers",
-        ];
-      } else if (selectedAilmentId === "cold_flu") {
-        recommendedActions = [
-          "Advise rest, fluids, and paracetamol (500mg-1000mg every 4-6 hours) for pain/fever",
-          "Recommend saline nasal sprays or decongestants for temporary nasal relief",
-          "Warn against request for antibiotics (viral infection)",
-        ];
-      } else {
-        recommendedActions = [
-          "Recommend H2-antagonists (e.g. Famotidine) or PPIs (e.g. Omeprazole 20mg daily)",
-          "Offer antacids or alginates (e.g. Gaviscon) for rapid symptom relief",
-          "Counsel on lifestyle modifications (eating smaller meals, avoiding lying down for 3 hours after food)",
-        ];
-      }
-    } else {
-      triageLevel = "Self Care";
-      severity = "MILD";
-      aiSuggestion =
-        "Self-Care suitable. Symptoms are mild and localized. Standard over-the-counter options and lifestyle measures are appropriate.";
-      
-      if (selectedAilmentId === "allergies") {
-        recommendedActions = ["Standard OTC antihistamine", "Keep windows closed during high pollen counts"];
-      } else if (selectedAilmentId === "skin_rash") {
-        recommendedActions = ["Keep area clean and moisturized", "Avoid scratching to prevent infection"];
-      } else if (selectedAilmentId === "cold_flu") {
-        recommendedActions = ["Adequate hydration and rest", "Sore throat lozenges"];
-      } else {
-        recommendedActions = ["Avoid spicy, fatty foods and caffeine", "Take OTC alginates as needed after meals"];
-      }
-    }
-
-    const newAssessment = {
+    // Map payload according to FullAssessmentPayloadSchema
+    const newPayload = {
       id: "OMA-" + Math.floor(1000 + Math.random() * 9000),
+      pharmacyId: "PHARM-ONTARIO-1", // Multi-tenant tag
+      timestamp: Date.now(),
+      status: requiresReferral ? "GP Referral" : "Pending Review",
+      triageLevel: requiresReferral ? "Referral" : "Pharmacist Consult",
+      severity: requiresReferral ? "CRITICAL" : "MILD",
+      requiresReferral,
+      referralReasons: reasons,
+      submittedAt: new Date().toISOString(),
+      
+      // Demographics block matching DemographicsSchema
+      demographics: {
+        firstName,
+        lastName,
+        dateOfBirth: dobFormatted,
+        gender,
+        healthCardNumber: cleanHealthNumber,
+        isOdbRecipient,
+        pastYearAssessmentAttempt: pastYearAttempt,
+        ailmentType: selectedAilment,
+      },
+      
+      // Dynamically built clinical answers block
+      clinicalAnswers: {
+        ...clinicalAnswers,
+        additionalNotes: notes,
+      },
+      
+      // Legacy fields for pharmacist compatibility
       patientName: `${firstName} ${lastName}`,
-      firstName: firstName,
-      lastName: lastName,
-      dob: dob,
       age: calculatedAge(),
-      gender: gender,
-      healthNumber: healthNumber.replace(/[\s-]/g, "").toUpperCase(),
-      consentGiven: true,
-      consultedIn365Days: consultedIn365Days,
-      ailmentId: selectedAilmentId,
-      ailmentName: currentAilment?.name || "",
-      symptoms: selectedSymptoms.map((id) => {
-        const s = currentAilment?.symptoms.find((sym) => sym.id === id);
+      dob: dobInput,
+      genderDisplay: gender === "M" ? "Male" : gender === "F" ? "Female" : "Unknown",
+      healthNumber: cleanHealthNumber,
+      ailmentId: selectedAilment,
+      ailmentName: activeConfig?.displayName || selectedAilment,
+      additionalNotes: notes,
+      symptoms: Object.keys(clinicalAnswers).map((key) => {
+        const q = activeConfig?.questions.find((quest) => quest.id === key);
+        const ans = clinicalAnswers[key];
+        
+        let labelAns = ans === true ? "Yes" : ans === false ? "No" : ans;
+        if (q?.choices) {
+          const choice = q.choices.find((c) => c.value === ans);
+          if (choice) labelAns = choice.label;
+        }
+
         return {
-          id: id,
-          label: s?.label || id,
-          isRedFlag: s?.isRedFlag || false,
+          id: key,
+          label: `${q?.label || key}: ${labelAns}`,
+          isRedFlag: q?.triggerRedFlagOnTrue && ans === true ? true : false,
         };
       }),
-      additionalNotes: notes,
-      status: triageLevel === "Referral" ? "GP Referral" : "Pending Review",
-      triageLevel,
-      severity,
-      aiSuggestion,
-      recommendedActions,
-      submittedAt: new Date().toISOString(),
-      pharmacyId: "PHARM-ONTARIO-1", // Seed pharmacy ID
+      aiSuggestion: requiresReferral
+        ? `CRITICAL: ${reasons.join(", ")}. Patient requires immediate doctor referral. Do not prescribe.`
+        : `Assessment suitable for clinical counseling. Dynamic triage cap checks recommended. Maximum ${activeConfig?.maxClaimsPerYear} claims yearly.`,
+      recommendedActions: requiresReferral
+        ? ["Refer to Primary Care Physician immediately", "Log referral status in store files", "Issue referral notice"]
+        : ["Counsel on symptom relief", "Assess for OTC therapy", "Detail follow-up timeline"],
     };
 
-    // Save to Firestore if configured, otherwise localStorage
+    // Firebase writing check
     const hasFirebase = db !== null;
     if (hasFirebase) {
       try {
         const { collection, addDoc, serverTimestamp } = await import("firebase/firestore");
         await addDoc(collection(db, "assessments"), {
-          ...newAssessment,
+          ...newPayload,
           timestamp: serverTimestamp(),
         });
       } catch (err) {
-        console.error("Failed to write to Firestore, falling back to localStorage", err);
-        saveToLocalStorage(newAssessment);
+        console.error("Firestore submission failed, fallback to local storage", err);
+        saveToLocalStorage(newPayload);
       }
     } else {
-      saveToLocalStorage(newAssessment);
+      saveToLocalStorage(newPayload);
     }
 
     setTimeout(() => {
       setIsSubmitting(false);
       setIsSuccess(true);
+      setSavedCaseId(newPayload.id);
     }, 1200);
   };
 
   const progressPercentage = Math.round((step / 4) * 100);
 
   if (isSuccess) {
-    const isCritical = hasRedFlagsSelected() || isComplicatingFactor();
+    const { requiresReferral } = evaluateRedFlags();
     return (
       <div className="container assessment-layout animate-fade-in">
         <div className="assessment-card success-state">
           <div className="success-icon-wrapper" style={{
-            backgroundColor: isCritical ? "var(--danger-light)" : "var(--success-light)",
-            color: isCritical ? "var(--danger)" : "var(--success)"
+            backgroundColor: requiresReferral ? "var(--danger-light)" : "var(--success-light)",
+            color: requiresReferral ? "var(--danger)" : "var(--success)"
           }}>
-            {isCritical ? (
+            {requiresReferral ? (
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
                 <line x1="12" y1="9" x2="12" y2="13"/>
@@ -383,33 +274,31 @@ export default function AssessmentPage() {
             )}
           </div>
           <h2>
-            {isCritical ? "Urgent Action Required" : "Assessment Submitted Successfully"}
+            {requiresReferral ? "Assessment Registered" : "Intake Sent Successfully"}
           </h2>
-          <p style={{ maxWidth: "500px", margin: "0.5rem 0 1.5rem" }}>
-            {isCritical
-              ? "Based on your symptoms or complicating factors, we strongly recommend that you seek immediate medical care. Please contact emergency services or visit a hospital. Your details have been triaged as Critical."
-              : `Your assessment has been registered under case ID: ${savedAssessmentId}. It has been forwarded to the Pharmacist for review. You can visit the Pharmacist Portal to see your triaged status.`}
-          </p>
-
-          {isCritical && (
-            <div className="alert-box alert-box-danger" style={{ textAlign: "left", width: "100%", marginBottom: "1.5rem" }}>
-              <div>
-                <strong>Emergency Guidelines:</strong>
-                <ul style={{ listStyleType: "disc", marginLeft: "1.25rem", marginTop: "0.5rem" }}>
-                  <li>Call emergency services or seek primary doctor review.</li>
-                  <li>Do not take any new medication before speaking to a doctor.</li>
-                  <li>Keep a friend or family member notified of your condition.</li>
-                </ul>
-              </div>
-            </div>
-          )}
+          
+          <div style={{ padding: "1.25rem", borderRadius: "var(--radius-md)", backgroundColor: "var(--bg-primary)", border: "1px solid var(--border-color)", margin: "1rem 0", width: "100%", textAlign: "left" }}>
+            <h3 style={{ fontSize: "1.1rem", marginBottom: "0.5rem", color: "var(--primary)" }}>Waiting Room Instructions</h3>
+            <p style={{ fontSize: "0.92rem", lineHeight: "1.5", color: "var(--text-secondary)" }}>
+              Your assessment intake details have been securely sent. **The pharmacist will call your name shortly.**
+            </p>
+            {requiresReferral ? (
+              <p style={{ fontSize: "0.92rem", lineHeight: "1.5", color: "var(--danger-text)", marginTop: "0.75rem", fontWeight: 700 }}>
+                ⚠️ Please note: Based on your symptoms and complicating factors, the pharmacist may need to refer you directly to a physician or primary care provider.
+              </p>
+            ) : (
+              <p style={{ fontSize: "0.92rem", lineHeight: "1.5", color: "var(--text-secondary)", marginTop: "0.5rem" }}>
+                Case Registration ID: <strong style={{ color: "var(--text-primary)" }}>{savedCaseId}</strong>. The pharmacist is triaging your file.
+              </p>
+            )}
+          </div>
 
           <div style={{ display: "flex", gap: "1rem" }}>
             <Link href="/" className="btn btn-secondary">
               Back to Home
             </Link>
             <Link href="/pharmacist" className="btn btn-primary">
-              View Pharmacist Portal
+              Open Pharmacist Desk
             </Link>
           </div>
         </div>
@@ -435,12 +324,12 @@ export default function AssessmentPage() {
       <div className="assessment-card">
         {step === 1 && (
           <div className="animate-slide-up">
-            <h2 style={{ marginBottom: "1.5rem" }}>Patient Information</h2>
-            
+            <h2 style={{ marginBottom: "1.5rem" }}>Gateway Patient Intake</h2>
+
             <div className="options-grid" style={{ marginBottom: "1rem" }}>
               <div className="form-group">
                 <label className="form-label" htmlFor="first-name">
-                  First Name
+                  Legal First Name (on Health Card)
                 </label>
                 <input
                   id="first-name"
@@ -453,7 +342,7 @@ export default function AssessmentPage() {
               </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="last-name">
-                  Last Name
+                  Legal Last Name (on Health Card)
                 </label>
                 <input
                   id="last-name"
@@ -475,185 +364,199 @@ export default function AssessmentPage() {
                   id="dob"
                   type="date"
                   className="form-input"
-                  value={dob}
-                  onChange={(e) => setDob(e.target.value)}
+                  value={dobInput}
+                  onChange={(e) => setDobInput(e.target.value)}
                 />
               </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="patient-gender">
-                  Gender
+                  Gender Identification (MOH Options)
                 </label>
                 <select
                   id="patient-gender"
                   className="form-select"
                   value={gender}
-                  onChange={(e) => setGender(e.target.value)}
+                  onChange={(e) => setGender(e.target.value as any)}
                 >
                   <option value="">Select...</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
+                  <option value="M">Male (M)</option>
+                  <option value="F">Female (F)</option>
+                  <option value="U">Unknown / Other (U)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="options-grid" style={{ marginBottom: "1rem" }}>
+              <div className="form-group">
+                <label className="form-label" htmlFor="health-number">
+                  Ontario Health Card Number
+                </label>
+                <input
+                  id="health-number"
+                  type="text"
+                  className="form-input"
+                  placeholder="10 digits + version code (e.g. 1234567890 AB)"
+                  value={healthNumber}
+                  onChange={(e) => setHealthNumber(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="odb-status">
+                  Are you an ODB Recipient?
+                </label>
+                <select
+                  id="odb-status"
+                  className="form-select"
+                  value={isOdbRecipient === null ? "" : isOdbRecipient ? "yes" : "no"}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setIsOdbRecipient(val === "" ? null : val === "yes" ? true : false);
+                  }}
+                >
+                  <option value="">Select...</option>
+                  <option value="yes">Yes, I have Ontario Drug Benefit card</option>
+                  <option value="no">No, standard public/private coverage</option>
                 </select>
               </div>
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="health-number">
-                Ontario Health Card Number (OHIP / ODB Eligibility)
+              <label className="form-label" htmlFor="attempt-tracking">
+                Have you been assessed by a pharmacist for this specific condition in the last 365 days?
               </label>
-              <input
-                id="health-number"
-                type="text"
-                className="form-input"
-                placeholder="10 digits plus optional 2-letter version code (e.g. 1234567890 AB)"
-                value={healthNumber}
-                onChange={(e) => setHealthNumber(e.target.value)}
-              />
-              <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "0.15rem" }}>
-                Mandatory for virtual service billing under Ontario guidelines.
-              </span>
+              <select
+                id="attempt-tracking"
+                className="form-select"
+                value={pastYearAttempt}
+                onChange={(e) => setPastYearAttempt(e.target.value as any)}
+              >
+                <option value="">Select...</option>
+                <option value="NO">No, this is my first assessment for this condition in 365 days</option>
+                <option value="YES">Yes, I was assessed for this condition recently</option>
+                <option value="NOT_SURE">I am not sure</option>
+              </select>
             </div>
 
-            <div className="form-group" style={{ flexDirection: "row", alignItems: "flex-start", gap: "0.75rem", marginTop: "1.5rem" }}>
-              <input
-                id="informed-consent"
-                type="checkbox"
-                className="symptom-checkbox"
-                style={{ marginTop: "0.2rem" }}
-                checked={consentGiven}
-                onChange={(e) => setConsentGiven(e.target.checked)}
-              />
-              <label htmlFor="informed-consent" className="symptom-label">
-                <strong>Patient Informed Consent</strong>
-                <span style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "0.15rem" }}>
-                  I consent to the collection of my clinical history and details to perform this virtual minor ailment assessment.
-                </span>
+            <div className="form-group" style={{ marginTop: "1rem" }}>
+              <label className="form-label" htmlFor="ailment-selection">
+                Select Minor Ailment Condition
               </label>
+              <select
+                id="ailment-selection"
+                className="form-select"
+                value={selectedAilment}
+                onChange={(e) => setSelectedAilment(e.target.value as any)}
+              >
+                <option value="">Select condition...</option>
+                {Object.keys(AILMENT_CONFIGS).map((key) => (
+                  <option key={key} value={key}>
+                    {AILMENT_CONFIGS[key as AilmentType].displayName}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         )}
 
-        {step === 2 && (
+        {step === 2 && activeConfig && (
           <div className="animate-slide-up">
-            <h2 style={{ marginBottom: "1.5rem" }}>Select Primary Ailment</h2>
-            <p style={{ marginBottom: "1.5rem", fontSize: "0.95rem" }}>
-              Select the condition that matches your primary symptom area.
-            </p>
-            <div className="options-grid">
-              {AILMENTS.map((ailment) => (
-                <div
-                  key={ailment.id}
-                  onClick={() => setSelectedAilmentId(ailment.id)}
-                  className={`option-box ${
-                    selectedAilmentId === ailment.id ? "selected" : ""
-                  }`}
-                >
-                  <span className="option-title">{ailment.name}</span>
-                  <span className="option-desc">{ailment.description}</span>
-                </div>
-              ))}
-            </div>
-
-            {selectedAilmentId && (
-              <div className="form-group" style={{ marginTop: "2rem", borderTop: "1px solid var(--border-color)", paddingTop: "1.5rem" }}>
-                <label className="form-label">
-                  Annual Assessment Limits Verification
-                </label>
-                <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "0.75rem" }}>
-                  Have you consulted a pharmacist or physician for this specific ailment in the last 365 days?
-                </p>
-                <div style={{ display: "flex", gap: "1.5rem", flexDirection: "column" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", cursor: "pointer" }}>
-                    <input
-                      type="radio"
-                      name="limit-check"
-                      checked={consultedIn365Days === "no"}
-                      onChange={() => setConsultedIn365Days("no")}
-                      style={{ accentColor: "var(--primary)", width: "1.1rem", height: "1.1rem" }}
-                    />
-                    No, this is my first assessment for this condition in 365 days.
-                  </label>
-                  <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", cursor: "pointer" }}>
-                    <input
-                      type="radio"
-                      name="limit-check"
-                      checked={consultedIn365Days === "yes"}
-                      onChange={() => setConsultedIn365Days("yes")}
-                      style={{ accentColor: "var(--primary)", width: "1.1rem", height: "1.1rem" }}
-                    />
-                    Yes, I have received a consultation for this in the last 365 days.
-                  </label>
-                </div>
-                {consultedIn365Days === "yes" && (
-                  <div className="alert-box alert-box-info" style={{ marginTop: "1rem" }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="16" x2="12" y2="12" />
-                      <line x1="12" y1="8" x2="12.01" y2="8" />
-                    </svg>
-                    <div>
-                      <strong>Note:</strong> Under Ontario rules, subsidized virtual claims are subject to maximum annual limits. 
-                      You can still submit, but the pharmacist will verify eligibility.
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {step === 3 && currentAilment && (
-          <div className="animate-slide-up">
-            <h2 style={{ marginBottom: "0.5rem" }}>Symptom Checklist</h2>
+            <h2 style={{ marginBottom: "0.5rem" }}>Symptom & Clinical History</h2>
             <p style={{ marginBottom: "1.5rem", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-              Ailment: <strong style={{ color: "var(--primary)" }}>{currentAilment.name}</strong>. Check all symptoms that apply.
+              Condition: <strong style={{ color: "var(--primary)" }}>{activeConfig.displayName}</strong>.
             </p>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              {currentAilment.symptoms.map((symptom) => (
-                <div
-                  key={symptom.id}
-                  className="symptom-item"
-                  style={{
-                    border: symptom.isRedFlag ? "1px dashed rgba(239, 68, 68, 0.2)" : "1px solid var(--border-color)",
-                    backgroundColor: selectedSymptoms.includes(symptom.id)
-                      ? (symptom.isRedFlag ? "var(--danger-light)" : "var(--bg-tertiary)")
-                      : "transparent"
-                  }}
-                >
-                  <input
-                    id={symptom.id}
-                    type="checkbox"
-                    className="symptom-checkbox"
-                    checked={selectedSymptoms.includes(symptom.id)}
-                    onChange={() => toggleSymptom(symptom.id)}
-                  />
-                  <label htmlFor={symptom.id} className="symptom-label">
-                    <strong style={{ color: symptom.isRedFlag ? "var(--danger)" : "var(--text-primary)" }}>
-                      {symptom.label}
-                      {symptom.isRedFlag && " (Red Flag Indicator)"}
-                    </strong>
-                    {symptom.description && (
-                      <span style={{ display: "block", fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "0.15rem" }}>
-                        {symptom.description}
-                      </span>
-                    )}
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              {activeConfig.questions.map((q) => (
+                <div key={q.id} className="form-group" style={{ borderBottom: "1px solid var(--border-color)", paddingBottom: "1rem", marginBottom: 0 }}>
+                  <label className="form-label" style={{ marginBottom: "0.5rem" }}>
+                    {q.label} {q.required && <span style={{ color: "var(--danger)" }}>*</span>}
                   </label>
+
+                  {q.type === "BOOLEAN" && (
+                    <div style={{ display: "flex", gap: "1rem" }}>
+                      <button
+                        type="button"
+                        onClick={() => setClinicalAnswers((prev) => ({ ...prev, [q.id]: true }))}
+                        className={`btn btn-sm ${clinicalAnswers[q.id] === true ? "btn-primary" : "btn-secondary"}`}
+                        style={{ width: "80px" }}
+                      >
+                        Yes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setClinicalAnswers((prev) => ({ ...prev, [q.id]: false }))}
+                        className={`btn btn-sm ${clinicalAnswers[q.id] === false ? "btn-primary" : "btn-secondary"}`}
+                        style={{ width: "80px" }}
+                      >
+                        No
+                      </button>
+                    </div>
+                  )}
+
+                  {q.type === "CHOICE" && q.choices && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                      {q.choices.map((choice) => (
+                        <label key={choice.value} style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", cursor: "pointer" }}>
+                          <input
+                            type="radio"
+                            name={`choice-${q.id}`}
+                            value={choice.value}
+                            checked={clinicalAnswers[q.id] === choice.value}
+                            onChange={() => setClinicalAnswers((prev) => ({ ...prev, [q.id]: choice.value }))}
+                            style={{ accentColor: "var(--primary)", width: "1.1rem", height: "1.1rem" }}
+                          />
+                          {choice.label}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+
+                  {q.type === "TEXT" && (
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={clinicalAnswers[q.id] || ""}
+                      onChange={(e) => setClinicalAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                      placeholder="Please specify details..."
+                    />
+                  )}
                 </div>
               ))}
             </div>
+          </div>
+        )}
 
-            {hasRedFlagsSelected() && (
-              <div className="alert-box alert-box-danger animate-slide-up">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
-                  <line x1="12" y1="9" x2="12" y2="13"/>
-                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+        {step === 3 && (
+          <div className="animate-slide-up">
+            <h2 style={{ marginBottom: "1.25rem" }}>Consultation Notes</h2>
+            <p style={{ marginBottom: "1.5rem", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
+              Provide any additional information about symptom onset, timeline, past treatments tried, or allergies.
+            </p>
+            <div className="form-group">
+              <label className="form-label" htmlFor="additional-notes">
+                Consult Notes (Optional)
+              </label>
+              <textarea
+                id="additional-notes"
+                className="form-textarea"
+                rows={5}
+                placeholder="Timeline, medication dosage tried, or pre-existing conditions..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </div>
+
+            {/* Warn user silently of referral but don't block them */}
+            {evaluateRedFlags().requiresReferral && (
+              <div className="alert-box alert-box-info">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="16" x2="12" y2="12" />
+                  <line x1="12" y1="8" x2="12.01" y2="8" />
                 </svg>
                 <div>
-                  <strong>Critical Warning:</strong> You have selected one or more Red Flag symptoms.
-                  These suggest a serious underlying clinical condition.
-                  We recommend that you do not submit this as a minor ailment, and seek immediate emergency care.
+                  <strong>Note:</strong> Based on clinical guidelines, your symptoms or demographics indicate a GP referral might be required. 
+                  You may still proceed; the pharmacist will verify final suitability.
                 </div>
               </div>
             )}
@@ -662,73 +565,68 @@ export default function AssessmentPage() {
 
         {step === 4 && (
           <div className="animate-slide-up">
-            <h2 style={{ marginBottom: "1.5rem" }}>Review & Submit</h2>
+            <h2 style={{ marginBottom: "1.5rem" }}>Review & Consent</h2>
+            
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
               <div className="hero-card-item">
-                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Patient Details</div>
-                <div style={{ fontWeight: 600 }}>{firstName} {lastName}, {calculatedAge()} years ({gender})</div>
-                <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginTop: "0.15rem" }}>DOB: {dob}</div>
-              </div>
-
-              <div className="hero-card-item">
-                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Ontario Billing Eligibility</div>
-                <div style={{ fontWeight: 600, display: "flex", flexDirection: "column", gap: "0.25rem", fontSize: "0.9rem" }}>
-                  <div>Health Card Number: <span className="billing-pin-display">{maskHealthNumber(healthNumber)}</span></div>
-                  <div>Informed Consent: <span style={{ color: "var(--success-text)" }}>Given (Checked)</span></div>
-                  <div>Within 365-Day Claim Limit: <span>{consultedIn365Days === "yes" ? "⚠️ Needs verification (Prior consult reported)" : "✅ Yes (No prior consult)"}</span></div>
+                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Demographics</div>
+                <div style={{ fontWeight: 600 }}>{firstName} {lastName}, {calculatedAge()} years ({gender === "M" ? "Male" : gender === "F" ? "Female" : "Unknown"})</div>
+                <div style={{ fontSize: "0.82rem", color: "var(--text-secondary)", marginTop: "0.15rem" }}>
+                  DOB: {formatDOBForDisplay(getFormattedDOB())} | OHIP: {maskHealthNumber(healthNumber)} {isOdbRecipient ? "(ODB)" : ""}
                 </div>
               </div>
 
               <div className="hero-card-item">
-                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Selected Ailment</div>
-                <div style={{ fontWeight: 600, color: "var(--primary)" }}>{currentAilment?.name}</div>
+                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Ailment Selection</div>
+                <div style={{ fontWeight: 600, color: "var(--primary)" }}>{activeConfig?.displayName}</div>
               </div>
 
               <div className="hero-card-item">
-                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Checked Symptoms ({selectedSymptoms.length})</div>
-                {selectedSymptoms.length === 0 ? (
-                  <div style={{ fontStyle: "italic", fontSize: "0.9rem" }}>No symptoms selected</div>
-                ) : (
-                  <ul style={{ listStyleType: "disc", marginLeft: "1.25rem", fontSize: "0.9rem", display: "flex", flexDirection: "column", gap: "0.25rem", marginTop: "0.25rem" }}>
-                    {selectedSymptoms.map((id) => {
-                      const s = currentAilment?.symptoms.find((sym) => sym.id === id);
-                      return (
-                        <li key={id} style={{ color: s?.isRedFlag ? "var(--danger)" : "var(--text-primary)" }}>
-                          {s?.label} {s?.isRedFlag && "⚠️"}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
+                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Intake Symptom Summary</div>
+                <ul style={{ listStyleType: "disc", marginLeft: "1.25rem", fontSize: "0.88rem", display: "flex", flexDirection: "column", gap: "0.25rem", marginTop: "0.25rem" }}>
+                  {activeConfig?.questions.map((q) => {
+                    const ans = clinicalAnswers[q.id];
+                    let displayAns = ans === true ? "Yes" : ans === false ? "No" : ans || "Unanswered";
+                    if (q.choices && typeof ans === "string") {
+                      const choice = q.choices.find((c) => c.value === ans);
+                      if (choice) displayAns = choice.label;
+                    }
+                    
+                    const isRed = q.triggerRedFlagOnTrue && ans === true ? true : false;
+
+                    return (
+                      <li key={q.id} style={{ color: isRed ? "var(--danger)" : "var(--text-primary)" }}>
+                        {q.label}: <strong>{displayAns}</strong> {isRed && "⚠️"}
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
 
-              <div className="form-group">
-                <label className="form-label" htmlFor="additional-notes">
-                  Additional Notes (Optional)
-                </label>
-                <textarea
-                  id="additional-notes"
-                  className="form-textarea"
-                  placeholder="Tell us about symptom onset, medications tried, or past medical history..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-              </div>
+              {notes && (
+                <div className="hero-card-item">
+                  <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Additional Notes</div>
+                  <div style={{ fontSize: "0.85rem", fontStyle: "italic" }}>&ldquo;{notes}&rdquo;</div>
+                </div>
+              )}
             </div>
 
-            {(hasRedFlagsSelected() || isComplicatingFactor()) && (
-              <div className="alert-box alert-box-danger" style={{ marginBottom: "1.5rem" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
-                  <line x1="12" y1="9" x2="12" y2="13"/>
-                  <line x1="12" y1="17" x2="12.01" y2="17"/>
-                </svg>
-                <div>
-                  <strong>Emergency Disclaimer:</strong> Triage is set to Critical due to symptoms or complicating factors.
-                  By submitting, you acknowledge you are advised to seek emergency professional medical help immediately.
-                </div>
-              </div>
-            )}
+            <div className="form-group" style={{ flexDirection: "row", alignItems: "flex-start", gap: "0.75rem", borderTop: "1px solid var(--border-color)", paddingTop: "1.5rem", marginTop: "1rem" }}>
+              <input
+                id="final-consent"
+                type="checkbox"
+                className="symptom-checkbox"
+                style={{ marginTop: "0.2rem" }}
+                checked={consentGiven}
+                onChange={(e) => setConsentGiven(e.target.checked)}
+              />
+              <label htmlFor="final-consent" className="symptom-label">
+                <strong>Informed Consent</strong>
+                <span style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "0.15rem" }}>
+                  I certify that all details submitted are accurate. I consent to the pharmacist reviewing this information and sharing it with my primary care provider if a prescription is issued.
+                </span>
+              </label>
+            </div>
           </div>
         )}
 
@@ -748,10 +646,10 @@ export default function AssessmentPage() {
           ) : (
             <button
               onClick={handleSubmit}
-              disabled={isSubmitting}
-              className={`btn ${hasRedFlagsSelected() || isComplicatingFactor() ? "btn-danger" : "btn-accent"}`}
+              disabled={isSubmitting || !consentGiven}
+              className={`btn ${evaluateRedFlags().requiresReferral ? "btn-danger" : "btn-accent"}`}
             >
-              {isSubmitting ? "Submitting..." : (hasRedFlagsSelected() || isComplicatingFactor() ? "Submit Emergency Case" : "Submit Assessment")}
+              {isSubmitting ? "Submitting..." : (evaluateRedFlags().requiresReferral ? "Register Case (GP Referral)" : "Submit Intake")}
             </button>
           )}
         </div>
