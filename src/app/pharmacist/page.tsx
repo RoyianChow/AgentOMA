@@ -702,7 +702,7 @@ export default function PharmacistDashboard() {
       {/* ====================================================================
          PANEL 3: 10-Second Billing Panel (Right Column)
          ==================================================================== */}
-      <div className="sidebar-panel" style={{ width: "360px", backgroundColor: "var(--bg-primary)" }}>
+      <div className="sidebar-panel" style={{ width: "100%", backgroundColor: "var(--bg-primary)" }}>
         {!selectedAssessment ? (
           <div className="detail-placeholder">
             <h2>HNS Billing</h2>
