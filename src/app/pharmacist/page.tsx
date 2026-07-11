@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+// TODO(step: dashboard rebuild): this page still reads its mock queue via
+// Firestore/localStorage. Firestore + Firebase are removed from the stack when
+// this dashboard is rebuilt on authenticated server actions (no client-side PHI).
 import { db } from "@/lib/firebase";
 import { usePharmacyConfig } from "@/hooks/usePharmacyConfig";
 
