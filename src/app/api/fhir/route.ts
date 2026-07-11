@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// ICD-10 mapping for Ontario authorized minor ailments
+// TODO: PHARMACIST REVIEW REQUIRED — these ICD-10 mappings are NOT sourced from
+// the EO Notice (2026-07-01) and have not been clinically validated. They must be
+// reviewed by a pharmacist before this export is used for anything real. Do not
+// expand this map without that review.
 const AILMENT_TO_ICD10: Record<string, { code: string; display: string }> = {
   URINARY_TRACT_INFECTION:       { code: "N39.0",  display: "Urinary tract infection, site not specified" },
   HERPES_LABIALIS:               { code: "B00.1",  display: "Herpesviral vesicular dermatitis (Cold Sores)" },
@@ -27,7 +30,23 @@ const AILMENT_TO_ICD10: Record<string, { code: string; display: string }> = {
   CANKER_SORES:                  { code: "K12.0",  display: "Recurrent oral aphthae (Canker Sores)" },
 };
 
-export async function POST(req: NextRequest) {
+export async function POST(): Promise<NextResponse> {
+  // ── SECURITY GATE (Step 1) ────────────────────────────────────────────────
+  // This route previously accepted PHI in the request body from ANY caller with
+  // no authentication and returned a FHIR bundle. It is DISABLED until it sits
+  // behind a verified better-auth pharmacist session (see the FHIR export step /
+  // docs/COMPLIANCE.md). `buildFhirResponse` below is preserved unchanged for
+  // that step. Do NOT re-enable without server-side session + role verification.
+  return NextResponse.json(
+    { error: "FHIR export is disabled pending an authenticated pharmacist session." },
+    { status: 403 },
+  );
+}
+
+// Preserved verbatim for the authenticated FHIR export step; intentionally not
+// invoked yet (see the SECURITY GATE in POST above).
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function buildFhirResponse(req: NextRequest): Promise<NextResponse> {
   try {
     const body = await req.json();
     const { assessment } = body;

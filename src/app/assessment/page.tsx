@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { db } from "@/lib/firebase";
 import { AILMENT_CONFIGS } from "@/config/ailments";
 import { AilmentType, ClinicalQuestion, QuestionChoice } from "@/types/assessment";
 import { buildClinicalValidationSchema } from "@/schemas/clinical";
@@ -143,16 +142,6 @@ export default function AssessmentPage() {
     setStep((prev) => prev - 1);
   };
 
-  const saveToLocalStorage = (payload: any) => {
-    try {
-      const existingRaw = localStorage.getItem("oma_assessments");
-      const existing = existingRaw ? JSON.parse(existingRaw) : [];
-      localStorage.setItem("oma_assessments", JSON.stringify([payload, ...existing]));
-    } catch (err) {
-      console.error("Error writing to localStorage", err);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!firstName || !lastName || !dobInput || !gender || !selectedAilment || !healthNumber || isOdbRecipient === null || !pastYearAttempt) return;
@@ -226,22 +215,13 @@ export default function AssessmentPage() {
         : ["Counsel on symptom relief", "Assess for OTC therapy", "Detail follow-up timeline"],
     };
 
-    // Firebase writing check
-    const hasFirebase = db !== null;
-    if (hasFirebase) {
-      try {
-        const { collection, addDoc, serverTimestamp } = await import("firebase/firestore");
-        await addDoc(collection(db, "assessments"), {
-          ...newPayload,
-          timestamp: serverTimestamp(),
-        });
-      } catch (err) {
-        console.error("Firestore submission failed, fallback to local storage", err);
-        saveToLocalStorage(newPayload);
-      }
-    } else {
-      saveToLocalStorage(newPayload);
-    }
+    // ── SECURITY (Step 1) ─────────────────────────────────────────────────
+    // Client-side persistence of PHI has been REMOVED. This flow previously
+    // wrote the full assessment payload (health number, name, DOB, clinical
+    // answers) straight to Firestore / localStorage from the browser. PHIPA
+    // and the working agreement forbid client-side PHI persistence. Persistence
+    // is deferred to the authenticated server-action flow (assessment rebuild
+    // step). Until then, nothing is stored. Do NOT reintroduce a client write.
 
     setTimeout(() => {
       setIsSubmitting(false);
