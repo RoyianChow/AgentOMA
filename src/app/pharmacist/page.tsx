@@ -841,7 +841,7 @@ export default function PharmacistDashboard() {
               const isReferred = selectedAssessment.status === "GP Referral" || selectedAssessment.requiresReferral;
               const isNonODB = selectedAssessment.demographics 
                 ? !selectedAssessment.demographics.isOdbRecipient 
-                : (!selectedAssessment.healthNumber.endsWith("AB") && !selectedAssessment.healthNumber.endsWith("CD"));
+                : (!(selectedAssessment.healthNumber || "").endsWith("AB") && !(selectedAssessment.healthNumber || "").endsWith("CD"));
               
               if (isReferred || isNonODB) {
                 return (
