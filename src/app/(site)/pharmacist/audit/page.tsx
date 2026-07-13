@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { db } from "@/lib/firebase";
+import { getAllAssessments } from "../actions";
 import Link from "next/link";
 
 interface AuditRecord {
@@ -9,28 +9,22 @@ interface AuditRecord {
   patientName: string;
   dob: string;
   healthNumber: string;
-  ailmentName: string;
-  ailmentId: string;
-  status: string;
-  submittedAt: string;
-  requiresReferral?: boolean;
-  pharmacyId?: string;
-  demographics?: {
-    firstName?: string;
-    lastName?: string;
-    dateOfBirth?: string;
-    healthCardNumber?: string;
-    gender?: string;
-    ailmentType?: string;
-  };
+  ailmentGroupCode: string;
+  outcome: string;
+  serviceDate: string;
+  createdAt: string;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: "#f59e0b",
-  IN_PROGRESS: "#3b82f6",
-  COMPLETED: "#10b981",
-  ARCHIVED: "#6b7280",
-  "GP Referral": "#ef4444",
+const OUTCOME_COLORS: Record<string, string> = {
+  rx_issued: "#10b981",
+  no_rx_referral: "#ef4444",
+  no_rx_otc_or_nonpharm: "#f59e0b",
+};
+
+const OUTCOME_LABELS: Record<string, string> = {
+  rx_issued: "Rx Issued",
+  no_rx_referral: "Referred",
+  no_rx_otc_or_nonpharm: "No Rx (OTC)",
 };
 
 export default function AuditPage() {
@@ -48,30 +42,13 @@ export default function AuditPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 15;
 
-  // Load all records (including ARCHIVED) from Firestore or LocalStorage
+  // Load all records (including ARCHIVED) from Supabase
   useEffect(() => {
     const loadRecords = async () => {
       setLoading(true);
       try {
-        if (db) {
-          const { collection, getDocs, orderBy, query } = await import("firebase/firestore");
-          const q = query(collection(db, "assessments"), orderBy("submittedAt", "desc"));
-          const snap = await getDocs(q);
-          const data: AuditRecord[] = snap.docs.map((d) => ({
-            id: d.id,
-            ...d.data(),
-          } as AuditRecord));
-          setRecords(data);
-        } else {
-          // LocalStorage fallback
-          const stored = localStorage.getItem("assessments");
-          if (stored) {
-            const parsed: AuditRecord[] = JSON.parse(stored);
-            setRecords(parsed.sort((a, b) =>
-              new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
-            ));
-          }
-        }
+        const data = await getAllAssessments();
+        setRecords(data);
       } catch (err) {
         console.error("Failed to load audit records:", err);
       } finally {
@@ -83,24 +60,24 @@ export default function AuditPage() {
 
   // Unique ailment names for filter dropdown
   const ailmentOptions = useMemo(() => {
-    const names = Array.from(new Set(records.map((r) => r.ailmentName || r.ailmentId))).filter(Boolean);
+    const names = Array.from(new Set(records.map((r) => r.ailmentGroupCode))).filter(Boolean);
     return names.sort();
   }, [records]);
 
   // Filtered + searched records
   const filtered = useMemo(() => {
     return records.filter((r) => {
-      const name = r.patientName || `${r.demographics?.firstName || ""} ${r.demographics?.lastName || ""}`.trim();
-      const card = r.healthNumber || r.demographics?.healthCardNumber || "";
+      const name = r.patientName || "";
+      const card = r.healthNumber || "";
       const matchSearch =
         !searchQuery ||
         name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         card.includes(searchQuery);
-      const matchStatus = filterStatus === "ALL" || r.status === filterStatus;
+      const matchStatus = filterStatus === "ALL" || r.outcome === filterStatus;
       const matchAilment =
         filterAilment === "ALL" ||
-        (r.ailmentName || r.ailmentId) === filterAilment;
-      const dateObj = new Date(r.submittedAt);
+        r.ailmentGroupCode === filterAilment;
+      const dateObj = new Date(r.createdAt);
       const matchFrom = !dateFrom || dateObj >= new Date(dateFrom);
       const matchTo = !dateTo || dateObj <= new Date(dateTo + "T23:59:59");
       return matchSearch && matchStatus && matchAilment && matchFrom && matchTo;
@@ -121,23 +98,21 @@ export default function AuditPage() {
     } catch { return iso; }
   };
 
-  // ── CSV Export ──────────────────────────────────────────────────────────
   const exportCSV = () => {
     const headers = [
       "Patient Name", "Date of Birth", "Health Card", "Ailment",
-      "Status", "Referral Required", "Pharmacy", "Submitted At",
+      "Outcome", "Service Date", "Created At",
     ];
     const rows = filtered.map((r) => {
-      const name = r.patientName || `${r.demographics?.firstName || ""} ${r.demographics?.lastName || ""}`.trim();
-      const dob = r.dob || r.demographics?.dateOfBirth || "";
-      const card = r.healthNumber || r.demographics?.healthCardNumber || "";
+      const name = r.patientName || "";
+      const dob = r.dob || "";
+      const card = r.healthNumber || "";
       return [
         name, dob, card,
-        r.ailmentName || r.ailmentId || "",
-        r.status || "",
-        r.requiresReferral ? "YES" : "NO",
-        r.pharmacyId || "",
-        r.submittedAt || "",
+        r.ailmentGroupCode || "",
+        OUTCOME_LABELS[r.outcome] || r.outcome,
+        r.serviceDate || "",
+        r.createdAt || "",
       ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",");
     });
     const csv = [headers.join(","), ...rows].join("\n");
@@ -174,21 +149,20 @@ export default function AuditPage() {
 
     // Table
     const tableRows = filtered.map((r) => {
-      const name = r.patientName || `${r.demographics?.firstName || ""} ${r.demographics?.lastName || ""}`.trim();
-      const dob = r.dob || r.demographics?.dateOfBirth || "";
-      const card = r.healthNumber || r.demographics?.healthCardNumber || "";
+      const name = r.patientName || "";
+      const dob = r.dob || "";
+      const card = r.healthNumber || "";
       return [
         name, dob, card,
-        r.ailmentName || r.ailmentId || "",
-        r.status || "",
-        r.requiresReferral ? "YES" : "NO",
-        r.submittedAt ? new Date(r.submittedAt).toLocaleDateString("en-CA") : "",
+        r.ailmentGroupCode || "",
+        OUTCOME_LABELS[r.outcome] || r.outcome,
+        r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-CA") : "",
       ];
     });
 
     autoTable(doc, {
       startY: 28,
-      head: [["Patient", "DOB", "Health Card", "Ailment", "Status", "Referral", "Date"]],
+      head: [["Patient", "DOB", "Health Card", "Ailment", "Outcome", "Date"]],
       body: tableRows,
       styles: { fontSize: 8, cellPadding: 2 },
       headStyles: { fillColor: [99, 102, 241], textColor: 255, fontStyle: "bold" },
@@ -266,12 +240,10 @@ export default function AuditPage() {
           value={filterStatus}
           onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
         >
-          <option value="ALL">All Statuses</option>
-          <option value="PENDING">Pending</option>
-          <option value="IN_PROGRESS">In Progress</option>
-          <option value="COMPLETED">Completed</option>
-          <option value="ARCHIVED">Archived</option>
-          <option value="GP Referral">GP Referral</option>
+          <option value="ALL">All Outcomes</option>
+          <option value="rx_issued">Rx Issued</option>
+          <option value="no_rx_referral">No Rx - Referral</option>
+          <option value="no_rx_otc_or_nonpharm">No Rx - OTC</option>
         </select>
         <select
           className="audit-select"
@@ -314,38 +286,32 @@ export default function AuditPage() {
                 <th>DOB</th>
                 <th>Health Card</th>
                 <th>Ailment</th>
-                <th>Status</th>
-                <th>Referral</th>
-                <th>Submitted</th>
+                <th>Outcome</th>
+                <th>Service Date</th>
+                <th>Created At</th>
               </tr>
             </thead>
             <tbody>
               {paginated.map((r) => {
-                const name = r.patientName || `${r.demographics?.firstName || ""} ${r.demographics?.lastName || ""}`.trim();
-                const dob = r.dob || r.demographics?.dateOfBirth || "—";
-                const card = r.healthNumber || r.demographics?.healthCardNumber || "—";
+                const name = r.patientName || "—";
+                const dob = r.dob || "—";
+                const card = r.healthNumber || "—";
                 return (
                   <tr key={r.id} className="audit-row">
-                    <td className="audit-td-name">{name || "—"}</td>
+                    <td className="audit-td-name">{name}</td>
                     <td>{dob}</td>
                     <td className="audit-td-mono">{card}</td>
-                    <td>{r.ailmentName || r.ailmentId || "—"}</td>
+                    <td>{r.ailmentGroupCode || "—"}</td>
                     <td>
                       <span
                         className="audit-status-badge"
-                        style={{ background: `${STATUS_COLORS[r.status] || "#6b7280"}22`, color: STATUS_COLORS[r.status] || "#6b7280" }}
+                        style={{ background: `${OUTCOME_COLORS[r.outcome] || "#6b7280"}22`, color: OUTCOME_COLORS[r.outcome] || "#6b7280" }}
                       >
-                        {r.status}
+                        {OUTCOME_LABELS[r.outcome] || r.outcome}
                       </span>
                     </td>
-                    <td>
-                      {r.requiresReferral ? (
-                        <span className="audit-referral-yes">⚠ YES</span>
-                      ) : (
-                        <span className="audit-referral-no">—</span>
-                      )}
-                    </td>
-                    <td className="audit-td-date">{formatDate(r.submittedAt)}</td>
+                    <td>{r.serviceDate}</td>
+                    <td className="audit-td-date">{formatDate(r.createdAt)}</td>
                   </tr>
                 );
               })}
