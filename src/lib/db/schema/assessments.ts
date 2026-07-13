@@ -53,8 +53,8 @@ export const assessment = pgTable("assessment", {
   intakeSessionId: uuid("intake_session_id").references(() => intakeSession.id),
   outcome: text("outcome").notNull(), // rx_issued | no_rx_referral | no_rx_otc_or_nonpharm
   noRxRationaleCode: text("no_rx_rationale_code"),
-  serviceDate: date("service_date").notNull(),
-  retainUntil: date("retain_until").notNull(),
+  serviceDate: date("service_date", { mode: "date" }).notNull(),
+  retainUntil: date("retain_until", { mode: "date" }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   uniqueIndex("assessment_one_per_day").on(t.patientId, t.ailmentGroupCode, t.serviceDate),
