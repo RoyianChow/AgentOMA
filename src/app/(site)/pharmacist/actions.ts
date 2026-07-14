@@ -225,39 +225,30 @@ export async function checkSameDayMutex(patientId: string, ailmentGroupCode: str
   }
 
   return { allowed: true };
-}
-
-// Ensure patient exists or create new
-export async function upsertPatient(data: {
+} export async function upsertPatient(data: {
+  pharmacyId: string;
   firstName: string;
   lastName: string;
   dob: Date;
   healthNumber: string;
-  gender: string;
+  gender: "F" | "M" | "U";
 }) {
-  try {
-    const existing = await db.query.patient.findFirst({
-      where: eq(patient.healthNumber, data.healthNumber)
-    });
+  const existing = await db.query.patient.findFirst({
+    where: and(
+      eq(patient.pharmacyId, data.pharmacyId),
+      eq(patient.healthNumber, data.healthNumber)
+    ),
+  });
+  if (existing) return { success: true, patientId: existing.id };
 
-    if (existing) {
-      return { success: true, patientId: existing.id };
-    }
+  // Convert the Date object to a YYYY-MM-DD string for Postgres
+  const insertData = {
+    ...data,
+    dob: data.dob.toISOString().split('T')[0],
+  };
 
-    const [newPatient] = await db.insert(patient).values({
-      firstName: data.firstName,
-      lastName: data.lastName,
-      // patient.dob is a plain date column (string mode) — YYYY-MM-DD only
-      dob: new Date(data.dob).toISOString().slice(0, 10),
-      healthNumber: data.healthNumber,
-      gender: data.gender,
-    }).returning({ id: patient.id });
-
-    return { success: true, patientId: newPatient.id };
-  } catch (err) {
-    console.error("Failed to upsert patient:", err);
-    return { success: false, error: "Failed to save patient" };
-  }
+  const [row] = await db.insert(patient).values(insertData).returning({ id: patient.id });
+  return { success: true, patientId: row.id };
 }
 
 export async function createAssessment(data: {
@@ -356,7 +347,7 @@ export async function getAllAssessments() {
       .from(assessment)
       .innerJoin(patient, eq(assessment.patientId, patient.id))
       .orderBy(desc(assessment.createdAt));
-      
+
     // Stringify and parse to convert Dates
     return JSON.parse(JSON.stringify(data));
   } catch (err) {
