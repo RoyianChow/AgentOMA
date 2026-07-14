@@ -20,7 +20,7 @@ export const patient = pgTable("patient", {
   id: uuid("id").primaryKey().defaultRandom(),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
-  dob: date("dob").notNull(),
+  dob: date("dob", { mode: "date" }).notNull(),
   healthNumber: text("health_number").notNull().unique(),
   gender: text("gender").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
