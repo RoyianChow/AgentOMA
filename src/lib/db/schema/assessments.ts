@@ -16,15 +16,28 @@ export const pharmacy = pgTable("pharmacy", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const patient = pgTable("patient", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  dob: date("dob", { mode: "date" }).notNull(),
-  healthNumber: text("health_number").notNull().unique(),
-  gender: text("gender").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+
+export const patient = pgTable(
+  "patient",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    pharmacyId: uuid("pharmacy_id").notNull().references(() => pharmacy.id),
+    firstName: text("first_name").notNull(),
+    lastName: text("last_name").notNull(),
+    // { mode: "string" } is what makes dob accept "YYYY-MM-DD".
+    // Without it Drizzle demands a Date object — that's your build error.
+    dob: date("dob", { mode: "string" }).notNull(),
+    healthNumber: text("health_number").notNull(),
+    gender: text("gender").notNull(), // F | M | U
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    // Scoped per pharmacy, not globally. Single-tenant today, and this is
+    // what keeps you out of HINP territory if a second pharmacy ever lands.
+    healthNumberPerPharmacy: uniqueIndex("patient_health_number_per_pharmacy")
+      .on(t.pharmacyId, t.healthNumber),
+  })
+);
 
 export const intakeSession = pgTable("intake_session", {
   id: uuid("id").primaryKey().defaultRandom(),

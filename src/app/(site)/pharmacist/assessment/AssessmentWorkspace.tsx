@@ -24,9 +24,7 @@ export default function AssessmentWorkspace({
   const [lastName, setLastName] = useState("");
   const [dob, setDob] = useState("");
   const [healthNumber, setHealthNumber] = useState("");
-  const [gender, setGender] = useState("");
-
-  // Clinical Workflow
+  const [gender, setGender] = useState<"F" | "M" | "U" | "">("");  // Clinical Workflow
   const [viewerChecked, setViewerChecked] = useState(false);
   const [systemCount, setSystemCount] = useState<number | null>(null);
   const [outcome, setOutcome] = useState("rx_issued");
@@ -45,21 +43,28 @@ export default function AssessmentWorkspace({
 
   const handleSubmitAssessment = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!gender) {
+      setError("Please select a gender.");
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // 1. Resolve Patient
+      // 2. Resolve Patient (TypeScript now knows gender is "F" | "M" | "U")
       const patientRes = await upsertPatient({
+        pharmacyId: MOCK_PHARMACY_ID,
         firstName,
         lastName,
         dob: new Date(dob),
         healthNumber,
-        gender,
+        gender, // <-- No more error here!
       });
 
       if (!patientRes.success || !patientRes.patientId) {
-        throw new Error(patientRes.error || "Failed to save patient.");
+        throw new Error("Failed to save patient.");
       }
 
       const patientId = patientRes.patientId;
@@ -154,16 +159,26 @@ export default function AssessmentWorkspace({
                 <input type="text" className="form-input" value={healthNumber} onChange={e => setHealthNumber(e.target.value)} required />
               </div>
               <div>
-                <label className="form-label">Gender</label>
-                <select className="form-input" value={gender} onChange={e => setGender(e.target.value)} required>
-                  <option value="">Select...</option>
-                  <option value="M">M</option>
-                  <option value="F">F</option>
-                  <option value="X">X</option>
-                </select>
+                <div>
+                  <label className="form-label">Gender</label>
+                  <select
+                    className="form-input"
+                    value={gender}
+                    // 1. Cast the generic string to your specific allowed types
+                    onChange={e => setGender(e.target.value as "F" | "M" | "U" | "")}
+                    required
+                  >
+                    <option value="">Select...</option>
+                    <option value="M">M</option>
+                    <option value="F">F</option>
+                    {/* 2. Change "X" to "U" to match your TypeScript definition */}
+                    <option value="U">U</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
+
 
           <div className="detail-section-card">
             <h3 style={{ marginBottom: "1rem" }}>Clinical Decision & Billing</h3>
@@ -231,7 +246,7 @@ export default function AssessmentWorkspace({
                 <ul style={{ listStyleType: "none", padding: 0, margin: 0, fontSize: "0.88rem" }}>
                   {session.trail.map((t, i) => (
                     <li key={i} style={{ padding: "0.5rem", borderBottom: "1px solid var(--border-color)", background: i % 2 === 0 ? "var(--bg-tertiary)" : "transparent" }}>
-                      <strong>Q:</strong> {t.question}<br/>
+                      <strong>Q:</strong> {t.question}<br />
                       <span style={{ color: "var(--text-secondary)" }}><strong>A:</strong> {t.answer}</span>
                     </li>
                   ))}
@@ -279,7 +294,7 @@ export default function AssessmentWorkspace({
                   style={{ marginTop: "0.2rem" }}
                 />
                 <div style={{ fontSize: "0.85rem", color: "var(--warning-text)", lineHeight: 1.4 }}>
-                  <strong>Clinical Viewer Attestation</strong><br/>
+                  <strong>Clinical Viewer Attestation</strong><br />
                   I confirm that I have checked the provincial clinical viewer and verified the patient has not exceeded the funded maximums for this ailment group in the trailing 365 days.
                 </div>
               </label>
