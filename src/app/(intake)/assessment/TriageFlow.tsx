@@ -14,6 +14,7 @@ import {
   type TriageOption,
 } from "@/config/triage";
 import { createIntakeSession, logTriageExit } from "./actions";
+import { MOCK_PHARMACY_ID } from "@/lib/constants";
 import styles from "./TriageFlow.module.css";
 
 /**
@@ -129,8 +130,7 @@ export default function TriageFlow({ claimMaximums }: Props) {
     setIsSubmitting(true);
     try {
       const res = await createIntakeSession({
-        // For now hardcoded to a mock pharmacy ID (or read from config/session if available)
-        pharmacyId: "00000000-0000-0000-0000-000000000000",
+        pharmacyId: MOCK_PHARMACY_ID,
         ailmentGroupCode: ailment || "",
         trail: stack.map((s, i) => {
           const node = NODES[s.nodeId];
@@ -592,12 +592,12 @@ export default function TriageFlow({ claimMaximums }: Props) {
 
             <div className={`${styles.panel} ${styles.panelGreen}`}>
               <span className={`${styles.eyebrow} ${styles.eyebrowGo}`}>
-                Show this code to the pharmacist
+                Your reference code
               </span>
               <div className={styles.code}>{intakeCode || "······"}</div>
               <p className={styles.sub}>
-                The pharmacist will type this code into their system to retrieve your intake
-                answers securely.
+                Your intake has been sent to the pharmacy and is waiting in their queue. Show
+                this reference code at the counter so the pharmacist can match you to it.
               </p>
             </div>
 

@@ -1,367 +1,187 @@
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
-import { claimIntakeSession, upsertPatient, createAssessment, getPatientHistoryCount } from "./actions";
+import {
+  getDashboardStats,
+  getPendingIntakeSessions,
+  getRecentAssessments,
+  type PendingIntake,
+  type RecentAssessment,
+} from "./actions";
+import { MOCK_PHARMACY_ID } from "@/lib/constants";
+import { AILMENT_LABELS, type AilmentId } from "@/config/triage";
+import DashboardRefresher from "./DashboardRefresher";
+import styles from "./Dashboard.module.css";
 
-// Use a mock pharmacy ID for now
-const MOCK_PHARMACY_ID = "00000000-0000-0000-0000-000000000000";
+export const dynamic = "force-dynamic";
 
-type IntakeSession = {
-  id: string;
-  code: string;
-  pharmacyId: string;
-  ailmentGroupCode: string;
-  trail: { question: string; answer: string }[] | null;
-  priorCountSelfReport: number | null;
-  existingRxSelfReport: string | null;
+function ailmentLabel(code: string): string {
+  const known = AILMENT_LABELS[code.toLowerCase() as AilmentId];
+  if (known) return known;
+  return code
+    .toLowerCase()
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+function timeAgo(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.max(0, Math.round(diffMs / 60_000));
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ${mins % 60}m ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+function expiresIn(iso: string): { label: string; soon: boolean } {
+  const diffMs = new Date(iso).getTime() - Date.now();
+  const mins = Math.max(0, Math.floor(diffMs / 60_000));
+  const soon = mins < 20;
+  if (mins < 60) return { label: `expires in ${mins}m`, soon };
+  return { label: `expires in ${Math.floor(mins / 60)}h ${mins % 60}m`, soon };
+}
+
+const OUTCOME_LABELS: Record<string, string> = {
+  rx_issued: "Rx Issued",
+  no_rx_referral: "Referral",
+  no_rx_otc_or_nonpharm: "OTC / Non-Pharm",
 };
 
-export default function PharmacistDashboard() {
-  const [code, setCode] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+function QueueRow({ intake }: { intake: PendingIntake }) {
+  const expiry = expiresIn(intake.expiresAt);
+  return (
+    <Link href={`/pharmacist/assessment?session=${intake.id}`} className={styles.queueRow}>
+      <div className={styles.queueMain}>
+        <div className={styles.queueAilment}>{ailmentLabel(intake.ailmentGroupCode)}</div>
+        <div className={styles.queueMeta}>
+          <span>Submitted {timeAgo(intake.createdAt)}</span>
+          <span>{intake.trailLength} triage answers</span>
+          {intake.priorCountSelfReport !== null && (
+            <span>{intake.priorCountSelfReport}× prior (self-report)</span>
+          )}
+        </div>
+      </div>
+      <div className={styles.queueSide}>
+        <span className="badge badge-accent">Ref: {intake.code}</span>
+        <span className={`${styles.queueExpiry} ${expiry.soon ? styles.queueExpirySoon : ""}`}>
+          {expiry.label}
+        </span>
+      </div>
+    </Link>
+  );
+}
 
-  const [session, setSession] = useState<IntakeSession | null>(null);
-  const [isColdStart, setIsColdStart] = useState(false);
-  const [coldStartAilment, setColdStartAilment] = useState("RHINITIS"); // Default for cold start dropdown
+function RecentRow({ a }: { a: RecentAssessment }) {
+  return (
+    <li className={styles.recentRow}>
+      <div>
+        <div className={styles.recentName}>{a.patientName}</div>
+        <div className={styles.recentMeta}>
+          {ailmentLabel(a.ailmentGroupCode)} · {timeAgo(a.createdAt)}
+        </div>
+      </div>
+      <span className="badge badge-accent">{OUTCOME_LABELS[a.outcome] ?? a.outcome}</span>
+    </li>
+  );
+}
 
-  // Patient Identity
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [dob, setDob] = useState("");
-  const [healthNumber, setHealthNumber] = useState("");
-  const [gender, setGender] = useState("");
-
-  // Clinical Workflow
-  const [viewerChecked, setViewerChecked] = useState(false);
-  const [systemCount, setSystemCount] = useState<number | null>(null);
-  const [outcome, setOutcome] = useState("rx_issued");
-  const [modality, setModality] = useState("in_person");
-  
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  const handleClaim = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!code || code.length !== 6) {
-      setError("Please enter a 6-character code.");
-      return;
-    }
-    
-    setIsLoading(true);
-    setError(null);
-    setSuccessMsg(null);
-    
-    try {
-      const res = await claimIntakeSession(code, MOCK_PHARMACY_ID);
-      if (res.success && res.session) {
-        setSession(res.session);
-        setIsColdStart(false);
-      } else {
-        setError(res.error || "Failed to claim intake.");
-      }
-    } catch (err) {
-      setError("An unexpected error occurred.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleColdStart = () => {
-    setSession(null);
-    setIsColdStart(true);
-    setError(null);
-    setSuccessMsg(null);
-  };
-
-  const checkHistory = async (patientId: string, ailmentCode: string) => {
-    const res = await getPatientHistoryCount(patientId, ailmentCode);
-    if (res.success) {
-      setSystemCount(res.count);
-    }
-  };
-
-  const handleSubmitAssessment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
-    
-    try {
-      // 1. Resolve Patient
-      const patientRes = await upsertPatient({
-        firstName,
-        lastName,
-        dob: new Date(dob),
-        healthNumber,
-        gender
-      });
-
-      if (!patientRes.success || !patientRes.patientId) {
-        throw new Error(patientRes.error || "Failed to save patient.");
-      }
-
-      const patientId = patientRes.patientId;
-      const ailmentCode = session ? session.ailmentGroupCode : coldStartAilment;
-      
-      // Check history just to update UI right before submit, but server will check mutex
-      await checkHistory(patientId, ailmentCode);
-
-      // 2. Create Assessment
-      const assessmentRes = await createAssessment({
-        pharmacyId: MOCK_PHARMACY_ID,
-        patientId,
-        ailmentGroupCode: ailmentCode,
-        modality,
-        intakeSessionId: session ? session.id : undefined,
-        outcome,
-        serviceDate: new Date(),
-      });
-
-      if (!assessmentRes.success) {
-        throw new Error(assessmentRes.error || "Failed to create assessment.");
-      }
-
-      setSuccessMsg("Assessment successfully recorded!");
-      // Clear form
-      setSession(null);
-      setIsColdStart(false);
-      setCode("");
-      setFirstName("");
-      setLastName("");
-      setDob("");
-      setHealthNumber("");
-      setGender("");
-      
-    } catch (err: any) {
-      setError(err.message || "An unexpected error occurred.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+export default async function PharmacistDashboard() {
+  const [stats, pending, recent] = await Promise.all([
+    getDashboardStats(MOCK_PHARMACY_ID),
+    getPendingIntakeSessions(MOCK_PHARMACY_ID),
+    getRecentAssessments(8),
+  ]);
 
   return (
-    <div className="dashboard-layout animate-fade-in" style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-        <h1>Pharmacist Desk</h1>
-        <Link href="/pharmacist/audit" className="btn btn-secondary">Audit Log</Link>
+    <div className={`${styles.page} animate-fade-in`}>
+      <div className={styles.header}>
+        <div className={styles.headerTitle}>
+          <h1>Pharmacist Dashboard</h1>
+          <p className={styles.headerSub}>
+            Patient intakes appear in the queue automatically as they finish triage.
+          </p>
+        </div>
+        <DashboardRefresher />
       </div>
 
-      {!session && !isColdStart ? (
-        <div style={{ display: "flex", gap: "2rem", flexDirection: "column", maxWidth: "500px", margin: "0 auto", marginTop: "4rem" }}>
-          
-          <div className="hero-card-item" style={{ textAlign: "center", padding: "2rem" }}>
-            <h2 style={{ marginBottom: "1rem" }}>Load Patient Intake</h2>
-            <form onSubmit={handleClaim} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              <input 
-                type="text" 
-                value={code} 
-                onChange={e => setCode(e.target.value.toUpperCase())}
-                placeholder="6-Char Code" 
-                maxLength={6}
-                style={{ 
-                  fontSize: "2rem", 
-                  textAlign: "center", 
-                  letterSpacing: "0.2em",
-                  textTransform: "uppercase",
-                  padding: "1rem",
-                  borderRadius: "var(--radius-md)",
-                  border: "2px solid var(--border-color)"
-                }} 
-              />
-              <button type="submit" className="btn btn-primary" disabled={isLoading || code.length !== 6}>
-                {isLoading ? "Loading..." : "Retrieve Intake"}
-              </button>
-            </form>
-            {error && <div style={{ color: "var(--danger)", marginTop: "1rem" }}>{error}</div>}
+      <div className={styles.stats}>
+        <div className={styles.statTile}>
+          <div className={styles.statLabel}>Today&apos;s Assessments</div>
+          <div className={styles.statValue}>{stats.todayAssessments}</div>
+        </div>
+        <div className={styles.statTile}>
+          <div className={styles.statLabel}>Pending Intakes</div>
+          <div className={`${styles.statValue} ${styles.statValueAccent}`}>
+            {stats.pendingIntakes}
           </div>
-
-          <div style={{ textAlign: "center" }}>
-            <span style={{ color: "var(--text-muted)", margin: "0 1rem" }}>or</span>
+        </div>
+        <div className={styles.statTile}>
+          <div className={styles.statLabel}>Est. Revenue Today</div>
+          <div className={styles.statValue}>
+            ${(stats.todayRevenueCents / 100).toFixed(2)}
           </div>
+          <div className={styles.statHint}>Based on current PIN fees</div>
+        </div>
+      </div>
 
-          <div style={{ textAlign: "center" }}>
-            <button type="button" className="btn btn-secondary" onClick={handleColdStart} style={{ width: "100%" }}>
-              Start Walk-in Assessment (No Code)
-            </button>
+      <div className={styles.columns}>
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <h2>Intake Queue</h2>
+            <span className={styles.recentMeta}>
+              {pending.sessions.length} waiting
+            </span>
           </div>
-
-          {successMsg && (
-            <div style={{ padding: "1rem", background: "var(--success-light)", color: "var(--success-text)", borderRadius: "var(--radius-md)", textAlign: "center" }}>
-              {successMsg}
+          {pending.sessions.length > 0 ? (
+            <div className={styles.queueList}>
+              {pending.sessions.map((intake) => (
+                <QueueRow key={intake.id} intake={intake} />
+              ))}
+            </div>
+          ) : (
+            <div className={styles.emptyState}>
+              No pending intakes — patients appear here as they finish triage.
             </div>
           )}
-
         </div>
-      ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
-          
-          {/* Left Column: Identity & Clinical Decision */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-            <div className="detail-section-card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                <h3>Patient Identity</h3>
-                <button type="button" className="btn btn-secondary" style={{ padding: "0.2rem 0.5rem", fontSize: "0.8rem" }} onClick={() => { setSession(null); setIsColdStart(false); }}>
-                  Cancel
-                </button>
-              </div>
-              <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
-                Key this strictly from the physical health card to prevent drift.
-              </p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                <div>
-                  <label className="form-label">First Name</label>
-                  <input type="text" className="form-input" value={firstName} onChange={e => setFirstName(e.target.value)} required />
-                </div>
-                <div>
-                  <label className="form-label">Last Name</label>
-                  <input type="text" className="form-input" value={lastName} onChange={e => setLastName(e.target.value)} required />
-                </div>
-                <div>
-                  <label className="form-label">DOB (YYYY-MM-DD)</label>
-                  <input type="date" className="form-input" value={dob} onChange={e => setDob(e.target.value)} required />
-                </div>
-                <div>
-                  <label className="form-label">Health Card Number</label>
-                  <input type="text" className="form-input" value={healthNumber} onChange={e => setHealthNumber(e.target.value)} required />
-                </div>
-                <div>
-                  <label className="form-label">Gender</label>
-                  <select className="form-input" value={gender} onChange={e => setGender(e.target.value)} required>
-                    <option value="">Select...</option>
-                    <option value="M">M</option>
-                    <option value="F">F</option>
-                    <option value="X">X</option>
-                  </select>
-                </div>
-              </div>
-            </div>
 
-            <div className="detail-section-card">
-              <h3 style={{ marginBottom: "1rem" }}>Clinical Decision & Billing</h3>
-              {error && <div style={{ color: "var(--danger)", marginBottom: "1rem", fontSize: "0.9rem", padding: "0.5rem", background: "var(--danger-light)", borderRadius: "var(--radius-sm)" }}>{error}</div>}
-              
-              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                {isColdStart && (
-                  <div>
-                    <label className="form-label">Ailment Group</label>
-                    <select className="form-input" value={coldStartAilment} onChange={e => setColdStartAilment(e.target.value)}>
-                      <option value="RHINITIS">Rhinitis</option>
-                      <option value="HERPES_LABIALIS">Herpes Labialis</option>
-                      <option value="DERMATITIS">Dermatitis</option>
-                      <option value="GERD">GERD</option>
-                      <option value="URINARY_TRACT_INFECTION">Urinary Tract Infection</option>
-                      <option value="INSECT_BITES">Insect Bites</option>
-                      <option value="TICK_BITES">Tick Bites</option>
-                    </select>
-                  </div>
-                )}
-                <div>
-                  <label className="form-label">Outcome</label>
-                  <select className="form-input" value={outcome} onChange={e => setOutcome(e.target.value)}>
-                    <option value="rx_issued">Prescription Issued</option>
-                    <option value="no_rx_referral">No Rx - Referral</option>
-                    <option value="no_rx_otc_or_nonpharm">No Rx - OTC / Non-Pharm</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="form-label">Modality</label>
-                  <select className="form-input" value={modality} onChange={e => setModality(e.target.value)}>
-                    <option value="in_person">In Person</option>
-                    <option value="virtual_from_pharmacy">Virtual (From Pharmacy)</option>
-                    <option value="virtual_remote">Virtual (Remote Exception)</option>
-                  </select>
-                </div>
-                
-                <button 
-                  type="button" 
-                  className="btn btn-primary" 
-                  onClick={handleSubmitAssessment}
-                  disabled={isSubmitting || !firstName || !lastName || !dob || !healthNumber || !gender || !viewerChecked}
-                  style={{ marginTop: "1rem" }}
-                >
-                  {isSubmitting ? "Saving..." : "Sign & Create Assessment"}
-                </button>
-                {(!viewerChecked) && (
-                  <div style={{ fontSize: "0.8rem", color: "var(--warning-text)" }}>You must attest to checking the clinical viewer below before signing.</div>
-                )}
-              </div>
+        <div className={styles.rightCol}>
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>
+              <h2>Quick Actions</h2>
+            </div>
+            <div className={styles.actionsList}>
+              <Link href="/pharmacist/assessment" className="btn btn-primary">
+                Start Walk-in Assessment
+              </Link>
+              <Link href="/pharmacist/audit" className="btn btn-secondary">
+                Ministry Audit Log
+              </Link>
+              <Link href="/pharmacist/settings" className="btn btn-secondary">
+                Pharmacy Settings
+              </Link>
             </div>
           </div>
 
-          {/* Right Column: Intake Summary */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-            <div className="detail-section-card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                <h3>{session ? `Intake: ${session.ailmentGroupCode}` : "Walk-in Assessment"}</h3>
-                {session && <span className="badge badge-accent">Code: {session.code}</span>}
-              </div>
-
-              {session && session.trail ? (
-                <div style={{ marginBottom: "1.5rem" }}>
-                  <h4 style={{ fontSize: "0.9rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>Triage Trail</h4>
-                  <ul style={{ listStyleType: "none", padding: 0, margin: 0, fontSize: "0.88rem" }}>
-                    {session.trail.map((t, i) => (
-                      <li key={i} style={{ padding: "0.5rem", borderBottom: "1px solid var(--border-color)", background: i % 2 === 0 ? "var(--bg-tertiary)" : "transparent" }}>
-                        <strong>Q:</strong> {t.question}<br/>
-                        <span style={{ color: "var(--text-secondary)" }}><strong>A:</strong> {t.answer}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                <div style={{ marginBottom: "1.5rem", fontSize: "0.9rem", color: "var(--text-muted)" }}>
-                  No digital intake provided. Collect clinical history verbally.
-                </div>
-              )}
-
-              <div style={{ borderTop: "2px solid var(--border-color)", paddingTop: "1rem" }}>
-                <h4 style={{ fontSize: "0.9rem", color: "var(--text-secondary)", marginBottom: "0.75rem" }}>Claim Limits & History</h4>
-                
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
-                  <div style={{ padding: "0.75rem", background: "var(--bg-tertiary)", borderRadius: "var(--radius-sm)" }}>
-                    <div style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-muted)" }}>Patient Self-Report (Count)</div>
-                    <div style={{ fontSize: "1.1rem", fontWeight: 700 }}>
-                      {session?.priorCountSelfReport !== null && session?.priorCountSelfReport !== undefined 
-                        ? session.priorCountSelfReport 
-                        : "Not Sure / N/A"}
-                    </div>
-                  </div>
-                  
-                  <div style={{ padding: "0.75rem", background: "var(--bg-tertiary)", borderRadius: "var(--radius-sm)" }}>
-                    <div style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-muted)" }}>Patient Self-Report (Rx)</div>
-                    <div style={{ fontSize: "1.1rem", fontWeight: 700 }}>
-                      {session?.existingRxSelfReport || "N/A"}
-                    </div>
-                  </div>
-
-                  <div style={{ padding: "0.75rem", background: "var(--primary-light)", borderRadius: "var(--radius-sm)" }}>
-                    <div style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary)" }}>Platform 365-Day Count</div>
-                    <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--primary-dark)" }}>
-                      {systemCount !== null ? systemCount : "-"}
-                    </div>
-                  </div>
-                </div>
-
-                <label style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start", padding: "1rem", background: "var(--warning-light)", borderRadius: "var(--radius-md)", border: "1px solid var(--warning-border)", cursor: "pointer" }}>
-                  <input 
-                    type="checkbox" 
-                    checked={viewerChecked}
-                    onChange={(e) => setViewerChecked(e.target.checked)}
-                    style={{ marginTop: "0.2rem" }}
-                  />
-                  <div style={{ fontSize: "0.85rem", color: "var(--warning-text)", lineHeight: 1.4 }}>
-                    <strong>Clinical Viewer Attestation</strong><br/>
-                    I confirm that I have checked the provincial clinical viewer and verified the patient has not exceeded the funded maximums for this ailment group in the trailing 365 days.
-                  </div>
-                </label>
-              </div>
-
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>
+              <h2>Recent Assessments</h2>
+              <Link href="/pharmacist/audit" className={styles.cardHeaderLink}>
+                View all
+              </Link>
             </div>
+            {recent.length > 0 ? (
+              <ul className={styles.recentList}>
+                {recent.map((a) => (
+                  <RecentRow key={a.id} a={a} />
+                ))}
+              </ul>
+            ) : (
+              <div className={styles.emptyState}>No assessments recorded yet.</div>
+            )}
           </div>
-          
         </div>
-      )}
+      </div>
     </div>
   );
 }
