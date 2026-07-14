@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { checkSameDayMutex, createAssessment, getIntakeSessionById } from '../../../app/(site)/pharmacist/actions';
+import { checkSameDayMutex, createAssessment, getIntakeSessionById } from '../../../app/(dashboard)/pharmacist/actions';
 import { createIntakeSession, logTriageExit } from '../../../app/(intake)/assessment/actions';
 
 // Note: These tests require a test database environment or mocked db module.
