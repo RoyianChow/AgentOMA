@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { checkSameDayMutex, createAssessment, claimIntakeSession } from '../../../app/(site)/pharmacist/actions';
+import { checkSameDayMutex, createAssessment, getIntakeSessionById } from '../../../app/(site)/pharmacist/actions';
 import { createIntakeSession, logTriageExit } from '../../../app/(intake)/assessment/actions';
 
 // Note: These tests require a test database environment or mocked db module.
@@ -85,13 +85,15 @@ describe('Assessment Rules & Constraints', () => {
   });
 
   describe('Intake Session Expiry & Single-Use', () => {
-    it('claimIntakeSession rejects expired or consumed codes', async () => {
+    it('getIntakeSessionById rejects expired or consumed sessions', async () => {
       const { db } = await import('@/lib/db');
       (db.query.intakeSession.findFirst as any).mockResolvedValue(null);
 
-      const res = await claimIntakeSession('EXPIRE', 'pharm-1');
+      const res = await getIntakeSessionById('sess-expired', 'pharm-1');
       expect(res.success).toBe(false);
-      expect(res.error).toBe('Invalid, expired, or already consumed code.');
+      if (!res.success) {
+        expect(res.error).toContain('no longer available');
+      }
     });
 
     it('createAssessment consumes the intake session', async () => {

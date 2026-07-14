@@ -9,7 +9,8 @@
 import "dotenv/config";
 
 import { db } from "./index";
-import { ailmentGroup, pin, claimRule } from "./schema";
+import { ailmentGroup, pin, claimRule, pharmacy } from "./schema";
+import { MOCK_PHARMACY_ID } from "../constants";
 import {
   AILMENT_GROUPS,
   CLAIM_RULES,
@@ -21,6 +22,13 @@ async function seed() {
   console.log(
     `Seeding reference data (effective ${EO_NOTICE_EFFECTIVE_DATE})...`,
   );
+
+  // Intake sessions and assessments FK to a pharmacy row; until onboarding
+  // exists the app runs against this fixed placeholder pharmacy.
+  await db
+    .insert(pharmacy)
+    .values({ id: MOCK_PHARMACY_ID, storeName: "Demo Pharmacy" })
+    .onConflictDoNothing({ target: pharmacy.id });
 
   for (const group of AILMENT_GROUPS) {
     const [row] = await db
