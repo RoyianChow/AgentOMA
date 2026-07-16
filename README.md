@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AgentOMA
 
-## Getting Started
+A web platform for Ontario pharmacies to run publicly-funded **minor ailment** assessments —
+the program where a pharmacist can assess and prescribe for ~23 common conditions and bill the
+Ministry of Health.
 
-First, run the development server:
+Two sides, deliberately separated:
+
+- **Patient intake** (`/assessment`) — a kiosk screen. A guided, **zero-PHI** triage that narrows
+  symptoms to one funded ailment (or routes safely to 911 / a doctor), ending in a 6-character
+  handoff code.
+- **Pharmacist portal** (`/pharmacist/*`) — the pharmacist enters that code, reads the triage
+  trail, adds identity from the physical health card, and records a compliant assessment.
+
+> **This repo bills a public health system and handles PHI under PHIPA.** Mistakes here are not
+> bugs — they are improper claims and privacy violations. Never derive a PIN, fee, or claim
+> maximum from memory.
+
+## Start here
+
+| Doc | What's in it |
+|---|---|
+| **[`docs/PROJECT_OVERVIEW.md`](docs/PROJECT_OVERVIEW.md)** | Architecture, routes, data model, both user flows, and what's done vs. not. **Read this to orient — don't crawl the codebase.** |
+| **[`docs/COMPLIANCE.md`](docs/COMPLIANCE.md)** | Every implemented rule mapped to its section of the EO Notice. |
+| **[`AGENTS.md`](AGENTS.md)** | The canonical rules for AI agents (and a fast briefing for humans). |
+| `docs/regulatory/*.pdf` | The binding source of truth. If it and any file disagree, the PDF wins. |
+
+## Running it
+
+Needs Node 22 and a Supabase Postgres instance. On Windows, PowerShell must allow scripts
+(`Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned`) or `npm` will fail.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local   # fill in DATABASE_URL / DIRECT_URL
+npm install
+npm run db:migrate           # schema + triggers
+npm run db:seed              # reference data (idempotent)
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`npm run test` runs the money-rule tests. Schema changes go **`db:generate` → review the SQL →
+`db:migrate`**; `db:push` is banned (it drops columns on a PHI database).
