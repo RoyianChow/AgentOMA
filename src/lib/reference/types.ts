@@ -24,7 +24,7 @@ export interface AilmentPins {
 }
 
 export interface AilmentGroupReference {
-  /** Stable machine code. Mirrors the AilmentType union key used across the app. */
+  /** Stable machine code, e.g. RHINITIS. Seeds `ailment_group.code`. */
   code: string;
   /** Human label taken from the EO Notice ailment list / Table 1. */
   displayName: string;
