@@ -7,12 +7,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/lib/db/seed.ts",
-    "db:verify": "tsx src/lib/db/verify.ts"
+    "db:verify": "tsx src/lib/db/verify.ts",
+    "db:harden": "tsx src/lib/db/harden.ts"
   },
   "dependencies": {
     "@t3-oss/env-nextjs": "^0.13.11",
@@ -37,6 +40,7 @@
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
     "tsx": "^4.23.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }

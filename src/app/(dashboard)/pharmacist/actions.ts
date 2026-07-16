@@ -1,8 +1,14 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { intakeSession, assessment, patient, ailmentGroup, pin, claimRule } from "@/lib/db/schema";
+import { intakeSession, assessment, patient, pharmacy, ailmentGroup, pin, claimRule } from "@/lib/db/schema";
 import { eq, and, sql, desc, isNull, count } from "drizzle-orm";
+import { computeRetainUntil } from "@/lib/retention";
+import { writeAudit } from "@/lib/audit";
+
+// ODB fee tiers permitted to provide remote virtual services (EO Notice). A
+// regular-fee pharmacy ($8.83) selecting virtual_remote is hard-blocked.
+const RURAL_FEE_TIERS = ["rural_9_93", "rural_12_14", "rural_13_25"];
 
 export type PendingIntake = {
   id: string;
@@ -265,17 +271,47 @@ export async function createAssessment(data: {
   serviceDate: Date;
 }) {
   try {
-    // 1. Check same day mutex
+    // 1. Remote-virtual eligibility (#5). Only rural-fee-tier pharmacies may
+    //    provide remote virtual services, and the location/reason must be on file.
+    if (data.modality === "virtual_remote") {
+      const ph = await db.query.pharmacy.findFirst({
+        where: eq(pharmacy.id, data.pharmacyId),
+      });
+      if (!ph || !RURAL_FEE_TIERS.includes(ph.odbFeeTier)) {
+        return {
+          success: false,
+          error:
+            "Remote virtual assessments are only permitted for rural-fee-tier pharmacies ($9.93 / $12.14 / $13.25). This pharmacy is on the regular ODB fee tier ($8.83).",
+        };
+      }
+      if (!data.remoteReason || !data.virtualLocation) {
+        return {
+          success: false,
+          error:
+            "A remote virtual assessment must record the pharmacist's physical location and the reason on-site staff cannot meet demand.",
+        };
+      }
+    }
+
+    // 2. Same-day mutex pre-check for a friendly message. The DATABASE trigger
+    //    (assessment_same_day_mutex_trg) is the race-safe backstop; this only
+    //    improves the common-case UX.
     const mutexCheck = await checkSameDayMutex(data.patientId, data.ailmentGroupCode, new Date(data.serviceDate));
     if (!mutexCheck.allowed) {
       return { success: false, error: mutexCheck.reason };
     }
 
-    // Retain for 10 years
-    const retainUntil = new Date(data.serviceDate);
-    retainUntil.setFullYear(retainUntil.getFullYear() + 10);
+    // 3. Retention (#7): max(service + 10y, (dob + 18y) + 10y). The age-18
+    //    branch is why a child's record outlives the flat 10-year clock.
+    const pat = await db.query.patient.findFirst({
+      where: eq(patient.id, data.patientId),
+    });
+    if (!pat) {
+      return { success: false, error: "Patient not found" };
+    }
+    const retainUntil = computeRetainUntil(new Date(data.serviceDate), new Date(pat.dob));
 
-    // 2. Insert Assessment
+    // 4. Insert Assessment
     const [newAssessment] = await db.insert(assessment).values({
       pharmacyId: data.pharmacyId,
       pharmacistUserId: data.pharmacistUserId || null,
@@ -291,7 +327,7 @@ export async function createAssessment(data: {
       retainUntil,
     }).returning({ id: assessment.id });
 
-    // 3. Consume intake session if provided
+    // 5. Consume intake session if provided
     if (data.intakeSessionId) {
       await db.update(intakeSession)
         .set({
@@ -301,12 +337,39 @@ export async function createAssessment(data: {
         .where(eq(intakeSession.id, data.intakeSessionId));
     }
 
+    // 6. Audit (append-only). Best-effort: a failed audit write must not undo a
+    //    created assessment, but it is logged loudly. No PHI in metadata.
+    try {
+      await writeAudit({
+        pharmacyId: data.pharmacyId,
+        actorUserId: data.pharmacistUserId,
+        action: "assessment.created",
+        entityType: "assessment",
+        entityId: newAssessment.id,
+        metadata: {
+          ailmentGroupCode: data.ailmentGroupCode,
+          modality: data.modality,
+          outcome: data.outcome,
+        },
+      });
+    } catch (auditErr) {
+      console.error("AUDIT WRITE FAILED for assessment", newAssessment.id, auditErr);
+    }
+
     return { success: true, assessmentId: newAssessment.id };
   } catch (err: unknown) {
     console.error("Failed to create assessment:", err);
-    // Unique violation in Postgres
-    if (typeof err === "object" && err !== null && "code" in err && err.code === "23505") {
+    const code = typeof err === "object" && err !== null && "code" in err ? (err as { code?: string }).code : undefined;
+    // One claim per person / ailment / day (unique index).
+    if (code === "23505") {
       return { success: false, error: "Patient already has an assessment for this ailment today." };
+    }
+    // Same-day mutex trigger fired on a concurrent insert (23P01).
+    if (code === "23P01") {
+      return {
+        success: false,
+        error: "This patient was already assessed today for a condition that can't be claimed alongside this one (e.g. insect bites and tick bites).",
+      };
     }
     return { success: false, error: "Database error" };
   }

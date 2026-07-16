@@ -1,5 +1,6 @@
 import {
   pgTable,
+  pgEnum,
   uuid,
   text,
   integer,
@@ -9,10 +10,23 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+// ODB dispensing fee tier. The rural tiers ($9.93 / $12.14 / $13.25) are the
+// only ones permitted to provide remote virtual services; a regular-fee
+// pharmacy ($8.83) selecting virtual_remote must be hard-blocked (see
+// createAssessment). Stored, never hardcoded.
+export const odbFeeTier = pgEnum("odb_fee_tier", [
+  "regular_8_83",
+  "rural_9_93",
+  "rural_12_14",
+  "rural_13_25",
+]);
+
 // Define a minimal pharmacy table since pharmacy_id must be a UUID FK
 export const pharmacy = pgTable("pharmacy", {
   id: uuid("id").primaryKey().defaultRandom(),
   storeName: text("store_name").notNull(),
+  hnsAccountId: text("hns_account_id"),
+  odbFeeTier: odbFeeTier("odb_fee_tier").notNull().default("regular_8_83"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -78,4 +92,19 @@ export const triageExit = pgTable("triage_exit", {
   ailmentGroupCode: text("ailment_group_code").notNull(),
   reason: text("reason").notNull(),
   timestamp: timestamp("timestamp", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Append-only audit trail. Immutability is enforced at the DATABASE level (a
+// migration REVOKEs UPDATE/DELETE from the app role AND installs a trigger that
+// raises on UPDATE/DELETE) — not by application convention. `metadata` holds
+// references and non-PHI context only; never store health numbers or names here.
+export const auditLog = pgTable("audit_log", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  pharmacyId: uuid("pharmacy_id").references(() => pharmacy.id),
+  actorUserId: uuid("actor_user_id"),
+  action: text("action").notNull(),
+  entityType: text("entity_type").notNull(),
+  entityId: uuid("entity_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
