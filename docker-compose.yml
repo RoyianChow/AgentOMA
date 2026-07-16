@@ -1,0 +1,37 @@
+# Throwaway Postgres for the money-rule tests.
+#
+# The constraint-backed rules (one-per-day, the insect/tick mutex race,
+# claim_draft immutability) are enforced by the DATABASE — indexes and triggers.
+# Mocking them tests the mock, so these tests need real Postgres.
+#
+# This must never be the live Supabase database: the tests truncate and insert
+# concurrently, and that database holds PHI.
+#
+#   npm run test:db:up     start it
+#   npm run test:db:down   stop and remove it
+#
+# Storage is tmpfs, so the data is ephemeral by construction — nothing survives
+# a restart and no test row can ever linger on disk.
+
+services:
+  test-db:
+    image: postgres:16-alpine
+    container_name: agentoma-test-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: agentoma_test
+      # Test DB only — no durability needed, and it makes the suite much faster.
+      POSTGRES_INITDB_ARGS: "--no-sync"
+    command: >
+      postgres -c fsync=off -c synchronous_commit=off -c full_page_writes=off
+    # 5433, not 5432, so it cannot collide with a local Postgres.
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d agentoma_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

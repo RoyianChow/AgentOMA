@@ -36,6 +36,20 @@
       "when": 1784205438692,
       "tag": "0004_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784222643185,
+      "tag": "0005_bent_ted_forrester",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784222672204,
+      "tag": "0006_claim_draft_immutable",
+      "breakpoints": true
     }
   ]
 }
