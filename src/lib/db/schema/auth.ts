@@ -4,6 +4,8 @@ import {
   uuid,
   text,
   boolean,
+  bigint,
+  integer,
   timestamp,
   index,
 } from "drizzle-orm/pg-core";
@@ -39,6 +41,10 @@ export const user = pgTable("user", {
   // role; the invitation flow assigns the real role and pharmacy.
   role: userRole("role").notNull().default("technician"),
   pharmacyId: uuid("pharmacy_id").references(() => pharmacy.id),
+  // Set by the twoFactor plugin once TOTP enrollment is verified. Mandatory
+  // TOTP is enforced at the session boundary (requireAuth, slice 4): a session
+  // whose user has not enabled TOTP never reaches PHI.
+  twoFactorEnabled: boolean("two_factor_enabled").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -97,6 +103,38 @@ export const account = pgTable(
   },
   (t) => [index("account_user_id_idx").on(t.userId)]
 );
+
+// twoFactor plugin table (better-auth 1.6.23 shape: includes verified /
+// failed_verification_count / locked_until — the plugin implements TOTP
+// attempt lockout itself).
+export const twoFactor = pgTable(
+  "two_factor",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    secret: text("secret").notNull(),
+    backupCodes: text("backup_codes").notNull(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    verified: boolean("verified").default(true),
+    failedVerificationCount: integer("failed_verification_count").default(0),
+    lockedUntil: timestamp("locked_until", { withTimezone: true }),
+  },
+  (t) => [
+    index("two_factor_secret_idx").on(t.secret),
+    index("two_factor_user_id_idx").on(t.userId),
+  ]
+);
+
+// better-auth rate limiting with storage: "database" — persistent and shared
+// across instances, unlike the in-memory default which silently resets on
+// every restart (and never fires on serverless).
+export const rateLimit = pgTable("rate_limit", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: text("key").notNull().unique(),
+  count: integer("count").notNull(),
+  lastRequest: bigint("last_request", { mode: "number" }).notNull(),
+});
 
 export const verification = pgTable(
   "verification",

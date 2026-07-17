@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
+import { twoFactor } from "better-auth/plugins/two-factor";
 
 import { env } from "../env";
 import { db, schema } from "./db";
@@ -25,8 +26,34 @@ export const auth = betterAuth({
       session: schema.session,
       account: schema.account,
       verification: schema.verification,
+      twoFactor: schema.twoFactor,
+      rateLimit: schema.rateLimit,
     },
   }),
+
+  // 30-minute idle timeout with rolling refresh: any request more than
+  // `updateAge` after the last refresh pushes expiry out another `expiresIn`.
+  // Sign-out deletes the session row server-side (better-auth default), so
+  // revocation is immediate, not cookie-dependent.
+  session: {
+    expiresIn: 60 * 30,
+    updateAge: 60 * 5,
+  },
+
+  // Brute-force protection. better-auth ships special rules for /sign-in/* and
+  // /request-password-reset; the explicit rules below pin the policy in code
+  // and extend it to the TOTP endpoints. Database storage so counts survive
+  // restarts and are shared across instances.
+  rateLimit: {
+    enabled: true,
+    storage: "database",
+    customRules: {
+      "/sign-in/email": { window: 60, max: 5 },
+      "/request-password-reset": { window: 900, max: 3 },
+      "/two-factor/verify-totp": { window: 60, max: 5 },
+      "/two-factor/verify-backup-code": { window: 60, max: 3 },
+    },
+  },
 
   emailAndPassword: {
     enabled: true,
@@ -58,9 +85,25 @@ export const auth = betterAuth({
     // Auth ids are Postgres UUIDs so they join cleanly against
     // assessment.pharmacist_user_id / audit_log.actor_user_id (both uuid).
     database: { generateId: "uuid" },
+    // Cookies: better-auth defaults are already httpOnly, sameSite=lax,
+    // path=/, and secure (+ __Secure- prefix) whenever BETTER_AUTH_URL is
+    // https — i.e. everywhere except local http dev. Nothing to override.
   },
 
-  // Must stay last: lets auth.api calls made inside server actions set the
-  // session cookie via Next's cookies() API.
-  plugins: [nextCookies()],
+  plugins: [
+    // TOTP. Enrollment is MANDATORY to reach PHI — enforced at the session
+    // boundary in requireAuth (slice 4), not here; the plugin only makes
+    // sign-in challenge for enrolled users and handles attempt lockout
+    // (failed_verification_count / locked_until).
+    twoFactor({
+      issuer: "AgentOMA",
+      // Pharmacy terminals are shared machines: cap "trust this device" at 8h
+      // (a shift) instead of the 30-day default. The sign-in UI additionally
+      // never offers the trust-device option.
+      trustDeviceMaxAge: 60 * 60 * 8,
+    }),
+    // Must stay last: lets auth.api calls made inside server actions set the
+    // session cookie via Next's cookies() API.
+    nextCookies(),
+  ],
 });
