@@ -60,6 +60,12 @@ export const auth = betterAuth({
     // Policy choice for a PHI-reaching portal (not an EO Notice requirement):
     // longer than better-auth's default of 8.
     minPasswordLength: 12,
+    // NO public signup — onboarding is invitation-only. This closes the
+    // /sign-up/email endpoint entirely (server-side calls included);
+    // acceptInvitation (src/lib/invitations.ts) creates the user + credential
+    // account itself, with better-auth's own password hash so sign-in
+    // verifies it.
+    disableSignUp: true,
   },
 
   user: {

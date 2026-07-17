@@ -51,7 +51,9 @@ export async function resetOperationalTables(db: TestDb): Promise<void> {
   assertLocalTestDb();
   // claim_draft has a DELETE-blocking trigger; TRUNCATE bypasses row triggers,
   // which is exactly why it's used here (and why it's local-only).
+  // "user" is quoted because it's a reserved word; cascade covers the
+  // dependent auth tables' FKs.
   await db.execute(
-    sql`truncate table claim_draft, audit_log, assessment, intake_session, patient, triage_exit restart identity cascade`,
+    sql`truncate table claim_draft, audit_log, assessment, intake_session, patient, triage_exit, invitation, two_factor, rate_limit, session, account, verification, "user" restart identity cascade`,
   );
 }

@@ -8,6 +8,7 @@ import {
   integer,
   timestamp,
   index,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
 import { pharmacy } from "./assessments";
@@ -45,6 +46,11 @@ export const user = pgTable("user", {
   // TOTP is enforced at the session boundary (requireAuth, slice 4): a session
   // whose user has not enabled TOTP never reaches PHI.
   twoFactorEnabled: boolean("two_factor_enabled").notNull().default(false),
+  // Interns and students practise under a supervising pharmacist — it is the
+  // SUPERVISOR's OCP number that goes on any claim, never the trainee's.
+  supervisingPharmacistId: uuid("supervising_pharmacist_id").references(
+    (): AnyPgColumn => user.id
+  ),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -125,6 +131,35 @@ export const twoFactor = pgTable(
     index("two_factor_user_id_idx").on(t.userId),
   ]
 );
+
+// Invitation-only onboarding: there is NO public signup (emailAndPassword.
+// disableSignUp). A pharmacy admin issues a single-use, expiring invitation;
+// only the SHA-256 hash of the token is stored — a database leak does not leak
+// usable invitations. Acceptance claims the row atomically (UPDATE … WHERE
+// used_at IS NULL) and creates the user + credential account in the same
+// transaction.
+export const invitation = pgTable("invitation", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  pharmacyId: uuid("pharmacy_id")
+    .notNull()
+    .references(() => pharmacy.id),
+  email: text("email").notNull(),
+  role: userRole("role").notNull(),
+  // Required (app-enforced) when role is intern/student.
+  supervisingPharmacistId: uuid("supervising_pharmacist_id").references(
+    () => user.id
+  ),
+  tokenHash: text("token_hash").notNull().unique(),
+  invitedByUserId: uuid("invited_by_user_id")
+    .notNull()
+    .references(() => user.id),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  usedByUserId: uuid("used_by_user_id").references(() => user.id),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 // better-auth rate limiting with storage: "database" — persistent and shared
 // across instances, unlike the in-memory default which silently resets on
