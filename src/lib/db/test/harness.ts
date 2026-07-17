@@ -6,7 +6,7 @@ import * as schema from "../schema";
 /** Matches docker-compose.yml. Overridable, but see assertLocal() below. */
 export const TEST_DATABASE_URL =
   process.env.TEST_DATABASE_URL ??
-  "postgres://postgres:postgres@localhost:5433/agentoma_test";
+  "postgres://postgres@localhost:5433/agentoma_test";
 
 /**
  * Hard guard. These tests TRUNCATE and insert concurrently. If TEST_DATABASE_URL

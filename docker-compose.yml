@@ -19,7 +19,7 @@ services:
     container_name: agentoma-test-db
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
       POSTGRES_DB: agentoma_test
       # Test DB only — no durability needed, and it makes the suite much faster.
       POSTGRES_INITDB_ARGS: "--no-sync"
