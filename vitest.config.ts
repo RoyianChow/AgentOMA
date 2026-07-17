@@ -14,6 +14,10 @@ export default defineConfig({
     environment: "node",
     include: ["src/**/*.test.ts"],
     globalSetup: ["src/lib/db/test/global-setup.ts"],
+    // The DB test files share ONE database and truncate between tests, so they
+    // must not run in parallel with each other — otherwise one file's reset
+    // wipes another's fixtures mid-test and the failures look like rule bugs.
+    fileParallelism: false,
     // Concurrency/advisory-lock tests need more than the 5s default.
     testTimeout: 20_000,
     hookTimeout: 60_000,

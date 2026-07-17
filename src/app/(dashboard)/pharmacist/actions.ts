@@ -1,10 +1,18 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { intakeSession, assessment, patient, pharmacy, ailmentGroup, pin, claimRule } from "@/lib/db/schema";
+import { intakeSession, assessment, patient, pharmacy, ailmentGroup, pin, claimRule, claimDraft } from "@/lib/db/schema";
 import { eq, and, sql, desc, isNull, count } from "drizzle-orm";
 import { computeRetainUntil } from "@/lib/retention";
 import { writeAudit } from "@/lib/audit";
+import {
+  deriveClaimDraft,
+  NOT_BILLABLE_MESSAGES,
+  type ResolvePin,
+  type AssessmentModality,
+  type Outcome,
+  type OdbFeeTier,
+} from "@/lib/claims/derive-claim-draft";
 
 // ODB fee tiers permitted to provide remote virtual services (EO Notice). A
 // regular-fee pharmacy ($8.83) selecting virtual_remote is hard-blocked.
@@ -257,6 +265,34 @@ export async function checkSameDayMutex(patientId: string, ailmentGroupCode: str
   return { success: true, patientId: row.id };
 }
 
+/**
+ * Builds a `resolvePin` over the SEEDED reference tables.
+ *
+ * deriveClaimDraft is pure and takes this as an argument — the DB lookup lives
+ * here, in the caller, on purpose. Only currently-effective PIN rows are loaded
+ * (end_date IS NULL), so a future revision can coexist without being picked up
+ * early. If a combination has no row, the map returns undefined and
+ * deriveClaimDraft REFUSES; it must never fall back to a default.
+ */
+async function loadResolvePin(): Promise<ResolvePin> {
+  const rows = await db
+    .select({
+      code: ailmentGroup.code,
+      modality: pin.modality,
+      rxIssued: pin.rxIssued,
+      pinCode: pin.pinCode,
+      feeCents: pin.feeCents,
+    })
+    .from(pin)
+    .innerJoin(ailmentGroup, eq(pin.ailmentGroupId, ailmentGroup.id))
+    .where(isNull(pin.endDate));
+
+  const byKey = new Map(
+    rows.map((r) => [`${r.code}|${r.modality}|${r.rxIssued}`, { pinCode: r.pinCode, feeCents: r.feeCents }]),
+  );
+  return (code, modality, rxIssued) => byKey.get(`${code}|${modality}|${rxIssued}`);
+}
+
 export async function createAssessment(data: {
   pharmacyId: string;
   pharmacistUserId?: string;
@@ -269,6 +305,13 @@ export async function createAssessment(data: {
   outcome: string;
   noRxRationaleCode?: string;
   serviceDate: Date;
+  // --- claim inputs ---
+  // TODO(auth, Part 4): prescriber identity must come from the authenticated
+  // session's pharmacist profile, not the caller. Passed in until auth lands.
+  prescriberOcpNumber?: string;
+  isAsOfRightWithoutOntarioLicence?: boolean;
+  isOdbRecipient?: boolean;
+  ltc?: { isResident: boolean; providerRole?: "primary" | "secondary"; isEmergency?: boolean };
 }) {
   try {
     // 1. Remote-virtual eligibility (#5). Only rural-fee-tier pharmacies may
@@ -337,26 +380,77 @@ export async function createAssessment(data: {
         .where(eq(intakeSession.id, data.intakeSessionId));
     }
 
-    // 6. Audit (append-only). Best-effort: a failed audit write must not undo a
+    // 6. Derive the claim draft. The assessment itself is recorded either way —
+    //    the pharmacist did the work — but a NON-BILLABLE result persists NO
+    //    claim_draft row. deriveClaimDraft stays pure: we do the PIN lookup here
+    //    and pass it in.
+    const ph = await db.query.pharmacy.findFirst({ where: eq(pharmacy.id, data.pharmacyId) });
+    const claim = deriveClaimDraft({
+      ailmentGroupCode: data.ailmentGroupCode,
+      modality: data.modality as AssessmentModality,
+      outcome: data.outcome as Outcome,
+      resolvePin: await loadResolvePin(),
+      prescriber: {
+        ocpRegistrationNumber: data.prescriberOcpNumber,
+        isAsOfRightWithoutOntarioLicence: data.isAsOfRightWithoutOntarioLicence,
+      },
+      isOdbRecipient: data.isOdbRecipient ?? true,
+      pharmacyFeeTier: (ph?.odbFeeTier ?? "regular_8_83") as OdbFeeTier,
+      virtualLocation: data.virtualLocation,
+      remoteReason: data.remoteReason,
+      ltc: data.ltc,
+    });
+
+    if (claim.billable) {
+      await db.insert(claimDraft).values({
+        assessmentId: newAssessment.id,
+        ailmentGroupCode: claim.draft.ailmentGroupCode,
+        modality: claim.draft.modality,
+        billingModality: claim.draft.billingModality,
+        rxIssued: claim.draft.rxIssued,
+        pinCode: claim.draft.pinCode,
+        feeCents: claim.draft.feeCents,
+        prescriberIdReference: claim.draft.prescriberIdReference,
+        prescriberId: claim.draft.prescriberId,
+        interventionCodes: claim.draft.interventionCodes,
+        carrierId: claim.draft.carrierId,
+        quantity: claim.draft.quantity,
+        ssc: claim.draft.ssc,
+      });
+    }
+
+    // 7. Audit (append-only). Best-effort: a failed audit write must not undo a
     //    created assessment, but it is logged loudly. No PHI in metadata.
     try {
       await writeAudit({
         pharmacyId: data.pharmacyId,
         actorUserId: data.pharmacistUserId,
-        action: "assessment.created",
+        action: claim.billable ? "assessment.created.claim_drafted" : "assessment.created.no_claim",
         entityType: "assessment",
         entityId: newAssessment.id,
         metadata: {
           ailmentGroupCode: data.ailmentGroupCode,
           modality: data.modality,
           outcome: data.outcome,
+          billable: claim.billable,
+          ...(claim.billable ? { pinCode: claim.draft.pinCode } : { notBillableReason: claim.reason }),
         },
       });
     } catch (auditErr) {
       console.error("AUDIT WRITE FAILED for assessment", newAssessment.id, auditErr);
     }
 
-    return { success: true, assessmentId: newAssessment.id };
+    return {
+      success: true,
+      assessmentId: newAssessment.id,
+      claim: claim.billable
+        ? { billable: true as const, draft: claim.draft }
+        : {
+            billable: false as const,
+            reason: claim.reason,
+            message: NOT_BILLABLE_MESSAGES[claim.reason],
+          },
+    };
   } catch (err: unknown) {
     console.error("Failed to create assessment:", err);
     const code = typeof err === "object" && err !== null && "code" in err ? (err as { code?: string }).code : undefined;

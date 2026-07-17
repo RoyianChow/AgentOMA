@@ -9,6 +9,7 @@ import {
   type IntakeSessionDTO,
 } from "../actions";
 import { MOCK_PHARMACY_ID } from "@/lib/constants";
+import ClaimDraftPanel, { type ClaimResult } from "./ClaimDraftPanel";
 
 export default function AssessmentWorkspace({
   session,
@@ -33,6 +34,14 @@ export default function AssessmentWorkspace({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDone, setIsDone] = useState(false);
+
+  // Claim inputs. Derived fields are never typed — but these are FACTS the
+  // derivation needs, so they are collected, not guessed.
+  // TODO(auth, Part 4): the OCP number must come from the authenticated
+  // pharmacist's profile, not a free-text field.
+  const [prescriberOcp, setPrescriberOcp] = useState("");
+  const [isOdbRecipient, setIsOdbRecipient] = useState(true);
+  const [claimResult, setClaimResult] = useState<ClaimResult | null>(null);
 
   const checkHistory = async (patientId: string, ailmentCode: string) => {
     const res = await getPatientHistoryCount(patientId, ailmentCode);
@@ -82,12 +91,17 @@ export default function AssessmentWorkspace({
         intakeSessionId: session ? session.id : undefined,
         outcome,
         serviceDate: new Date(),
+        prescriberOcpNumber: prescriberOcp || undefined,
+        isOdbRecipient,
       });
 
       if (!assessmentRes.success) {
         throw new Error(assessmentRes.error || "Failed to create assessment.");
       }
 
+      // A non-billable result is NOT an error — the assessment was recorded, and
+      // the panel explains why no claim was drafted.
+      setClaimResult(assessmentRes.claim ?? null);
       setIsDone(true);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred.");
@@ -106,6 +120,11 @@ export default function AssessmentWorkspace({
             {session ? " and the patient's intake has been marked as completed" : ""}.
             It is now visible in the audit log.
           </p>
+          {claimResult && (
+            <div style={{ textAlign: "left", marginBottom: "1.5rem" }}>
+              <ClaimDraftPanel result={claimResult} />
+            </div>
+          )}
           <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
             <Link href="/pharmacist" className="btn btn-primary">
               Back to Dashboard
@@ -199,6 +218,31 @@ export default function AssessmentWorkspace({
                   </select>
                 </div>
               )}
+              <div>
+                <label className="form-label">Prescribing pharmacist OCP registration #</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={prescriberOcp}
+                  onChange={(e) => setPrescriberOcp(e.target.value)}
+                  placeholder="e.g. 123456"
+                />
+                <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                  Goes in the prescriber field. For an intern or student, use the supervising
+                  pharmacist&apos;s number.
+                </span>
+              </div>
+              <label style={{ display: "flex", gap: "0.5rem", alignItems: "center", fontSize: "0.9rem" }}>
+                <input
+                  type="checkbox"
+                  checked={isOdbRecipient}
+                  onChange={(e) => setIsOdbRecipient(e.target.checked)}
+                />
+                Patient has ODB coverage
+                <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                  (non-ODB adds intervention code ML and Carrier ID S)
+                </span>
+              </label>
               <div>
                 <label className="form-label">Outcome</label>
                 <select className="form-input" value={outcome} onChange={e => setOutcome(e.target.value)}>
