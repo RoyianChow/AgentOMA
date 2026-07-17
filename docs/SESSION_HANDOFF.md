@@ -4,7 +4,8 @@ For a fresh agent with an empty context window. Read this + `AGENTS.md` and you 
 without re-reading the repo. Architecture lives in `PROJECT_OVERVIEW.md`; rules in
 `COMPLIANCE.md`; unresolved ambiguities in `OPEN_QUESTIONS.md`.
 
-**Last updated:** after Part 3 core (`deriveClaimDraft`) landed and was proven on real Postgres.
+**Last updated:** **Part 3 is COMPLETE** (derive + persist + UI panel, all green on real Postgres).
+**Next: Part 4 auth, slice 1.** Nothing is half-finished — the tree is at a clean boundary.
 
 ---
 
@@ -80,26 +81,31 @@ truncate it** (patient=5, assessment=7+, audit_log, pharmacy=3).
   which **refuses any non-localhost/Supabase URL** (the tests truncate). `global-setup.ts` **drops
   and migrates from zero every run**, which is itself the proof that the migration chain is
   self-sufficient. Seeding is shared with `db:seed` via `seed-reference.ts`.
-- **58/58 tests green** (`npm run test`, needs Docker up), including the **two-transaction
+- **Part 3 COMPLETE.** `createAssessment` derives the claim (caller does the `resolvePin` lookup
+  over `pin` where `end_date IS NULL`), inserts **exactly one** `claim_draft` on billable and
+  **nothing** on non-billable. `ClaimDraftPanel.tsx` renders it read-only with the HNS boundary on
+  the panel. A non-billable result is shown as a plain reason, not an error.
+- **56/56 tests green** (`npm run test`, **needs Docker up**), across 4 files: pure derivation, pure
+  retention, real-PG constraints, real-PG completion action. Includes the **two-transaction
   insect/tick race** (exactly one survives), one-per-day, 365-day lookback, supersede atomicity,
-  and immutability.
+  immutability, and **a red-flag exit writing ZERO claim rows**.
+
+### Test-harness gotchas learned the hard way
+- **`fileParallelism: false`** in `vitest.config.ts` is load-bearing. The DB test files share one
+  database and truncate between tests; in parallel, one file's reset wipes another's fixtures and
+  the failures masquerade as rule bugs.
+- The old `src/lib/db/__tests__/assessment-rules.test.ts` was **deleted**. It mocked the db, so its
+  "one-per-day" test only proved a hand-thrown `{ code: "23505" }` got formatted nicely. Don't
+  reintroduce mocked constraint tests.
+- **Docker Desktop stops on its own.** If tests fail with `ECONNREFUSED ::1:5433`, the engine is
+  down — relaunch `"/c/Program Files/Docker/Docker/Docker Desktop.exe"`, wait for `docker ps`, then
+  `npm run test:db:up`.
 
 ---
 
 ## 4. What is NOT done — resume here
 
-1. **Part 3 remainder — claim_draft persist + UI seam** *(small)*
-   - Wire `deriveClaimDraft` into the assessment-completion server action
-     (`src/app/(dashboard)/pharmacist/actions.ts` → `createAssessment`). On `{ billable: true }`
-     insert the `claim_draft` row; on `{ billable: false }` **persist nothing** and surface the reason.
-   - Read-only claim-draft panel in `AssessmentWorkspace.tsx`: show every derived field (PIN, fee,
-     prescriber ref `09`, prescriber ID, intervention codes, quantity, SSC), nothing editable, with
-     the boundary stated in the panel: *"For hand-entry into your dispensing software. Nothing is
-     submitted to HNS from here."* A `{ billable: false }` result shows the reason plainly, not as an
-     error state.
-   - Test: billable → exactly one active draft; non-billable → zero; **a red-flag exit still writes
-     zero claim rows** (must stay provable).
-2. **Part 4 — auth. Build in committable slices; commit after each.** A half-removed
+1. **Part 4 — auth. Build in committable slices; commit after each.** A half-removed
    `MOCK_PHARMACY_ID` is worse than none — do not start slice 4 unless you can finish it.
    1. Schema + better-auth core (Drizzle adapter; user/session/account/verification via
       `db:generate` → `db:migrate`); email + password.
@@ -112,6 +118,15 @@ truncate it** (patient=5, assessment=7+, audit_log, pharmacy=3).
       orientation attestation** — comment that where the checks live.
    5. **Orientation gate** — no recorded module completion → the completion action refuses **before
       `deriveClaimDraft` is ever called**. Server-side, not UI. Test it.
+   **Slice 1 is the next thing to do. Nothing for Part 4 has been started.**
+
+   Two `TODO(auth)` seams already exist and clearing them is part of slice 4:
+   `createAssessment` takes `prescriberOcpNumber` / `isAsOfRightWithoutOntarioLicence` /
+   `isOdbRecipient` as **parameters**, and `AssessmentWorkspace.tsx` collects the OCP number in a
+   free-text field. Once auth exists the prescriber identity must come from the authenticated
+   pharmacist's profile — a pharmacist must not be able to type someone else's OCP number into a
+   claim.
+
 3. **Part 5 — audit page.** Move `src/app/(dashboard)/pharmacist/audit/page.tsx` fully server-side;
    it currently pulls PHI (name/DOB/health number) to the client via `getAllAssessments()`. Also
    clears the `no-explicit-any` at `audit/page.tsx:182`. Verify the audit `REVOKE`/trigger are live
