@@ -7,11 +7,45 @@ import { sql } from "drizzle-orm";
  * Point the action's `db` at the throwaway test database. The action itself is
  * unchanged — this exercises the real insert path, the real triggers, and the
  * real constraints, not a mock of them.
+ *
+ * The auth GUARD is the one thing stubbed (there is no HTTP request, hence no
+ * session, inside a unit test): requirePortalUser returns a fixed actor whose
+ * user row exists in the test DB, so the action's prescriber-from-profile
+ * lookup is still the real query. The guard's own logic is thin and its
+ * refusal paths are covered by the slice-5 orientation tests.
  */
 vi.mock("@/lib/db", async () => {
   const { makeTestDb } = await import("@/lib/db/test/harness");
   const { db } = makeTestDb();
   return { db };
+});
+
+const testAuth = vi.hoisted(() => ({
+  actor: {
+    userId: "",
+    pharmacyId: "",
+    role: "pharmacist" as const,
+    name: "Test Pharmacist",
+    email: "pharmacist@test.local",
+    supervisingPharmacistId: null as string | null,
+  },
+}));
+
+vi.mock("@/lib/auth-guard", () => {
+  class AuthorizationError extends Error {
+    constructor(public readonly reason: string) {
+      super(reason);
+      this.name = "AuthorizationError";
+    }
+  }
+  return {
+    AuthorizationError,
+    PORTAL_ROLES: ["pharmacy_admin", "pharmacist", "intern", "student", "technician"],
+    ASSESSING_ROLES: ["pharmacy_admin", "pharmacist"],
+    requirePortalUser: vi.fn(async () => ({ ...testAuth.actor })),
+    requireSession: vi.fn(),
+    requirePortalPage: vi.fn(),
+  };
 });
 
 import { makeTestDb, resetOperationalTables, type TestDb } from "@/lib/db/test/harness";
@@ -50,16 +84,24 @@ beforeEach(async () => {
     returning id
   `);
   patientId = (rows as unknown as { id: string }[])[0].id;
+
+  // The signed-in pharmacist. The claim's prescriber_id must come from THIS
+  // row's ocp_number — the action accepts no prescriber input.
+  const userRows = await db.execute<{ id: string }>(sql`
+    insert into "user" (name, email, role, pharmacy_id, ocp_number)
+    values ('Test Pharmacist', 'pharmacist@test.local', 'pharmacist'::user_role, ${PHARMACY_ID}::uuid, '123456')
+    returning id
+  `);
+  testAuth.actor.userId = (userRows as unknown as { id: string }[])[0].id;
+  testAuth.actor.pharmacyId = PHARMACY_ID;
 });
 
 const baseInput = () => ({
-  pharmacyId: PHARMACY_ID,
   patientId,
   ailmentGroupCode: "RHINITIS",
   modality: "in_person",
   outcome: "rx_issued",
   serviceDate: new Date("2026-07-16"),
-  prescriberOcpNumber: "123456",
   isOdbRecipient: true,
 });
 

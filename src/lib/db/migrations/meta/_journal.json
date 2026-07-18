@@ -71,6 +71,13 @@
       "when": 1784304482218,
       "tag": "0009_strong_molten_man",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1784304727115,
+      "tag": "0010_wide_white_queen",
+      "breakpoints": true
     }
   ]
 }

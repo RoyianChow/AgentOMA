@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getIntakeSessionById } from "../actions";
-import { MOCK_PHARMACY_ID } from "@/lib/constants";
+import { requirePortalPage } from "@/lib/auth-guard";
 import AssessmentWorkspace from "./AssessmentWorkspace";
 
 export const dynamic = "force-dynamic";
@@ -10,13 +10,18 @@ export default async function AssessmentPage({
 }: {
   searchParams: Promise<{ session?: string }>;
 }) {
+  // UX redirect only — the server actions this page's workspace calls
+  // re-verify session + role themselves.
+  await requirePortalPage();
+
   const { session: sessionId } = await searchParams;
 
   if (!sessionId) {
     return <AssessmentWorkspace session={null} />;
   }
 
-  const res = await getIntakeSessionById(sessionId, MOCK_PHARMACY_ID);
+  // Pharmacy scoping happens inside the action, from the session.
+  const res = await getIntakeSessionById(sessionId);
 
   if (!res.success) {
     return (

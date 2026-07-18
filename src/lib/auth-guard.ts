@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { auth } from "./auth";
 import { userRole } from "./db/schema/auth";
@@ -95,4 +96,31 @@ export async function requirePortalUser(
     email: user.email,
     supervisingPharmacistId: user.supervisingPharmacistId ?? null,
   };
+}
+
+/**
+ * Server-COMPONENT variant: same checks as requirePortalUser, but a refusal
+ * redirects instead of throwing (a page can't render an AuthorizationError).
+ * This is still UX — the enforcement that matters stays inside each server
+ * action, which calls requirePortalUser itself.
+ */
+export async function requirePortalPage(
+  allowedRoles?: readonly PortalRole[]
+): Promise<PortalUser> {
+  try {
+    return await requirePortalUser(allowedRoles);
+  } catch (e) {
+    if (e instanceof AuthorizationError) {
+      switch (e.reason) {
+        case "UNAUTHENTICATED":
+          redirect("/sign-in");
+        case "TOTP_ENROLLMENT_REQUIRED":
+          redirect("/enroll-2fa");
+        case "NO_PHARMACY":
+        case "FORBIDDEN_ROLE":
+          redirect("/sign-in?error=account");
+      }
+    }
+    throw e;
+  }
 }

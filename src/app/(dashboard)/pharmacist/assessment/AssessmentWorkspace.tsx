@@ -8,7 +8,6 @@ import {
   getPatientHistoryCount,
   type IntakeSessionDTO,
 } from "../actions";
-import { MOCK_PHARMACY_ID } from "@/lib/constants";
 import ClaimDraftPanel, { type ClaimResult } from "./ClaimDraftPanel";
 
 export default function AssessmentWorkspace({
@@ -35,11 +34,10 @@ export default function AssessmentWorkspace({
   const [error, setError] = useState<string | null>(null);
   const [isDone, setIsDone] = useState(false);
 
-  // Claim inputs. Derived fields are never typed — but these are FACTS the
-  // derivation needs, so they are collected, not guessed.
-  // TODO(auth, Part 4): the OCP number must come from the authenticated
-  // pharmacist's profile, not a free-text field.
-  const [prescriberOcp, setPrescriberOcp] = useState("");
+  // Claim inputs. Derived fields are never typed — but ODB coverage is a FACT
+  // about the patient the derivation needs, so it is collected, not guessed.
+  // Prescriber identity is NOT collected here: it comes from the signed-in
+  // pharmacist's profile server-side (the supervisor's for interns/students).
   const [isOdbRecipient, setIsOdbRecipient] = useState(true);
   const [claimResult, setClaimResult] = useState<ClaimResult | null>(null);
 
@@ -64,16 +62,15 @@ export default function AssessmentWorkspace({
     try {
       // 2. Resolve Patient (TypeScript now knows gender is "F" | "M" | "U")
       const patientRes = await upsertPatient({
-        pharmacyId: MOCK_PHARMACY_ID,
         firstName,
         lastName,
         dob: new Date(dob),
         healthNumber,
-        gender, // <-- No more error here!
+        gender,
       });
 
-      if (!patientRes.success || !patientRes.patientId) {
-        throw new Error("Failed to save patient.");
+      if (!patientRes.success) {
+        throw new Error(patientRes.error || "Failed to save patient.");
       }
 
       const patientId = patientRes.patientId;
@@ -82,16 +79,15 @@ export default function AssessmentWorkspace({
       // Check history just to update UI right before submit, but server will check mutex
       await checkHistory(patientId, ailmentCode);
 
-      // 2. Create Assessment
+      // 2. Create Assessment. Pharmacy + prescriber identity come from the
+      // authenticated session server-side.
       const assessmentRes = await createAssessment({
-        pharmacyId: MOCK_PHARMACY_ID,
         patientId,
         ailmentGroupCode: ailmentCode,
         modality,
         intakeSessionId: session ? session.id : undefined,
         outcome,
         serviceDate: new Date(),
-        prescriberOcpNumber: prescriberOcp || undefined,
         isOdbRecipient,
       });
 
@@ -218,19 +214,10 @@ export default function AssessmentWorkspace({
                   </select>
                 </div>
               )}
-              <div>
-                <label className="form-label">Prescribing pharmacist OCP registration #</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={prescriberOcp}
-                  onChange={(e) => setPrescriberOcp(e.target.value)}
-                  placeholder="e.g. 123456"
-                />
-                <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                  Goes in the prescriber field. For an intern or student, use the supervising
-                  pharmacist&apos;s number.
-                </span>
+              <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", padding: "0.6rem 0.75rem", background: "var(--bg-tertiary)", borderRadius: "var(--radius-sm)" }}>
+                The prescriber on the claim is taken from your signed-in profile
+                (for interns and students, your supervising pharmacist&apos;s OCP
+                number) — it is never typed here.
               </div>
               <label style={{ display: "flex", gap: "0.5rem", alignItems: "center", fontSize: "0.9rem" }}>
                 <input

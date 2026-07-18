@@ -51,6 +51,18 @@ export const user = pgTable("user", {
   supervisingPharmacistId: uuid("supervising_pharmacist_id").references(
     (): AnyPgColumn => user.id
   ),
+  // Prescriber identity. The OCP registration number that goes on a claim
+  // comes from HERE (or the supervisor's row) — never from a form field. A
+  // pharmacist practising under As-of-Right without an Ontario licence bills
+  // as PHR888 (deriveClaimDraft handles that mapping).
+  ocpNumber: text("ocp_number"),
+  isAsOfRight: boolean("is_as_of_right").notNull().default(false),
+  // OCP "Mandatory Orientation for Minor Ailments Module". NULL means not
+  // completed — and completing a billable assessment REFUSES before
+  // deriveClaimDraft is ever called (enforced server-side in slice 5).
+  orientationCompletedAt: timestamp("orientation_completed_at", {
+    withTimezone: true,
+  }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
