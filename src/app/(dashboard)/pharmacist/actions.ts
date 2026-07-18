@@ -71,6 +71,10 @@ export type IntakeSessionDTO = {
   trail: { question: string; answer: string }[] | null;
   priorCountSelfReport: number | null;
   existingRxSelfReport: string | null;
+  /** When the patient ticked consent on their own phone; the pharmacist still
+   * re-confirms in person. */
+  consentCapturedAt: string | null;
+  createdAt: string;
 };
 
 export type DashboardStats = {
@@ -159,6 +163,8 @@ export async function getIntakeSessionById(
         trail: session.trail,
         priorCountSelfReport: session.priorCountSelfReport,
         existingRxSelfReport: session.existingRxSelfReport,
+        consentCapturedAt: session.consentCapturedAt?.toISOString() ?? null,
+        createdAt: session.createdAt.toISOString(),
       },
     };
   } catch (err) {

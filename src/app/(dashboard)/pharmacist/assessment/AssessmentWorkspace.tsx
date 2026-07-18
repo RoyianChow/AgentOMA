@@ -274,6 +274,14 @@ export default function AssessmentWorkspace({
               {session && <span className="badge badge-accent">Ref: {session.code}</span>}
             </div>
 
+            {session && (
+              <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginTop: "-0.5rem", marginBottom: "1rem" }}>
+                {session.consentCapturedAt
+                  ? `Consent captured on the patient's device at ${new Date(session.consentCapturedAt).toLocaleString()}. Re-confirm in person.`
+                  : "No consent timestamp on this intake — obtain and record consent in person."}
+              </p>
+            )}
+
             {session && session.trail ? (
               <div style={{ marginBottom: "1.5rem" }}>
                 <h4 style={{ fontSize: "0.9rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>Triage Trail</h4>
