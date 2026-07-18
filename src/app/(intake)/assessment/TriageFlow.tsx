@@ -49,9 +49,12 @@ type ExistingRx = "none" | "refillable" | "other_prescriber" | "unsure";
 
 interface Props {
   claimMaximums: Record<AilmentId, number>;
+  /** From the per-pharmacy QR link, validated by the page AND re-validated by
+   * the server action. Which pharmacy gets the intake — never who the patient is. */
+  pharmacyId: string;
 }
 
-export default function TriageFlow({ claimMaximums }: Props) {
+export default function TriageFlow({ claimMaximums, pharmacyId }: Props) {
   const [phase, setPhase] = useState<Phase>("emergency");
   const [emergencyChecks, setEmergencyChecks] = useState<string[]>([]);
   const [nodeId, setNodeId] = useState<string>(TRIAGE_ROOT);
@@ -125,12 +128,16 @@ export default function TriageFlow({ claimMaximums }: Props) {
     setIntakeCode(null);
   }
 
+  // The summary screen keys off intakeCode alone: it only renders after this
+  // has completed (Finish awaits it), so a null code there MEANS the handoff
+  // failed and the error panel shows.
   async function handoff() {
     setIsSubmitting(true);
     try {
-      // The pharmacy is resolved server-side in the action — the kiosk never
-      // says which pharmacy it belongs to.
+      // pharmacyId came from the QR link; the action re-validates it against
+      // the pharmacy table before writing anything.
       const res = await createIntakeSession({
+        pharmacyId,
         ailmentGroupCode: ailment || "",
         trail: stack.map((s, i) => {
           const node = NODES[s.nodeId];
@@ -139,11 +146,17 @@ export default function TriageFlow({ claimMaximums }: Props) {
         priorCountSelfReport: priorCount === -1 ? null : priorCount,
         existingRxSelfReport: existingRx === "unsure" ? null : existingRx,
       });
-      if (res.success) {
-        setIntakeCode(res.code || null);
+      // Success ONLY with a real code in hand — a missing code is a failure,
+      // and the summary screen must never pretend otherwise.
+      if (res.success && res.code) {
+        setIntakeCode(res.code);
       } else {
-        console.error(res.error);
+        if (!res.success) console.error(res.error);
+        setIntakeCode(null);
       }
+    } catch (err) {
+      console.error("Handoff failed:", err);
+      setIntakeCode(null);
     } finally {
       setIsSubmitting(false);
     }
@@ -590,16 +603,38 @@ export default function TriageFlow({ claimMaximums }: Props) {
               you and confirm — that&apos;s their job, and it&apos;s the part that counts.
             </p>
 
-            <div className={`${styles.panel} ${styles.panelGreen}`}>
-              <span className={`${styles.eyebrow} ${styles.eyebrowGo}`}>
-                Your reference code
-              </span>
-              <div className={styles.code}>{intakeCode || "······"}</div>
-              <p className={styles.sub}>
-                Your intake has been sent to the pharmacy and is waiting in their queue. Show
-                this reference code at the counter so the pharmacist can match you to it.
-              </p>
-            </div>
+            {intakeCode ? (
+              <div className={`${styles.panel} ${styles.panelGreen}`}>
+                <span className={`${styles.eyebrow} ${styles.eyebrowGo}`}>
+                  Your reference code
+                </span>
+                <div className={styles.code}>{intakeCode}</div>
+                <p className={styles.sub}>
+                  Your intake has been sent to the pharmacy and is waiting in their queue. Show
+                  this reference code at the counter so the pharmacist can match you to it.
+                </p>
+              </div>
+            ) : (
+              // The handoff did NOT reach the pharmacy — say so. Never show an
+              // empty code as if it succeeded, never claim it was queued.
+              <div className={styles.panel}>
+                <span className={`${styles.eyebrow} ${styles.eyebrowStop}`}>
+                  Not sent yet
+                </span>
+                <p className={styles.sub}>
+                  Something went wrong sending this to the pharmacy. Your answers are still on
+                  this screen — please show them to the pharmacist directly, or try again.
+                </p>
+                <button
+                  type="button"
+                  className={styles.cta}
+                  disabled={isSubmitting}
+                  onClick={() => void handoff()}
+                >
+                  {isSubmitting ? "Sending…" : "Try again"}
+                </button>
+              </div>
+            )}
 
             <div className={styles.panel}>
               <span className={styles.eyebrow}>What you told us</span>
