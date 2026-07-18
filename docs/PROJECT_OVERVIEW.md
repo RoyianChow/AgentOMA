@@ -35,7 +35,7 @@ The whole thing is governed by a real regulation — the Ontario MoH **Executive
 | Env | `@t3-oss/env-nextjs` + zod, wired into `next.config.ts` | Fails the build on missing/invalid vars; no raw `process.env` in app code |
 | Tests | **Vitest** | Unit tests for the money rules |
 | PDF export | `jspdf` + `jspdf-autotable` | Audit-log export |
-| Identity | **better-auth** (planned, not yet installed) | Firebase Auth explicitly removed |
+| Identity | **better-auth 1.6** (Drizzle adapter) | Mandatory TOTP, invitation-only onboarding, 30-min rolling sessions. Firebase Auth explicitly removed |
 | File storage | Supabase Storage (planned, for Rx/referral PDFs) | |
 
 **Firebase is gone.** `src/lib/firebase.ts` and the `firebase` dependency were deleted once grep confirmed zero importers.
@@ -88,7 +88,9 @@ src/
     reference/types.ts
     retention.ts                 computeRetainUntil (the 10y / age-18 clock)
     audit.ts                     writeAudit() append-only helper
-    constants.ts                 MOCK_PHARMACY_ID (placeholder until onboarding/auth)
+    auth.ts                      better-auth instance (TOTP, sessions, rate limits)
+    auth-guard.ts                requirePortalUser — THE per-action security boundary
+    invitations.ts               invitation-only onboarding (token hash, single-use)
   hooks/usePharmacyConfig.ts     ⚠️ LEGACY (localStorage pharmacy profile; used by settings)
 docs/
   COMPLIANCE.md                  Rule → EO Notice section mapping
@@ -191,7 +193,11 @@ Everything here maps back to the EO Notice in [`COMPLIANCE.md`](COMPLIANCE.md).
 
 **Big rocks still open:**
 
-- **No authentication yet.** better-auth is planned but not installed. `/pharmacist/*` is **unprotected**, and everything uses `MOCK_PHARMACY_ID`. No login, no roles, no 2FA, no invitations, no `proxy.ts`, no orientation-attestation billing gate. This is the largest missing piece.
+- ~~No authentication~~ **DONE (Part 4).** better-auth with mandatory TOTP, invitation-only
+  onboarding, five roles, `proxy.ts` as a UX-only gate with `requirePortalUser()` re-verifying
+  session + role inside every server action, `MOCK_PHARMACY_ID` eliminated, prescriber OCP from
+  the authenticated profile, and the orientation gate refusing completion before
+  `deriveClaimDraft`. See `SESSION_HANDOFF.md` §"Part 4 auth — where things live".
 - **Claim assembly (`deriveClaimDraft`) not built.** The pieces exist (PIN reference data, fee tier, the fee/PIN lookup), but the actual `ClaimDraft` — deriving PIN + fee + prescriber ID (`09` / `PHR888`) + intervention codes (`PS`/`ML`) + quantity + `SSC=4` — and persisting/exporting it is not yet implemented.
 - **LTC branch** (capitation / `$0` / secondary-provider `LT`) is not implemented.
 

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requirePortalPage } from "@/lib/auth-guard";
 import { listTeam } from "./actions";
 import InviteForm from "./InviteForm";
+import OrientationButton from "./OrientationButton";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,12 @@ export default async function TeamPage() {
                       {m.ocpNumber ? `OCP ${m.ocpNumber}` : "no OCP # on file"}
                       {" · "}
                       {m.twoFactorEnabled ? "2FA ✓" : "2FA pending"}
+                      {" · "}
+                      {m.orientationCompletedAt ? (
+                        "orientation ✓"
+                      ) : (
+                        <OrientationButton userId={m.id} />
+                      )}
                     </div>
                   </div>
                 </div>

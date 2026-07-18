@@ -352,7 +352,12 @@ export async function upsertPatient(data: {
 async function resolvePrescriberIdentity(
   actor: PortalUser
 ): Promise<
-  | { ok: true; ocpNumber: string | null; isAsOfRight: boolean }
+  | {
+      ok: true;
+      ocpNumber: string | null;
+      isAsOfRight: boolean;
+      orientationCompletedAt: Date | null;
+    }
   | { ok: false; error: string }
 > {
   if (actor.role === "intern" || actor.role === "student") {
@@ -380,6 +385,7 @@ async function resolvePrescriberIdentity(
       ok: true,
       ocpNumber: supervisor.ocpNumber,
       isAsOfRight: supervisor.isAsOfRight,
+      orientationCompletedAt: supervisor.orientationCompletedAt,
     };
   }
 
@@ -388,6 +394,7 @@ async function resolvePrescriberIdentity(
     ok: true,
     ocpNumber: self?.ocpNumber ?? null,
     isAsOfRight: self?.isAsOfRight ?? false,
+    orientationCompletedAt: self?.orientationCompletedAt ?? null,
   };
 }
 
@@ -445,6 +452,19 @@ export async function createAssessment(data: {
     const prescriber = await resolvePrescriberIdentity(actor);
     if (!prescriber.ok) {
       return { success: false, error: prescriber.error };
+    }
+
+    // 0a. ORIENTATION GATE. The prescriber on the claim (the supervisor, for
+    //     an intern/student) must have a recorded OCP "Mandatory Orientation
+    //     for Minor Ailments Module" completion. This refuses HERE — server-
+    //     side, before ANY row is written and before deriveClaimDraft is ever
+    //     called. A UI-only gate is not a gate.
+    if (!prescriber.orientationCompletedAt) {
+      return {
+        success: false,
+        error:
+          "The prescribing pharmacist has no recorded completion of OCP's Mandatory Orientation for Minor Ailments Module. A billable assessment cannot be completed until a pharmacy admin records it on their profile.",
+      };
     }
 
     // 0b. Tenancy: the patient must belong to the actor's pharmacy.

@@ -4,8 +4,15 @@ For a fresh agent with an empty context window. Read this + `AGENTS.md` and you 
 without re-reading the repo. Architecture lives in `PROJECT_OVERVIEW.md`; rules in
 `COMPLIANCE.md`; unresolved ambiguities in `OPEN_QUESTIONS.md`.
 
-**Last updated:** **Part 3 is COMPLETE** (derive + persist + UI panel, all green on real Postgres).
-**Next: Part 4 auth, slice 1.** Nothing is half-finished — the tree is at a clean boundary.
+**Last updated:** **Part 4 (auth) is COMPLETE — all five slices, committed one per slice.**
+better-auth 1.6.23: email+password on the Drizzle adapter · mandatory TOTP ·
+30-min rolling sessions + DB-backed rate limits · invitation-only onboarding with
+roles + supervisor links · `proxy.ts` (UX only) with `requirePortalUser()` inside
+every server action as the real boundary · `MOCK_PHARMACY_ID` fully gone (grep is
+empty; kiosk resolves its pharmacy server-side via `KIOSK_PHARMACY_ID` env or the
+single row) · prescriber OCP comes from the profile (supervisor's for
+interns/students) · orientation gate refuses completion before `deriveClaimDraft`.
+**67/67 green. Next: Part 5 — audit page server-side.** Nothing is half-finished.
 
 ---
 
@@ -49,6 +56,12 @@ truncate it** (patient=5, assessment=7+, audit_log, pharmacy=3).
 | **`0004_hardening`** | **same-day mutex trigger** on `assessment` (per-patient `pg_advisory_xact_lock` + reads `claim_rule`; raises **`23P01`**) · **`audit_log` immutability trigger** (raises **`0A000`** on UPDATE/DELETE) · `REVOKE UPDATE, DELETE ON audit_log FROM PUBLIC` |
 | `0005` | `claim_draft` table |
 | **`0006`** | `claim_draft` **deferrable partial EXCLUDE** (one active draft per assessment; `23P01`) · `claim_draft` immutability trigger (`0A000`) · `REVOKE DELETE` |
+| `0007` | better-auth core: `user` (with `role` enum + `pharmacy_id`), `session`, `account`, `verification` — uuid PKs |
+| `0008` | `two_factor` + `rate_limit` tables; `user.two_factor_enabled` |
+| `0009` | `invitation` table (token **hash** only, single-use, expiring); `user.supervising_pharmacist_id` |
+| `0010` | `user.ocp_number` / `is_as_of_right` / `orientation_completed_at` |
+
+**Live is at `0010`.**
 
 ### Rules that are not negotiable
 - **`db:push` is BANNED and removed from `package.json`.** It drops columns on a PHI database and
@@ -105,37 +118,39 @@ truncate it** (patient=5, assessment=7+, audit_log, pharmacy=3).
 
 ## 4. What is NOT done — resume here
 
-1. **Part 4 — auth. Build in committable slices; commit after each.** A half-removed
-   `MOCK_PHARMACY_ID` is worse than none — do not start slice 4 unless you can finish it.
-   1. Schema + better-auth core (Drizzle adapter; user/session/account/verification via
-      `db:generate` → `db:migrate`); email + password.
-   2. TOTP (mandatory) + 30-min rolling sessions + server-side revocation + rate-limited
-      sign-in/reset.
-   3. Invitations (no public signup; pharmacy-admin, single-use, expiring) + roles
-      `pharmacy_admin` / `pharmacist` / `intern` / `student` / `technician`.
-   4. Route protection + **kill `MOCK_PHARMACY_ID`**. `proxy.ts` is an **optimistic UX gate only**
-      (Next 16 renamed `middleware` → `proxy`); **every server action re-verifies session + role +
-      orientation attestation** — comment that where the checks live.
-   5. **Orientation gate** — no recorded module completion → the completion action refuses **before
-      `deriveClaimDraft` is ever called**. Server-side, not UI. Test it.
-   **Slice 1 is the next thing to do. Nothing for Part 4 has been started.**
+1. **Part 5 — audit page (NEXT).** Move `src/app/(dashboard)/pharmacist/audit/page.tsx` fully
+   server-side; it still pulls PHI (name/DOB/health number) to the client via
+   `getAllAssessments()` — the action is now auth-gated and pharmacy-scoped (Part 4), but the
+   client-side PHI transfer remains. Also clears the `no-explicit-any` at `audit/page.tsx:182`.
+   Verify the audit `REVOKE`/trigger are live on the **real** DB, not just in the migration.
 
-   Two `TODO(auth)` seams already exist and clearing them is part of slice 4:
-   `createAssessment` takes `prescriberOcpNumber` / `isAsOfRightWithoutOntarioLicence` /
-   `isOdbRecipient` as **parameters**, and `AssessmentWorkspace.tsx` collects the OCP number in a
-   free-text field. Once auth exists the prescriber identity must come from the authenticated
-   pharmacist's profile — a pharmacist must not be able to type someone else's OCP number into a
-   claim.
+2. **Smaller follow-ups discovered/left by Part 4** (none block Part 5):
+   - Settings page still uses the localStorage profile (`usePharmacyConfig`) — unify with the DB
+     `pharmacy` row.
+   - Kiosk provisioning: with 2+ pharmacy rows the kiosk needs `KIOSK_PHARMACY_ID` set (env) or it
+     refuses intakes by design. Real per-device provisioning is future work.
+   - Post-TOTP-verify redirect: after the enroll-2fa verify succeeds, the client-side
+     `router.push("/pharmacist")` can appear to stay on the enroll page (Next dev router cache);
+     a fresh navigation lands correctly. Cosmetic; revisit with an eye on `router.refresh()`.
+   - Password reset needs an email transport before `requestPasswordReset` does anything useful
+     (rate limits are already in place). Admin-driven re-invite is the interim answer.
+   - The old baseline lint warning is gone (now 6 errors / 0 warnings, all pre-existing).
+   - Orientation completion is recorded by a pharmacy admin on /pharmacist/team; there is no
+     evidence upload — it is an attestation. Decide later if OCP evidence needs storing.
 
-3. **Part 5 — audit page.** Move `src/app/(dashboard)/pharmacist/audit/page.tsx` fully server-side;
-   it currently pulls PHI (name/DOB/health number) to the client via `getAllAssessments()`. Also
-   clears the `no-explicit-any` at `audit/page.tsx:182`. Verify the audit `REVOKE`/trigger are live
-   on the **real** DB, not just in the migration.
-
-### `MOCK_PHARMACY_ID` — every use (slice 4 must clear all of them)
-`src/lib/constants.ts` (definition) · `src/app/(intake)/assessment/TriageFlow.tsx` ·
-`src/app/(dashboard)/pharmacist/page.tsx` · `src/app/(dashboard)/pharmacist/assessment/AssessmentWorkspace.tsx` ·
-`src/lib/db/seed.ts` (seed may legitimately keep a fixed demo pharmacy — decide deliberately).
+### Part 4 auth — where things live (for the next session)
+- `src/lib/auth.ts` — better-auth instance (TOTP plugin, 30-min/5-min rolling sessions,
+  DB-backed rate limits, `disableSignUp`, `generateId: "uuid"`, `nextCookies` last).
+- `src/lib/auth-guard.ts` — **`requirePortalUser()` is THE security boundary**; every portal
+  server action calls it. `requirePortalPage()` is the redirecting page variant. `proxy.ts` is
+  an optimistic cookie check only.
+- `src/lib/invitations.ts` — issue/accept (token hash only, atomic single-use claim,
+  better-auth-compatible credential rows). `src/lib/db/bootstrap-admin.ts` +
+  `npm run auth:bootstrap-admin` creates the FIRST admin only.
+- Tests stub `@/lib/auth-guard` (no HTTP session in unit tests) but hit real Postgres for
+  everything else; vitest sets `SKIP_ENV_VALIDATION=1`.
+- `MOCK_PHARMACY_ID` no longer exists anywhere; the seed's demo pharmacy id lives as a local
+  constant in `seed.ts` only.
 
 ---
 
@@ -159,8 +174,9 @@ truncate it** (patient=5, assessment=7+, audit_log, pharmacy=3).
 ## 6. Definition of done for any commit
 
 `tsc --noEmit` clean · `npm run test` green (Docker up for the constraint tests) · lint **no worse
-than baseline (6 errors, 1 warning — all pre-existing** in `audit/page.tsx`, `api/fhir/route.ts`,
-`settings/page.tsx`, `Navbar.tsx`, `(site)/page.tsx`, `(intake)/assessment/actions.ts`**)** · no new
+than baseline (now 6 errors, 0 warnings — all pre-existing** in `audit/page.tsx`,
+`api/fhir/route.ts`, `settings/page.tsx`, `Navbar.tsx`, `(site)/page.tsx`**)** · no new
 `process.env` outside `src/env.ts` · no PHI in client components or logs.
 
-**No PR until Part 3-complete + Part 4 stand together.** Part 5 can follow.
+**Part 3 + Part 4 now stand together — the branch is PR-able.** Part 5 can follow in the same PR
+or the next one; the audit page's client-side PHI pull is the one thing to weigh before opening it.

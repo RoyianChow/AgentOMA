@@ -24,7 +24,12 @@ const testAuth = vi.hoisted(() => ({
   actor: {
     userId: "",
     pharmacyId: "",
-    role: "pharmacist" as const,
+    role: "pharmacist" as
+      | "pharmacy_admin"
+      | "pharmacist"
+      | "intern"
+      | "student"
+      | "technician",
     name: "Test Pharmacist",
     email: "pharmacist@test.local",
     supervisingPharmacistId: null as string | null,
@@ -86,15 +91,26 @@ beforeEach(async () => {
   patientId = (rows as unknown as { id: string }[])[0].id;
 
   // The signed-in pharmacist. The claim's prescriber_id must come from THIS
-  // row's ocp_number — the action accepts no prescriber input.
+  // row's ocp_number — the action accepts no prescriber input. Attested
+  // (orientation on file): every other test in this file doubles as the
+  // "attested pharmacist proceeds" half of the orientation-gate pair.
   const userRows = await db.execute<{ id: string }>(sql`
-    insert into "user" (name, email, role, pharmacy_id, ocp_number)
-    values ('Test Pharmacist', 'pharmacist@test.local', 'pharmacist'::user_role, ${PHARMACY_ID}::uuid, '123456')
+    insert into "user" (name, email, role, pharmacy_id, ocp_number, orientation_completed_at)
+    values ('Test Pharmacist', 'pharmacist@test.local', 'pharmacist'::user_role, ${PHARMACY_ID}::uuid, '123456', now())
     returning id
   `);
   testAuth.actor.userId = (userRows as unknown as { id: string }[])[0].id;
   testAuth.actor.pharmacyId = PHARMACY_ID;
+  testAuth.actor.role = "pharmacist";
+  testAuth.actor.supervisingPharmacistId = null;
 });
+
+async function countRows(table: "assessment" | "claim_draft"): Promise<number> {
+  const rows = await db.execute<{ n: number }>(
+    sql`select count(*)::int as n from ${sql.raw(table)}`,
+  );
+  return (rows as unknown as { n: number }[])[0].n;
+}
 
 const baseInput = () => ({
   patientId,
@@ -163,6 +179,69 @@ describe("createAssessment → claim_draft", () => {
     expect(res.claim?.billable).toBe(false);
     if (res.claim && !res.claim.billable) expect(res.claim.reason).toBe("UNKNOWN_PIN_LOOKUP");
     expect(await countClaimDrafts()).toBe(0);
+  });
+
+  it("ORIENTATION GATE: an un-attested pharmacist's completion refuses — no assessment row, no claim row", async () => {
+    const { createAssessment } = await import("../actions");
+    const rows = await db.execute<{ id: string }>(sql`
+      insert into "user" (name, email, role, pharmacy_id, ocp_number)
+      values ('No Orientation', 'nomodule@test.local', 'pharmacist'::user_role, ${PHARMACY_ID}::uuid, '654321')
+      returning id
+    `);
+    testAuth.actor.userId = (rows as unknown as { id: string }[])[0].id;
+
+    const res = await createAssessment(baseInput());
+
+    expect(res.success).toBe(false);
+    if (!res.success) expect(res.error).toMatch(/Mandatory Orientation/i);
+    // Refused BEFORE anything was written — not a recorded-but-unbillable
+    // assessment, and deriveClaimDraft was never reached.
+    expect(await countRows("assessment")).toBe(0);
+    expect(await countRows("claim_draft")).toBe(0);
+  });
+
+  it("ORIENTATION GATE: the attested pharmacist's identical completion proceeds", async () => {
+    const { createAssessment } = await import("../actions");
+    const res = await createAssessment(baseInput());
+    expect(res.success).toBe(true);
+    expect(res.claim?.billable).toBe(true);
+    expect(await countRows("assessment")).toBe(1);
+  });
+
+  it("ORIENTATION GATE: an intern's completion keys off the SUPERVISOR's orientation, and bills the supervisor's OCP", async () => {
+    const { createAssessment } = await import("../actions");
+    // Supervisor without orientation → the intern's completion refuses.
+    const sup = await db.execute<{ id: string }>(sql`
+      insert into "user" (name, email, role, pharmacy_id, ocp_number)
+      values ('Supervisor', 'supervisor@test.local', 'pharmacist'::user_role, ${PHARMACY_ID}::uuid, '777777')
+      returning id
+    `);
+    const supervisorId = (sup as unknown as { id: string }[])[0].id;
+    const intern = await db.execute<{ id: string }>(sql`
+      insert into "user" (name, email, role, pharmacy_id, supervising_pharmacist_id)
+      values ('Ivy Intern', 'intern@test.local', 'intern'::user_role, ${PHARMACY_ID}::uuid, ${supervisorId}::uuid)
+      returning id
+    `);
+    testAuth.actor.userId = (intern as unknown as { id: string }[])[0].id;
+    testAuth.actor.role = "intern";
+    testAuth.actor.supervisingPharmacistId = supervisorId;
+
+    const refused = await createAssessment(baseInput());
+    expect(refused.success).toBe(false);
+    expect(await countRows("claim_draft")).toBe(0);
+
+    // Record the supervisor's orientation → same completion now proceeds,
+    // with the SUPERVISOR's OCP number on the draft (never the intern's).
+    await db.execute(
+      sql`update "user" set orientation_completed_at = now() where id = ${supervisorId}::uuid`,
+    );
+    const ok = await createAssessment(baseInput());
+    expect(ok.success).toBe(true);
+    expect(ok.claim?.billable).toBe(true);
+    const drafts = await db.execute<{ prescriber_id: string }>(
+      sql`select prescriber_id from claim_draft`,
+    );
+    expect((drafts as unknown as { prescriber_id: string }[])[0].prescriber_id).toBe("777777");
   });
 
   it("a red-flag exit writes ZERO claim rows (the invariant)", async () => {
