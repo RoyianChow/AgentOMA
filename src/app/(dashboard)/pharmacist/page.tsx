@@ -6,9 +6,10 @@ import {
   type PendingIntake,
   type RecentAssessment,
 } from "./actions";
-import { MOCK_PHARMACY_ID } from "@/lib/constants";
+import { requirePortalPage } from "@/lib/auth-guard";
 import { AILMENT_LABELS, type AilmentId } from "@/config/triage";
 import DashboardRefresher from "./DashboardRefresher";
+import SignOutButton from "./SignOutButton";
 import styles from "./Dashboard.module.css";
 
 export const dynamic = "force-dynamic";
@@ -86,9 +87,14 @@ function RecentRow({ a }: { a: RecentAssessment }) {
 }
 
 export default async function PharmacistDashboard() {
+  // UX redirect for signed-out visitors. The actions below ALSO re-verify the
+  // session themselves — that's the enforcement; this just avoids rendering an
+  // empty dashboard.
+  await requirePortalPage();
+
   const [stats, pending, recent] = await Promise.all([
-    getDashboardStats(MOCK_PHARMACY_ID),
-    getPendingIntakeSessions(MOCK_PHARMACY_ID),
+    getDashboardStats(),
+    getPendingIntakeSessions(),
     getRecentAssessments(8),
   ]);
 
@@ -101,7 +107,10 @@ export default async function PharmacistDashboard() {
             Patient intakes appear in the queue automatically as they finish triage.
           </p>
         </div>
-        <DashboardRefresher />
+        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+          <DashboardRefresher />
+          <SignOutButton />
+        </div>
       </div>
 
       <div className={styles.stats}>

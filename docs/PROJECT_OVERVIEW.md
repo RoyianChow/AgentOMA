@@ -35,10 +35,10 @@ The whole thing is governed by a real regulation — the Ontario MoH **Executive
 | Env | `@t3-oss/env-nextjs` + zod, wired into `next.config.ts` | Fails the build on missing/invalid vars; no raw `process.env` in app code |
 | Tests | **Vitest** | Unit tests for the money rules |
 | PDF export | `jspdf` + `jspdf-autotable` | Audit-log export |
-| Identity | **better-auth** (planned, not yet installed) | Firebase Auth explicitly removed |
+| Identity | **better-auth 1.6** (Drizzle adapter) | Mandatory TOTP, invitation-only onboarding, 30-min rolling sessions. Firebase Auth explicitly removed |
 | File storage | Supabase Storage (planned, for Rx/referral PDFs) | |
 
-**Firebase is effectively gone.** `src/lib/firebase.ts` still exists and `firebase` is still in `package.json`, but **nothing imports it** — it is dead code scheduled for deletion.
+**Firebase is gone.** `src/lib/firebase.ts` and the `firebase` dependency were deleted once grep confirmed zero importers.
 
 ---
 
@@ -76,24 +76,22 @@ src/
   config/
     triage.ts                    THE TRIAGE TREE: nodes, options, red flags, emergency signs
     ailment-reference.ts         SERVER-ONLY reference data (PINs, fees, maxes) — seed input
-    ailments.ts                  ⚠️ LEGACY / DEAD (old prototype config, unused)
   lib/
     db/
       index.ts                   Drizzle singleton (pooled Supabase connection)
       schema/                    reference.ts + assessments.ts (+ barrel index.ts)
-      migrations/                Drizzle migrations 0000–0003 (tracking is DRIFTED — see §8)
-      sql/0003_hardening.sql     Hand-written idempotent hardening (triggers, REVOKE, fee tier)
+      migrations/                Drizzle migrations 0000–0004 (file-based; 0004 = triggers + REVOKE)
       seed.ts                    npm run db:seed — reference data + "Sam Child" retention row
-      verify.ts / harden.ts      Connection smoke test / applies the hardening SQL
+      verify.ts                  Connection smoke test
       __tests__/                 Vitest money-rule tests
     reference/minor-ailment-reference.ts   Adversarially-verified PIN/fee/max source (seed)
     reference/types.ts
     retention.ts                 computeRetainUntil (the 10y / age-18 clock)
     audit.ts                     writeAudit() append-only helper
-    constants.ts                 MOCK_PHARMACY_ID (placeholder until onboarding/auth)
-    firebase.ts                  ⚠️ DEAD (no importers)
+    auth.ts                      better-auth instance (TOTP, sessions, rate limits)
+    auth-guard.ts                requirePortalUser — THE per-action security boundary
+    invitations.ts               invitation-only onboarding (token hash, single-use)
   hooks/usePharmacyConfig.ts     ⚠️ LEGACY (localStorage pharmacy profile; used by settings)
-  schemas/*.ts, types/assessment.ts   ⚠️ LEGACY / DEAD (old zod schemas + types)
 docs/
   COMPLIANCE.md                  Rule → EO Notice section mapping
   PROJECT_OVERVIEW.md            (this file)
@@ -195,7 +193,11 @@ Everything here maps back to the EO Notice in [`COMPLIANCE.md`](COMPLIANCE.md).
 
 **Big rocks still open:**
 
-- **No authentication yet.** better-auth is planned but not installed. `/pharmacist/*` is **unprotected**, and everything uses `MOCK_PHARMACY_ID`. No login, no roles, no 2FA, no invitations, no `proxy.ts`, no orientation-attestation billing gate. This is the largest missing piece.
+- ~~No authentication~~ **DONE (Part 4).** better-auth with mandatory TOTP, invitation-only
+  onboarding, five roles, `proxy.ts` as a UX-only gate with `requirePortalUser()` re-verifying
+  session + role inside every server action, `MOCK_PHARMACY_ID` eliminated, prescriber OCP from
+  the authenticated profile, and the orientation gate refusing completion before
+  `deriveClaimDraft`. See `SESSION_HANDOFF.md` §"Part 4 auth — where things live".
 - **Claim assembly (`deriveClaimDraft`) not built.** The pieces exist (PIN reference data, fee tier, the fee/PIN lookup), but the actual `ClaimDraft` — deriving PIN + fee + prescriber ID (`09` / `PHR888`) + intervention codes (`PS`/`ML`) + quantity + `SSC=4` — and persisting/exporting it is not yet implemented.
 - **LTC branch** (capitation / `$0` / secondary-provider `LT`) is not implemented.
 
@@ -209,8 +211,7 @@ Everything here maps back to the EO Notice in [`COMPLIANCE.md`](COMPLIANCE.md).
 
 **Housekeeping:**
 
-- **Migration tracking is drifted.** The DB was built with `drizzle-kit push`, so `__drizzle_migrations` is out of sync and `drizzle-kit migrate` will fail. Schema/trigger changes are currently applied via the idempotent **`npm run db:harden`**. Needs a one-time **baseline** to make `migrate` usable again.
-- **Dead code to delete:** `src/config/ailments.ts`, `src/types/assessment.ts`, `src/schemas/*`, `src/lib/firebase.ts`, and the `firebase` dependency. The FHIR route's `buildFhirResponse` is preserved but unreachable.
+- The FHIR route's `buildFhirResponse` is preserved but unreachable (the route returns 403 pending auth).
 - **`README.md` is still the create-next-app boilerplate** (this file is the real overview).
 
 ---
@@ -222,12 +223,14 @@ Requires Node (Node 22 known-good) and a Supabase Postgres instance.
 ```bash
 cp .env.example .env.local          # fill in DATABASE_URL / DIRECT_URL (+ others)
 npm install
-npm run db:harden                   # apply schema additions + triggers + REVOKE (idempotent)
+npm run db:migrate                  # apply migrations (incl. 0004: triggers + REVOKE)
 npm run db:seed                     # reference data + Sam Child retention row (idempotent)
 npm run dev                         # http://localhost:3000
 ```
 
-**Scripts:** `dev` · `build` · `start` · `lint` · `test` / `test:watch` · `db:generate` · `db:migrate` _(drifted — see §9)_ · `db:push` · `db:studio` · `db:seed` · `db:verify` · `db:harden`.
+**Scripts:** `dev` · `build` · `start` · `lint` · `test` / `test:watch` · `db:generate` · `db:migrate` · `db:studio` · `db:seed` · `db:verify`.
+
+**Schema changes go `db:generate` → review the SQL → `db:migrate`. `db:push` is removed and must not come back** — it drops columns on a PHI database and bypasses migration tracking (which is how this repo drifted once already). Triggers/grants aren't modelled by Drizzle: add them via `db:generate --custom` (see `migrations/0004_hardening.sql`).
 
 **Env vars** (validated in `src/env.ts`): `DATABASE_URL` (pooled, 6543), `DIRECT_URL` (direct, 5432), `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET`, `CLINICAL_VIEWER_BASE_URL`, `NEXT_PUBLIC_APP_URL`.
 

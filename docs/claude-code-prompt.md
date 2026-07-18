@@ -8,7 +8,7 @@ You are working on an existing Ontario pharmacy minor-ailments web platform. Rea
 
 ---
 
-## Part 0 — Two decisions to make before you touch anything
+## (COMPLETE) Part 0 — Two decisions to make before you touch anything   
 
 ### 0a. better-auth + Firestore
 better-auth ships adapters for Drizzle, Prisma, Kysely, and MongoDB. It has **no first-class Firestore adapter.** Pick one and justify it in the plan:
@@ -23,7 +23,7 @@ Any store that touches personal health information must be pinned to a Canadian 
 
 ---
 
-## Part 1 — Environment: `@t3-oss/env-nextjs`
+## (COMPLETE) Part 1 — Environment: `@t3-oss/env-nextjs`
 
 Install `@t3-oss/env-nextjs` and `zod`. Create `src/env.ts` with strict server/client split.
 
@@ -35,7 +35,7 @@ Install `@t3-oss/env-nextjs` and `zod`. Create `src/env.ts` with strict server/c
 
 ---
 
-## Part 2 — Remove hardcoded data
+## (COMPLETE) Part 2 — Remove hardcoded data
 
 Audit the repo for hardcoded/mock data: ailment lists, PIN tables, patient records, queue items, pharmacy details, fee amounts, demo pharmacists. List every location you find in the plan.
 
@@ -106,6 +106,7 @@ Install `better-auth` and wire up the adapter chosen in 0a.
 **Pharmacy record fields:** HNS account identifier, ODB dispensing fee tier (`8.83` regular vs `9.93` / `12.14` / `13.25` rural). The fee tier drives the remote-virtual rules in Part 4. Store it; do not hardcode it.
 
 **Middleware:** every `/portal/*` route requires an authenticated session with an active role. Server actions re-verify — never trust the client.
+
 
 ---
 

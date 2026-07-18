@@ -9,18 +9,19 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:db:up": "docker compose up -d --wait test-db",
+    "test:db:down": "docker compose down -v",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/lib/db/seed.ts",
     "db:verify": "tsx src/lib/db/verify.ts",
-    "db:harden": "tsx src/lib/db/harden.ts"
+    "auth:bootstrap-admin": "tsx src/lib/db/bootstrap-admin.ts"
   },
   "dependencies": {
     "@t3-oss/env-nextjs": "^0.13.11",
+    "better-auth": "^1.6.23",
     "drizzle-orm": "^0.45.2",
-    "firebase": "^12.15.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
     "next": "16.2.10",

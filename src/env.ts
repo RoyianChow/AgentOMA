@@ -40,6 +40,13 @@ export const env = createEnv({
       .url("CLINICAL_VIEWER_BASE_URL must be a valid URL")
       .optional(),
 
+    // --- Intake kiosk provisioning ------------------------------------------
+    // The patient kiosk is deliberately unauthenticated (zero-PHI), so the
+    // pharmacy an intake belongs to comes from the DEPLOYMENT, not the client:
+    // set this to the pharmacy's uuid on the kiosk's host. Optional — when
+    // unset and exactly one pharmacy row exists, that row is used.
+    KIOSK_PHARMACY_ID: z.uuid("KIOSK_PHARMACY_ID must be a uuid").optional(),
+
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),

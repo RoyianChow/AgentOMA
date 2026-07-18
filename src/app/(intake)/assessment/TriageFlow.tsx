@@ -14,7 +14,6 @@ import {
   type TriageOption,
 } from "@/config/triage";
 import { createIntakeSession, logTriageExit } from "./actions";
-import { MOCK_PHARMACY_ID } from "@/lib/constants";
 import styles from "./TriageFlow.module.css";
 
 /**
@@ -129,8 +128,9 @@ export default function TriageFlow({ claimMaximums }: Props) {
   async function handoff() {
     setIsSubmitting(true);
     try {
+      // The pharmacy is resolved server-side in the action — the kiosk never
+      // says which pharmacy it belongs to.
       const res = await createIntakeSession({
-        pharmacyId: MOCK_PHARMACY_ID,
         ailmentGroupCode: ailment || "",
         trail: stack.map((s, i) => {
           const node = NODES[s.nodeId];

@@ -4,10 +4,12 @@ import {
   uuid,
   text,
   integer,
+  boolean,
   date,
   timestamp,
   jsonb,
   uniqueIndex,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
 // ODB dispensing fee tier. The rural tiers ($9.93 / $12.14 / $13.25) are the
@@ -93,6 +95,67 @@ export const triageExit = pgTable("triage_exit", {
   reason: text("reason").notNull(),
   timestamp: timestamp("timestamp", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * The billing record: the output of deriveClaimDraft(), snapshotted.
+ *
+ * IMMUTABLE, with supersession. A draft is never edited — if the pharmacist got
+ * something wrong (picked the wrong modality, say), a NEW row is inserted and
+ * the old one's `superseded_by_id` is pointed at it, in the same transaction. A
+ * DB trigger blocks DELETE and blocks UPDATE of every column except
+ * `superseded_by_id`, so "the mistake" and "the correction" both survive — which
+ * is the entire point of an audit trail in a post-payment review.
+ *
+ * There is intentionally NO unique constraint on assessment_id: that would make
+ * supersession impossible. Exactly one ACTIVE (non-superseded) draft per
+ * assessment is instead guaranteed by a partial, DEFERRABLE exclusion
+ * constraint, added in migration 0006 because Drizzle cannot model it:
+ *
+ *   EXCLUDE USING btree (assessment_id WITH =) WHERE (superseded_by_id IS NULL)
+ *     DEFERRABLE INITIALLY DEFERRED
+ *
+ * Deferred matters. A supersede inserts the replacement and then marks the
+ * original, so mid-transaction there are briefly two active drafts. A
+ * non-deferred index rejects that at INSERT, which would force callers into a
+ * fragile pre-generate-the-id-and-update-first dance. Deferring checks the
+ * invariant at COMMIT, so it holds at every boundary an observer can see, and
+ * the obvious ordering just works.
+ *
+ * Export and UI show only non-superseded drafts.
+ *
+ * Nothing here is submitted to HNS. It is produced for hand-entry.
+ */
+export const claimDraft = pgTable(
+  "claim_draft",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    assessmentId: uuid("assessment_id")
+      .notNull()
+      .references(() => assessment.id),
+    ailmentGroupCode: text("ailment_group_code").notNull(),
+    modality: text("modality").notNull(),
+    billingModality: text("billing_modality").notNull(),
+    rxIssued: boolean("rx_issued").notNull(),
+    /** From the seeded `pin` table. Never a literal. */
+    pinCode: text("pin_code").notNull(),
+    feeCents: integer("fee_cents").notNull(),
+    /** Always '09'. '01'/'99' reject with "60 – Prescriber License Code Error". */
+    prescriberIdReference: text("prescriber_id_reference").notNull(),
+    /** OCP registration number, or PHR888 for As-of-Right without a licence. */
+    prescriberId: text("prescriber_id").notNull(),
+    /** PS always; ML for non-ODB; LT for LTC secondary emergency. */
+    interventionCodes: jsonb("intervention_codes").$type<string[]>().notNull(),
+    carrierId: text("carrier_id"),
+    quantity: integer("quantity").notNull(),
+    /** 4 only for a completed assessment that ended in referral. */
+    ssc: integer("ssc"),
+    supersededById: uuid("superseded_by_id").references((): AnyPgColumn => claimDraft.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  // The one-active-draft invariant is a deferrable partial EXCLUDE constraint in
+  // migration 0006 — see the note above. Drizzle can't express it, so it must
+  // not be declared here or `db:generate` would fight the migration.
+);
 
 // Append-only audit trail. Immutability is enforced at the DATABASE level (a
 // migration REVOKEs UPDATE/DELETE from the app role AND installs a trigger that
