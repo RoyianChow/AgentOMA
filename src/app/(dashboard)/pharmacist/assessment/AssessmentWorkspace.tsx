@@ -51,6 +51,9 @@ export default function AssessmentWorkspace({
   const handleSubmitAssessment = async (e: React.FormEvent) => {
     e.preventDefault();
 
+
+
+
     if (!gender) {
       setError("Please select a gender.");
       return;

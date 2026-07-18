@@ -107,6 +107,7 @@ Install `better-auth` and wire up the adapter chosen in 0a.
 
 **Middleware:** every `/portal/*` route requires an authenticated session with an active role. Server actions re-verify — never trust the client.
 
+
 ---
 
 ## Part 4 — Virtual-assessment compliance (the important part)
