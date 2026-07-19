@@ -119,9 +119,10 @@ Status legend: ✅ implemented · 🔶 in progress · ⬜ planned
 
 | Rule | Notice location | Where enforced | Status |
 |---|---|---|---|
-| Append-only audit trail (post-payment verification) | p.12 | `audit_log` + DB `REVOKE UPDATE, DELETE` | ⬜ |
-| Retain 10 yrs from last service, or 10 yrs past age 18, whichever longer | p.12 | computed `retain_until` | ⬜ |
-| Overpayments recoverable | p.12 | audit trail as defence | ⬜ |
+| Append-only audit trail (post-payment verification) | p.12 | `audit_log`: 0004 trigger (`0A000`) + 0011 non-owner app role `agentoma_app` with only `SELECT, INSERT` (`42501` verified live) | ✅ |
+| Retain 10 yrs from last service, or 10 yrs past age 18, whichever longer | p.12 | `computeRetainUntil` in app **and** DB trigger `assessment_retain_until_trg` (0011) recomputes on every write | ✅ |
+| Overpayments recoverable | p.12 | audit trail as defence; events cover intake/patient/assessment/claim/orientation/invitation/**export access** | ⬜ |
+| No PHI reachable from client components | (PHIPA posture) | audit page + CSV/PDF exports fully server-rendered/generated | ✅ |
 
 ## 12. Eligible pharmacy / pharmacist conditions
 

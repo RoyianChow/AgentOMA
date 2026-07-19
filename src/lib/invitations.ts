@@ -109,6 +109,21 @@ export async function issueInvitation(params: {
     })
     .returning({ id: invitation.id });
 
+  // Best-effort audit — role and row reference; never the token.
+  try {
+    const { writeAudit } = await import("@/lib/audit");
+    await writeAudit({
+      pharmacyId: params.pharmacyId,
+      actorUserId: params.invitedByUserId,
+      action: "invitation.issued",
+      entityType: "invitation",
+      entityId: row.id,
+      metadata: { role: params.role },
+    });
+  } catch (auditErr) {
+    console.error("AUDIT WRITE FAILED for invitation", row.id, auditErr);
+  }
+
   return { ok: true, invitationId: row.id, token, expiresAt };
 }
 
@@ -204,6 +219,25 @@ export async function acceptInvitation(params: {
         .where(eq(invitation.id, invite.id));
 
       return { ok: true as const, userId: created.id, email: invite.email };
+    }).then(async (result) => {
+      // Audit AFTER the transaction commits (best-effort — a failed audit
+      // write must not undo a created account).
+      if (result.ok) {
+        try {
+          const { writeAudit } = await import("@/lib/audit");
+          await writeAudit({
+            pharmacyId: invite.pharmacyId,
+            actorUserId: result.userId,
+            action: "invitation.accepted",
+            entityType: "invitation",
+            entityId: invite.id,
+            metadata: { role: invite.role },
+          });
+        } catch (auditErr) {
+          console.error("AUDIT WRITE FAILED for invitation accept", invite.id, auditErr);
+        }
+      }
+      return result;
     });
   } catch (err) {
     if (pgErrorCode(err) === "23505") {

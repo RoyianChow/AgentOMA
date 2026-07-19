@@ -204,9 +204,10 @@ Everything here maps back to the EO Notice in [`COMPLIANCE.md`](COMPLIANCE.md).
 **Compliance/quality gaps:**
 
 - **Clinical content is unvalidated.** Every triage question and red flag in `config/triage.ts` is marked **PHARMACIST REVIEW REQUIRED**. The **tick-bite 72-hour** threshold is explicitly a _guess_ and must be replaced with OCP's Lyme PEP algorithm before go-live (it's time-critical).
-- **Audit page pulls PHI to the client.** `getAllAssessments()` returns patient name/DOB/health number to the browser audit table. Fine functionally, but there's no auth gate and it's client-side PHI.
-- **`retain_until` isn't DB-enforced.** It's computed correctly in the app + seed, but a direct insert could set it wrong (a computed-column/trigger backstop would harden it).
-- **Audit coverage is thin.** Only `assessment.created` is written; most actions don't emit audit events, and the write is best-effort (not in the same transaction as the assessment).
+- ~~Audit page pulls PHI to the client~~ **DONE.** Fully server-rendered (`audit/page.tsx` + `audit/query.ts`); CSV/PDF exports are generated server-side by `audit/export/route.ts`; `getAllAssessments` is deleted. No client component receives patient data.
+- ~~`retain_until` isn't DB-enforced~~ **DONE.** `assessment_retain_until_trg` (migration 0011) recomputes the clock on every insert/update — a direct write cannot shorten it.
+- ~~Audit coverage is thin~~ **Broadened.** Events now cover patient/intake creation, orientation attestation, invitations, exports (access log), and assessment/claim. Writes remain best-effort (not same-transaction) — a deliberate trade so an audit failure can't undo clinical work.
+- **The app runs as a non-owner DB role** (`agentoma_app`, migration 0011) — the audit-log REVOKE actually binds (`42501` verified). Migrations still run as the owner via `DIRECT_URL`.
 - **Pharmacy config is split.** Settings uses a **localStorage** profile (`usePharmacyConfig`) while the real fee tier lives in the DB `pharmacy` row — these should be unified.
 
 **Housekeeping:**

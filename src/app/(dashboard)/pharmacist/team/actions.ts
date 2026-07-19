@@ -104,6 +104,22 @@ export async function recordOrientationCompletion(
       .where(and(eq(user.id, userId), eq(user.pharmacyId, actor.pharmacyId)))
       .returning({ id: user.id });
     if (!updated) return { ok: false, error: "No such user at this pharmacy." };
+
+    // The attestation itself is an audited statement: who recorded whose
+    // orientation, and when.
+    try {
+      const { writeAudit } = await import("@/lib/audit");
+      await writeAudit({
+        pharmacyId: actor.pharmacyId,
+        actorUserId: actor.userId,
+        action: "user.orientation_recorded",
+        entityType: "user",
+        entityId: updated.id,
+      });
+    } catch (auditErr) {
+      console.error("AUDIT WRITE FAILED for orientation", updated.id, auditErr);
+    }
+
     return { ok: true };
   } catch (err) {
     if (err instanceof AuthorizationError) {

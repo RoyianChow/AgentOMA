@@ -1,19 +1,22 @@
-"use client";
-
-import { useState, useEffect, useMemo } from "react";
-import { getAllAssessments } from "../actions";
 import Link from "next/link";
 
-interface AuditRecord {
-  id: string;
-  patientName: string;
-  dob: string;
-  healthNumber: string;
-  ailmentGroupCode: string;
-  outcome: string;
-  serviceDate: string;
-  createdAt: string;
-}
+import { requirePortalPage } from "@/lib/auth-guard";
+import {
+  AUDIT_PAGE_SIZE,
+  OUTCOME_LABELS,
+  listAuditAilments,
+  queryAuditPage,
+  type AuditFilters,
+} from "./query";
+
+export const dynamic = "force-dynamic";
+
+/**
+ * Ministry audit log — fully SERVER-rendered. No client component ever holds
+ * patient identity: filtering is a plain GET form, pagination and exports are
+ * links, and the table is rendered here on the server. The CSV/PDF exports are
+ * generated server-side by ./export/route.ts.
+ */
 
 const OUTCOME_COLORS: Record<string, string> = {
   rx_issued: "#10b981",
@@ -21,178 +24,63 @@ const OUTCOME_COLORS: Record<string, string> = {
   no_rx_otc_or_nonpharm: "#f59e0b",
 };
 
-const OUTCOME_LABELS: Record<string, string> = {
-  rx_issued: "Rx Issued",
-  no_rx_referral: "Referred",
-  no_rx_otc_or_nonpharm: "No Rx (OTC)",
-};
+function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString("en-CA", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
-export default function AuditPage() {
-  const [records, setRecords] = useState<AuditRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+function queryString(filters: AuditFilters, extra: Record<string, string | number> = {}): string {
+  const params = new URLSearchParams();
+  for (const [k, v] of Object.entries({ ...filters, ...extra })) {
+    if (v !== undefined && v !== "" && v !== "ALL") params.set(k, String(v));
+  }
+  const s = params.toString();
+  return s ? `?${s}` : "";
+}
 
-  // Filters
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState("ALL");
-  const [filterAilment, setFilterAilment] = useState("ALL");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+export default async function AuditPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    q?: string;
+    outcome?: string;
+    ailment?: string;
+    from?: string;
+    to?: string;
+    page?: string;
+  }>;
+}) {
+  // UX redirect; the queries below take this verified actor for tenancy.
+  const actor = await requirePortalPage();
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const PAGE_SIZE = 15;
-
-  // Load all records (including ARCHIVED) from Supabase
-  useEffect(() => {
-    const loadRecords = async () => {
-      setLoading(true);
-      try {
-        const data = await getAllAssessments();
-        setRecords(data);
-      } catch (err) {
-        console.error("Failed to load audit records:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadRecords();
-  }, []);
-
-  // Unique ailment names for filter dropdown
-  const ailmentOptions = useMemo(() => {
-    const names = Array.from(new Set(records.map((r) => r.ailmentGroupCode))).filter(Boolean);
-    return names.sort();
-  }, [records]);
-
-  // Filtered + searched records
-  const filtered = useMemo(() => {
-    return records.filter((r) => {
-      const name = r.patientName || "";
-      const card = r.healthNumber || "";
-      const matchSearch =
-        !searchQuery ||
-        name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        card.includes(searchQuery);
-      const matchStatus = filterStatus === "ALL" || r.outcome === filterStatus;
-      const matchAilment =
-        filterAilment === "ALL" ||
-        r.ailmentGroupCode === filterAilment;
-      const dateObj = new Date(r.createdAt);
-      const matchFrom = !dateFrom || dateObj >= new Date(dateFrom);
-      const matchTo = !dateTo || dateObj <= new Date(dateTo + "T23:59:59");
-      return matchSearch && matchStatus && matchAilment && matchFrom && matchTo;
-    });
-  }, [records, searchQuery, filterStatus, filterAilment, dateFrom, dateTo]);
-
-  // Pagination slice
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
-  const formatDate = (iso: string) => {
-    if (!iso) return "—";
-    try {
-      return new Date(iso).toLocaleString("en-CA", {
-        year: "numeric", month: "short", day: "2-digit",
-        hour: "2-digit", minute: "2-digit",
-      });
-    } catch { return iso; }
+  const sp = await searchParams;
+  const filters: AuditFilters = {
+    q: sp.q,
+    outcome: sp.outcome,
+    ailment: sp.ailment,
+    from: sp.from,
+    to: sp.to,
   };
+  const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
 
-  const exportCSV = () => {
-    const headers = [
-      "Patient Name", "Date of Birth", "Health Card", "Ailment",
-      "Outcome", "Service Date", "Created At",
-    ];
-    const rows = filtered.map((r) => {
-      const name = r.patientName || "";
-      const dob = r.dob || "";
-      const card = r.healthNumber || "";
-      return [
-        name, dob, card,
-        r.ailmentGroupCode || "",
-        OUTCOME_LABELS[r.outcome] || r.outcome,
-        r.serviceDate || "",
-        r.createdAt || "",
-      ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",");
-    });
-    const csv = [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `agentoma-audit-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const [{ rows, total }, ailmentOptions] = await Promise.all([
+    queryAuditPage(actor, filters, page),
+    listAuditAilments(actor),
+  ]);
+  const totalPages = Math.max(1, Math.ceil(total / AUDIT_PAGE_SIZE));
 
-  // ── PDF Export ──────────────────────────────────────────────────────────
-  const exportPDF = async () => {
-    const { default: jsPDF } = await import("jspdf");
-    const autoTable = (await import("jspdf-autotable")).default;
-
-    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-
-    // Header
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
-    doc.setTextColor(99, 102, 241);
-    doc.text("AgentOMA — Ministry Audit Report", 14, 16);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(107, 114, 128);
-    doc.text(
-      `Generated: ${new Date().toLocaleString("en-CA")}   |   Records: ${filtered.length}   |   10-Year Retention Required`,
-      14,
-      23
-    );
-
-    // Table
-    const tableRows = filtered.map((r) => {
-      const name = r.patientName || "";
-      const dob = r.dob || "";
-      const card = r.healthNumber || "";
-      return [
-        name, dob, card,
-        r.ailmentGroupCode || "",
-        OUTCOME_LABELS[r.outcome] || r.outcome,
-        r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-CA") : "",
-      ];
-    });
-
-    autoTable(doc, {
-      startY: 28,
-      head: [["Patient", "DOB", "Health Card", "Ailment", "Outcome", "Date"]],
-      body: tableRows,
-      styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [99, 102, 241], textColor: 255, fontStyle: "bold" },
-      alternateRowStyles: { fillColor: [245, 245, 255] },
-      columnStyles: {
-        0: { cellWidth: 38 },
-        1: { cellWidth: 24 },
-        2: { cellWidth: 28 },
-        3: { cellWidth: 48 },
-        4: { cellWidth: 24 },
-        5: { cellWidth: 18 },
-        6: { cellWidth: 28 },
-      },
-    });
-
-    // Footer on every page
-    const pageCount = (doc as any).internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(7);
-      doc.setTextColor(150);
-      doc.text(
-        `Page ${i} of ${pageCount}  |  CONFIDENTIAL — Ontario Minor Ailments Programme — 10-Year Retention Required`,
-        14,
-        doc.internal.pageSize.getHeight() - 6
-      );
-    }
-
-    doc.save(`agentoma-audit-${new Date().toISOString().slice(0, 10)}.pdf`);
-  };
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1)
+    .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+    .reduce<(number | "...")[]>((acc, p, i, arr) => {
+      if (i > 0 && (arr[i - 1] as number) !== p - 1) acc.push("...");
+      acc.push(p);
+      return acc;
+    }, []);
 
   return (
     <div className="audit-page">
@@ -204,52 +92,51 @@ export default function AuditPage() {
             <h1 className="audit-title">Ministry Audit Log</h1>
             <p className="audit-subtitle">
               Complete historical record of all assessments.{" "}
-              <strong>{records.length} total</strong> — 10-year retention required by OCP.
+              <strong>{total} matching</strong> — 10-year retention required by OCP.
             </p>
           </div>
         </div>
         <div className="audit-export-group">
-          <button className="audit-export-btn audit-export-csv" onClick={exportCSV}>
+          {/* Server-generated downloads carrying the current filters. */}
+          <a
+            className="audit-export-btn audit-export-csv"
+            href={`/pharmacist/audit/export${queryString(filters, { format: "csv" })}`}
+          >
             ⬇ Export CSV
-          </button>
-          <button className="audit-export-btn audit-export-pdf" onClick={exportPDF}>
+          </a>
+          <a
+            className="audit-export-btn audit-export-pdf"
+            href={`/pharmacist/audit/export${queryString(filters, { format: "pdf" })}`}
+          >
             📄 Export PDF
-          </button>
+          </a>
         </div>
       </div>
 
       {/* ── Retention Banner ─────────────────────────────────────────────── */}
       <div className="audit-retention-banner">
         <span className="audit-retention-icon">⚠️</span>
-        Records must be retained for a minimum of <strong>10 years</strong> per Ontario College of
-        Pharmacists guidelines. Do not delete records — use the{" "}
-        <em>ARCHIVED</em> status to remove items from the live queue.
+        Records are retained for a minimum of <strong>10 years</strong> (or 10 years
+        after the patient turns 18, whichever is longer). Nothing here can be
+        deleted — the audit trail is append-only at the database level.
       </div>
 
-      {/* ── Filters ─────────────────────────────────────────────────────── */}
-      <div className="audit-filters">
+      {/* ── Filters (plain GET form — no client JS touches these values) ── */}
+      <form method="get" className="audit-filters">
         <input
           className="audit-search"
           type="search"
+          name="q"
           placeholder="Search by patient name or health card…"
-          value={searchQuery}
-          onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+          defaultValue={filters.q ?? ""}
         />
-        <select
-          className="audit-select"
-          value={filterStatus}
-          onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
-        >
+        <select className="audit-select" name="outcome" defaultValue={filters.outcome ?? "ALL"}>
           <option value="ALL">All Outcomes</option>
           <option value="rx_issued">Rx Issued</option>
           <option value="no_rx_referral">No Rx - Referral</option>
           <option value="no_rx_otc_or_nonpharm">No Rx - OTC</option>
         </select>
-        <select
-          className="audit-select"
-          value={filterAilment}
-          onChange={(e) => { setFilterAilment(e.target.value); setCurrentPage(1); }}
-        >
+        <select className="audit-select" name="ailment" defaultValue={filters.ailment ?? "ALL"}>
           <option value="ALL">All Ailments</option>
           {ailmentOptions.map((a) => (
             <option key={a} value={a}>{a}</option>
@@ -257,23 +144,19 @@ export default function AuditPage() {
         </select>
         <div className="audit-date-range">
           <label className="audit-date-label">From</label>
-          <input type="date" className="audit-date-input" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setCurrentPage(1); }} />
+          <input type="date" className="audit-date-input" name="from" defaultValue={filters.from ?? ""} />
           <label className="audit-date-label">To</label>
-          <input type="date" className="audit-date-input" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setCurrentPage(1); }} />
+          <input type="date" className="audit-date-input" name="to" defaultValue={filters.to ?? ""} />
         </div>
+        <button type="submit" className="audit-page-btn">Apply</button>
         <span className="audit-result-count">
-          {filtered.length} record{filtered.length !== 1 ? "s" : ""} found
+          {total} record{total !== 1 ? "s" : ""} found
         </span>
-      </div>
+      </form>
 
-      {/* ── Table ───────────────────────────────────────────────────────── */}
+      {/* ── Table (server-rendered) ─────────────────────────────────────── */}
       <div className="audit-table-wrapper">
-        {loading ? (
-          <div className="audit-loading">
-            <div className="audit-spinner" />
-            <span>Loading records…</span>
-          </div>
-        ) : filtered.length === 0 ? (
+        {rows.length === 0 ? (
           <div className="audit-empty">
             <span className="audit-empty-icon">🗂️</span>
             <p>No records match your filters.</p>
@@ -292,71 +175,62 @@ export default function AuditPage() {
               </tr>
             </thead>
             <tbody>
-              {paginated.map((r) => {
-                const name = r.patientName || "—";
-                const dob = r.dob || "—";
-                const card = r.healthNumber || "—";
-                return (
-                  <tr key={r.id} className="audit-row">
-                    <td className="audit-td-name">{name}</td>
-                    <td>{dob}</td>
-                    <td className="audit-td-mono">{card}</td>
-                    <td>{r.ailmentGroupCode || "—"}</td>
-                    <td>
-                      <span
-                        className="audit-status-badge"
-                        style={{ background: `${OUTCOME_COLORS[r.outcome] || "#6b7280"}22`, color: OUTCOME_COLORS[r.outcome] || "#6b7280" }}
-                      >
-                        {OUTCOME_LABELS[r.outcome] || r.outcome}
-                      </span>
-                    </td>
-                    <td>{r.serviceDate}</td>
-                    <td className="audit-td-date">{formatDate(r.createdAt)}</td>
-                  </tr>
-                );
-              })}
+              {rows.map((r) => (
+                <tr key={r.id} className="audit-row">
+                  <td className="audit-td-name">{r.patientName || "—"}</td>
+                  <td>{r.dob || "—"}</td>
+                  <td className="audit-td-mono">{r.healthNumber || "—"}</td>
+                  <td>{r.ailmentGroupCode || "—"}</td>
+                  <td>
+                    <span
+                      className="audit-status-badge"
+                      style={{
+                        background: `${OUTCOME_COLORS[r.outcome] || "#6b7280"}22`,
+                        color: OUTCOME_COLORS[r.outcome] || "#6b7280",
+                      }}
+                    >
+                      {OUTCOME_LABELS[r.outcome] || r.outcome}
+                    </span>
+                  </td>
+                  <td>{r.serviceDate}</td>
+                  <td className="audit-td-date">{formatDateTime(r.createdAt)}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         )}
       </div>
 
-      {/* ── Pagination ──────────────────────────────────────────────────── */}
-      {!loading && totalPages > 1 && (
+      {/* ── Pagination (links, filters preserved) ───────────────────────── */}
+      {totalPages > 1 && (
         <div className="audit-pagination">
-          <button
-            className="audit-page-btn"
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          <Link
+            className={`audit-page-btn ${page === 1 ? "disabled" : ""}`}
+            aria-disabled={page === 1}
+            href={`/pharmacist/audit${queryString(filters, { page: Math.max(1, page - 1) })}`}
           >
             ← Prev
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
-            .reduce<(number | "...")[]>((acc, p, i, arr) => {
-              if (i > 0 && (arr[i - 1] as number) !== p - 1) acc.push("...");
-              acc.push(p);
-              return acc;
-            }, [])
-            .map((p, i) =>
-              p === "..." ? (
-                <span key={`ellipsis-${i}`} className="audit-page-ellipsis">…</span>
-              ) : (
-                <button
-                  key={p}
-                  className={`audit-page-btn ${currentPage === p ? "active" : ""}`}
-                  onClick={() => setCurrentPage(p as number)}
-                >
-                  {p}
-                </button>
-              )
-            )}
-          <button
-            className="audit-page-btn"
-            disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+          </Link>
+          {pageNumbers.map((p, i) =>
+            p === "..." ? (
+              <span key={`ellipsis-${i}`} className="audit-page-ellipsis">…</span>
+            ) : (
+              <Link
+                key={p}
+                className={`audit-page-btn ${page === p ? "active" : ""}`}
+                href={`/pharmacist/audit${queryString(filters, { page: p })}`}
+              >
+                {p}
+              </Link>
+            )
+          )}
+          <Link
+            className={`audit-page-btn ${page === totalPages ? "disabled" : ""}`}
+            aria-disabled={page === totalPages}
+            href={`/pharmacist/audit${queryString(filters, { page: Math.min(totalPages, page + 1) })}`}
           >
             Next →
-          </button>
+          </Link>
         </div>
       )}
     </div>

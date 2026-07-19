@@ -40,6 +40,7 @@ export default function AssessmentWorkspace({
   // pharmacist's profile server-side (the supervisor's for interns/students).
   const [isOdbRecipient, setIsOdbRecipient] = useState(true);
   const [claimResult, setClaimResult] = useState<ClaimResult | null>(null);
+  const [assessmentId, setAssessmentId] = useState<string | null>(null);
 
   const checkHistory = async (patientId: string, ailmentCode: string) => {
     const res = await getPatientHistoryCount(patientId, ailmentCode);
@@ -101,6 +102,9 @@ export default function AssessmentWorkspace({
       // A non-billable result is NOT an error — the assessment was recorded, and
       // the panel explains why no claim was drafted.
       setClaimResult(assessmentRes.claim ?? null);
+      if ("assessmentId" in assessmentRes) {
+        setAssessmentId(assessmentRes.assessmentId as string);
+      }
       setIsDone(true);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred.");
@@ -122,6 +126,13 @@ export default function AssessmentWorkspace({
           {claimResult && (
             <div style={{ textAlign: "left", marginBottom: "1.5rem" }}>
               <ClaimDraftPanel result={claimResult} />
+              {claimResult.billable && assessmentId && (
+                <div style={{ marginTop: "1rem", textAlign: "center" }}>
+                  <Link href={`/pharmacist/assessment/${assessmentId}/export`} className="btn btn-primary" style={{ backgroundColor: "#000", color: "#fff" }}>
+                    🖨️ Print Claim Draft for Dispensing Software
+                  </Link>
+                </div>
+              )}
             </div>
           )}
           <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
@@ -273,6 +284,14 @@ export default function AssessmentWorkspace({
               <h3>{session ? `Intake: ${session.ailmentGroupCode}` : "Walk-in Assessment"}</h3>
               {session && <span className="badge badge-accent">Ref: {session.code}</span>}
             </div>
+
+            {session && (
+              <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginTop: "-0.5rem", marginBottom: "1rem" }}>
+                {session.consentCapturedAt
+                  ? `Consent captured on the patient's device at ${new Date(session.consentCapturedAt).toLocaleString()}. Re-confirm in person.`
+                  : "No consent timestamp on this intake — obtain and record consent in person."}
+              </p>
+            )}
 
             {session && session.trail ? (
               <div style={{ marginBottom: "1.5rem" }}>

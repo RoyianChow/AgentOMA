@@ -2,7 +2,6 @@
 
 import { db } from "@/lib/db";
 import { intakeSession, pharmacy, triageExit } from "@/lib/db/schema";
-import { env } from "@/env";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
 
@@ -16,44 +15,48 @@ function generateCode(): string {
   return result;
 }
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
- * The kiosk is deliberately unauthenticated (the whole intake is zero-PHI), so
- * the pharmacy an intake belongs to is resolved SERVER-SIDE, never taken from
- * the client:
+ * The intake runs on the PATIENT'S OWN PHONE (no session, no device config) —
+ * the pharmacy comes from the per-pharmacy QR link: /assessment?pharmacy=<uuid>.
+ * That is a user-controlled URL param, so it is validated here, server-side,
+ * against the pharmacy table before anything is written. It must resolve to an
+ * existing row or no intake session is created.
  *
- *   1. KIOSK_PHARMACY_ID (env) — per-deployment provisioning; the row must
- *      exist.
- *   2. Otherwise, exactly one pharmacy row → unambiguous, use it.
- *   3. Otherwise refuse loudly: multi-pharmacy hosting needs real per-device
- *      provisioning before the kiosk can run un-bound.
+ * A pharmacy id is not PHI; the intake stays zero-PHI.
  */
-async function resolveKioskPharmacyId(): Promise<string | null> {
-  if (env.KIOSK_PHARMACY_ID) {
-    const [row] = await db
-      .select({ id: pharmacy.id })
-      .from(pharmacy)
-      .where(eq(pharmacy.id, env.KIOSK_PHARMACY_ID))
-      .limit(1);
-    return row?.id ?? null;
-  }
-  const rows = await db.select({ id: pharmacy.id }).from(pharmacy).limit(2);
-  return rows.length === 1 ? rows[0].id : null;
+export async function resolvePharmacy(
+  pharmacyId: string | undefined
+): Promise<{ id: string; storeName: string } | null> {
+  if (!pharmacyId || !UUID_RE.test(pharmacyId)) return null;
+  const [row] = await db
+    .select({ id: pharmacy.id, storeName: pharmacy.storeName })
+    .from(pharmacy)
+    .where(eq(pharmacy.id, pharmacyId))
+    .limit(1);
+  return row ?? null;
 }
 
 export async function createIntakeSession(data: {
+  pharmacyId: string;
   ailmentGroupCode: string;
   trail: { question: string; answer: string }[];
   priorCountSelfReport: number | null;
   existingRxSelfReport: string | null;
 }) {
   try {
-    const pharmacyId = await resolveKioskPharmacyId();
-    if (!pharmacyId) {
-      console.error(
-        "createIntakeSession: pharmacy is ambiguous (0 or 2+ rows) — kiosk provisioning required."
-      );
-      return { success: false, error: "This kiosk is not configured. Please speak to the pharmacist." };
+    // Never trust the client-supplied id blindly — re-validate on every call.
+    const ph = await resolvePharmacy(data.pharmacyId);
+    if (!ph) {
+      console.error("createIntakeSession: unknown pharmacy id from client:", data.pharmacyId);
+      return {
+        success: false,
+        error: "This link isn't tied to a pharmacy. Please re-scan the pharmacy's code.",
+      };
     }
+    const pharmacyId = ph.id;
 
     const code = generateCode();
     
@@ -74,6 +77,21 @@ export async function createIntakeSession(data: {
         expiresAt,
       })
       .returning();
+
+    // Best-effort audit. No actor — the kiosk is the patient's own phone —
+    // and no PHI exists to leak: the metadata is the ailment code only.
+    try {
+      const { writeAudit } = await import("@/lib/audit");
+      await writeAudit({
+        pharmacyId,
+        action: "intake.created",
+        entityType: "intake_session",
+        entityId: session.id,
+        metadata: { ailmentGroupCode: data.ailmentGroupCode },
+      });
+    } catch (auditErr) {
+      console.error("AUDIT WRITE FAILED for intake_session", session.id, auditErr);
+    }
 
     return { success: true, code: session.code };
   } catch (err) {

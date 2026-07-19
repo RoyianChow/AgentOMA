@@ -1,0 +1,233 @@
+/* Sign-in for the pharmacist portal. Uses the portal's design tokens
+   (globals.css :root vars) so light/dark both work. UI only — no auth logic
+   lives anywhere near this file. */
+
+.shell {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.25rem;
+  background:
+    radial-gradient(48rem 30rem at 50% -8rem, var(--primary-light) 0%, transparent 60%),
+    var(--bg-primary);
+}
+
+.column {
+  width: min(26.5rem, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── Brand ─────────────────────────────────────────────────────────────── */
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.brandMark {
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: none;
+  color: var(--primary);
+}
+
+.brandName {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.brandSub {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+/* ── Card ──────────────────────────────────────────────────────────────── */
+
+.card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 30px rgb(2 6 23 / 0.08);
+  padding: 2rem;
+}
+
+.stepTag {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted, #64748b);
+  margin-bottom: 0.35rem;
+}
+
+.heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.4rem;
+}
+
+.lede {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-muted, #64748b);
+  margin: 0 0 1.4rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.input {
+  width: 100%;
+  padding: 0.65rem 0.8rem;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.input:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.inputInvalid {
+  border-color: var(--danger);
+}
+
+.inputInvalid:focus-visible {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-light);
+}
+
+/* The 6-digit code gets a deliberate, code-shaped input. */
+.totpInput {
+  composes: input;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.55em;
+  padding: 0.7rem 0.5rem 0.7rem calc(0.5rem + 0.55em); /* recenter around tracking */
+}
+
+/* ── Messages ──────────────────────────────────────────────────────────── */
+
+/* Field-level problem (wrong credentials / wrong code): sits right under the
+   field it belongs to. */
+.errorText {
+  font-size: 0.83rem;
+  line-height: 1.45;
+  color: var(--danger-text);
+  margin: 0;
+}
+
+/* Throttle notice: calm, informative — amber, not red. A legitimate user who
+   fat-fingered a password twice should not feel accused. */
+.notice {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--warning-text);
+  background: var(--warning-light);
+  border: 1px solid var(--warning, #f59e0b);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.75rem;
+  margin: 0;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────── */
+
+.submit {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: var(--primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.submit:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.submit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-light), 0 0 0 1.5px var(--primary);
+}
+
+.submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.linkBtn {
+  align-self: flex-start;
+  padding: 0.25rem 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.linkBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-light);
+  border-radius: var(--radius-sm);
+}
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+
+.footnote {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-muted, #64748b);
+  text-align: center;
+  margin: 0;
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 1.4rem 1.15rem;
+  }
+  .shell {
+    padding: 1.25rem 0.9rem;
+  }
+}

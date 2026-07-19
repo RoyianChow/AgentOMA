@@ -244,6 +244,68 @@ describe("createAssessment → claim_draft", () => {
     expect((drafts as unknown as { prescriber_id: string }[])[0].prescriber_id).toBe("777777");
   });
 
+  it("completion links the assessment to its intake_session and consumes it (single-use)", async () => {
+    const { createAssessment, getIntakeSessionById } = await import("../actions");
+    const intakeRows = await db.execute<{ id: string }>(sql`
+      insert into intake_session (code, pharmacy_id, ailment_group_code, trail, consent_captured_at, expires_at)
+      values ('QQTAB2', ${PHARMACY_ID}::uuid, 'RHINITIS', '[{"question":"Q","answer":"A"}]'::jsonb, now(), now() + interval '2 hours')
+      returning id
+    `);
+    const intakeId = (intakeRows as unknown as { id: string }[])[0].id;
+
+    // Loading it (the table click / typed code — same guarded action) works
+    // while pending, and carries the consent timestamp.
+    const loaded = await getIntakeSessionById(intakeId);
+    expect(loaded.success).toBe(true);
+    if (loaded.success) expect(loaded.session.consentCapturedAt).not.toBeNull();
+
+    const res = await createAssessment({ ...baseInput(), intakeSessionId: intakeId });
+    expect(res.success).toBe(true);
+
+    const linked = (await db.execute<{ intake_session_id: string }>(
+      sql`select intake_session_id from assessment`,
+    )) as unknown as { intake_session_id: string }[];
+    expect(linked[0].intake_session_id).toBe(intakeId);
+
+    const consumed = (await db.execute<{ consumed_at: string; consumed_by_assessment_id: string }>(
+      sql`select consumed_at, consumed_by_assessment_id from intake_session where id = ${intakeId}::uuid`,
+    )) as unknown as { consumed_at: string; consumed_by_assessment_id: string }[];
+    expect(consumed[0].consumed_at).not.toBeNull();
+    expect(consumed[0].consumed_by_assessment_id).toBe(res.success ? res.assessmentId : null);
+
+    // Single-use: the same intake can no longer be loaded.
+    const reload = await getIntakeSessionById(intakeId);
+    expect(reload.success).toBe(false);
+  });
+
+  it("another pharmacy's intake and an expired intake cannot be loaded", async () => {
+    const { getIntakeSessionById } = await import("../actions");
+    const OTHER = "00000000-0000-0000-0000-0000000000dd";
+    await db.execute(sql`
+      insert into pharmacy (id, store_name, odb_fee_tier)
+      values (${OTHER}::uuid, 'Other Pharmacy', 'regular_8_83')
+      on conflict (id) do nothing
+    `);
+    const rows = await db.execute<{ a: string; b: string }>(sql`
+      with foreign_intake as (
+        insert into intake_session (code, pharmacy_id, ailment_group_code, expires_at)
+        values ('QQTAB3', ${OTHER}::uuid, 'RHINITIS', now() + interval '2 hours')
+        returning id
+      ), expired_intake as (
+        insert into intake_session (code, pharmacy_id, ailment_group_code, expires_at)
+        values ('QQTAB4', ${PHARMACY_ID}::uuid, 'RHINITIS', now() - interval '1 minute')
+        returning id
+      )
+      select (select id from foreign_intake) as a, (select id from expired_intake) as b
+    `);
+    const { a: foreignId, b: expiredId } = (rows as unknown as { a: string; b: string }[])[0];
+
+    // The mocked actor belongs to PHARMACY_ID — the foreign intake must not
+    // resolve, and neither must the expired one.
+    expect((await getIntakeSessionById(foreignId)).success).toBe(false);
+    expect((await getIntakeSessionById(expiredId)).success).toBe(false);
+  });
+
   it("a red-flag exit writes ZERO claim rows (the invariant)", async () => {
     const { logTriageExit } = await import("@/app/(intake)/assessment/actions");
     await logTriageExit({
