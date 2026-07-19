@@ -7,12 +7,13 @@ import { useEffect, useState } from "react";
 export default function Navbar() {
   const pathname = usePathname();
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     // Check local storage or system preference on mount
     const savedTheme = localStorage.getItem("theme");
     const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    
+
     if (savedTheme === "dark" || (!savedTheme && systemPrefersDark)) {
       document.documentElement.classList.add("dark-theme");
       setIsDarkMode(true);
@@ -21,6 +22,9 @@ export default function Navbar() {
       setIsDarkMode(false);
     }
   }, []);
+
+  // Collapse the mobile menu after a navigation choice.
+  const closeMenu = () => setMenuOpen(false);
 
   const toggleTheme = () => {
     if (isDarkMode) {
@@ -62,24 +66,37 @@ export default function Navbar() {
           <span>AgentOMA</span>
         </Link>
 
-        <div className="navbar-links">
+        <div
+          id="navbar-menu"
+          className={`navbar-links ${menuOpen ? "open" : ""}`}
+        >
           <Link
             href="/"
+            onClick={closeMenu}
             className={`navbar-link ${pathname === "/" ? "active" : ""}`}
           >
             Home
           </Link>
           <Link
             href="/assessment"
+            onClick={closeMenu}
             className={`navbar-link ${pathname === "/assessment" ? "active" : ""}`}
           >
             Assessment
           </Link>
           <Link
             href="/pharmacist"
+            onClick={closeMenu}
             className={`navbar-link ${pathname === "/pharmacist" ? "active" : ""}`}
           >
             Pharmacist Portal
+          </Link>
+          <Link
+            href="/assessment"
+            onClick={closeMenu}
+            className="btn btn-primary btn-sm navbar-menu-cta"
+          >
+            Start Triage
           </Link>
         </div>
 
@@ -119,9 +136,45 @@ export default function Navbar() {
               </svg>
             )}
           </button>
-          <Link href="/assessment" className="btn btn-primary btn-sm">
+          <Link href="/assessment" className="btn btn-primary btn-sm navbar-cta">
             Start Triage
           </Link>
+
+          <button
+            onClick={() => setMenuOpen((open) => !open)}
+            className="navbar-toggle"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            aria-controls="navbar-menu"
+          >
+            {menuOpen ? (
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M3 12h18M3 6h18M3 18h18" />
+              </svg>
+            )}
+          </button>
         </div>
       </div>
     </nav>
