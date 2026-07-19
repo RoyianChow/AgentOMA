@@ -78,6 +78,13 @@
       "when": 1784304727115,
       "tag": "0010_wide_white_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1784425676661,
+      "tag": "0011_audit_hardening",
+      "breakpoints": true
     }
   ]
 }

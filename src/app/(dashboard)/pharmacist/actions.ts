@@ -316,7 +316,7 @@ export async function upsertPatient(data: {
     // Session + role re-verified here, not in proxy.ts (see SECURITY MODEL).
     // The patient row lands in the ACTOR's pharmacy — never a caller-supplied
     // one.
-    const { pharmacyId } = await requirePortalUser();
+    const { pharmacyId, userId } = await requirePortalUser();
 
     const existing = await db.query.patient.findFirst({
       where: and(
@@ -338,6 +338,20 @@ export async function upsertPatient(data: {
         gender: data.gender,
       })
       .returning({ id: patient.id });
+
+    // Best-effort audit; the row reference only — never name/DOB/health number.
+    try {
+      await writeAudit({
+        pharmacyId,
+        actorUserId: userId,
+        action: "patient.created",
+        entityType: "patient",
+        entityId: row.id,
+      });
+    } catch (auditErr) {
+      console.error("AUDIT WRITE FAILED for patient", row.id, auditErr);
+    }
+
     return { success: true, patientId: row.id };
   } catch (err) {
     if (err instanceof AuthorizationError) {
@@ -678,33 +692,8 @@ export async function getPatientHistoryCount(patientId: string, ailmentGroupCode
   }
 }
 
-export async function getAllAssessments() {
-  try {
-    // Session + role re-verified here, not in proxy.ts (see SECURITY MODEL),
-    // and scoped to the actor's pharmacy. NOTE (Part 5): this still returns
-    // PHI to a client component — the audit page must move server-side.
-    const { pharmacyId } = await requirePortalUser();
-    const data = await db
-      .select({
-        id: assessment.id,
-        patientName: sql<string>`${patient.firstName} || ' ' || ${patient.lastName}`,
-        dob: patient.dob,
-        healthNumber: patient.healthNumber,
-        ailmentGroupCode: assessment.ailmentGroupCode,
-        outcome: assessment.outcome,
-        serviceDate: assessment.serviceDate,
-        createdAt: assessment.createdAt,
-      })
-      .from(assessment)
-      .innerJoin(patient, eq(assessment.patientId, patient.id))
-      .where(eq(assessment.pharmacyId, pharmacyId))
-      .orderBy(desc(assessment.createdAt));
-
-    // Stringify and parse to convert Dates
-    return JSON.parse(JSON.stringify(data));
-  } catch (err) {
-    if (err instanceof AuthorizationError) return [];
-    console.error("Failed to fetch all assessments from Supabase:", err);
-    return [];
-  }
-}
+// getAllAssessments is GONE on purpose: it was a public "use server" endpoint
+// returning patient identity for a client component to render. The audit page
+// is now fully server-rendered (audit/page.tsx + audit/query.ts), so the
+// endpoint had zero callers and shipping PHI to browser JS is exactly what
+// the definition of done forbids.

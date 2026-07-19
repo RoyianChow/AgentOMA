@@ -118,13 +118,28 @@ truncate it** (patient=5, assessment=7+, audit_log, pharmacy=3).
 
 ## 4. What is NOT done — resume here
 
-1. **Part 5 — audit page (NEXT).** Move `src/app/(dashboard)/pharmacist/audit/page.tsx` fully
-   server-side; it still pulls PHI (name/DOB/health number) to the client via
-   `getAllAssessments()` — the action is now auth-gated and pharmacy-scoped (Part 4), but the
-   client-side PHI transfer remains. Also clears the `no-explicit-any` at `audit/page.tsx:182`.
-   Verify the audit `REVOKE`/trigger are live on the **real** DB, not just in the migration.
+0. **Part 5 / Task A is DONE** (audit page server-side + hardening, migration `0011` live):
+   fully server-rendered audit page + server-generated CSV/PDF exports (`audit/query.ts`,
+   `audit/export/route.ts`); `getAllAssessments` deleted; audit events broadened
+   (patient/intake/orientation/invitations/`audit.exported` access log);
+   `assessment_retain_until_trg` recomputes the retention clock on every write; and the app now
+   runs as the **non-owner role `agentoma_app`** — `UPDATE/DELETE audit_log` → `42501`, verified
+   live and in tests (78/78).
+   **Operational:** runtime `DATABASE_URL` (.env) = `agentoma_app` via the pooler; its password
+   exists ONLY in `.env` (rotate with `ALTER ROLE agentoma_app PASSWORD` as owner);
+   `DIRECT_URL` stays the owner — migrations must keep running through it. A new migration that
+   creates a sensitive table must add its own REVOKEs for `agentoma_app` (grants default open —
+   see 0011's `ALTER DEFAULT PRIVILEGES` note).
 
-2. **Smaller follow-ups discovered/left by Part 4** (none block Part 5):
+1. **NEXT — profile/settings pass:** no UI exists to set a pharmacist's `ocp_number` /
+   `is_as_of_right` (DB-only today, and claims refuse without an OCP number); settings page still
+   uses the localStorage profile instead of the DB `pharmacy` row.
+
+2. **Then:** claim-draft export artifact (hand-off for dispensing-software entry) · LTC branch
+   (blocked on the ODB Help Desk answer in OPEN_QUESTIONS — do not resolve by reasoning) ·
+   clinical sign-off of `config/triage.ts` incl. the tick-bite 72h placeholder (go-live blocker).
+
+3. **Smaller follow-ups left by Part 4** (unchanged):
    - Settings page still uses the localStorage profile (`usePharmacyConfig`) — unify with the DB
      `pharmacy` row.
    - Kiosk provisioning: with 2+ pharmacy rows the kiosk needs `KIOSK_PHARMACY_ID` set (env) or it

@@ -78,6 +78,21 @@ export async function createIntakeSession(data: {
       })
       .returning();
 
+    // Best-effort audit. No actor — the kiosk is the patient's own phone —
+    // and no PHI exists to leak: the metadata is the ailment code only.
+    try {
+      const { writeAudit } = await import("@/lib/audit");
+      await writeAudit({
+        pharmacyId,
+        action: "intake.created",
+        entityType: "intake_session",
+        entityId: session.id,
+        metadata: { ailmentGroupCode: data.ailmentGroupCode },
+      });
+    } catch (auditErr) {
+      console.error("AUDIT WRITE FAILED for intake_session", session.id, auditErr);
+    }
+
     return { success: true, code: session.code };
   } catch (err) {
     console.error("Failed to create intake session:", err);
