@@ -131,17 +131,28 @@ truncate it** (patient=5, assessment=7+, audit_log, pharmacy=3).
    creates a sensitive table must add its own REVOKEs for `agentoma_app` (grants default open —
    see 0011's `ALTER DEFAULT PRIVILEGES` note).
 
-1. **NEXT — profile/settings pass:** no UI exists to set a pharmacist's `ocp_number` /
-   `is_as_of_right` (DB-only today, and claims refuse without an OCP number); settings page still
-   uses the localStorage profile instead of the DB `pharmacy` row.
+0b. **Task C is DONE** (profile/settings + claim-draft export), all on `/pharmacist/settings`:
+   - **Profile & Settings** page is DB-backed (localStorage gone — `usePharmacyConfig` deleted).
+     Two sections with split authorization: "My prescriber identity" (OCP number + As-of-Right,
+     **self**-service, any role, never touches `orientation_completed_at`) and "Pharmacy settings"
+     (store name / HNS id / **ODB fee tier**, **admin-only** — the tier gates remote-virtual
+     billing, so `updatePharmacySettings` is `requirePortalUser(["pharmacy_admin"])`). Fee-tier
+     labels are derived from the enum key, so no fee literal in code. OCP validated server-side
+     (digits, 4–7); As-of-Right clears the OCP and bills as PHR888.
+   - **Claim-draft hand-off sheet** at `/pharmacist/assessment/[id]/export` — server-rendered,
+     pharmacy-scoped, field-by-field for dispensing-software entry, with "draft for hand-off —
+     not submitted to HNS" + advisory-only eligibility language. LTC-flagged drafts
+     (`fee_cents === 0` or `LT` intervention) surface as **unsupported**, not guessed.
+   - Verified end-to-end live: OCP set in the profile UI (`654321`) → appears as the claim's
+     Prescriber ID on the export sheet; both saves persist + emit audit events.
+   - NOTE: the export sheet DOES render patient identity, but server-side only (same accepted
+     pattern as the Task A audit page) — no PHI reaches a client component.
 
-2. **Then:** claim-draft export artifact (hand-off for dispensing-software entry) · LTC branch
-   (blocked on the ODB Help Desk answer in OPEN_QUESTIONS — do not resolve by reasoning) ·
-   clinical sign-off of `config/triage.ts` incl. the tick-bite 72h placeholder (go-live blocker).
+1. **NEXT — clinical sign-off of `config/triage.ts`** incl. the tick-bite 72h placeholder
+   (go-live blocker; needs a pharmacist, not an agent) · LTC branch (blocked on the ODB Help
+   Desk answer in OPEN_QUESTIONS — do not resolve by reasoning).
 
 3. **Smaller follow-ups left by Part 4** (unchanged):
-   - Settings page still uses the localStorage profile (`usePharmacyConfig`) — unify with the DB
-     `pharmacy` row.
    - Kiosk provisioning: with 2+ pharmacy rows the kiosk needs `KIOSK_PHARMACY_ID` set (env) or it
      refuses intakes by design. Real per-device provisioning is future work.
    - Post-TOTP-verify redirect: after the enroll-2fa verify succeeds, the client-side

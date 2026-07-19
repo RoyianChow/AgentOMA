@@ -2,166 +2,255 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { updatePharmacySettings, type PharmacySettingsDTO } from "./actions";
 
-export default function SettingsForm({ initialData }: { initialData: PharmacySettingsDTO }) {
-  const [form, setForm] = useState(initialData);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+import {
+  updateMyPrescriberIdentity,
+  updatePharmacySettings,
+  type SettingsData,
+} from "./actions";
 
-  const update = (field: keyof PharmacySettingsDTO, value: string | boolean) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-    setSaved(false);
-    setError(null);
-  };
+// Label derived from the enum key itself (e.g. "rural_9_93" → "Rural — $9.93")
+// so there is no hardcoded fee literal anywhere in the code.
+function feeTierLabel(tier: string): string {
+  const [kind, dollars, cents] = tier.split("_");
+  const amount = dollars && cents ? `$${dollars}.${cents}` : tier;
+  return `${kind === "regular" ? "Regular" : "Rural"} — ${amount}`;
+}
 
-  const handleSave = async () => {
-    setIsSubmitting(true);
-    setError(null);
-    setSaved(false);
-    
-    const res = await updatePharmacySettings({
-      storeName: form.storeName,
-      hnsAccountId: form.hnsAccountId || "",
-      odbFeeTier: form.odbFeeTier as any,
-      ocpNumber: form.ocpNumber || "",
-      isAsOfRight: form.isAsOfRight,
-    });
-    
-    setIsSubmitting(false);
+export default function SettingsForm({
+  initialData,
+  feeTiers,
+}: {
+  initialData: SettingsData;
+  feeTiers: string[];
+}) {
+  const canEdit = initialData.canEditPharmacy;
+  const isTrainee = initialData.role === "intern" || initialData.role === "student";
 
+  // ── Prescriber identity (self) ──────────────────────────────────────────
+  const [ocpNumber, setOcpNumber] = useState(initialData.ocpNumber ?? "");
+  const [isAsOfRight, setIsAsOfRight] = useState(initialData.isAsOfRight);
+  const [profileBusy, setProfileBusy] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  async function saveProfile() {
+    setProfileBusy(true);
+    setProfileError(null);
+    setProfileSaved(false);
+    const res = await updateMyPrescriberIdentity({ ocpNumber, isAsOfRight });
+    setProfileBusy(false);
     if (res.success) {
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 3000);
     } else {
-      setError(res.error);
+      setProfileError(res.error);
     }
-  };
+  }
+
+  // ── Pharmacy settings (admin) ───────────────────────────────────────────
+  const [storeName, setStoreName] = useState(initialData.storeName);
+  const [hnsAccountId, setHnsAccountId] = useState(initialData.hnsAccountId ?? "");
+  const [odbFeeTier, setOdbFeeTier] = useState(initialData.odbFeeTier);
+  const [pharmacyBusy, setPharmacyBusy] = useState(false);
+  const [pharmacySaved, setPharmacySaved] = useState(false);
+  const [pharmacyError, setPharmacyError] = useState<string | null>(null);
+
+  async function savePharmacy() {
+    setPharmacyBusy(true);
+    setPharmacyError(null);
+    setPharmacySaved(false);
+    const res = await updatePharmacySettings({ storeName, hnsAccountId, odbFeeTier });
+    setPharmacyBusy(false);
+    if (res.success) {
+      setPharmacySaved(true);
+      setTimeout(() => setPharmacySaved(false), 3000);
+    } else {
+      setPharmacyError(res.error);
+    }
+  }
 
   return (
     <div className="settings-page">
-      {/* ── Header ────────────────────────────────────────────────────── */}
       <div className="settings-header">
         <div className="settings-header-left">
-          <Link href="/pharmacist" className="settings-back-btn">
-            ← Back to Dashboard
-          </Link>
-          <h1 className="settings-title">Pharmacy Settings</h1>
+          <Link href="/pharmacist" className="settings-back-btn">← Back to Dashboard</Link>
+          <h1 className="settings-title">Profile &amp; Settings</h1>
           <p className="settings-subtitle">
-            Configure your store profile, billing preferences, and pharmacist profile.
+            Your prescriber identity, and this pharmacy&apos;s billing configuration.
           </p>
         </div>
-        <button
-          className={`settings-save-btn ${saved ? "saved" : ""}`}
-          onClick={handleSave}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? "Saving..." : saved ? "✓ Saved" : "Save Changes"}
-        </button>
       </div>
 
-      {error && (
-        <div style={{ color: "var(--danger)", marginBottom: "1rem", padding: "0.75rem", background: "var(--danger-light)", borderRadius: "var(--radius-sm)" }}>
-          {error}
-        </div>
-      )}
-
       <div className="settings-grid">
-        {/* ── Pharmacist Profile ───────────────────────────────────────── */}
+        {/* ── My prescriber identity (self-service) ────────────────────── */}
         <section className="settings-card">
           <div className="settings-card-header">
             <span className="settings-card-icon">👤</span>
-            <h2 className="settings-card-title">Pharmacist Profile</h2>
+            <h2 className="settings-card-title">My prescriber identity</h2>
           </div>
           <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
-            The OCP Registration Number entered here is used on all claims you submit.
+            The OCP registration number that goes on the claims you complete.
+            {isTrainee && (
+              <>
+                {" "}
+                <strong>
+                  As an {initialData.role}, your claims bill under your supervising
+                  pharmacist&apos;s number — not this one.
+                </strong>
+              </>
+            )}
           </p>
 
           <div className="settings-form-group">
-            <label className="settings-label">OCP Registration Number</label>
+            <label className="settings-label" htmlFor="ocp">OCP registration number</label>
             <input
+              id="ocp"
               className="settings-input settings-input-mono"
-              value={form.ocpNumber || ""}
-              onChange={(e) => update("ocpNumber", e.target.value)}
-              placeholder="e.g. 12345"
-              disabled={form.isAsOfRight}
+              value={ocpNumber}
+              onChange={(e) => setOcpNumber(e.target.value)}
+              placeholder="e.g. 123456"
+              inputMode="numeric"
+              disabled={isAsOfRight}
+              autoComplete="off"
             />
-            {form.isAsOfRight && (
+            {isAsOfRight && (
               <span className="settings-input-hint" style={{ marginTop: "0.25rem", display: "block" }}>
-                As-of-Right flag is enabled. Claims will use PHR888.
+                As-of-Right is on — your claims will use <strong>PHR888</strong>, so no OCP number is needed.
               </span>
             )}
           </div>
 
           <div className="settings-toggle-group">
             <div className="settings-toggle-label">
-              <span>Practising As-of-Right</span>
+              <span>Practising under As-of-Right</span>
               <span className="settings-toggle-sub">
-                Check this if you are practising in Ontario without an OCP number yet.
+                Turn on if you&apos;re practising in Ontario without a licence number yet.
               </span>
             </div>
             <label className="settings-switch">
               <input
                 type="checkbox"
-                checked={form.isAsOfRight}
-                onChange={(e) => update("isAsOfRight", e.target.checked)}
+                checked={isAsOfRight}
+                onChange={(e) => setIsAsOfRight(e.target.checked)}
               />
               <span className="settings-switch-slider" />
             </label>
           </div>
+
+          {/* Orientation status is READ-ONLY here — only an admin can record it
+              (team page), and completing a billable assessment refuses without
+              it. Shown so a pharmacist knows why billing might be blocked. */}
+          <div className="settings-form-group" style={{ marginTop: "0.5rem" }}>
+            <label className="settings-label">Minor-ailments orientation</label>
+            <div style={{ fontSize: "0.9rem" }}>
+              {initialData.orientationCompletedAt ? (
+                <span style={{ color: "var(--primary)" }}>
+                  ✓ Recorded {new Date(initialData.orientationCompletedAt).toLocaleDateString("en-CA")}
+                </span>
+              ) : (
+                <span style={{ color: "var(--warning-text)" }}>
+                  Not recorded — a pharmacy admin must record your OCP orientation-module
+                  completion before you can complete a billable assessment.
+                </span>
+              )}
+            </div>
+          </div>
+
+          {profileError && (
+            <div style={{ color: "var(--danger)", fontSize: "0.85rem", marginTop: "0.75rem" }}>
+              {profileError}
+            </div>
+          )}
+          <button
+            className={`settings-save-btn ${profileSaved ? "saved" : ""}`}
+            onClick={saveProfile}
+            disabled={profileBusy}
+            style={{ marginTop: "1rem" }}
+          >
+            {profileBusy ? "Saving…" : profileSaved ? "✓ Saved" : "Save my profile"}
+          </button>
         </section>
 
-        {/* ── Pharmacy Settings ────────────────────────────────────────── */}
+        {/* ── Pharmacy settings (admin only) ───────────────────────────── */}
         <section className="settings-card">
           <div className="settings-card-header">
             <span className="settings-card-icon">🏥</span>
-            <h2 className="settings-card-title">Pharmacy Settings</h2>
+            <h2 className="settings-card-title">Pharmacy settings</h2>
           </div>
+          {!canEdit && (
+            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
+              Only a pharmacy admin can change these. Shown for reference.
+            </p>
+          )}
 
           <div className="settings-form-group">
-            <label className="settings-label">Store Name</label>
+            <label className="settings-label" htmlFor="store">Store name</label>
             <input
+              id="store"
               className="settings-input"
-              value={form.storeName}
-              onChange={(e) => update("storeName", e.target.value)}
+              value={storeName}
+              onChange={(e) => setStoreName(e.target.value)}
               placeholder="e.g. Rexall — King Street"
+              disabled={!canEdit}
             />
           </div>
 
           <div className="settings-form-group">
-            <label className="settings-label">HNS Account ID</label>
+            <label className="settings-label" htmlFor="hns">HNS account ID</label>
             <input
+              id="hns"
               className="settings-input settings-input-mono"
-              value={form.hnsAccountId || ""}
-              onChange={(e) => update("hnsAccountId", e.target.value)}
-              placeholder="e.g. HNS-12345"
+              value={hnsAccountId}
+              onChange={(e) => setHnsAccountId(e.target.value)}
+              placeholder="optional"
+              disabled={!canEdit}
             />
           </div>
 
           <div className="settings-form-group">
-            <label className="settings-label">ODB Fee Tier</label>
+            <label className="settings-label" htmlFor="tier">ODB dispensing fee tier</label>
             <select
+              id="tier"
               className="settings-input"
-              value={form.odbFeeTier}
-              onChange={(e) => update("odbFeeTier", e.target.value)}
+              value={odbFeeTier}
+              onChange={(e) => setOdbFeeTier(e.target.value)}
+              disabled={!canEdit}
             >
-              <option value="regular_8_83">Regular ($8.83)</option>
-              <option value="rural_9_93">Rural ($9.93)</option>
-              <option value="rural_12_14">Rural ($12.14)</option>
-              <option value="rural_13_25">Rural ($13.25)</option>
+              {feeTiers.map((t) => (
+                <option key={t} value={t}>{feeTierLabel(t)}</option>
+              ))}
             </select>
             <span className="settings-input-hint" style={{ marginTop: "0.25rem", display: "block" }}>
-              Note: Remote virtual assessments are only permitted for rural fee tiers.
+              Remote virtual assessments are only permitted on a rural tier — the regular
+              tier is blocked from remote billing.
             </span>
           </div>
+
+          {canEdit && (
+            <>
+              {pharmacyError && (
+                <div style={{ color: "var(--danger)", fontSize: "0.85rem", marginTop: "0.75rem" }}>
+                  {pharmacyError}
+                </div>
+              )}
+              <button
+                className={`settings-save-btn ${pharmacySaved ? "saved" : ""}`}
+                onClick={savePharmacy}
+                disabled={pharmacyBusy}
+                style={{ marginTop: "1rem" }}
+              >
+                {pharmacyBusy ? "Saving…" : pharmacySaved ? "✓ Saved" : "Save pharmacy settings"}
+              </button>
+            </>
+          )}
         </section>
 
-        {/* ── Quick Nav ────────────────────────────────────────────────── */}
+        {/* ── Quick nav ────────────────────────────────────────────────── */}
         <section className="settings-card settings-card-nav" style={{ gridColumn: "1 / -1" }}>
           <div className="settings-card-header">
             <span className="settings-card-icon">🔗</span>
-            <h2 className="settings-card-title">Quick Navigation</h2>
+            <h2 className="settings-card-title">Quick navigation</h2>
           </div>
           <div className="settings-nav-links" style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
             <Link href="/pharmacist" className="settings-nav-link" style={{ flex: 1, minWidth: "250px" }}>
@@ -174,7 +263,7 @@ export default function SettingsForm({ initialData }: { initialData: PharmacySet
             <Link href="/pharmacist/audit" className="settings-nav-link" style={{ flex: 1, minWidth: "250px" }}>
               <span>🗂️</span>
               <div>
-                <strong>Audit Log & Claims Exporter</strong>
+                <strong>Ministry Audit Log</strong>
                 <span>Historical records, CSV and PDF export</span>
               </div>
             </Link>

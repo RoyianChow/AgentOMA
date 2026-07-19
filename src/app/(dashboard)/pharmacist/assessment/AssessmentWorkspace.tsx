@@ -128,8 +128,8 @@ export default function AssessmentWorkspace({
               <ClaimDraftPanel result={claimResult} />
               {claimResult.billable && assessmentId && (
                 <div style={{ marginTop: "1rem", textAlign: "center" }}>
-                  <Link href={`/pharmacist/assessment/${assessmentId}/export`} className="btn btn-primary" style={{ backgroundColor: "#000", color: "#fff" }}>
-                    🖨️ Print Claim Draft for Dispensing Software
+                  <Link href={`/pharmacist/assessment/${assessmentId}/export`} className="btn btn-primary">
+                    🖨️ Print claim draft for dispensing software
                   </Link>
                 </div>
               )}

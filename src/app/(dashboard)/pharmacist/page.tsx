@@ -167,7 +167,7 @@ export default async function PharmacistDashboard() {
                 Ministry Audit Log
               </Link>
               <Link href="/pharmacist/settings" className="btn btn-secondary">
-                Pharmacy Settings
+                Profile &amp; Settings
               </Link>
             </div>
           </div>

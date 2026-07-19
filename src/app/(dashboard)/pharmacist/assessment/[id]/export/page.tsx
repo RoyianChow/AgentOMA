@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { assessment, patient, claimDraft, pharmacy } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
-import { requirePortalUser } from "@/lib/auth-guard";
+import { requirePortalPage } from "@/lib/auth-guard";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import styles from "./export.module.css";
@@ -13,7 +13,11 @@ export default async function ClaimDraftExportPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const actor = await requirePortalUser();
+  // Page guard: redirects signed-out/insufficient sessions rather than throwing.
+  // The query is scoped to this actor's pharmacy, so another store's assessment
+  // simply does not resolve (notFound below). No patient identity is rendered
+  // by any client component — this whole sheet is server-rendered.
+  const actor = await requirePortalPage();
 
   // Fetch assessment, patient, and active claim draft
   const data = await db
@@ -178,6 +182,13 @@ export default async function ClaimDraftExportPage({
             <span className={`${styles.value} ${styles.valueMono}`}>{draft.ssc ?? "—"}</span>
           </div>
         </div>
+      </div>
+
+      <div className={styles.draftNotice}>
+        These values are derived from the ministry reference data — do not hand-enter a
+        PIN or fee. Eligibility is advisory only: HNS adjudicates on submission with a
+        365-day look-back, so verify the patient&apos;s remaining maximum in the clinical
+        viewer. This sheet does not confirm the claim will be paid.
       </div>
     </div>
   );
