@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { authClient } from "@/lib/auth-client";
@@ -29,32 +30,18 @@ const GENERIC_TOTP_ERROR =
 const THROTTLE_MESSAGE =
   "Too many attempts in a short time. This pauses briefly for security — wait a minute, then try again.";
 
-function BrandMark() {
-  return (
-    <svg
-      className={styles.brandMark}
-      viewBox="0 0 40 40"
-      fill="none"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <rect x="1.5" y="1.5" width="37" height="37" rx="10" fill="currentColor" />
-      <path
-        d="M20 10.5v19M10.5 20h19"
-        stroke="#ffffff"
-        strokeWidth="5"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 export default function SignInPage() {
   const router = useRouter();
   const [step, setStep] = useState<"credentials" | "totp">("credentials");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
+  // Default OFF: pharmacy terminals are shared, so the safe default is a
+  // browser-session cookie that clears when the browser closes. When checked,
+  // better-auth's native `rememberMe` persists the cookie across a browser
+  // restart — but the 30-min idle timeout and TOTP still apply, so this does
+  // NOT create a long-lived session.
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<SignInError | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -63,7 +50,7 @@ export default function SignInPage() {
     if (busy) return; // belt on top of the disabled button — no double-submit
     setBusy(true);
     setError(null);
-    const res = await authClient.signIn.email({ email, password });
+    const res = await authClient.signIn.email({ email, password, rememberMe });
     setBusy(false);
     if (res.error) {
       setError(
@@ -108,7 +95,14 @@ export default function SignInPage() {
     <div className={styles.shell}>
       <div className={styles.column}>
         <div className={styles.brand}>
-          <BrandMark />
+          <Image
+            src="/logo.png"
+            alt="AgentOMA"
+            width={48}
+            height={48}
+            className={styles.brandMark}
+            priority
+          />
           <div>
             <span className={styles.brandName}>AgentOMA</span>
             <span className={styles.brandSub}>Pharmacist Portal</span>
@@ -168,6 +162,20 @@ export default function SignInPage() {
                     </p>
                   )}
                 </div>
+                <label className={styles.remember}>
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
+                  <span>
+                    Stay signed in on this device
+                    <span className={styles.rememberHint}>
+                      Leave off on shared pharmacy computers. Two-step
+                      verification and the 30-minute inactivity sign-out still apply.
+                    </span>
+                  </span>
+                </label>
                 <button type="submit" className={styles.submit} disabled={busy}>
                   {busy ? "Signing in…" : "Continue"}
                 </button>
