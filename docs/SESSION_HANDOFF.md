@@ -12,7 +12,8 @@ every server action as the real boundary · `MOCK_PHARMACY_ID` fully gone (grep 
 empty; kiosk resolves its pharmacy server-side via `KIOSK_PHARMACY_ID` env or the
 single row) · prescriber OCP comes from the profile (supervisor's for
 interns/students) · orientation gate refuses completion before `deriveClaimDraft`.
-**67/67 green. Next: Part 5 — audit page server-side.** Nothing is half-finished.
+**Reverified 2026-07-20:** Part 5 is also complete; TypeScript, all 78 tests, and
+ESLint are green. Nothing is half-finished.
 
 ---
 
@@ -160,7 +161,8 @@ truncate it** (patient=5, assessment=7+, audit_log, pharmacy=3).
      a fresh navigation lands correctly. Cosmetic; revisit with an eye on `router.refresh()`.
    - Password reset needs an email transport before `requestPasswordReset` does anything useful
      (rate limits are already in place). Admin-driven re-invite is the interim answer.
-   - The old baseline lint warning is gone (now 6 errors / 0 warnings, all pre-existing).
+   - Lint is clean. The last three safe issues (marketing-page apostrophe, a legacy
+     FHIR mapper `any`, and Navbar mount-state scheduling) were cleared on 2026-07-20.
    - Orientation completion is recorded by a pharmacy admin on /pharmacist/team; there is no
      evidence upload — it is an attestation. Decide later if OCP evidence needs storing.
 
@@ -199,10 +201,8 @@ truncate it** (patient=5, assessment=7+, audit_log, pharmacy=3).
 
 ## 6. Definition of done for any commit
 
-`tsc --noEmit` clean · `npm run test` green (Docker up for the constraint tests) · lint **no worse
-than baseline (now 6 errors, 0 warnings — all pre-existing** in `audit/page.tsx`,
-`api/fhir/route.ts`, `settings/page.tsx`, `Navbar.tsx`, `(site)/page.tsx`**)** · no new
+`tsc --noEmit` clean · `npm run test` green (Docker up for the constraint tests) · lint clean · no new
 `process.env` outside `src/env.ts` · no PHI in client components or logs.
 
-**Part 3 + Part 4 now stand together — the branch is PR-able.** Part 5 can follow in the same PR
-or the next one; the audit page's client-side PHI pull is the one thing to weigh before opening it.
+**Parts 3–5 stand together.** The portal is authenticated, orientation-gated, tenant-scoped,
+and the audit view/exports are server-rendered. The branch is PR-able.

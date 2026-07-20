@@ -30,6 +30,12 @@ const AILMENT_TO_ICD10: Record<string, { code: string; display: string }> = {
   CANKER_SORES:                  { code: "K12.0",  display: "Recurrent oral aphthae (Canker Sores)" },
 };
 
+type LegacyFhirSymptom = {
+  id?: string;
+  label?: string;
+  isRedFlag?: boolean;
+};
+
 export async function POST(): Promise<NextResponse> {
   // ── SECURITY GATE (Step 1) ────────────────────────────────────────────────
   // This route previously accepted PHI in the request body from ANY caller with
@@ -205,7 +211,7 @@ async function buildFhirResponse(req: NextRequest): Promise<NextResponse> {
             subject: { reference: patientId },
             encounter: { reference: encounterId },
             valueString: assessment.aiSuggestion || "Pharmacist assessment required",
-            component: (assessment.symptoms || []).map((s: any) => ({
+            component: (assessment.symptoms || []).map((s: LegacyFhirSymptom) => ({
               code: {
                 text: s.label || s.id,
               },

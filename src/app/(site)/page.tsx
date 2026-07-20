@@ -177,7 +177,7 @@ export default function Home() {
               </div>
               <h3>2. AI Clinical Triage</h3>
               <p>
-                AgentOMA's AI analyzes assessments instantly, running safety checks
+                AgentOMA&apos;s AI analyzes assessments instantly, running safety checks
                 for Red Flag indicators, calculating severity, and preparing treatment pathways.
               </p>
             </div>
