@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -44,25 +45,14 @@ export default function Navbar() {
     <nav className="navbar">
       <div className="container navbar-container">
         <Link href="/" className="navbar-logo">
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{ stroke: "url(#brand-grad)" }}
-          >
-            <defs>
-              <linearGradient id="brand-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="var(--primary)" />
-                <stop offset="100%" stopColor="var(--accent)" />
-              </linearGradient>
-            </defs>
-            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-          </svg>
+          <Image
+            src="/logo.png"
+            alt="AgentOMA"
+            width={28}
+            height={28}
+            priority
+            style={{ objectFit: "contain" }}
+          />
           <span>AgentOMA</span>
         </Link>
 

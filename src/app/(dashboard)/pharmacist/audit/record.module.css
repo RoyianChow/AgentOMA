@@ -1,0 +1,238 @@
+/* Audit record detail + modal shell. Uses the portal design tokens so light
+   and dark both work. The record CONTENT is server-rendered (PHI never enters
+   client props); only the overlay shell is a client component. */
+
+/* ── Modal overlay (client shell) ──────────────────────────────────────── */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 3rem 1rem;
+  overflow-y: auto;
+  background: rgb(2 6 23 / 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.modalPanel {
+  position: relative;
+  width: min(680px, 100%);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 60px rgb(2 6 23 / 0.35);
+}
+
+.closeBtn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--text-muted, #64748b);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+.closeBtn:hover {
+  color: var(--text-primary);
+}
+.closeBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+/* ── Full-page wrapper (direct navigation / print) ─────────────────────── */
+.pageWrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+/* ── Shared record content ─────────────────────────────────────────────── */
+.record {
+  padding: 1.75rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+.subtitle {
+  font-size: 0.82rem;
+  color: var(--text-muted, #64748b);
+  margin: 0.2rem 0 0;
+}
+
+/* The PIN — the number that goes into Kroll. Deliberately the loudest thing
+   on the record. Value read from the persisted claim draft. */
+.pinCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  background: var(--primary-light);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-md);
+}
+.pinLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--primary-dark, var(--primary));
+}
+.pinValue {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--primary-dark, var(--primary));
+  line-height: 1;
+  user-select: all;
+}
+.pinMeta {
+  text-align: right;
+  font-size: 0.85rem;
+  color: var(--text-secondary, var(--text-primary));
+}
+.pinMetaFee {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.noClaim {
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.88rem;
+  color: var(--warning-text);
+  background: var(--warning-light);
+  border: 1px solid var(--warning, #f59e0b);
+  border-radius: var(--radius-md);
+}
+
+.section {
+  margin-bottom: 1.25rem;
+}
+.sectionTitle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted, #64748b);
+  margin: 0 0 0.6rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border-color);
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1.5rem;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.fieldLabel {
+  font-size: 0.72rem;
+  color: var(--text-muted, #64748b);
+}
+.fieldValue {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+.mono {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  /* One-click select for the values a tech copies into Kroll (health card,
+     PIN, prescriber id). Mitigates the whole-row stretched-link blocking
+     text selection in the table — copy-out happens here in the dialog. */
+  user-select: all;
+}
+
+.actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-color);
+}
+.btn {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+}
+.btnPrimary {
+  color: #fff;
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.footnote {
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  color: var(--text-muted, #64748b);
+}
+
+@media (max-width: 520px) {
+  .grid { grid-template-columns: 1fr; }
+  .record { padding: 1.25rem; }
+}
+
+/* ── Clickable audit table row (stretched-link, no client JS, PHI stays in
+   the server-rendered table) ───────────────────────────────────────────── */
+.rowClickable {
+  position: relative;
+  cursor: pointer;
+}
+.rowClickable:hover {
+  background: var(--bg-tertiary, rgb(13 148 136 / 0.06));
+}
+.rowLink {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 700;
+}
+/* The pseudo-element stretches the link over the whole row so a click
+   anywhere on the row opens the record. */
+.rowLink::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.rowLink:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}

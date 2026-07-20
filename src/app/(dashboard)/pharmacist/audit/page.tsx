@@ -8,6 +8,7 @@ import {
   queryAuditPage,
   type AuditFilters,
 } from "./query";
+import styles from "./record.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -176,8 +177,19 @@ export default async function AuditPage({
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className="audit-row">
-                  <td className="audit-td-name">{r.patientName || "—"}</td>
+                // Whole-row link (server-rendered stretched <Link> — no client
+                // JS, and the row's PHI stays in the server-rendered table).
+                // Soft nav → intercepted into a modal; direct visit → full page.
+                <tr key={r.id} className={`audit-row ${styles.rowClickable}`}>
+                  <td className="audit-td-name">
+                    <Link
+                      href={`/pharmacist/audit/${r.id}`}
+                      className={styles.rowLink}
+                      aria-label={`Open record for ${r.patientName || "patient"}`}
+                    >
+                      {r.patientName || "—"}
+                    </Link>
+                  </td>
                   <td>{r.dob || "—"}</td>
                   <td className="audit-td-mono">{r.healthNumber || "—"}</td>
                   <td>{r.ailmentGroupCode || "—"}</td>
