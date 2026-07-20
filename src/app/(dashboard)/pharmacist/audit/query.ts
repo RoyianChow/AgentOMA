@@ -1,7 +1,7 @@
-import { and, eq, gte, lte, or, ilike, sql, desc, count, type SQL } from "drizzle-orm";
+import { and, eq, gte, lte, or, ilike, sql, desc, count, isNull, type SQL } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { assessment, patient } from "@/lib/db/schema";
+import { assessment, patient, claimDraft } from "@/lib/db/schema";
 import type { PortalUser } from "@/lib/auth-guard";
 
 /**
@@ -36,6 +36,12 @@ export const OUTCOME_LABELS: Record<string, string> = {
   rx_issued: "Rx Issued",
   no_rx_referral: "Referred",
   no_rx_otc_or_nonpharm: "No Rx (OTC)",
+};
+
+export const MODALITY_LABELS: Record<string, string> = {
+  in_person: "In person",
+  virtual_from_pharmacy: "Virtual (from pharmacy)",
+  virtual_remote: "Virtual (remote)",
 };
 
 function parseDay(value: string | undefined, endOfDay: boolean): Date | null {
@@ -135,6 +141,113 @@ export async function queryAuditRecordsForExport(
     .where(buildWhere(actor.pharmacyId, filters))
     .orderBy(desc(assessment.createdAt));
   return rows.map(toRecord);
+}
+
+/**
+ * The full record behind one audit row: assessment + patient + the active
+ * (non-superseded) claim draft, if any. PHI-bearing — server-only, and scoped
+ * to the actor's pharmacy so another store's assessment id simply returns null.
+ * The PIN is READ from the persisted claim draft; it is never derived or
+ * hardcoded here.
+ */
+export type AuditRecordDetail = {
+  id: string;
+  serviceDate: string;
+  createdAt: string;
+  ailmentGroupCode: string;
+  modality: string;
+  outcome: string;
+  virtualLocation: string | null;
+  patient: {
+    name: string;
+    dob: string;
+    healthNumber: string;
+    gender: string;
+  };
+  // Present only for a billable assessment; non-billable ones drafted no claim.
+  claim: {
+    pinCode: string;
+    feeCents: number;
+    billingModality: string;
+    rxIssued: boolean;
+    prescriberIdReference: string;
+    prescriberId: string;
+    interventionCodes: string[];
+    carrierId: string | null;
+    quantity: number;
+    ssc: number | null;
+  } | null;
+};
+
+export async function queryAuditRecordById(
+  actor: PortalUser,
+  id: string
+): Promise<AuditRecordDetail | null> {
+  const [row] = await db
+    .select({
+      id: assessment.id,
+      serviceDate: assessment.serviceDate,
+      createdAt: assessment.createdAt,
+      ailmentGroupCode: assessment.ailmentGroupCode,
+      modality: assessment.modality,
+      outcome: assessment.outcome,
+      virtualLocation: assessment.virtualLocation,
+      firstName: patient.firstName,
+      lastName: patient.lastName,
+      dob: patient.dob,
+      healthNumber: patient.healthNumber,
+      gender: patient.gender,
+      pinCode: claimDraft.pinCode,
+      feeCents: claimDraft.feeCents,
+      billingModality: claimDraft.billingModality,
+      rxIssued: claimDraft.rxIssued,
+      prescriberIdReference: claimDraft.prescriberIdReference,
+      prescriberId: claimDraft.prescriberId,
+      interventionCodes: claimDraft.interventionCodes,
+      carrierId: claimDraft.carrierId,
+      quantity: claimDraft.quantity,
+      ssc: claimDraft.ssc,
+    })
+    .from(assessment)
+    .innerJoin(patient, eq(assessment.patientId, patient.id))
+    .leftJoin(
+      claimDraft,
+      and(eq(claimDraft.assessmentId, assessment.id), isNull(claimDraft.supersededById))
+    )
+    .where(and(eq(assessment.id, id), eq(assessment.pharmacyId, actor.pharmacyId)))
+    .limit(1);
+
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    serviceDate: row.serviceDate.toISOString().slice(0, 10),
+    createdAt: row.createdAt.toISOString(),
+    ailmentGroupCode: row.ailmentGroupCode,
+    modality: row.modality,
+    outcome: row.outcome,
+    virtualLocation: row.virtualLocation,
+    patient: {
+      name: `${row.firstName} ${row.lastName}`,
+      dob: row.dob,
+      healthNumber: row.healthNumber,
+      gender: row.gender,
+    },
+    claim: row.pinCode
+      ? {
+          pinCode: row.pinCode,
+          feeCents: row.feeCents!,
+          billingModality: row.billingModality!,
+          rxIssued: row.rxIssued!,
+          prescriberIdReference: row.prescriberIdReference!,
+          prescriberId: row.prescriberId!,
+          interventionCodes: row.interventionCodes!,
+          carrierId: row.carrierId,
+          quantity: row.quantity!,
+          ssc: row.ssc,
+        }
+      : null,
+  };
 }
 
 /** Distinct ailment codes present in this pharmacy's records (filter dropdown). */
