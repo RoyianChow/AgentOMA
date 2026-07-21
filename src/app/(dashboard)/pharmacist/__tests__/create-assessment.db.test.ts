@@ -54,6 +54,7 @@ vi.mock("@/lib/auth-guard", () => {
 });
 
 import { makeTestDb, resetOperationalTables, type TestDb } from "@/lib/db/test/harness";
+import type { ClinicalRecordInput } from "@/lib/clinical-record-types";
 
 const PHARMACY_ID = "00000000-0000-0000-0000-0000000000bb";
 let db: TestDb;
@@ -79,8 +80,13 @@ afterAll(async () => {
 beforeEach(async () => {
   await resetOperationalTables(db);
   await db.execute(sql`
-    insert into pharmacy (id, store_name, odb_fee_tier)
-    values (${PHARMACY_ID}::uuid, 'Test Pharmacy', 'regular_8_83')
+    insert into pharmacy (
+      id, store_name, odb_fee_tier, address_line1, city, province, postal_code, phone
+    )
+    values (
+      ${PHARMACY_ID}::uuid, 'Test Pharmacy', 'regular_8_83',
+      '100 Test Street', 'Toronto', 'ON', 'M5V 1A1', '416-555-0100'
+    )
     on conflict (id) do nothing
   `);
   const rows = await db.execute<{ id: string }>(sql`
@@ -112,14 +118,77 @@ async function countRows(table: "assessment" | "claim_draft"): Promise<number> {
   return (rows as unknown as { n: number }[])[0].n;
 }
 
-const baseInput = () => ({
-  patientId,
-  ailmentGroupCode: "RHINITIS",
-  modality: "in_person",
-  outcome: "rx_issued",
-  serviceDate: new Date("2026-07-16"),
-  isOdbRecipient: true,
-});
+function clinicalRecordFor(
+  outcome: "rx_issued" | "no_rx_referral" | "no_rx_otc_or_nonpharm" = "rx_issued",
+): ClinicalRecordInput {
+  return {
+    consent: {
+      method: "verbal",
+      givenBy: "patient",
+      obtainedAt: "2026-07-16T14:00:00.000Z",
+    },
+    presentingComplaint: {
+      primaryConcern: "Synthetic rhinitis symptoms for integration testing",
+      onset: "Two days ago",
+      duration: "Two days",
+      course: "unchanged",
+      associatedSymptoms: "Synthetic sneezing and watery eyes",
+      aggravatingFactors: "Synthetic outdoor exposure",
+      relievingFactors: "None reported",
+      treatmentsTried: "None reported",
+    },
+    healthHistory: "No relevant synthetic history",
+    medicationHistory: "No current synthetic medications",
+    allergies: "No known synthetic allergies",
+    assessmentFindings: "Synthetic findings consistent with the documented complaint",
+    sharedDecisionMaking: "Options, benefits, and risks discussed in this synthetic record",
+    carePlan: "Synthetic care plan",
+    followUpPlan: "Synthetic monitoring and follow-up plan",
+    noRxRationaleCode:
+      outcome === "no_rx_referral"
+        ? "referral_to_other_provider"
+        : outcome === "no_rx_otc_or_nonpharm"
+          ? "otc_recommended"
+          : undefined,
+    prescription:
+      outcome === "rx_issued"
+        ? {
+            prescribedOn: "2026-07-16",
+            patientAddressLine1: "200 Synthetic Avenue",
+            patientCity: "Toronto",
+            patientProvince: "ON",
+            patientPostalCode: "M5V 2T6",
+            drugName: "Synthetic Drug",
+            strength: "1 unit",
+            quantity: "10 units",
+            directionsDose: "1 unit",
+            directionsFrequency: "Once daily",
+            directionsRoute: "Topical",
+            pcpNotificationAt: "2026-07-16T14:15:00.000Z",
+            pcpNotificationMethod: "fax",
+            patientChoiceInformedAt: "2026-07-16T14:10:00.000Z",
+          }
+        : undefined,
+  };
+}
+
+const baseInput = (
+  overrides: Partial<{
+    ailmentGroupCode: string;
+    outcome: "rx_issued" | "no_rx_referral" | "no_rx_otc_or_nonpharm";
+  }> = {},
+) => {
+  const outcome = overrides.outcome ?? "rx_issued";
+  return {
+    patientId,
+    ailmentGroupCode: overrides.ailmentGroupCode ?? "RHINITIS",
+    modality: "in_person",
+    outcome,
+    serviceDate: new Date("2026-07-16"),
+    clinicalRecord: clinicalRecordFor(outcome),
+    isOdbRecipient: true,
+  };
+};
 
 describe("createAssessment → claim_draft", () => {
   it("billable: persists exactly one active draft, with derived fields", async () => {
@@ -147,9 +216,134 @@ describe("createAssessment → claim_draft", () => {
     expect(d.ssc).toBeNull();
   });
 
+  it("persists a complete version-2 clinical, consent, prescription, and PCP record", async () => {
+    const { createAssessment } = await import("../actions");
+    const res = await createAssessment(baseInput());
+    expect(res.success).toBe(true);
+    if (!res.success) return;
+
+    const rows = (await db.execute<{
+      record_version: number;
+      consent_method: string;
+      presenting_complaint: string;
+      care_plan: string;
+      prescription_drug_name: string;
+      prescriber_name: string;
+      prescriber_address_line1: string;
+      prescriber_phone: string;
+      pcp_notification_method: string;
+    }>(sql`
+      select record_version, consent_method, presenting_complaint, care_plan,
+             prescription_drug_name, prescriber_name, prescriber_address_line1,
+             prescriber_phone, pcp_notification_method
+      from assessment where id = ${res.assessmentId}::uuid
+    `)) as unknown as {
+      record_version: number;
+      consent_method: string;
+      presenting_complaint: string;
+      care_plan: string;
+      prescription_drug_name: string;
+      prescriber_name: string;
+      prescriber_address_line1: string;
+      prescriber_phone: string;
+      pcp_notification_method: string;
+    }[];
+
+    expect(rows[0]).toMatchObject({
+      record_version: 2,
+      consent_method: "verbal",
+      care_plan: "Synthetic care plan",
+      prescription_drug_name: "Synthetic Drug",
+      prescriber_name: "Test Pharmacist",
+      prescriber_address_line1: "100 Test Street",
+      prescriber_phone: "416-555-0100",
+      pcp_notification_method: "fax",
+    });
+    expect(rows[0].presenting_complaint).toMatch(/Synthetic rhinitis/);
+
+    // The authenticated, pharmacy-scoped SERVER query exposes the complete
+    // record to the server-rendered audit view; no PHI client endpoint is used.
+    const { queryAuditRecordById } = await import("../audit/query");
+    expect(res.assessmentId).toBeTruthy();
+    if (!res.assessmentId) return;
+    const detail = await queryAuditRecordById({ ...testAuth.actor }, res.assessmentId);
+    expect(detail?.clinical?.followUpPlan).toBe("Synthetic monitoring and follow-up plan");
+    expect(detail?.prescription?.patientAddress).toContain("200 Synthetic Avenue");
+    expect(detail?.prescription?.prescriberAddress).toContain("100 Test Street");
+  });
+
+  it("persists SDM consent and a structured no-Rx code without prescription fields", async () => {
+    const { createAssessment } = await import("../actions");
+    const input = baseInput({ outcome: "no_rx_otc_or_nonpharm" });
+    input.clinicalRecord.consent = {
+      method: "written",
+      givenBy: "substitute_decision_maker",
+      obtainedAt: "2026-07-16T14:00:00.000Z",
+      substituteDecisionMakerName: "Synthetic SDM",
+      substituteDecisionMakerRelationship: "Parent",
+    };
+    const res = await createAssessment(input);
+    expect(res.success).toBe(true);
+
+    const rows = (await db.execute<{
+      consent_given_by: string;
+      sdm_name: string;
+      sdm_relationship: string;
+      no_rx_rationale_code: string;
+      prescribed_on: string | null;
+    }>(sql`
+      select consent_given_by, sdm_name, sdm_relationship,
+             no_rx_rationale_code, prescribed_on from assessment
+    `)) as unknown as {
+      consent_given_by: string;
+      sdm_name: string;
+      sdm_relationship: string;
+      no_rx_rationale_code: string;
+      prescribed_on: string | null;
+    }[];
+    expect(rows[0]).toEqual({
+      consent_given_by: "substitute_decision_maker",
+      sdm_name: "Synthetic SDM",
+      sdm_relationship: "Parent",
+      no_rx_rationale_code: "otc_recommended",
+      prescribed_on: null,
+    });
+  });
+
+  it("refuses an incomplete clinical record before writing assessment or claim rows", async () => {
+    const { createAssessment } = await import("../actions");
+    const input = baseInput();
+    input.clinicalRecord.carePlan = "";
+
+    const res = await createAssessment(input);
+    expect(res.success).toBe(false);
+    if (!res.success) expect(res.error).toMatch(/clinical-record field/i);
+    expect(await countRows("assessment")).toBe(0);
+    expect(await countRows("claim_draft")).toBe(0);
+  });
+
+  it("database rejects a direct incomplete record_version=2 insert", async () => {
+    let code: string | undefined;
+    try {
+      await db.execute(sql`
+        insert into assessment (
+          pharmacy_id, pharmacist_user_id, patient_id, ailment_group_code,
+          modality, outcome, service_date, retain_until, record_version
+        ) values (
+          ${PHARMACY_ID}::uuid, ${testAuth.actor.userId}::uuid, ${patientId}::uuid,
+          'RHINITIS', 'in_person', 'rx_issued', '2026-07-16', '2036-07-16', 2
+        )
+      `);
+    } catch (err) {
+      code = (err as { cause?: { code?: string } }).cause?.code;
+    }
+    expect(code).toBe("23514");
+    expect(await countRows("assessment")).toBe(0);
+  });
+
   it("completed-then-referral is billable with SSC 4", async () => {
     const { createAssessment } = await import("../actions");
-    const res = await createAssessment({ ...baseInput(), outcome: "no_rx_referral" });
+    const res = await createAssessment(baseInput({ outcome: "no_rx_referral" }));
     expect(res.claim?.billable).toBe(true);
     expect(await countClaimDrafts()).toBe(1);
     const rows = await db.execute<{ ssc: number }>(sql`select ssc from claim_draft`);
@@ -175,7 +369,7 @@ describe("createAssessment → claim_draft", () => {
 
   it("NON-billable: an unknown ailment group drafts nothing (never a default PIN)", async () => {
     const { createAssessment } = await import("../actions");
-    const res = await createAssessment({ ...baseInput(), ailmentGroupCode: "NOT_A_REAL_AILMENT" });
+    const res = await createAssessment(baseInput({ ailmentGroupCode: "NOT_A_REAL_AILMENT" }));
     expect(res.claim?.billable).toBe(false);
     if (res.claim && !res.claim.billable) expect(res.claim.reason).toBe("UNKNOWN_PIN_LOOKUP");
     expect(await countClaimDrafts()).toBe(0);

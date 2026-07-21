@@ -2,7 +2,7 @@
 
 **Verified through:** 2026-07-21
 
-**Quality snapshot:** TypeScript clean · ESLint clean · 81 Vitest tests passing
+**Quality snapshot:** TypeScript clean · ESLint clean · 85 Vitest tests passing
 
 This is the implementation record requested for the project. It describes capabilities present in the repository, not planned work. Remaining items are in [`NEXT_STEPS.md`](NEXT_STEPS.md).
 
@@ -65,9 +65,20 @@ This is the implementation record requested for the project. It describes capabi
 - Replaced legacy local-storage pharmacy settings with authenticated, database-backed pharmacy and pharmacist profile settings.
 - Added pharmacy team management and orientation recording.
 
+## Defensible clinical record and consent (P0-B)
+
+- Added version-2 assessment snapshots with database-enforced completeness while preserving readable legacy version-1 records.
+- Added informed-consent method, giver, timestamp, and conditional substitute decision-maker name/relationship.
+- Added separately queryable presenting complaint, onset/duration/course, associated symptoms, aggravating/relieving factors, treatments tried, health/medication/allergy history, findings, shared decision-making, care plan, and follow-up plan.
+- Added outcome-compatible coded no-Rx rationale; optional narrative cannot replace the required code.
+- Added complete Rx snapshots: patient address, date, drug/strength/quantity, dose/frequency/route, server-derived prescriber identity/practice contact, PCP notification timestamp/method, and choice-of-pharmacy information timestamp.
+- Added authenticated server-rendered review and PDF output. Clinical PHI remains in necessary local form state only, is cleared after persistence, and is never written to browser storage or passed into the audit modal's client props.
+- Added pharmacy practice address/phone settings used server-side for prescription snapshots.
+- Added real-Postgres tests for complete persistence/readback, SDM consent, coded no-Rx records, server refusal, and direct database constraint refusal.
+
 ## Verification and regression coverage
 
 - Vitest runs pure unit tests and real-Postgres integration tests.
 - Docker Postgres uses port 5433, is guarded against non-local database URLs, and rebuilds the migration chain from zero.
 - Tests cover claim derivation combinations, refusal paths, LTC behaviour, remote-virtual tiers, retention, one-per-day, concurrent mutex enforcement, claim persistence/supersession, invitations/auth data, audit grants/triggers, and red-flag zero-claim behaviour.
-- Current repository gates pass: 81 tests, `tsc --noEmit`, and ESLint.
+- Current repository gates pass: 85 tests, `tsc --noEmit`, and ESLint.

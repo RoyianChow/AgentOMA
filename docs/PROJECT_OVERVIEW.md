@@ -4,7 +4,7 @@
 
 **Current stage:** authenticated pilot foundation; **not production-ready**
 
-**Verification at this snapshot:** TypeScript clean, ESLint clean, 81 Vitest tests passing
+**Verification at this snapshot:** TypeScript clean, ESLint clean, 85 Vitest tests passing
 
 AgentOMA supports Ontario pharmacy minor-ailment services. The Ministry of Health Executive Officer Notice effective July 1, 2026 is the source of truth for covered ailment groups, claim maximums, fees, PINs, and billing rules. See [`COMPLIANCE.md`](COMPLIANCE.md) for traceability and [`NEXT_STEPS.md`](NEXT_STEPS.md) for the remaining go-live work.
 
@@ -52,7 +52,7 @@ Clinical content in `src/config/triage.ts` still requires pharmacist review. Do 
 
 ### Pharmacist portal
 
-An authenticated user can retrieve a handoff or start a walk-in assessment, enter identity from the health card, view platform claim history, attest to a clinical-viewer check, choose modality and outcome, and complete an assessment.
+An authenticated user can retrieve a handoff or start a walk-in assessment, enter identity from the health card, view platform claim history, attest to a clinical-viewer check, record informed consent, complete the structured clinical record, choose modality/outcome, and—when issuing a prescription—record patient address, medication directions, PCP notification, and the choice-of-pharmacy discussion.
 
 The server resolves the pharmacy and prescriber from the authenticated session. It derives a read-only `claim_draft` from seeded reference data and shows it for hand-entry into dispensing software. AgentOMA does **not** submit claims to HNS.
 
@@ -86,7 +86,7 @@ Operational and PHI data:
 - `patient`: pharmacy-scoped identity and health-card fields.
 - `intake_session`: zero-PHI handoff state.
 - `triage_exit`: terminal non-billable exits.
-- `assessment`: service record, modality/outcome, and retention date.
+- `assessment`: versioned service snapshot containing consent, structured complaint/history/findings/plan, coded no-Rx rationale, outcome-specific prescription/PCP fields, modality/outcome, and retention date.
 - `claim_draft`: immutable billing snapshot with supersession for corrections.
 - `audit_log`: append-only activity trail.
 
@@ -104,7 +104,7 @@ Authentication data:
 
 ## Migration state
 
-The reviewed chain is `0000` through `0011`:
+The reviewed chain is `0000` through `0012`:
 
 | Range | Purpose |
 |---|---|
@@ -113,9 +113,10 @@ The reviewed chain is `0000` through `0011`:
 | `0005`–`0006` | Claim-draft schema, immutable supersession, one-active-draft constraint |
 | `0007`–`0010` | better-auth core, TOTP/rate limits, invitations/roles, pharmacist profile fields |
 | `0011_audit_hardening` | Database retention trigger, non-owner app role, effective audit/claim grants |
+| `0012_clinical_record_and_consent` | P0-B version-2 consent/clinical/prescription snapshot, completeness checks, pharmacy practice contact |
 
 Use `db:generate` then `db:migrate`. Never use `db:push`.
 
 ## What is complete and what is not
 
-Implemented work is recorded in [`COMPLETED_WORK.md`](COMPLETED_WORK.md). The highest-priority gaps are clinical sign-off, unresolved LTC billing guidance, complete consent and clinical-record capture, server-enforced eligibility/existing-prescription/history gates, virtual/LTC workspace inputs, and removal or approval of the orientation override. See [`NEXT_STEPS.md`](NEXT_STEPS.md) for an ordered plan and [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) for decisions that must come from a pharmacist or ODB.
+Implemented work is recorded in [`COMPLETED_WORK.md`](COMPLETED_WORK.md). The highest-priority gaps are clinical-content sign-off, unresolved LTC billing guidance, server-enforced eligibility/existing-prescription/history gates, virtual/LTC workspace inputs, and removal or approval of the orientation override. See [`NEXT_STEPS.md`](NEXT_STEPS.md) for an ordered plan and [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) for decisions that must come from a pharmacist or ODB.

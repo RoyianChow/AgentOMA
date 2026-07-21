@@ -52,6 +52,12 @@ export default function SettingsForm({
   const [storeName, setStoreName] = useState(initialData.storeName);
   const [hnsAccountId, setHnsAccountId] = useState(initialData.hnsAccountId ?? "");
   const [odbFeeTier, setOdbFeeTier] = useState(initialData.odbFeeTier);
+  const [addressLine1, setAddressLine1] = useState(initialData.addressLine1 ?? "");
+  const [addressLine2, setAddressLine2] = useState(initialData.addressLine2 ?? "");
+  const [city, setCity] = useState(initialData.city ?? "");
+  const [province, setProvince] = useState(initialData.province ?? "ON");
+  const [postalCode, setPostalCode] = useState(initialData.postalCode ?? "");
+  const [phone, setPhone] = useState(initialData.phone ?? "");
   const [pharmacyBusy, setPharmacyBusy] = useState(false);
   const [pharmacySaved, setPharmacySaved] = useState(false);
   const [pharmacyError, setPharmacyError] = useState<string | null>(null);
@@ -60,7 +66,17 @@ export default function SettingsForm({
     setPharmacyBusy(true);
     setPharmacyError(null);
     setPharmacySaved(false);
-    const res = await updatePharmacySettings({ storeName, hnsAccountId, odbFeeTier });
+    const res = await updatePharmacySettings({
+      storeName,
+      hnsAccountId,
+      odbFeeTier,
+      addressLine1,
+      addressLine2,
+      city,
+      province,
+      postalCode,
+      phone,
+    });
     setPharmacyBusy(false);
     if (res.success) {
       setPharmacySaved(true);
@@ -206,6 +222,75 @@ export default function SettingsForm({
               placeholder="optional"
               disabled={!canEdit}
             />
+          </div>
+
+          <div className="settings-form-group">
+            <label className="settings-label" htmlFor="address-line-1">Practice address</label>
+            <input
+              id="address-line-1"
+              className="settings-input"
+              value={addressLine1}
+              onChange={(e) => setAddressLine1(e.target.value)}
+              placeholder="Street address"
+              disabled={!canEdit}
+            />
+            <input
+              className="settings-input"
+              value={addressLine2}
+              onChange={(e) => setAddressLine2(e.target.value)}
+              placeholder="Unit / suite (optional)"
+              disabled={!canEdit}
+              style={{ marginTop: "0.5rem" }}
+            />
+          </div>
+
+          <div className="settings-form-group">
+            <label className="settings-label" htmlFor="city">City</label>
+            <input
+              id="city"
+              className="settings-input"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              disabled={!canEdit}
+            />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+            <div className="settings-form-group">
+              <label className="settings-label" htmlFor="province">Province</label>
+              <input
+                id="province"
+                className="settings-input"
+                value={province}
+                onChange={(e) => setProvince(e.target.value)}
+                disabled={!canEdit}
+              />
+            </div>
+            <div className="settings-form-group">
+              <label className="settings-label" htmlFor="postal-code">Postal code</label>
+              <input
+                id="postal-code"
+                className="settings-input settings-input-mono"
+                value={postalCode}
+                onChange={(e) => setPostalCode(e.target.value)}
+                disabled={!canEdit}
+              />
+            </div>
+          </div>
+
+          <div className="settings-form-group">
+            <label className="settings-label" htmlFor="phone">Practice phone</label>
+            <input
+              id="phone"
+              className="settings-input"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              inputMode="tel"
+              disabled={!canEdit}
+            />
+            <span className="settings-input-hint" style={{ marginTop: "0.25rem", display: "block" }}>
+              This address and phone are snapshotted onto issued prescription records.
+            </span>
           </div>
 
           <div className="settings-form-group">

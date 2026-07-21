@@ -57,12 +57,12 @@ All clinical questions, including the tick-bite timing threshold, remain open fo
 
 | Requirement | Notice | Current implementation | Status |
 |---|---|---|---|
-| Informed consent, verbal/written, person or SDM; who/when/method/relationship | pp.5, 12 | Intake stores a consent timestamp only | 🔶 |
-| Presenting complaint, health/medication history, findings, shared decision-making, care plan | p.5 | Current assessment schema/workspace does not capture the complete structured record | ⬜ |
-| Complete prescription record and PCP notification | pp.5, 12 | Not fully implemented | ⬜ |
-| Structured rationale when no prescription is issued | p.12 | A rationale code field exists; full required capture and validation remain incomplete | 🔶 |
-| Inform patient prescription may be filled anywhere; follow-up still owed | p.5 | Not fully captured as an attested record | ⬜ |
-| Follow-up monitoring, safety/efficacy, and next steps | pp.5, 12 | Not fully implemented | ⬜ |
+| Informed consent, verbal/written, person or SDM; who/when/method/relationship | pp.5, 12 | Pharmacist records method, giver, timestamp, and conditional SDM identity/relationship; Zod and DB checks enforce completeness | ✅ |
+| Presenting complaint, health/medication history, findings, shared decision-making, care plan | p.5 | Version-2 assessment snapshot stores separately queryable complaint/history/findings/decision/plan fields | ✅ |
+| Complete prescription record and PCP notification | pp.5, 12 | Rx outcome requires patient address, drug/strength/quantity/directions, server-derived prescriber snapshot, and PCP timestamp/method | ✅ |
+| Structured rationale when no prescription is issued | p.12 | Outcome-compatible documentation code is required; notes are supplementary only | ✅ |
+| Inform patient prescription may be filled anywhere; follow-up still owed | p.5 | Rx record requires a choice-of-pharmacy information timestamp; follow-up plan is required for every outcome | ✅ |
+| Follow-up monitoring, safety/efficacy, and next steps | pp.5, 12 | Required follow-up/monitoring field, server validation, and DB completeness check | ✅ |
 
 ## Claim assembly
 
@@ -104,11 +104,11 @@ All clinical questions, including the tick-bite timing threshold, remain open fo
 | Defensible activity trail for post-payment review | p.12 | Pharmacy-scoped append-only audit events and server-generated exports | ✅ |
 | Audit records cannot be updated/deleted by the app | p.12 | Trigger plus `agentoma_app` privilege revocation; real-Postgres grant tests | ✅ |
 | Retain ten years from last service or ten years after age 18, whichever later | p.12 | App computation plus database trigger; pediatric branch tested | ✅ |
-| Improper payments are recoverable | p.12 | Claim/audit snapshots support review; complete clinical record still needs implementation | 🔶 |
+| Improper payments are recoverable | p.12 | Claim, consent, clinical, prescription, PCP, and audit snapshots support post-payment review | ✅ |
 | No PHI in patient intake | PHIPA posture | Intake schema/actions/tests contain symptom/handoff state only | ✅ |
 | No PHI in unnecessary client components or logs | PHIPA posture | Audit records render on the server; exports are generated server-side; continued review required for new features | ✅ |
 | PHI remains in Canada | PHIPA posture | Postgres is documented for Supabase `ca-central-1`; future object storage is not yet implemented | 🔶 |
 
 ## Current release conclusion
 
-The billing derivation, database constraints, authentication foundation, audit immutability, and retention backstops are implemented. The product is **not yet ready for clinical production** because clinical content lacks pharmacist approval and the eligibility, consent, existing-prescription, virtual/LTC, and complete-record workflows are incomplete. The ordered remediation list is [`NEXT_STEPS.md`](NEXT_STEPS.md).
+The billing derivation, version-2 clinical/consent record, database constraints, authentication foundation, audit immutability, and retention backstops are implemented. The product is **not yet ready for clinical production** because clinical content lacks pharmacist approval and the eligibility, existing-prescription, claim-history, virtual/LTC, and orientation-override issues remain incomplete. The ordered remediation list is [`NEXT_STEPS.md`](NEXT_STEPS.md).

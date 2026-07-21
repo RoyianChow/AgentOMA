@@ -161,6 +161,18 @@
 .fieldValue {
   font-size: 0.95rem;
   color: var(--text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.legacyRecord {
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.88rem;
+  color: var(--warning-text);
+  background: var(--warning-light);
+  border: 1px solid var(--warning, #f59e0b);
+  border-radius: var(--radius-md);
 }
 .mono {
   font-family: var(--font-mono, ui-monospace, monospace);

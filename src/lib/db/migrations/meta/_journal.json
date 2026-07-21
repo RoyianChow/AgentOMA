@@ -85,6 +85,13 @@
       "when": 1784425676661,
       "tag": "0011_audit_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1784637106046,
+      "tag": "0012_clinical_record_and_consent",
+      "breakpoints": true
     }
   ]
 }
