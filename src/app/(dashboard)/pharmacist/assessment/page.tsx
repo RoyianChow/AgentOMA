@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getIntakeSessionById, getPendingIntakeSessions } from "../actions";
 import { requirePortalPage } from "@/lib/auth-guard";
 import AssessmentWorkspace from "./AssessmentWorkspace";
@@ -17,33 +17,29 @@ export default async function AssessmentPage({
 
   const { session: sessionId } = await searchParams;
 
+  // Every assessment must trace back to a real, submitted intake — there is
+  // no walk-in/cold-start path. No session id at all means this page was
+  // reached some way other than clicking a queue row.
+  if (!sessionId) {
+    redirect("/pharmacist");
+  }
+
+  // Loading an intake goes through the same guarded action as typing the code
+  // by hand: pharmacy scope + single-use + expiry re-checked server-side. A
+  // session that doesn't resolve (expired / already consumed / wrong
+  // pharmacy) sends the pharmacist back to the queue rather than rendering a
+  // blank/cold-start workspace.
+  const res = await getIntakeSessionById(sessionId);
+  if (!res.success) {
+    redirect("/pharmacist");
+  }
+
   // Pharmacy-scoped, unconsumed, unexpired — filtered server-side in the
   // action. Holds no patient identity (the intake has none by design).
   const pending = await getPendingIntakeSessions();
   const queue = (
-    <IntakeQueue intakes={pending.sessions} currentSessionId={sessionId ?? null} />
+    <IntakeQueue intakes={pending.sessions} currentSessionId={sessionId} />
   );
-
-  // Loading an intake goes through the same guarded action as typing the code
-  // by hand: pharmacy scope + single-use + expiry re-checked server-side.
-  const res = sessionId ? await getIntakeSessionById(sessionId) : null;
-
-  if (res && !res.success) {
-    return (
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "2rem" }}>
-        {queue}
-        <div className="detail-section-card" style={{ maxWidth: "540px", margin: "2rem auto", textAlign: "center", padding: "2.5rem 2rem" }}>
-          <h2 style={{ marginBottom: "0.75rem" }}>Intake unavailable</h2>
-          <p style={{ color: "var(--text-muted)", marginBottom: "1.5rem" }}>{res.error}</p>
-          <Link href="/pharmacist" className="btn btn-primary">
-            Back to Dashboard
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const session = res?.success ? res.session : null;
 
   return (
     <div>
@@ -52,7 +48,7 @@ export default async function AssessmentPage({
       </div>
       {/* Keyed by intake id: switching rows REMOUNTS the workspace, so no
           state — typed identity included — survives from the previous intake. */}
-      <AssessmentWorkspace key={session?.id ?? "walk-in"} session={session} />
+      <AssessmentWorkspace key={res.session.id} session={res.session} />
     </div>
   );
 }
