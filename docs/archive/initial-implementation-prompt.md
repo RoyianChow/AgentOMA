@@ -1,3 +1,7 @@
+# Archived: initial implementation prompt
+
+> Historical artifact only. It predates the current architecture and may describe deleted code or completed work. Do not use it as current guidance; see [`../PROJECT_OVERVIEW.md`](../PROJECT_OVERVIEW.md).
+
 # Task: Firebase migration, better-auth pharmacist portal, and MoH-compliant minor ailment assessment
 
 You are working on an existing Ontario pharmacy minor-ailments web platform. Read the codebase first and produce a written plan before writing code. Do not start editing files until you have shown me the plan and I approve it.
@@ -8,7 +12,7 @@ You are working on an existing Ontario pharmacy minor-ailments web platform. Rea
 
 ---
 
-## (COMPLETE) Part 0 — Two decisions to make before you touch anything   
+## (COMPLETE) Part 0 — Two decisions to make before you touch anything
 
 ### 0a. better-auth + Firestore
 better-auth ships adapters for Drizzle, Prisma, Kysely, and MongoDB. It has **no first-class Firestore adapter.** Pick one and justify it in the plan:

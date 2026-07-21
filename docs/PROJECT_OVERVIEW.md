@@ -1,238 +1,121 @@
-# AgentOMA — Project Overview
+# AgentOMA project overview
 
-_A snapshot of what this website is and everything that has been built into it so far._
-_Companion to [`docs/COMPLIANCE.md`](COMPLIANCE.md), which maps each rule to the source regulation._
+**Status snapshot:** 2026-07-21
 
----
+**Current stage:** authenticated pilot foundation; **not production-ready**
 
-## 1. What it is
+**Verification at this snapshot:** TypeScript clean, ESLint clean, 81 Vitest tests passing
 
-**AgentOMA is a web platform for Ontario pharmacies to run publicly-funded _minor ailment_ assessments** — the program where a pharmacist can assess and prescribe for ~23 common conditions (rhinitis, UTI, cold sores, pink eye, etc.) and bill the Ministry of Health.
+AgentOMA supports Ontario pharmacy minor-ailment services. The Ministry of Health Executive Officer Notice effective July 1, 2026 is the source of truth for covered ailment groups, claim maximums, fees, PINs, and billing rules. See [`COMPLIANCE.md`](COMPLIANCE.md) for traceability and [`NEXT_STEPS.md`](NEXT_STEPS.md) for the remaining go-live work.
 
-It is deliberately **two-sided**:
+## Product surfaces
 
-| Side | Who | Where | Holds PHI? |
+| Surface | Route | Purpose | PHI policy |
 |---|---|---|---|
-| **Patient intake** | A patient on their phone in the pharmacy (possibly unwell, possibly holding a sick child) | `/assessment` — a bare kiosk screen | **No.** By design — only symptom answers, never name/DOB/health card |
-| **Pharmacist portal** | The pharmacist at the counter | `/pharmacist/*` | Yes — identity is attached here, keyed from the physical health card |
-| **Marketing site** | Public | `/` | No |
+| Marketing site | `/` | Public product information | No PHI |
+| Patient intake | `/assessment` | Mobile kiosk triage and six-character handoff | Collects zero PHI by design |
+| Authentication | `/sign-in`, `/enroll-2fa`, `/accept-invitation` | Invitation-only portal access and mandatory TOTP | Authentication data only |
+| Pharmacist portal | `/pharmacist/*` | Intake retrieval, patient identity, assessment, claim draft, audit, settings, team | Contains PHI; authenticated and pharmacy-scoped |
+| FHIR route | `/api/fhir` | Preserved export scaffold | Disabled with `403`; not available to clients |
 
-The core idea: the patient does a **guided, zero-PHI triage** on their own phone that narrows "something is wrong with me" down to one funded ailment (or routes them safely to 911 / a doctor / "talk to the pharmacist"). It ends in a **6-character handoff code**. The pharmacist types that code into their dashboard, reads the triage trail, adds identity from the health card, and records a compliant, billable assessment.
+Next.js route groups isolate layouts without changing URLs:
 
-The whole thing is governed by a real regulation — the Ontario MoH **Executive Officer Notice: Funding for Minor Ailment Services, effective July 1 2026** (the PDF lives in [`docs/regulatory/`](regulatory/)). That notice is the source of truth for the ailment list, the PINs (billing codes), claim maximums, fees, and billing rules. Getting these wrong costs the pharmacy real money on a Ministry post-payment review, which is why so much of the work below is about **provable correctness**.
+- `(site)` supplies public header and footer.
+- `(intake)` is a bare kiosk layout with an isolated CSS module and large tap targets.
+- `(auth)` contains sign-in, invitation acceptance, and TOTP enrollment.
+- `(dashboard)` contains the pharmacist portal without marketing chrome.
+- The root layout contains only document structure, fonts, and global CSS.
 
----
+## Technology and deployment
 
-## 2. Tech stack
+| Concern | Current choice |
+|---|---|
+| Framework | Next.js 16.2 App Router, React 19, strict TypeScript |
+| Database | Supabase Postgres in `ca-central-1` |
+| ORM and migrations | Drizzle ORM; file-based migrations only |
+| Authentication | better-auth 1.6 with Drizzle, email/password, TOTP, database sessions and rate limits |
+| Validation | Zod and `@t3-oss/env-nextjs` |
+| Tests | Vitest; database tests use a fresh Docker Postgres on port 5433 |
+| Exports | Server-rendered claim handoff, audit CSV/PDF, assessment-record PDF |
 
-| Concern | Choice | Notes |
-|---|---|---|
-| Framework | **Next.js 16.2** (App Router, Turbopack) | ⚠️ Breaking changes vs older Next — e.g. middleware is renamed `proxy.ts`. See `AGENTS.md`. |
-| UI | React 19, CSS Modules + one big `globals.css` | Intake uses an isolated CSS module; portal/marketing use `globals.css` utility classes |
-| Language | TypeScript (strict) | `tsc --noEmit` is clean |
-| Datastore | **Supabase Postgres** (region `ca-central-1`, for PHIPA residency) | |
-| ORM | **Drizzle** | Chosen over Prisma (a Prisma request came in as a template paste and was reconciled back to Drizzle) |
-| Env | `@t3-oss/env-nextjs` + zod, wired into `next.config.ts` | Fails the build on missing/invalid vars; no raw `process.env` in app code |
-| Tests | **Vitest** | Unit tests for the money rules |
-| PDF export | `jspdf` + `jspdf-autotable` | Audit-log export |
-| Identity | **better-auth 1.6** (Drizzle adapter) | Mandatory TOTP, invitation-only onboarding, 30-min rolling sessions. Firebase Auth explicitly removed |
-| File storage | Supabase Storage (planned, for Rx/referral PDFs) | |
+Firebase is no longer part of the stack. PHI and operational data use Canadian-region Postgres. Future Rx/referral document storage is planned for Supabase Storage but is not implemented.
 
-**Firebase is gone.** `src/lib/firebase.ts` and the `firebase` dependency were deleted once grep confirmed zero importers.
+## Current workflows
 
----
+### Patient intake
 
-## 3. Repository map
+The kiosk runs an emergency check, a deterministic narrowing tree, ailment-specific red-flag questions, claim-history self-report, existing-prescription self-report, consent confirmation, and a summary. It has five terminal outcomes: emergency, assessable, referral, not funded, and unsure.
 
-```
-src/
-  env.ts                         Typed/validated env (server+client split)
-  app/
-    layout.tsx                   Root: <html>/<body> + fonts + globals.css only. No chrome.
-    globals.css                  ~2,500 lines. Marketing + portal design system.
-    (site)/                      Route group WITH header/footer chrome
-      layout.tsx                   <Navbar/> <main/> <Footer/>
-      page.tsx                     Marketing home ("/")
-    (intake)/                    Route group — BARE kiosk shell
-      layout.tsx                   just <main>{children}</main>
-      assessment/
-        page.tsx                   Server component; passes claim maximums to the flow
-        TriageFlow.tsx             The whole patient wizard (zero-PHI, client)
-        TriageFlow.module.css      Isolated kiosk styling (own palette + fonts)
-        actions.ts                 createIntakeSession / logTriageExit (server actions)
-    (dashboard)/                 Route group — BARE portal shell (no site chrome)
-      pharmacist/
-        page.tsx                   Dashboard (server component): stats, intake queue, recents
-        DashboardRefresher.tsx     Auto-refresh of the queue
-        Dashboard.module.css
-        actions.ts                 The portal's server actions (see §6)
-        assessment/
-          page.tsx                 Loads an intake session by id
-          AssessmentWorkspace.tsx  Pharmacist records the assessment (identity + outcome)
-        audit/page.tsx             Ministry audit log view + CSV/PDF export
-        settings/page.tsx          Pharmacy settings (localStorage-backed — legacy)
-    api/fhir/route.ts            FHIR/Kroll export — GATED (returns 403) pending auth
-  components/                    Navbar, Footer (marketing chrome)
-  config/
-    triage.ts                    THE TRIAGE TREE: nodes, options, red flags, emergency signs
-    ailment-reference.ts         SERVER-ONLY reference data (PINs, fees, maxes) — seed input
-  lib/
-    db/
-      index.ts                   Drizzle singleton (pooled Supabase connection)
-      schema/                    reference.ts + assessments.ts (+ barrel index.ts)
-      migrations/                Drizzle migrations 0000–0004 (file-based; 0004 = triggers + REVOKE)
-      seed.ts                    npm run db:seed — reference data + "Sam Child" retention row
-      verify.ts                  Connection smoke test
-      __tests__/                 Vitest money-rule tests
-    reference/minor-ailment-reference.ts   Adversarially-verified PIN/fee/max source (seed)
-    reference/types.ts
-    retention.ts                 computeRetainUntil (the 10y / age-18 clock)
-    audit.ts                     writeAudit() append-only helper
-    auth.ts                      better-auth instance (TOTP, sessions, rate limits)
-    auth-guard.ts                requirePortalUser — THE per-action security boundary
-    invitations.ts               invitation-only onboarding (token hash, single-use)
-  hooks/usePharmacyConfig.ts     ⚠️ LEGACY (localStorage pharmacy profile; used by settings)
-docs/
-  COMPLIANCE.md                  Rule → EO Notice section mapping
-  PROJECT_OVERVIEW.md            (this file)
-  regulatory/…pdf                The EO Notice (source of truth)
-```
+An assessable flow creates a short-lived, single-use `intake_session` containing symptom answers and a handoff code—never a name, date of birth, health number, or other patient identifier. Emergency and red-flag exits remain structurally separate from completed assessments; a red-flag exit creates no assessment or claim draft.
 
----
+Clinical content in `src/config/triage.ts` still requires pharmacist review. Do not treat the intake as a diagnosis.
 
-## 4. The three route groups (URLs unchanged by the grouping)
+### Pharmacist portal
 
-Next.js route groups `(name)` don't affect the URL — they let different sections have different layouts:
+An authenticated user can retrieve a handoff or start a walk-in assessment, enter identity from the health card, view platform claim history, attest to a clinical-viewer check, choose modality and outcome, and complete an assessment.
 
-- **`(site)`** → header + footer. Serves `/` (marketing home) and formerly the portal.
-- **`(intake)`** → bare `<main>`. Serves `/assessment`. No nav, no exit links — it's a kiosk. `TriageFlow` paints its own full-viewport background so the marketing site's `globals.css` body styles don't bleed in.
-- **`(dashboard)`** → bare shell (no site chrome). Serves `/pharmacist/*`. The dashboard supplies its own UI via `Dashboard.module.css` + `globals.css` utility classes.
+The server resolves the pharmacy and prescriber from the authenticated session. It derives a read-only `claim_draft` from seeded reference data and shows it for hand-entry into dispensing software. AgentOMA does **not** submit claims to HNS.
 
-The root `layout.tsx` is intentionally minimal: `<html>`/`<body>`, five loaded fonts (Geist for the site; **Bricolage Grotesque / IBM Plex Sans / IBM Plex Mono** for the intake kiosk), and the `globals.css` import.
+The portal also provides server-rendered audit records, CSV/PDF export, pharmacy settings, team invitations, and orientation recording.
 
----
+## Security and authorization
 
-## 5. Data model (Drizzle → Supabase Postgres)
+- better-auth is the only identity layer. Public self-signup is unavailable.
+- Invitations are single-use, expiring, pharmacy-scoped, and role-scoped.
+- Supported roles are `pharmacy_admin`, `pharmacist`, `intern`, `student`, and `technician`.
+- TOTP is mandatory. Sessions use a 30-minute rolling policy and server-side revocation.
+- `proxy.ts` is an optimistic navigation gate only. It performs no authorization.
+- Every portal server action calls the server-side guard to verify session, active role, and pharmacy scope. Billing completion also resolves the eligible prescriber and orientation record.
+- `MOCK_PHARMACY_ID` has been removed.
+- The application runs through a non-owner database role so audit and claim-draft grants are effective.
 
-**Reference tables** (`schema/reference.ts`) — seeded, versioned with `effective_date`/`end_date` so a future PIN revision can coexist:
+There is currently an audited pharmacy-admin break-glass path around the orientation record. That policy conflicts with the intended hard eligibility gate and must be resolved before production; see [`NEXT_STEPS.md`](NEXT_STEPS.md).
 
-- `ailment_group` — the 23 groups + `max_claims_per_365_days`
-- `pin` — 4 PINs per group (in-person/virtual × Rx/no-Rx), each with `fee_cents`
-- `ailment_red_flag` — table exists, seeded later (clinical content needs pharmacist sign-off)
-- `claim_rule` — cross-ailment rules **as data**: insect⊕tick same-day mutex, warts-scope exclusion
+## Data model
 
-**Operational / PHI tables** (`schema/assessments.ts`):
+Reference data is effective-dated and seeded idempotently:
 
-- `pharmacy` — `store_name`, **`odb_fee_tier`** (`regular_8_83`/`rural_9_93`/`rural_12_14`/`rural_13_25`), `hns_account_id`
-- `patient` — name, `dob`, `health_number`, `gender`. **PHI.** Unique on **`(pharmacy_id, health_number)`** (single-tenant-safe scoping)
-- `intake_session` — the zero-PHI handoff: `code`, `trail` (jsonb), self-reports, `expires_at`, single-use `consumed_at`
-- `assessment` — the billable record: `modality`, `outcome`, `service_date`, **`retain_until`**; unique **`one_per_day`** index on `(patient_id, ailment_group_code, service_date)`
-- `triage_exit` — logged when a red flag / emergency ends the flow (no claim)
-- `audit_log` — **append-only** event trail (immutable at the DB level — see §7)
+- `ailment_group`: funded groups and trailing-365-day maximums.
+- `pin`: four modality/outcome PIN rows per group with fee cents.
+- `claim_rule`: data-driven same-day mutex and scope rules.
+- `ailment_red_flag`: schema for reviewed clinical rules; clinical content remains gated on pharmacist approval.
 
----
+Operational and PHI data:
 
-## 6. The two user flows
+- `pharmacy`: store identity, HNS account identifier, and ODB fee tier.
+- `patient`: pharmacy-scoped identity and health-card fields.
+- `intake_session`: zero-PHI handoff state.
+- `triage_exit`: terminal non-billable exits.
+- `assessment`: service record, modality/outcome, and retention date.
+- `claim_draft`: immutable billing snapshot with supersession for corrections.
+- `audit_log`: append-only activity trail.
 
-### 6a. Patient intake (`/assessment`, `TriageFlow.tsx`)
+Authentication data:
 
-A guarded, single-question-per-screen wizard. **Holds no PHI.** Phases:
+- `user`, `account`, `session`, `verification`, `two_factor`, `rate_limit`, and `invitation`.
 
-1. **emergency** — always first, never skippable. Any tick → `emergency_out` (call 911). No claim.
-2. **triage** — walks the narrowing tree in `config/triage.ts` ("Where's the problem?" → … → one ailment). A live counter shows how many of the 23 conditions still fit.
-3. **redflags** — per-ailment red-flag checklist. A hit is **terminal** → `refer` (see a doctor, **no claim**).
-4. **history** — "assessed for this in the last 12 months, at _any_ pharmacy?" (self-report, advisory only).
-5. **rx** — "do you already have a prescription for this?" (either "yes" blocks a claim).
-6. **consent** — records that consent was given (the pharmacist re-confirms in person).
-7. **summary** — shows the **6-character handoff code** + a triage recap.
+## Database guarantees
 
-Five outcomes, not two: **emergency / assessable / refer / not_funded / unsure**. The distinction between _red-flag exit_ (no claim) and _completed-then-referred_ (billable, SSC=4) is kept structurally separate — it's the one most likely to cause an improper claim.
+- One assessment per patient, ailment group, and service day is enforced by a unique index.
+- Insect-bite/urticaria and tick-bite same-day exclusion is enforced by an advisory-lock database trigger and tested under concurrency.
+- `retain_until` is recomputed by a database trigger using the longer adult/minor retention branch.
+- `audit_log` rejects updates and deletes, and the application role lacks those privileges.
+- `claim_draft` rejects deletion and field mutation. Corrections insert a replacement and permanently set `superseded_by_id`; only one active draft can exist per assessment at commit.
 
-On finish, `createIntakeSession` writes an `intake_session` (code, trail, self-reports, 2-hour expiry). **Nothing that identifies the patient is stored.**
+## Migration state
 
-### 6b. Pharmacist portal (`/pharmacist/*`)
+The reviewed chain is `0000` through `0011`:
 
-- **Dashboard** (`page.tsx`, server component): today's assessment count, pending-intake count, **estimated revenue today** (computed from the seeded PIN fees), the live **intake queue**, and recent assessments. Auto-refreshes.
-- **Assessment workspace** (`assessment/AssessmentWorkspace.tsx`): opened from a queue item (or as a walk-in). Pharmacist keys **identity from the physical health card**, sees the triage trail + self-reports + the platform's 365-day count, must tick a **clinical-viewer attestation**, picks outcome + modality, and signs. This calls `upsertPatient` then `createAssessment`.
-- **Audit log** (`audit/page.tsx`): searchable/filterable table of all assessments with CSV + PDF export, and a 10-year-retention banner.
-- **Settings** (`settings/page.tsx`): pharmacy profile — currently backed by **localStorage** via `usePharmacyConfig` (legacy; not yet the DB `pharmacy` row).
+| Range | Purpose |
+|---|---|
+| `0000`–`0003` | Reference data, removal of the legacy prototype table, operational tables, pharmacy fee/HNS fields, pharmacy-scoped patients |
+| `0004_hardening` | Same-day mutex trigger and initial audit immutability |
+| `0005`–`0006` | Claim-draft schema, immutable supersession, one-active-draft constraint |
+| `0007`–`0010` | better-auth core, TOTP/rate limits, invitations/roles, pharmacist profile fields |
+| `0011_audit_hardening` | Database retention trigger, non-owner app role, effective audit/claim grants |
 
-**Server actions** (`(dashboard)/pharmacist/actions.ts`) are the data layer: `getDashboardStats`, `getPendingIntakeSessions`, `getIntakeSessionById`, `checkSameDayMutex`, `upsertPatient`, `createAssessment`, `getPatientHistoryCount`, `getAllAssessments`.
+Use `db:generate` then `db:migrate`. Never use `db:push`.
 
----
+## What is complete and what is not
 
-## 7. Compliance & correctness (the parts that cost money)
-
-Everything here maps back to the EO Notice in [`COMPLIANCE.md`](COMPLIANCE.md).
-
-- **Reference data is a single, verified source.** All 23 ailments' PINs/fees/maxes live in `lib/reference/minor-ailment-reference.ts`, transcribed from Table 1 and **adversarially verified** (three independent agents re-extracted the PDF table and diffed it — this caught that the old prototype had 13 wrong claim-maximums and non-existent PINs). Acne's odd `9858250` No-Rx PIN is preserved exactly.
-- **One claim per person / ailment / day** — a `UNIQUE` index (`assessment_one_per_day`), not app logic. A concurrent duplicate gets `23505` → friendly message.
-- **Insect⊕tick same-day mutex** — enforced by a **database trigger** (`assessment_same_day_mutex_trg`) that takes a per-patient `pg_advisory_xact_lock` (serialising concurrent inserts to close a real race the app-level check couldn't) and reads the rule from `claim_rule` (data-driven). Verified live: tick-after-insect is rejected `23P01`.
-- **Retention clock** — `computeRetainUntil = max(service + 10y, (dob + 18y) + 10y)`. The age-18 branch is the one everyone forgets; a seeded minor ("Sam Child", born 2019, assessed 2026) correctly lands on **2047**, not 2036 — unit-tested and verified in the DB.
-- **Audit log is append-only as a _property_** — a trigger raises on any `UPDATE`/`DELETE` (verified: both rejected `0A000`), plus `REVOKE UPDATE, DELETE … FROM PUBLIC`. `createAssessment` writes an `assessment.created` audit row (no PHI in the metadata).
-- **Remote-virtual fee-tier gate** — `createAssessment` hard-blocks `virtual_remote` unless the pharmacy is a rural fee tier **and** location + reason are recorded.
-- **365-day count is advisory only** — the UI never says a claim _will_ be paid; the platform can't see other pharmacies' claims, so it's framed as a guide + a clinical-viewer attestation.
-
-**Tested** (`npm run test`, 10 passing): mutex pre-check, one-per-day handling, retain age-18 branch, fee-tier gate (block + allow), intake-session expiry, red-flag exit.
-
----
-
-## 8. What has been done — timeline
-
-1. **Security triage.** Closed two live PHI-exposure holes first: the FHIR route (accepted PHI from any unauthenticated caller — now `403`) and the old assessment page (wrote the full payload to Firestore/localStorage from the browser — removed).
-2. **Reference data + compliance map.** Verified PIN/fee/max source file; `docs/COMPLIANCE.md`; the EO Notice added under `docs/regulatory/`.
-3. **Typed env.** `src/env.ts` (@t3-oss) wired into the build; `.env.example`; Firebase Auth removed.
-4. **Drizzle + Supabase.** Connection singleton, reference schema, first migration + idempotent seed, verified end-to-end.
-5. **Intake rebuilt** as the zero-PHI `TriageFlow` (route groups isolate it from site chrome; own CSS module + kiosk fonts; ≥56px tap targets; usable one-handed at 375px).
-6. **Pharmacist portal rebuilt** on server actions (dashboard, walk-in workspace, audit, intake-session handoff via the 6-char code).
-7. **Money-rule hardening.** Vitest installed + tests running; DB-level mutex trigger; audit-log immutability + REVOKE; `pharmacy.odb_fee_tier`/`hns_account_id` + the remote-virtual gate; per-pharmacy patient uniqueness; the age-18 retention branch.
-
----
-
-## 9. Known gaps & tech debt (what's _not_ done)
-
-**Big rocks still open:**
-
-- ~~No authentication~~ **DONE (Part 4).** better-auth with mandatory TOTP, invitation-only
-  onboarding, five roles, `proxy.ts` as a UX-only gate with `requirePortalUser()` re-verifying
-  session + role inside every server action, `MOCK_PHARMACY_ID` eliminated, prescriber OCP from
-  the authenticated profile, and the orientation gate refusing completion before
-  `deriveClaimDraft`. See `SESSION_HANDOFF.md` §"Part 4 auth — where things live".
-- **Claim assembly (`deriveClaimDraft`) not built.** The pieces exist (PIN reference data, fee tier, the fee/PIN lookup), but the actual `ClaimDraft` — deriving PIN + fee + prescriber ID (`09` / `PHR888`) + intervention codes (`PS`/`ML`) + quantity + `SSC=4` — and persisting/exporting it is not yet implemented.
-- **LTC branch** (capitation / `$0` / secondary-provider `LT`) is not implemented.
-
-**Compliance/quality gaps:**
-
-- **Clinical content is unvalidated.** Every triage question and red flag in `config/triage.ts` is marked **PHARMACIST REVIEW REQUIRED**. The **tick-bite 72-hour** threshold is explicitly a _guess_ and must be replaced with OCP's Lyme PEP algorithm before go-live (it's time-critical).
-- ~~Audit page pulls PHI to the client~~ **DONE.** Fully server-rendered (`audit/page.tsx` + `audit/query.ts`); CSV/PDF exports are generated server-side by `audit/export/route.ts`; `getAllAssessments` is deleted. No client component receives patient data.
-- ~~`retain_until` isn't DB-enforced~~ **DONE.** `assessment_retain_until_trg` (migration 0011) recomputes the clock on every insert/update — a direct write cannot shorten it.
-- ~~Audit coverage is thin~~ **Broadened.** Events now cover patient/intake creation, orientation attestation, invitations, exports (access log), and assessment/claim. Writes remain best-effort (not same-transaction) — a deliberate trade so an audit failure can't undo clinical work.
-- **The app runs as a non-owner DB role** (`agentoma_app`, migration 0011) — the audit-log REVOKE actually binds (`42501` verified). Migrations still run as the owner via `DIRECT_URL`.
-- **Pharmacy config is split.** Settings uses a **localStorage** profile (`usePharmacyConfig`) while the real fee tier lives in the DB `pharmacy` row — these should be unified.
-
-**Housekeeping:**
-
-- The FHIR route's `buildFhirResponse` is preserved but unreachable (the route returns 403 pending auth).
-- **`README.md` is still the create-next-app boilerplate** (this file is the real overview).
-
----
-
-## 10. Running it
-
-Requires Node (Node 22 known-good) and a Supabase Postgres instance.
-
-```bash
-cp .env.example .env.local          # fill in DATABASE_URL / DIRECT_URL (+ others)
-npm install
-npm run db:migrate                  # apply migrations (incl. 0004: triggers + REVOKE)
-npm run db:seed                     # reference data + Sam Child retention row (idempotent)
-npm run dev                         # http://localhost:3000
-```
-
-**Scripts:** `dev` · `build` · `start` · `lint` · `test` / `test:watch` · `db:generate` · `db:migrate` · `db:studio` · `db:seed` · `db:verify`.
-
-**Schema changes go `db:generate` → review the SQL → `db:migrate`. `db:push` is removed and must not come back** — it drops columns on a PHI database and bypasses migration tracking (which is how this repo drifted once already). Triggers/grants aren't modelled by Drizzle: add them via `db:generate --custom` (see `migrations/0004_hardening.sql`).
-
-**Env vars** (validated in `src/env.ts`): `DATABASE_URL` (pooled, 6543), `DIRECT_URL` (direct, 5432), `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET`, `CLINICAL_VIEWER_BASE_URL`, `NEXT_PUBLIC_APP_URL`.
-
-**Verify the hardening** (mutex + audit immutability) any time by re-running the DB checks; the money rules are covered by `npm run test`.
+Implemented work is recorded in [`COMPLETED_WORK.md`](COMPLETED_WORK.md). The highest-priority gaps are clinical sign-off, unresolved LTC billing guidance, complete consent and clinical-record capture, server-enforced eligibility/existing-prescription/history gates, virtual/LTC workspace inputs, and removal or approval of the orientation override. See [`NEXT_STEPS.md`](NEXT_STEPS.md) for an ordered plan and [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) for decisions that must come from a pharmacist or ODB.

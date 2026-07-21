@@ -81,3 +81,5 @@ long-dead column or config would walk an agent straight back into a billing bug 
 killed.
 
 **If an invariant changes, change it here, in the same PR. The pointer files never change.**
+
+## Imported Claude Cowork project instructions

@@ -1,60 +1,56 @@
 # Open questions
 
-Regulatory/clinical ambiguities that **code must not resolve on its own**. Each one names who
-can answer it and what the code does in the meantime.
+**Reviewed:** 2026-07-21
 
-The rule: where the EO Notice is genuinely unclear, we take the **conservative branch** (the one
-that cannot produce an improper claim or an unsafe outcome), mark it `// TODO: VERIFY` at the
-branch, and log it here. An agent that "reasonably infers" an answer gets it wrong forever; a
-pharmacist or the ODB help desk settles it in five minutes.
+These issues require a pharmacist, the ODB Pharmacy Help Desk, or the product lead. Code and documentation must not infer an answer. Until resolved, use the conservative path that cannot create an improper claim or unsafe outcome.
 
----
+## 1. LTC secondary provider, non-emergency
 
-## 1. LTC secondary provider, non-emergency — is a $0 claim still required?
+**Status:** open — production blocker
 
-**Status:** open · **Who answers:** ODB Pharmacy Help Desk **1-800-668-6641** (or the pilot pharmacist)
-**Code:** `src/lib/claims/derive-claim-draft.ts` → `LTC_SECONDARY_NON_EMERGENCY`
+**Owner:** ODB Pharmacy Help Desk, **1-800-668-6641**, with the pilot pharmacist
 
-The Notice is arguably in tension with itself:
+**Code:** `src/lib/claims/derive-claim-draft.ts`, reason `LTC_SECONDARY_NON_EMERGENCY`
 
-- **Exclusions (p.14)** — minor ailment services for an LTC resident "must be provided by the LTC
-  home's contracted primary pharmacy service provider"; secondary providers are eligible for the
-  fee **only in emergency situations**. Reads as: a secondary provider shouldn't be doing this
-  at all outside an emergency.
-- **Footnote 5 (p.7) / Exclusions (p.14)** — "Pharmacies ineligible to receive a service fee must
-  submit claims for minor ailment services with a **zero dollar fee**." Reads as: if the service
-  happened anyway, a $0 claim is still filed rather than no claim at all.
+The Notice appears ambiguous:
 
-**Current behaviour:** `deriveClaimDraft` **refuses** — returns
-`{ billable: false, reason: "LTC_SECONDARY_NON_EMERGENCY" }`. This is the conservative choice: it
-cannot emit an improper fee. It may, however, be wrong in the other direction (failing to file a
-required $0 claim).
+- The exclusions on p.14 say an LTC resident's minor-ailment service must be provided by the contracted primary pharmacy, with a secondary provider eligible for the fee only in an emergency.
+- Footnote 5 on p.7 and the exclusions language say a pharmacy ineligible for a service fee must submit a zero-dollar claim.
 
-**What would change if the answer is "file a $0 claim":** the branch returns a billable draft with
-`feeCents: 0` (same shape as the LTC-primary path), instead of refusing.
+**Current safe behaviour:** derivation refuses and emits no claim draft. This avoids an improper fee but may omit a required zero-dollar claim.
 
-**Do not resolve this by reasoning about it.** Ask the help desk.
+**Decision required:** confirm whether a secondary, non-emergency service must not generate a claim or must generate a zero-dollar claim. Record the help-desk response, date, caller, and approved code change before altering the branch.
 
----
+## 2. Tick-bite post-exposure timing threshold
 
-## 2. Tick-bite post-exposure prophylaxis timing threshold
+**Status:** open — clinical production blocker
 
-**Status:** open · **Who answers:** pilot pharmacist, against OCP's Lyme PEP algorithm
-**Code:** `src/config/triage.ts` → `RED_FLAGS.tick_bite`
+**Owner:** pilot pharmacist using the current OCP Lyme PEP algorithm
 
-The **72-hour** figure in the tick-bite red flags is a **guess**, flagged in-file. It is
-time-critical and being wrong is unsafe. It must be replaced with the threshold from OCP's actual
-assessment/prescribing algorithm before go-live. Not ours to change — clinical content is the
-lead's.
+**Code:** `src/config/triage.ts`, tick-bite red flags
 
----
+The current 72-hour value is explicitly marked as a guess. It is time-critical clinical content and must be replaced or confirmed from the approved algorithm before go-live. An agent must not change it based on general knowledge.
 
-## 3. Red-flag and triage content generally
+## 3. Full triage and red-flag approval
 
-**Status:** open · **Who answers:** pilot pharmacist
+**Status:** open — clinical production blocker
+
+**Owner:** pilot pharmacist / clinical governance lead
+
 **Code:** `src/config/triage.ts`
 
-Every triage question and red flag is drafted from general clinical knowledge, **not** OCP's
-algorithms. The whole file is marked `PHARMACIST REVIEW REQUIRED`. It produces a *self-reported
-presenting complaint*, never a diagnosis — the pharmacist still verifies the self-diagnosis, which
-is what the Notice actually requires.
+The narrowing tree and red flags are draft clinical content. They produce a self-reported presenting complaint, not a diagnosis, and require line-by-line pharmacist review, versioning, and sign-off before use with real patients.
+
+**Decision record needed:** reviewer, source algorithm/version, review date, approved effective date, and any required changes.
+
+## 4. Orientation admin override
+
+**Status:** open — policy and compliance blocker
+
+**Owner:** product lead with pilot pharmacist/compliance review
+
+**Code:** `src/app/(dashboard)/pharmacist/actions.ts` and `AssessmentWorkspace.tsx`
+
+The intended eligibility rule is a hard block when the prescribing pharmacist or supervisor has no recorded orientation completion. The current implementation permits a pharmacy admin to enter an audited break-glass reason and continue.
+
+**Decision required:** remove the override, or document authoritative approval and tightly defined circumstances. Auditability alone does not establish billing eligibility.

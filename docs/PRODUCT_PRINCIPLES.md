@@ -1,11 +1,11 @@
-# soul.md — what AgentOMA is, underneath the code
+# Product principles — what AgentOMA is underneath the code
 
-> `AGENTS.md` tells you the rules. `PROJECT_OVERVIEW.md` tells you the shape.
+> [`AGENTS.md`](../AGENTS.md) tells you the rules. [`PROJECT_OVERVIEW.md`](PROJECT_OVERVIEW.md) tells you the shape.
 > This file tells you the **character** — the beliefs the code is an argument for,
 > and why it refuses the shortcuts a normal app would take.
 >
 > If you only read one thing before touching billing or PHI, read this, then the
-> `ontario-minor-ailments` skill.
+> installed `ontario-minor-ailments` skill when it is available.
 
 ---
 
