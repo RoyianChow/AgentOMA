@@ -38,7 +38,7 @@ export default async function AssessmentPage({
     return (
       <div
         style={{
-          minHeight: "100vh",
+          minHeight: "100dvh",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -49,10 +49,16 @@ export default async function AssessmentPage({
         }}
       >
         <div style={{ maxWidth: "26rem" }}>
-          <h1 style={{ fontSize: "1.6rem", marginBottom: "0.75rem" }}>
+          <h1
+            style={{
+              fontSize: "clamp(1.4rem, 6vw, 1.6rem)",
+              marginBottom: "0.75rem",
+              color: "#f4f1ea",
+            }}
+          >
             Scan your pharmacy&apos;s code to get started
           </h1>
-          <p style={{ opacity: 0.75, fontSize: "1rem", lineHeight: 1.5 }}>
+          <p style={{ opacity: 0.75, fontSize: "1rem", lineHeight: 1.5, color: "#f4f1ea" }}>
             This assessment needs to know which pharmacy you&apos;re visiting.
             Scan the QR code posted in the pharmacy — or ask the pharmacist for
             the link — and you&apos;ll be brought right back here.

@@ -160,9 +160,6 @@ export default async function PharmacistDashboard() {
               <h2>Quick Actions</h2>
             </div>
             <div className={styles.actionsList}>
-              <Link href="/pharmacist/assessment" className="btn btn-primary">
-                Start Walk-in Assessment
-              </Link>
               <Link href="/pharmacist/audit" className="btn btn-secondary">
                 Ministry Audit Log
               </Link>

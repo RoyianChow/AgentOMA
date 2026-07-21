@@ -250,6 +250,89 @@ ul {
   gap: 1rem;
 }
 
+/* Hamburger toggle — hidden on desktop, revealed at the mobile breakpoint. */
+.navbar-toggle {
+  display: none;
+  background: none;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.navbar-toggle:hover {
+  background-color: var(--bg-tertiary);
+  border-color: var(--text-muted);
+}
+
+/* The Start Triage link lives inside the collapsible menu on mobile only.
+   Parent selectors keep these above `.btn`'s own `display` (equal specificity,
+   defined later in the file). */
+.navbar-links .navbar-menu-cta {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .navbar-toggle {
+    display: inline-flex;
+  }
+
+  /* The inline desktop CTA collapses into the menu to save the top row. */
+  .navbar-actions .navbar-cta {
+    display: none;
+  }
+
+  /* Nav links become a full-width dropdown anchored under the sticky bar. */
+  .navbar-links {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 0.5rem 0 calc(0.5rem + env(safe-area-inset-bottom, 0px));
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow-lg);
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: max-height var(--transition-normal) ease,
+      opacity var(--transition-fast) ease;
+  }
+
+  .navbar-links.open {
+    max-height: 24rem;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .navbar-link {
+    padding: 0.9rem 1.5rem;
+    font-size: 1rem;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  .navbar-link:hover,
+  .navbar-link.active {
+    background-color: var(--bg-tertiary);
+  }
+
+  .navbar-links .navbar-menu-cta {
+    display: inline-flex;
+    margin: 0.75rem 1.5rem 0.25rem;
+  }
+}
+
 /* Footer */
 .footer {
   background-color: var(--bg-secondary);
@@ -684,6 +767,57 @@ ul {
   max-width: 600px;
   margin: 0 auto 2.5rem;
   font-size: 1.1rem;
+}
+
+/* Tighten the marketing vertical rhythm on phones so sections don't feel
+   stretched, and keep the rotated hero card from forcing horizontal scroll. */
+@media (max-width: 640px) {
+  .hero {
+    padding: 3rem 0 2.5rem;
+  }
+
+  .hero-description {
+    font-size: 1.05rem;
+    margin-bottom: 2rem;
+  }
+
+  .hero-card {
+    transform: none;
+    padding: 1.25rem;
+  }
+
+  .hero-card:hover {
+    transform: none;
+  }
+
+  .features {
+    padding: 3.5rem 0;
+  }
+
+  .section-header {
+    margin-bottom: 2.5rem;
+  }
+
+  .feature-card {
+    padding: 1.75rem;
+  }
+
+  .cta-section {
+    padding: 3.5rem 0;
+  }
+
+  .cta-box {
+    padding: 2.5rem 1.25rem;
+  }
+
+  .cta-box h2 {
+    font-size: 1.75rem;
+  }
+
+  .cta-box p {
+    font-size: 1rem;
+    margin-bottom: 2rem;
+  }
 }
 
 /* --------------------------------------------------------------------------

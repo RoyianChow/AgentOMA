@@ -64,7 +64,7 @@ export type PendingIntake = {
   existingRxSelfReport: string | null;
   trailLength: number;
 };
-
+//test
 export type IntakeSessionDTO = {
   id: string;
   code: string;
@@ -457,7 +457,7 @@ export async function createAssessment(data: {
   modality: string;
   virtualLocation?: string;
   remoteReason?: string;
-  intakeSessionId?: string;
+  intakeSessionId: string;
   outcome: string;
   serviceDate: Date;
   // P0-B owns this clinical/consent payload and its record_version=2 schema.
@@ -582,17 +582,16 @@ export async function createAssessment(data: {
     //    (Patient row already loaded — and pharmacy-scoped — in step 0b.)
     const retainUntil = computeRetainUntil(new Date(data.serviceDate), new Date(pat.dob));
 
-    // 3b. If an intake session is attached, it must belong to this pharmacy.
-    if (data.intakeSessionId) {
-      const intake = await db.query.intakeSession.findFirst({
-        where: and(
-          eq(intakeSession.id, data.intakeSessionId),
-          eq(intakeSession.pharmacyId, pharmacyId)
-        ),
-      });
-      if (!intake) {
-        return { success: false, error: "Intake session not found for this pharmacy." };
-      }
+    // 3b. Every assessment must trace back to a real, submitted intake — no
+    //     walk-in/cold-start path. It must belong to this pharmacy.
+    const intake = await db.query.intakeSession.findFirst({
+      where: and(
+        eq(intakeSession.id, data.intakeSessionId),
+        eq(intakeSession.pharmacyId, pharmacyId)
+      ),
+    });
+    if (!intake) {
+      return { success: false, error: "Intake session not found for this pharmacy." };
     }
 
     // 4. Insert Assessment. The recording user is the ACTOR (audit truth —
@@ -606,7 +605,7 @@ export async function createAssessment(data: {
       modality: data.modality,
       virtualLocation: data.virtualLocation || null,
       remoteReason: data.remoteReason || null,
-      intakeSessionId: data.intakeSessionId || null,
+      intakeSessionId: data.intakeSessionId,
       outcome: data.outcome,
       noRxRationaleCode: clinical.noRxRationaleCode || null,
       noRxRationaleNotes: clinical.noRxRationaleNotes || null,
@@ -671,15 +670,13 @@ export async function createAssessment(data: {
       retainUntil,
     }).returning({ id: assessment.id });
 
-    // 5. Consume intake session if provided
-    if (data.intakeSessionId) {
-      await db.update(intakeSession)
-        .set({
-          consumedAt: new Date(),
-          consumedByAssessmentId: newAssessment.id,
-        })
-        .where(eq(intakeSession.id, data.intakeSessionId));
-    }
+    // 5. Consume the intake session — single-use.
+    await db.update(intakeSession)
+      .set({
+        consumedAt: new Date(),
+        consumedByAssessmentId: newAssessment.id,
+      })
+      .where(eq(intakeSession.id, data.intakeSessionId));
 
     // 6. Derive the claim draft. The assessment itself is recorded either way —
     //    the pharmacist did the work — but a NON-BILLABLE result persists NO

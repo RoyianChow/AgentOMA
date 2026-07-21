@@ -193,7 +193,7 @@ const baseInput = (
 describe("createAssessment → claim_draft", () => {
   it("billable: persists exactly one active draft, with derived fields", async () => {
     const { createAssessment } = await import("../actions");
-    const res = await createAssessment(baseInput());
+    const res = await createAssessment(await baseInput());
 
     expect(res.success).toBe(true);
     expect(res.claim?.billable).toBe(true);
@@ -353,7 +353,7 @@ describe("createAssessment → claim_draft", () => {
   it("NON-billable: persists zero drafts and surfaces the reason", async () => {
     const { createAssessment } = await import("../actions");
     const res = await createAssessment({
-      ...baseInput(),
+      ...(await baseInput()),
       ltc: { isResident: true, providerRole: "secondary", isEmergency: false },
     });
 
@@ -384,7 +384,7 @@ describe("createAssessment → claim_draft", () => {
     `);
     testAuth.actor.userId = (rows as unknown as { id: string }[])[0].id;
 
-    const res = await createAssessment(baseInput());
+    const res = await createAssessment(await baseInput());
 
     expect(res.success).toBe(false);
     if (!res.success) expect(res.error).toMatch(/Mandatory Orientation/i);
@@ -396,7 +396,7 @@ describe("createAssessment → claim_draft", () => {
 
   it("ORIENTATION GATE: the attested pharmacist's identical completion proceeds", async () => {
     const { createAssessment } = await import("../actions");
-    const res = await createAssessment(baseInput());
+    const res = await createAssessment(await baseInput());
     expect(res.success).toBe(true);
     expect(res.claim?.billable).toBe(true);
     expect(await countRows("assessment")).toBe(1);
@@ -490,7 +490,7 @@ describe("createAssessment → claim_draft", () => {
     testAuth.actor.role = "intern";
     testAuth.actor.supervisingPharmacistId = supervisorId;
 
-    const refused = await createAssessment(baseInput());
+    const refused = await createAssessment(await baseInput());
     expect(refused.success).toBe(false);
     expect(await countRows("claim_draft")).toBe(0);
 
@@ -499,7 +499,7 @@ describe("createAssessment → claim_draft", () => {
     await db.execute(
       sql`update "user" set orientation_completed_at = now() where id = ${supervisorId}::uuid`,
     );
-    const ok = await createAssessment(baseInput());
+    const ok = await createAssessment(await baseInput());
     expect(ok.success).toBe(true);
     expect(ok.claim?.billable).toBe(true);
     const drafts = await db.execute<{ prescriber_id: string }>(
@@ -523,7 +523,7 @@ describe("createAssessment → claim_draft", () => {
     expect(loaded.success).toBe(true);
     if (loaded.success) expect(loaded.session.consentCapturedAt).not.toBeNull();
 
-    const res = await createAssessment({ ...baseInput(), intakeSessionId: intakeId });
+    const res = await createAssessment({ ...(await baseInput()), intakeSessionId: intakeId });
     expect(res.success).toBe(true);
 
     const linked = (await db.execute<{ intake_session_id: string }>(
