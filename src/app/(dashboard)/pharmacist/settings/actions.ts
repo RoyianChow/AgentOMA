@@ -14,6 +14,12 @@ export type SettingsData = {
   storeName: string;
   hnsAccountId: string | null;
   odbFeeTier: string;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  province: string | null;
+  postalCode: string | null;
+  phone: string | null;
   // this pharmacist's own prescriber identity (self-editable)
   ocpNumber: string | null;
   isAsOfRight: boolean;
@@ -44,6 +50,12 @@ export async function getPharmacySettings(): Promise<
         storeName: dbPharmacy.storeName,
         hnsAccountId: dbPharmacy.hnsAccountId,
         odbFeeTier: dbPharmacy.odbFeeTier,
+        addressLine1: dbPharmacy.addressLine1,
+        addressLine2: dbPharmacy.addressLine2,
+        city: dbPharmacy.city,
+        province: dbPharmacy.province,
+        postalCode: dbPharmacy.postalCode,
+        phone: dbPharmacy.phone,
         ocpNumber: dbUser.ocpNumber,
         isAsOfRight: dbUser.isAsOfRight,
         orientationCompletedAt: dbUser.orientationCompletedAt?.toISOString() ?? null,
@@ -129,12 +141,31 @@ export async function updatePharmacySettings(input: {
   storeName: string;
   hnsAccountId: string;
   odbFeeTier: string;
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  province: string;
+  postalCode: string;
+  phone: string;
 }): Promise<{ success: true } | { success: false; error: string }> {
   try {
     const actor = await requirePortalUser(["pharmacy_admin"]);
 
     const storeName = input.storeName.trim();
     if (!storeName) return { success: false, error: "Store name is required." };
+
+    const addressLine1 = input.addressLine1.trim();
+    const city = input.city.trim();
+    const province = input.province.trim();
+    const postalCode = input.postalCode.trim();
+    const phone = input.phone.trim();
+    if (!addressLine1 || !city || !province || !postalCode || !phone) {
+      return {
+        success: false,
+        error:
+          "Practice address, city, province, postal code, and phone are required for prescription records.",
+      };
+    }
 
     // The tier must be a real enum value — never free text, or a typo would
     // silently flip remote-virtual eligibility.
@@ -148,6 +179,12 @@ export async function updatePharmacySettings(input: {
         storeName,
         hnsAccountId: input.hnsAccountId.trim() || null,
         odbFeeTier: input.odbFeeTier as (typeof FEE_TIERS)[number],
+        addressLine1,
+        addressLine2: input.addressLine2.trim() || null,
+        city,
+        province,
+        postalCode,
+        phone,
       })
       .where(eq(pharmacy.id, actor.pharmacyId));
 

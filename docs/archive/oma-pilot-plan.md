@@ -1,3 +1,7 @@
+# Archived: Ontario Minor Ailments pilot build plan
+
+> Historical artifact only. Status and architecture in this plan may be obsolete. Use [`../COMPLETED_WORK.md`](../COMPLETED_WORK.md) and [`../NEXT_STEPS.md`](../NEXT_STEPS.md) for current project state.
+
 # OMA Project — Pilot Build Plan
 
 **Team:** Royian (lead, 180h) · Dev A (55h) · Dev B (55h) · Dev C (55h) — ~345h total

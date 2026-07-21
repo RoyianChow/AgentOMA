@@ -9,11 +9,67 @@ import {
   type IntakeSessionDTO,
 } from "../actions";
 import ClaimDraftPanel, { type ClaimResult } from "./ClaimDraftPanel";
+import {
+  NO_RX_RATIONALE_LABELS,
+  PCP_NOTIFICATION_METHOD_LABELS,
+  SYMPTOM_COURSE_LABELS,
+  type ConsentGivenBy,
+  type ConsentMethod,
+  type NoRxRationaleCode,
+  type PcpNotificationMethod,
+  type SymptomCourse,
+} from "@/lib/clinical-record-types";
+
+function emptyClinicalForm() {
+  return {
+    consentMethod: "",
+    consentGivenBy: "",
+    consentObtainedAt: "",
+    sdmName: "",
+    sdmRelationship: "",
+    primaryConcern: "",
+    symptomOnset: "",
+    symptomDuration: "",
+    symptomCourse: "",
+    associatedSymptoms: "",
+    aggravatingFactors: "",
+    relievingFactors: "",
+    treatmentsTried: "",
+    healthHistory: "",
+    medicationHistory: "",
+    allergies: "",
+    assessmentFindings: "",
+    sharedDecisionMaking: "",
+    carePlan: "",
+    followUpPlan: "",
+    noRxRationaleCode: "",
+    noRxRationaleNotes: "",
+    prescribedOn: "",
+    patientAddressLine1: "",
+    patientAddressLine2: "",
+    patientCity: "",
+    patientProvince: "ON",
+    patientPostalCode: "",
+    drugName: "",
+    strength: "",
+    quantity: "",
+    directionsDose: "",
+    directionsFrequency: "",
+    directionsRoute: "",
+    pcpNotificationAt: "",
+    pcpNotificationMethod: "",
+    patientChoiceInformedAt: "",
+  };
+}
 
 export default function AssessmentWorkspace({
   session,
+  canOverrideOrientation = false,
 }: {
-  session: IntakeSessionDTO;
+  session: IntakeSessionDTO | null;
+  /** True only for pharmacy admins — gates the audited orientation override
+   * affordance. The override is ALSO re-verified server-side. */
+  canOverrideOrientation?: boolean;
 }) {
   // Patient Identity
   const [firstName, setFirstName] = useState("");
@@ -25,6 +81,7 @@ export default function AssessmentWorkspace({
   const [systemCount, setSystemCount] = useState<number | null>(null);
   const [outcome, setOutcome] = useState("rx_issued");
   const [modality, setModality] = useState("in_person");
+  const [clinical, setClinical] = useState(emptyClinicalForm);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +95,60 @@ export default function AssessmentWorkspace({
   const [claimResult, setClaimResult] = useState<ClaimResult | null>(null);
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
 
+  // Admin orientation-override state. `orientationBlock` is set when the server
+  // refuses on the gate AND the current user can override; the admin then types
+  // a reason and re-submits with it.
+  const [orientationBlock, setOrientationBlock] = useState(false);
+  const [overrideReason, setOverrideReason] = useState("");
+
+  const setClinicalField = (field: keyof ReturnType<typeof emptyClinicalForm>, value: string) => {
+    setClinical((current) => ({ ...current, [field]: value }));
+  };
+
+  const commonClinicalReady = [
+    clinical.consentMethod,
+    clinical.consentGivenBy,
+    clinical.consentObtainedAt,
+    clinical.primaryConcern,
+    clinical.symptomOnset,
+    clinical.symptomDuration,
+    clinical.symptomCourse,
+    clinical.associatedSymptoms,
+    clinical.aggravatingFactors,
+    clinical.relievingFactors,
+    clinical.treatmentsTried,
+    clinical.healthHistory,
+    clinical.medicationHistory,
+    clinical.allergies,
+    clinical.assessmentFindings,
+    clinical.sharedDecisionMaking,
+    clinical.carePlan,
+    clinical.followUpPlan,
+  ].every((value) => value.trim().length > 0);
+  const consentReady =
+    clinical.consentGivenBy !== "substitute_decision_maker" ||
+    (clinical.sdmName.trim().length > 0 && clinical.sdmRelationship.trim().length > 0);
+  const prescriptionReady =
+    outcome !== "rx_issued" ||
+    [
+      clinical.prescribedOn,
+      clinical.patientAddressLine1,
+      clinical.patientCity,
+      clinical.patientProvince,
+      clinical.patientPostalCode,
+      clinical.drugName,
+      clinical.strength,
+      clinical.quantity,
+      clinical.directionsDose,
+      clinical.directionsFrequency,
+      clinical.directionsRoute,
+      clinical.pcpNotificationAt,
+      clinical.pcpNotificationMethod,
+      clinical.patientChoiceInformedAt,
+    ].every((value) => value.trim().length > 0);
+  const noRxReady = outcome === "rx_issued" || clinical.noRxRationaleCode.length > 0;
+  const clinicalReady = commonClinicalReady && consentReady && prescriptionReady && noRxReady;
+
   const checkHistory = async (patientId: string, ailmentCode: string) => {
     const res = await getPatientHistoryCount(patientId, ailmentCode);
     if (res.success) {
@@ -45,14 +156,15 @@ export default function AssessmentWorkspace({
     }
   };
 
-  const handleSubmitAssessment = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-
-
-
+  // Core submit. `overrideReason` is only passed on the admin break-glass
+  // re-submit; a normal submit passes nothing and the server enforces the gate.
+  const runSubmit = async (overrideReason?: string) => {
     if (!gender) {
       setError("Please select a gender.");
+      return;
+    }
+    if (!clinicalReady) {
+      setError("Complete every required consent and clinical-record field before signing.");
       return;
     }
 
@@ -60,7 +172,7 @@ export default function AssessmentWorkspace({
     setError(null);
 
     try {
-      // 2. Resolve Patient (TypeScript now knows gender is "F" | "M" | "U")
+      // Resolve Patient (TypeScript now knows gender is "F" | "M" | "U")
       const patientRes = await upsertPatient({
         firstName,
         lastName,
@@ -79,7 +191,7 @@ export default function AssessmentWorkspace({
       // Check history just to update UI right before submit, but server will check mutex
       await checkHistory(patientId, ailmentCode);
 
-      // 2. Create Assessment. Pharmacy + prescriber identity come from the
+      // Create Assessment. Pharmacy + prescriber identity come from the
       // authenticated session server-side.
       const assessmentRes = await createAssessment({
         patientId,
@@ -88,10 +200,81 @@ export default function AssessmentWorkspace({
         intakeSessionId: session.id,
         outcome,
         serviceDate: new Date(),
+        clinicalRecord: {
+          consent: {
+            method: clinical.consentMethod as ConsentMethod,
+            givenBy: clinical.consentGivenBy as ConsentGivenBy,
+            obtainedAt: new Date(clinical.consentObtainedAt).toISOString(),
+            substituteDecisionMakerName:
+              clinical.consentGivenBy === "substitute_decision_maker"
+                ? clinical.sdmName
+                : undefined,
+            substituteDecisionMakerRelationship:
+              clinical.consentGivenBy === "substitute_decision_maker"
+                ? clinical.sdmRelationship
+                : undefined,
+          },
+          presentingComplaint: {
+            primaryConcern: clinical.primaryConcern,
+            onset: clinical.symptomOnset,
+            duration: clinical.symptomDuration,
+            course: clinical.symptomCourse as SymptomCourse,
+            associatedSymptoms: clinical.associatedSymptoms,
+            aggravatingFactors: clinical.aggravatingFactors,
+            relievingFactors: clinical.relievingFactors,
+            treatmentsTried: clinical.treatmentsTried,
+          },
+          healthHistory: clinical.healthHistory,
+          medicationHistory: clinical.medicationHistory,
+          allergies: clinical.allergies,
+          assessmentFindings: clinical.assessmentFindings,
+          sharedDecisionMaking: clinical.sharedDecisionMaking,
+          carePlan: clinical.carePlan,
+          followUpPlan: clinical.followUpPlan,
+          noRxRationaleCode:
+            outcome === "rx_issued"
+              ? undefined
+              : (clinical.noRxRationaleCode as NoRxRationaleCode),
+          noRxRationaleNotes: clinical.noRxRationaleNotes || undefined,
+          prescription:
+            outcome === "rx_issued"
+              ? {
+                  prescribedOn: clinical.prescribedOn,
+                  patientAddressLine1: clinical.patientAddressLine1,
+                  patientAddressLine2: clinical.patientAddressLine2 || undefined,
+                  patientCity: clinical.patientCity,
+                  patientProvince: clinical.patientProvince,
+                  patientPostalCode: clinical.patientPostalCode,
+                  drugName: clinical.drugName,
+                  strength: clinical.strength,
+                  quantity: clinical.quantity,
+                  directionsDose: clinical.directionsDose,
+                  directionsFrequency: clinical.directionsFrequency,
+                  directionsRoute: clinical.directionsRoute,
+                  pcpNotificationAt: new Date(clinical.pcpNotificationAt).toISOString(),
+                  pcpNotificationMethod:
+                    clinical.pcpNotificationMethod as PcpNotificationMethod,
+                  patientChoiceInformedAt: new Date(
+                    clinical.patientChoiceInformedAt,
+                  ).toISOString(),
+                }
+              : undefined,
+        },
         isOdbRecipient,
+        orientationOverrideReason: overrideReason,
       });
 
       if (!assessmentRes.success) {
+        // Orientation gate: if THIS user can override, surface the audited
+        // override panel instead of a dead-end error. Otherwise show the error.
+        const orientationRequired =
+          "orientationRequired" in assessmentRes && assessmentRes.orientationRequired;
+        const canOverride =
+          "canOverride" in assessmentRes && assessmentRes.canOverride;
+        if (orientationRequired && canOverride && canOverrideOrientation) {
+          setOrientationBlock(true);
+          return;
+        }
         throw new Error(assessmentRes.error || "Failed to create assessment.");
       }
 
@@ -101,12 +284,26 @@ export default function AssessmentWorkspace({
       if ("assessmentId" in assessmentRes) {
         setAssessmentId(assessmentRes.assessmentId as string);
       }
+      // PHI exists only in this necessary pharmacist form while it is being
+      // completed. Clear it immediately after the server confirms persistence;
+      // nothing is copied to browser storage or returned as client props.
+      setFirstName("");
+      setLastName("");
+      setDob("");
+      setHealthNumber("");
+      setGender("");
+      setClinical(emptyClinicalForm());
       setIsDone(true);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred.");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSubmitAssessment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await runSubmit();
   };
 
   if (isDone) {
@@ -204,6 +401,101 @@ export default function AssessmentWorkspace({
             </div>
           </div>
 
+          <div className="detail-section-card">
+            <h3 style={{ marginBottom: "0.35rem" }}>Consent &amp; clinical record</h3>
+            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
+              Record what was obtained and assessed during this encounter. Enter “None” where
+              a reviewed history item has no findings; do not leave required sections blank.
+            </p>
+
+            <h4 style={{ marginBottom: "0.65rem" }}>Informed consent</h4>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+              <div>
+                <label className="form-label">Method</label>
+                <select className="form-input" value={clinical.consentMethod} onChange={(e) => setClinicalField("consentMethod", e.target.value)}>
+                  <option value="">Select...</option>
+                  <option value="verbal">Verbal</option>
+                  <option value="written">Written</option>
+                </select>
+              </div>
+              <div>
+                <label className="form-label">Consent given by</label>
+                <select className="form-input" value={clinical.consentGivenBy} onChange={(e) => setClinicalField("consentGivenBy", e.target.value)}>
+                  <option value="">Select...</option>
+                  <option value="patient">Patient</option>
+                  <option value="substitute_decision_maker">Substitute decision-maker</option>
+                </select>
+              </div>
+              <div>
+                <label className="form-label">Consent obtained at</label>
+                <input type="datetime-local" className="form-input" value={clinical.consentObtainedAt} onChange={(e) => setClinicalField("consentObtainedAt", e.target.value)} />
+              </div>
+            </div>
+            {clinical.consentGivenBy === "substitute_decision_maker" && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "1rem" }}>
+                <div>
+                  <label className="form-label">SDM name</label>
+                  <input className="form-input" value={clinical.sdmName} onChange={(e) => setClinicalField("sdmName", e.target.value)} />
+                </div>
+                <div>
+                  <label className="form-label">Relationship to patient</label>
+                  <input className="form-input" value={clinical.sdmRelationship} onChange={(e) => setClinicalField("sdmRelationship", e.target.value)} />
+                </div>
+              </div>
+            )}
+
+            <h4 style={{ margin: "1.4rem 0 0.65rem" }}>Presenting complaint</h4>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label className="form-label">Primary concern and symptom description</label>
+                <textarea className="form-input" rows={3} value={clinical.primaryConcern} onChange={(e) => setClinicalField("primaryConcern", e.target.value)} />
+              </div>
+              <div>
+                <label className="form-label">Onset</label>
+                <input className="form-input" value={clinical.symptomOnset} onChange={(e) => setClinicalField("symptomOnset", e.target.value)} placeholder="When and how it began" />
+              </div>
+              <div>
+                <label className="form-label">Duration</label>
+                <input className="form-input" value={clinical.symptomDuration} onChange={(e) => setClinicalField("symptomDuration", e.target.value)} />
+              </div>
+              <div>
+                <label className="form-label">Course</label>
+                <select className="form-input" value={clinical.symptomCourse} onChange={(e) => setClinicalField("symptomCourse", e.target.value)}>
+                  <option value="">Select...</option>
+                  {Object.entries(SYMPTOM_COURSE_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {([
+              ["associatedSymptoms", "Associated symptoms"],
+              ["aggravatingFactors", "Aggravating factors"],
+              ["relievingFactors", "Relieving factors"],
+              ["treatmentsTried", "Treatments already tried and response"],
+            ] as const).map(([field, label]) => (
+              <div key={field} style={{ marginTop: "0.8rem" }}>
+                <label className="form-label">{label}</label>
+                <textarea className="form-input" rows={2} value={clinical[field]} onChange={(e) => setClinicalField(field, e.target.value)} />
+              </div>
+            ))}
+
+            <h4 style={{ margin: "1.4rem 0 0.65rem" }}>History, findings &amp; plan</h4>
+            {([
+              ["healthHistory", "Relevant health history"],
+              ["medicationHistory", "Current and recent medication history"],
+              ["allergies", "Allergies and intolerances"],
+              ["assessmentFindings", "Findings that verify the self-diagnosis"],
+              ["sharedDecisionMaking", "Shared decision-making notes"],
+              ["carePlan", "Care plan"],
+              ["followUpPlan", "Follow-up and monitoring plan"],
+            ] as const).map(([field, label]) => (
+              <div key={field} style={{ marginTop: "0.8rem" }}>
+                <label className="form-label">{label}</label>
+                <textarea className="form-input" rows={3} value={clinical[field]} onChange={(e) => setClinicalField(field, e.target.value)} />
+              </div>
+            ))}
+          </div>
 
           <div className="detail-section-card">
             <h3 style={{ marginBottom: "1rem" }}>Clinical Decision & Billing</h3>
@@ -228,12 +520,139 @@ export default function AssessmentWorkspace({
               </label>
               <div>
                 <label className="form-label">Outcome</label>
-                <select className="form-input" value={outcome} onChange={e => setOutcome(e.target.value)}>
+                <select
+                  className="form-input"
+                  value={outcome}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setOutcome(next);
+                    setClinical((current) => ({
+                      ...current,
+                      noRxRationaleCode:
+                        next === "no_rx_referral"
+                          ? "referral_to_other_provider"
+                          : next === "rx_issued" ||
+                              current.noRxRationaleCode === "referral_to_other_provider"
+                            ? ""
+                            : current.noRxRationaleCode,
+                    }));
+                  }}
+                >
                   <option value="rx_issued">Prescription Issued</option>
                   <option value="no_rx_referral">No Rx - Referral</option>
                   <option value="no_rx_otc_or_nonpharm">No Rx - OTC / Non-Pharm</option>
                 </select>
               </div>
+
+              {outcome !== "rx_issued" && (
+                <div style={{ padding: "1rem", background: "var(--bg-tertiary)", borderRadius: "var(--radius-md)" }}>
+                  <h4 style={{ marginBottom: "0.75rem" }}>Structured no-Rx rationale</h4>
+                  <label className="form-label">Rationale code</label>
+                  <select
+                    className="form-input"
+                    value={clinical.noRxRationaleCode}
+                    onChange={(e) => setClinicalField("noRxRationaleCode", e.target.value)}
+                    disabled={outcome === "no_rx_referral"}
+                  >
+                    {outcome === "no_rx_referral" ? (
+                      <option value="referral_to_other_provider">
+                        {NO_RX_RATIONALE_LABELS.referral_to_other_provider}
+                      </option>
+                    ) : (
+                      <>
+                        <option value="">Select...</option>
+                        {Object.entries(NO_RX_RATIONALE_LABELS)
+                          .filter(([value]) => value !== "referral_to_other_provider")
+                          .map(([value, label]) => (
+                            <option key={value} value={value}>{label}</option>
+                          ))}
+                      </>
+                    )}
+                  </select>
+                  <label className="form-label" style={{ marginTop: "0.75rem" }}>
+                    Supplementary rationale notes (optional)
+                  </label>
+                  <textarea
+                    className="form-input"
+                    rows={2}
+                    value={clinical.noRxRationaleNotes}
+                    onChange={(e) => setClinicalField("noRxRationaleNotes", e.target.value)}
+                  />
+                </div>
+              )}
+
+              {outcome === "rx_issued" && (
+                <div style={{ padding: "1rem", background: "var(--bg-tertiary)", borderRadius: "var(--radius-md)" }}>
+                  <h4 style={{ marginBottom: "0.75rem" }}>Prescription record</h4>
+                  <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "0.8rem" }}>
+                    Prescriber name, OCP status, practice address, and phone are snapshotted
+                    server-side from the authenticated profile and pharmacy settings.
+                  </p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                    <div>
+                      <label className="form-label">Date prescribed</label>
+                      <input type="date" className="form-input" value={clinical.prescribedOn} onChange={(e) => setClinicalField("prescribedOn", e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="form-label">Drug name</label>
+                      <input className="form-input" value={clinical.drugName} onChange={(e) => setClinicalField("drugName", e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="form-label">Strength</label>
+                      <input className="form-input" value={clinical.strength} onChange={(e) => setClinicalField("strength", e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="form-label">Quantity</label>
+                      <input className="form-input" value={clinical.quantity} onChange={(e) => setClinicalField("quantity", e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="form-label">Dose</label>
+                      <input className="form-input" value={clinical.directionsDose} onChange={(e) => setClinicalField("directionsDose", e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="form-label">Frequency</label>
+                      <input className="form-input" value={clinical.directionsFrequency} onChange={(e) => setClinicalField("directionsFrequency", e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="form-label">Route</label>
+                      <input className="form-input" value={clinical.directionsRoute} onChange={(e) => setClinicalField("directionsRoute", e.target.value)} />
+                    </div>
+                  </div>
+
+                  <h4 style={{ margin: "1rem 0 0.65rem" }}>Patient address on prescription</h4>
+                  <input className="form-input" value={clinical.patientAddressLine1} onChange={(e) => setClinicalField("patientAddressLine1", e.target.value)} placeholder="Street address" />
+                  <input className="form-input" value={clinical.patientAddressLine2} onChange={(e) => setClinicalField("patientAddressLine2", e.target.value)} placeholder="Unit / suite (optional)" style={{ marginTop: "0.5rem" }} />
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 0.6fr 0.8fr", gap: "0.75rem", marginTop: "0.5rem" }}>
+                    <input className="form-input" value={clinical.patientCity} onChange={(e) => setClinicalField("patientCity", e.target.value)} placeholder="City" />
+                    <input className="form-input" value={clinical.patientProvince} onChange={(e) => setClinicalField("patientProvince", e.target.value)} placeholder="Province" />
+                    <input className="form-input" value={clinical.patientPostalCode} onChange={(e) => setClinicalField("patientPostalCode", e.target.value)} placeholder="Postal code" />
+                  </div>
+
+                  <h4 style={{ margin: "1rem 0 0.65rem" }}>PCP notification &amp; choice of pharmacy</h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                    <div>
+                      <label className="form-label">PCP notified at</label>
+                      <input type="datetime-local" className="form-input" value={clinical.pcpNotificationAt} onChange={(e) => setClinicalField("pcpNotificationAt", e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="form-label">Notification method</label>
+                      <select className="form-input" value={clinical.pcpNotificationMethod} onChange={(e) => setClinicalField("pcpNotificationMethod", e.target.value)}>
+                        <option value="">Select...</option>
+                        {Object.entries(PCP_NOTIFICATION_METHOD_LABELS).map(([value, label]) => (
+                          <option key={value} value={value}>{label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <label className="form-label">
+                        Patient informed they may fill at any pharmacy — timestamp
+                      </label>
+                      <input type="datetime-local" className="form-input" value={clinical.patientChoiceInformedAt} onChange={(e) => setClinicalField("patientChoiceInformedAt", e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="form-label">Modality</label>
                 <select className="form-input" value={modality} onChange={e => setModality(e.target.value)}>
@@ -247,13 +666,73 @@ export default function AssessmentWorkspace({
                 type="button"
                 className="btn btn-primary"
                 onClick={handleSubmitAssessment}
-                disabled={isSubmitting || !firstName || !lastName || !dob || !healthNumber || !gender || !viewerChecked}
+                disabled={isSubmitting || !firstName || !lastName || !dob || !healthNumber || !gender || !viewerChecked || !clinicalReady}
                 style={{ marginTop: "1rem" }}
               >
                 {isSubmitting ? "Saving..." : "Sign & Create Assessment"}
               </button>
               {(!viewerChecked) && (
                 <div style={{ fontSize: "0.8rem", color: "var(--warning-text)" }}>You must attest to checking the clinical viewer below before signing.</div>
+              )}
+              {!clinicalReady && (
+                <div style={{ fontSize: "0.8rem", color: "var(--warning-text)" }}>
+                  Complete every required consent, clinical, and outcome-specific record field.
+                </div>
+              )}
+
+              {/* Admin orientation override (break-glass). Only appears when the
+                  server refused on the gate AND this user is an admin. It is an
+                  AUDITED override, not a silent bypass. */}
+              {orientationBlock && (
+                <div
+                  style={{
+                    marginTop: "0.75rem",
+                    padding: "1rem",
+                    borderRadius: "var(--radius-md)",
+                    background: "var(--danger-light)",
+                    border: "1px solid var(--danger)",
+                  }}
+                >
+                  <div style={{ fontWeight: 700, color: "var(--danger-text)", marginBottom: "0.4rem" }}>
+                    Orientation not on file
+                  </div>
+                  <p style={{ fontSize: "0.85rem", color: "var(--danger-text)", marginBottom: "0.6rem", lineHeight: 1.45 }}>
+                    The prescribing pharmacist has no recorded OCP Mandatory Orientation
+                    completion. The compliant fix is to record it on their profile. As an
+                    admin you may override this once, with a reason — this is <strong>logged
+                    to the audit trail</strong> and does not change that completing the module
+                    is a billing precondition.
+                  </p>
+                  <label className="form-label">Reason for override (no patient identifiers)</label>
+                  <textarea
+                    className="form-input"
+                    rows={2}
+                    value={overrideReason}
+                    onChange={(e) => setOverrideReason(e.target.value)}
+                    placeholder="e.g. Module completed 2026-07-20, OCP record pending upload"
+                  />
+                  <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.6rem" }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      style={{ background: "var(--danger)", borderColor: "var(--danger)" }}
+                      // Same clinical-viewer attestation gate as the primary
+                      // submit — the break-glass path must not be weaker.
+                      disabled={isSubmitting || !viewerChecked || !clinicalReady || overrideReason.trim().length < 4}
+                      onClick={() => runSubmit(overrideReason.trim())}
+                    >
+                      {isSubmitting ? "Saving..." : "Override & sign assessment"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      disabled={isSubmitting}
+                      onClick={() => { setOrientationBlock(false); setOverrideReason(""); }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>

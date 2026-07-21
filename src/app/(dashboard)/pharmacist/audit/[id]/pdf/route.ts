@@ -8,6 +8,14 @@ import {
   queryAuditRecordById,
   type AuditRecordDetail,
 } from "../../query";
+import {
+  NO_RX_RATIONALE_LABELS,
+  PCP_NOTIFICATION_METHOD_LABELS,
+  SYMPTOM_COURSE_LABELS,
+  type NoRxRationaleCode,
+  type PcpNotificationMethod,
+  type SymptomCourse,
+} from "@/lib/clinical-record-types";
 
 /**
  * Server-side single-record PDF (assessment + patient + claim draft). Patient
@@ -91,6 +99,95 @@ async function pdfOf(rec: AuditRecordDetail): Promise<ArrayBuffer> {
     ["Recorded", new Date(rec.createdAt).toLocaleString("en-CA")],
     ...(rec.virtualLocation ? ([["Pharmacist location", rec.virtualLocation]] as [string, string][]) : []),
   ]);
+
+  if (rec.clinical) {
+    table("Informed consent", [
+      ["Method", rec.clinical.consentMethod],
+      ["Given by", rec.clinical.consentGivenBy.replaceAll("_", " ")],
+      ["Obtained at", new Date(rec.clinical.consentObtainedAt).toLocaleString("en-CA")],
+      ...(rec.clinical.sdmName
+        ? ([
+            ["Substitute decision-maker", rec.clinical.sdmName],
+            ["SDM relationship", rec.clinical.sdmRelationship ?? "—"],
+          ] as [string, string][])
+        : []),
+    ]);
+
+    table("Presenting complaint", [
+      ["Primary concern", rec.clinical.presentingComplaint],
+      ["Onset", rec.clinical.symptomOnset],
+      ["Duration", rec.clinical.symptomDuration],
+      [
+        "Course",
+        SYMPTOM_COURSE_LABELS[rec.clinical.symptomCourse as SymptomCourse] ??
+          rec.clinical.symptomCourse,
+      ],
+      ["Associated symptoms", rec.clinical.associatedSymptoms],
+      ["Aggravating factors", rec.clinical.aggravatingFactors],
+      ["Relieving factors", rec.clinical.relievingFactors],
+      ["Treatments tried", rec.clinical.treatmentsTried],
+    ]);
+
+    table("Clinical assessment and plan", [
+      ["Health history", rec.clinical.healthHistory],
+      ["Medication history", rec.clinical.medicationHistory],
+      ["Allergies / intolerances", rec.clinical.allergies],
+      ["Assessment findings", rec.clinical.assessmentFindings],
+      ["Shared decision-making", rec.clinical.sharedDecisionMaking],
+      ["Care plan", rec.clinical.carePlan],
+      ["Follow-up / monitoring", rec.clinical.followUpPlan],
+      ...(rec.clinical.noRxRationaleCode
+        ? ([
+            [
+              "No-Rx rationale",
+              NO_RX_RATIONALE_LABELS[
+                rec.clinical.noRxRationaleCode as NoRxRationaleCode
+              ] ?? rec.clinical.noRxRationaleCode,
+            ],
+            ...(rec.clinical.noRxRationaleNotes
+              ? [["Rationale notes", rec.clinical.noRxRationaleNotes] as [string, string]]
+              : []),
+          ] as [string, string][])
+        : []),
+    ]);
+  } else {
+    table("Clinical record", [
+      ["Status", "Legacy record — predates structured clinical and consent capture"],
+    ]);
+  }
+
+  if (rec.prescription) {
+    table("Prescription and PCP notification", [
+      ["Date prescribed", rec.prescription.prescribedOn],
+      ["Patient address", rec.prescription.patientAddress.join(", ")],
+      ["Drug", rec.prescription.drugName],
+      ["Strength", rec.prescription.strength],
+      ["Quantity", rec.prescription.quantity],
+      ["Dose", rec.prescription.dose],
+      ["Frequency", rec.prescription.frequency],
+      ["Route", rec.prescription.route],
+      ["Prescribing pharmacist", rec.prescription.prescriberName],
+      [
+        "OCP registration / status",
+        rec.prescription.prescriberIsAsOfRight
+          ? "As-of-Right (no Ontario licence number recorded)"
+          : rec.prescription.prescriberOcpNumber ?? "Not recorded",
+      ],
+      ["Prescriber address", rec.prescription.prescriberAddress.join(", ")],
+      ["Prescriber phone", rec.prescription.prescriberPhone],
+      ["PCP notified", new Date(rec.prescription.pcpNotificationAt).toLocaleString("en-CA")],
+      [
+        "PCP notification method",
+        PCP_NOTIFICATION_METHOD_LABELS[
+          rec.prescription.pcpNotificationMethod as PcpNotificationMethod
+        ] ?? rec.prescription.pcpNotificationMethod,
+      ],
+      [
+        "Patient informed of pharmacy choice",
+        new Date(rec.prescription.patientChoiceInformedAt).toLocaleString("en-CA"),
+      ],
+    ]);
+  }
 
   if (rec.claim) {
     table("Claim draft (for Kroll entry)", [

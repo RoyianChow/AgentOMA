@@ -1,148 +1,114 @@
-# Compliance Map — Ontario Minor Ailment Services
+# Compliance map — Ontario minor-ailment services
 
-This document maps each rule implemented in this codebase back to the specific
-section of the source regulation. It is written for an OCP Practice Consultant
-or a Ministry post-payment reviewer.
+**Implementation review date:** 2026-07-21
 
-**Source of truth:** Ministry of Health, Health Programs and Delivery Division —
-_Executive Officer Notice: Update to Funding for Minor Ailment Services in
-Ontario Pharmacies_, **effective July 1, 2026**
-([`docs/regulatory/moh-executive-officer-notice-minor-ailments-en-2026-05-19.pdf`](regulatory/moh-executive-officer-notice-minor-ailments-en-2026-05-19.pdf)).
-This notice replaces the notice effective November 18, 2024. Page numbers below
-refer to that PDF.
+This document maps the current code to the Ontario Ministry of Health _Executive Officer Notice: Update to Funding for Minor Ailment Services in Ontario Pharmacies_, effective July 1, 2026. Page references point to [`regulatory/moh-executive-officer-notice-minor-ailments-en-2026-05-19.pdf`](regulatory/moh-executive-officer-notice-minor-ailments-en-2026-05-19.pdf), which is the binding source.
 
-> **No invented regulatory content.** Everything in the reference tables is
-> transcribed from the notice. Clinical red-flag algorithms are OCP-sourced and
-> are marked `// TODO: PHARMACIST REVIEW REQUIRED` until a pharmacist signs off.
+Status: ✅ implemented and tested · 🔶 partial or awaiting human approval · ⬜ not implemented
 
-Status legend: ✅ implemented · 🔶 in progress · ⬜ planned
+> This is an implementation traceability document, not legal advice. It deliberately contains no duplicate PIN table. Billing values come only from `src/config/ailment-reference.ts` and the seeded reference tables. Clinical content remains subject to pharmacist review.
 
----
+## Reference data and claim limits
 
-## 1. Reference data (fees, PINs, claim maximums)
-
-| Rule | Notice location | Where enforced | Status |
+| Requirement | Notice | Current implementation | Status |
 |---|---|---|---|
-| $19 in-person / $15 virtual fee, paid regardless of Rx | p.5; Table 1 (pp.8–10) | `SERVICE_FEES_CENTS`, claim derivation | ✅ reference / ⬜ derivation |
-| Four PINs per ailment (Rx/No-Rx × In-Person/Virtual) | Table 1 (pp.8–10) | `AILMENT_GROUPS[].pins` | ✅ |
-| 23 ailment groups incl. 9 added 2026-07-01 | pp.2–3; Table 1 | `AILMENT_GROUPS` | ✅ |
-| Dermatitis merged (incl. diaper, seborrheic), max 6 | p.2; Table 1 | `AILMENT_GROUPS` (DERMATITIS) | ✅ |
-| Rhinitis merged (allergic, viral) | p.2; Table 1 | `AILMENT_GROUPS` (RHINITIS) | ✅ |
-| Acne No-Rx-In-Person PIN is `9858250` (not `9858249`) | Table 1 (p.9) | `AILMENT_GROUPS` (ACNE) w/ note | ✅ |
-| Per-ailment max claims / 365 days | Table 1 (pp.8–10) | `maxClaimsPer365Days` | ✅ reference / ⬜ enforcement |
+| Effective-dated funded groups, four PINs per group, fees, and claim maximums | pp.2–3; Table 1, pp.8–10 | Versioned seed source and `ailment_group`/`pin`; claim draft resolves the applicable row and refuses an unknown lookup | ✅ |
+| Merged rhinitis and dermatitis groups; 2026 additions | p.2; Table 1 | Seeded reference data | ✅ |
+| Acne no-Rx in-person PIN preserved exactly as published | Table 1, p.9 | Reference-source regression test | ✅ |
+| HNS looks back 365 days; `LO` maximum rejection has no override | p.7 | Platform count and honest UI language exist; HNS remains authoritative | 🔶 |
+| Platform count is advisory because other pharmacies are not visible | p.7 | UI/export state this limitation | ✅ |
+| One claim per person/ailment/day | p.2; p.14 | Unique database index; concurrent duplicate is rejected | ✅ |
 
-## 2. Claim maximums & 365-day lookback
+The claim-history record is still incomplete: the viewer attestation/timestamp and all three evidence signals are not yet persisted together, and the completion action does not yet receive every maximum-state fact. See [`NEXT_STEPS.md`](NEXT_STEPS.md).
 
-| Rule | Notice location | Where enforced | Status |
+## Cross-ailment and scope rules
+
+| Requirement | Notice | Current implementation | Status |
 |---|---|---|---|
-| HNS looks back 365 days from date of service | p.7 | 365-day count (advisory) + UI wording | ⬜ |
-| `LO – Benefit Maximum Exceeded`, no override | p.7 | UI must never promise payment | ⬜ |
-| Our count is advisory only (other pharmacies invisible) | p.7 (principle) | claim-history gate wording | ⬜ |
-| One claim/day/person/ailment regardless of outcome/pharmacy | p.2; p.14 | unique index + hard warn + override reason | ⬜ |
+| Insect bites/urticaria and tick bites cannot both be claimed the same day | Table 1 footnotes, pp.8–9 | Data-driven `claim_rule`; advisory-lock trigger; two-transaction race test | ✅ |
+| Verrucae bill under calluses/corns/warts; face/genital warts are out of scope | p.3 | Scope rule exists as data; clinical presentation still needs pharmacist validation | 🔶 |
 
-## 3. Cross-ailment rules (encoded as data)
+## Patient and service eligibility
 
-| Rule | Notice location | Where enforced | Status |
+| Requirement | Notice | Current implementation | Status |
 |---|---|---|---|
-| Insect bites/urticaria ⊕ tick bites — not same day | Table 1 footnotes (pp.8–9) | `CLAIM_RULES` MUTEX_INSECT_TICK_SAME_DAY | ✅ data / ⬜ enforcement |
-| Warts on face/genitals out of scope → referral | p.3 (ailment list note) | `CLAIM_RULES` SCOPE_WARTS_FACE_GENITAL | ✅ data / ⬜ enforcement |
+| Valid OHIP/ODB eligibility number; no number means no funded claim | p.6; p.14; footnote 4 | Portal captures a number, but format/eligibility is not fully Zod-validated and enforced server-side | 🔶 |
+| Name as on card, DOB, and F/M/U for non-ODB claims | pp.11, 13 | Patient record captures name, DOB, and gender; exact-card/recipient validation remains incomplete | 🔶 |
+| LTC primary provider receives a zero-dollar fee | footnote 5, p.7; p.14 | Pure derivation and tests exist; pharmacist workspace does not yet collect the branch | 🔶 |
+| LTC secondary emergency uses `LT` | pp.14–15 | Pure derivation and tests exist; UI branch is missing | 🔶 |
+| LTC secondary non-emergency handling | p.14; footnote 5 | Conservatively refused pending ODB clarification | 🔶 |
+| Pharmacist does not assess self/family | p.14 | Derivation refuses it, but the authoritative server workflow does not yet collect the attestation | 🔶 |
 
-## 4. Eligibility
+The unresolved LTC interpretation is recorded in [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md).
 
-| Rule | Notice location | Where enforced | Status |
+## Triage, red flags, and existing prescriptions
+
+| Requirement | Notice | Current implementation | Status |
 |---|---|---|---|
-| Valid Ontario health number (OHIP or ODB eligibility #) | p.6; footnote 4 | eligibility gate | ⬜ |
-| No health number → not publicly funded | p.6; p.14 | eligibility gate (block claim) | ⬜ |
-| Name (as on card), DOB (YYYYMMDD), gender (F/M/U) for non-ODB | p.11; p.13 | demographics capture | ⬜ |
-| LTC resident + primary provider → $0 (LTC capitation) | footnote 5 (p.7); p.14 | eligibility LTC branch | ⬜ |
-| LTC secondary provider bills only in emergency (`LT`) | p.14–15 | eligibility LTC branch | ⬜ |
-| Pharmacist not self/family | p.14 | attestation gate | ⬜ |
-| Red flag identified → refer, no claim | pp.7–8; p.14 | red-flag gate (exit) | ⬜ |
+| Use ailment-appropriate assessment/red-flag criteria | pp.7–8 | Deterministic triage and red-flag flow exists, but content has not received pharmacist sign-off | 🔶 |
+| A red flag exits to referral and creates no claim | pp.7–8; p.14 | Separate `triage_exit`, defensive derivation refusal, and database tests prove zero claim rows | ✅ |
+| Completed assessment ending in referral remains distinct from red-flag exit | pp.11, 13 | Outcome model distinguishes the paths; only completed referral derives SSC `4` | ✅ |
+| Existing fillable/adaptable/extendable prescription blocks the fee | p.15 | Intake self-report and derivation refusal exist; pharmacist/server gate is incomplete | 🔶 |
+| Reachable prescriber/verification-only scenario blocks the fee | p.15 | Not yet represented as a complete authoritative gate | ⬜ |
 
-## 5. Red flags (OCP-sourced)
+All clinical questions, including the tick-bite timing threshold, remain open for pharmacist review.
 
-| Rule | Notice location | Where enforced | Status |
+## Consent and clinical record
+
+| Requirement | Notice | Current implementation | Status |
 |---|---|---|---|
-| Per-ailment red flags via OCP algorithms | pp.7–8 | `ailment_red_flag` reference table | ⬜ (pharmacist review) |
-| Red flag → referral pathway, **no billable claim** | pp.7–8; p.14 | red-flag gate (distinct from post-assessment referral) | ⬜ |
-| UTI complicating factors (male, pregnancy, age < 12) | footnote 7 (p.9) | UTI red flags | ⬜ (pharmacist review) |
+| Informed consent, verbal/written, person or SDM; who/when/method/relationship | pp.5, 12 | Pharmacist records method, giver, timestamp, and conditional SDM identity/relationship; Zod and DB checks enforce completeness | ✅ |
+| Presenting complaint, health/medication history, findings, shared decision-making, care plan | p.5 | Version-2 assessment snapshot stores separately queryable complaint/history/findings/decision/plan fields | ✅ |
+| Complete prescription record and PCP notification | pp.5, 12 | Rx outcome requires patient address, drug/strength/quantity/directions, server-derived prescriber snapshot, and PCP timestamp/method | ✅ |
+| Structured rationale when no prescription is issued | p.12 | Outcome-compatible documentation code is required; notes are supplementary only | ✅ |
+| Inform patient prescription may be filled anywhere; follow-up still owed | p.5 | Rx record requires a choice-of-pharmacy information timestamp; follow-up plan is required for every outcome | ✅ |
+| Follow-up monitoring, safety/efficacy, and next steps | pp.5, 12 | Required follow-up/monitoring field, server validation, and DB completeness check | ✅ |
 
-## 6. Existing prescription exclusion
+## Claim assembly
 
-| Rule | Notice location | Where enforced | Status |
+| Derived field/rule | Notice | Current implementation | Status |
 |---|---|---|---|
-| Existing Rx fillable/adaptable/extendable in scope → no claim | p.15 | existing-Rx gate | ⬜ |
-| Rx from another prescriber needing verification, prescriber reachable → no claim | p.15 | existing-Rx gate | ⬜ |
+| PIN from ailment, modality, and Rx outcome | Table 1 | Pure injected lookup; unknown result refuses; immutable snapshot | ✅ |
+| Fee from reference row, with zero-dollar LTC primary | p.5; Table 1; p.14 | Pure derivation and tests | ✅ |
+| Prescriber reference `09`; OCP number or As-of-Right identifier | p.11 | Derived from authenticated prescriber profile | ✅ |
+| `PS`; non-ODB `ML` and Carrier `S` | p.13 | Pure derivation and tests | ✅ |
+| Quantity `2` only for remote virtual | pp.11, 14 | Pure derivation and tests | ✅ |
+| SSC `4` only for completed assessment ending in referral | pp.11, 13 | Pure derivation and tests; red-flag exit refuses | ✅ |
+| Claim is prepared on service date | p.14 | Assessment and draft are created from the current service action | ✅ |
+| Export/handoff only; no HNS submission | Product boundary | Read-only panel and print export state this explicitly | ✅ |
 
-## 7. Consent
+## Modality and virtual service
 
-| Rule | Notice location | Where enforced | Status |
+| Requirement | Notice | Current implementation | Status |
 |---|---|---|---|
-| Informed consent (verbal or written) from person or SDM | p.5; p.12 | consent capture (who/when/method/SDM) | ⬜ |
+| In-person or virtual from pharmacy; record physical location for virtual | pp.4, 13 | Schema/server fields exist; workspace does not collect every required virtual location | 🔶 |
+| Remote virtual only for rural fee tiers | p.4 footnote 3; p.15 | Pharmacy tier is stored; server derivation/action refuse regular tier; tests cover the rule | ✅ |
+| Remote requires reason on-site staff cannot meet demand | p.4 | Server requires `remote_reason`, but current workspace does not supply the full branch | 🔶 |
+| Remote quantity `2`, otherwise `1` | pp.11, 14 | Derived and tested | ✅ |
 
-## 8. Assessment, outcome & documentation
+## Authentication and pharmacist eligibility
 
-| Rule | Notice location | Where enforced | Status |
+| Requirement | Notice | Current implementation | Status |
 |---|---|---|---|
-| History, health/med history, verify self-diagnosis, shared decision, care plan | p.5 | structured assessment capture | ⬜ |
-| If Rx: date, patient name/address/DOB, drug/strength/qty, directions, prescriber name/address/phone/OCP #, care plan, PCP notification date+method | p.5; p.12 | prescription record | ⬜ |
-| If no Rx: structured rationale mandatory | p.12 | outcome capture | ⬜ |
-| Inform patient they may fill anywhere; still owe follow-up | p.5 | outcome + follow-up | ⬜ |
-| Follow-up plan (monitoring, safety/efficacy, next steps) | p.5; p.12 | follow-up capture (required) | ⬜ |
+| Pharmacy HNS subscription/account identity | p.6 | `pharmacy.hns_account_id` and authenticated pharmacy settings exist; operational verification is still required | 🔶 |
+| OCP orientation module completed before billable assessment | p.6 | Server gate and supervisor logic exist, but an audited admin override currently bypasses the hard gate | 🔶 |
+| Clinical viewer check | p.6 | UI attestation/link exists; durable evidence model is incomplete | 🔶 |
+| Portal protects PHI | PHIPA posture | better-auth, mandatory TOTP, invitation-only roles, rolling/revocable sessions, server-action authorization | ✅ |
 
-## 9. Claim assembly (derived, never typed)
+`proxy.ts` performs no authorization. It is an optimistic redirect only. Every server action independently verifies the better-auth session, active role, and pharmacy scope; billable completion additionally resolves prescriber eligibility server-side.
 
-| Field | Rule | Notice location | Status |
+## Audit, retention, and privacy
+
+| Requirement | Notice | Current implementation | Status |
 |---|---|---|---|
-| PIN | f(ailment, modality, Rx?) | Table 1 | ⬜ |
-| Fee | $19 / $15 / $0 LTC | p.5; Table 1; p.14 | ⬜ |
-| Prescriber ID Reference | `09` (never 01/99 → `60` error) | p.11 | ⬜ |
-| Prescriber ID | pharmacist OCP #, or `PHR888` As-of-Right | p.11 | ⬜ |
-| Intervention codes | `PS`; non-ODB adds `ML`, Carrier `S` | p.13 | ⬜ |
-| Quantity | `2` remote virtual, else `1` | p.11; p.14 | ⬜ |
-| SSC | `4` when completed assessment ends in referral | p.11; p.13 | ⬜ |
-| Claim date | day service provided | p.14 | ⬜ |
-| No HNS integration | produce/validate/persist/export only | (design) | ⬜ |
+| Defensible activity trail for post-payment review | p.12 | Pharmacy-scoped append-only audit events and server-generated exports | ✅ |
+| Audit records cannot be updated/deleted by the app | p.12 | Trigger plus `agentoma_app` privilege revocation; real-Postgres grant tests | ✅ |
+| Retain ten years from last service or ten years after age 18, whichever later | p.12 | App computation plus database trigger; pediatric branch tested | ✅ |
+| Improper payments are recoverable | p.12 | Claim, consent, clinical, prescription, PCP, and audit snapshots support post-payment review | ✅ |
+| No PHI in patient intake | PHIPA posture | Intake schema/actions/tests contain symptom/handoff state only | ✅ |
+| No PHI in unnecessary client components or logs | PHIPA posture | Audit records render on the server; exports are generated server-side; continued review required for new features | ✅ |
+| PHI remains in Canada | PHIPA posture | Postgres is documented for Supabase `ca-central-1`; future object storage is not yet implemented | 🔶 |
 
-## 10. Modality & virtual compliance
+## Current release conclusion
 
-| Rule | Notice location | Where enforced | Status |
-|---|---|---|---|
-| In-person or virtual from the pharmacy location | p.4 | modality gate | ⬜ |
-| Remote virtual only for rural fee tiers ($9.93/$12.14/$13.25) | p.4 footnote 3; p.15 | modality gate (fee-tier check) | ⬜ |
-| Remote requires on-site staff cannot meet demand (capture reason) | p.4 | modality gate (reason field) | ⬜ |
-| Regular fee ($8.83) cannot do remote → hard block | p.15 | modality gate | ⬜ |
-| Record specific physical location for every virtual assessment | p.13 | assessment.virtual_location | ⬜ |
-| Remote virtual → Quantity `2`, else `1` | p.11; p.14 | claim derivation | ⬜ |
-
-## 11. Audit & retention
-
-| Rule | Notice location | Where enforced | Status |
-|---|---|---|---|
-| Append-only audit trail (post-payment verification) | p.12 | `audit_log`: 0004 trigger (`0A000`) + 0011 non-owner app role `agentoma_app` with only `SELECT, INSERT` (`42501` verified live) | ✅ |
-| Retain 10 yrs from last service, or 10 yrs past age 18, whichever longer | p.12 | `computeRetainUntil` in app **and** DB trigger `assessment_retain_until_trg` (0011) recomputes on every write | ✅ |
-| Overpayments recoverable | p.12 | audit trail as defence; events cover intake/patient/assessment/claim/orientation/invitation/**export access** | ⬜ |
-| No PHI reachable from client components | (PHIPA posture) | audit page + CSV/PDF exports fully server-rendered/generated | ✅ |
-
-## 12. Eligible pharmacy / pharmacist conditions
-
-| Rule | Notice location | Where enforced | Status |
-|---|---|---|---|
-| Valid HNS Subscription Agreement | p.6 | pharmacy record (HNS account id) | ⬜ |
-| Pharmacist completed OCP Mandatory Orientation for Minor Ailments Module | p.6 | orientation attestation gates billable assessment | ⬜ |
-| Clinical viewer (ConnectingOntario / ClinicalConnect) check | p.6 | claim-history gate attestation + link-out | ⬜ |
-
-## Architecture / security decisions (supporting compliance)
-
-- **better-auth is the sole identity layer** (no Firebase Auth, no Supabase Auth);
-  mandatory TOTP 2FA because the portal reaches PHI.
-- **`proxy.ts` performs NO authorization** — it does at most an optimistic cookie
-  presence check for redirects. Every server action independently re-verifies
-  session + role + orientation attestation server-side; the client is never
-  trusted. (Next.js 16 renamed `middleware` → `proxy`.)
-- **Primary datastore: Supabase Postgres, region `ca-central-1` (Canada Central)**
-  for PHIPA residency; all PHI-bearing tables live there. Firebase/Firestore
-  removed from the stack; Rx/referral PDFs go to Supabase Storage; QR handshake
-  sessions live in Postgres (no Firestore).
-- **Audit immutability is DB-enforced** (application role has no UPDATE/DELETE on
-  `audit_log`), not merely application convention.
+The billing derivation, version-2 clinical/consent record, database constraints, authentication foundation, audit immutability, and retention backstops are implemented. The product is **not yet ready for clinical production** because clinical content lacks pharmacist approval and the eligibility, existing-prescription, claim-history, virtual/LTC, and orientation-override issues remain incomplete. The ordered remediation list is [`NEXT_STEPS.md`](NEXT_STEPS.md).

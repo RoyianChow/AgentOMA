@@ -9,8 +9,10 @@ import {
   timestamp,
   jsonb,
   uniqueIndex,
+  check,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 // ODB dispensing fee tier. The rural tiers ($9.93 / $12.14 / $13.25) are the
 // only ones permitted to provide remote virtual services; a regular-fee
@@ -29,6 +31,15 @@ export const pharmacy = pgTable("pharmacy", {
   storeName: text("store_name").notNull(),
   hnsAccountId: text("hns_account_id"),
   odbFeeTier: odbFeeTier("odb_fee_tier").notNull().default("regular_8_83"),
+  // Practice contact is snapshotted onto every issued prescription. These are
+  // nullable for legacy pharmacies; an Rx completion refuses until an admin
+  // fills them in through Settings.
+  addressLine1: text("address_line1"),
+  addressLine2: text("address_line2"),
+  city: text("city"),
+  province: text("province"),
+  postalCode: text("postal_code"),
+  phone: text("phone"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -82,11 +93,126 @@ export const assessment = pgTable("assessment", {
   intakeSessionId: uuid("intake_session_id").references(() => intakeSession.id),
   outcome: text("outcome").notNull(), // rx_issued | no_rx_referral | no_rx_otc_or_nonpharm
   noRxRationaleCode: text("no_rx_rationale_code"),
+  noRxRationaleNotes: text("no_rx_rationale_notes"),
+
+  // P0-B owns record_version=2 and every field through
+  // patient_choice_informed_at. P0-C may add eligibility fields in a later
+  // migration, but must not weaken these clinical-record checks.
+  recordVersion: integer("record_version").notNull().default(1),
+  consentMethod: text("consent_method"),
+  consentGivenBy: text("consent_given_by"),
+  consentObtainedAt: timestamp("consent_obtained_at", { withTimezone: true }),
+  sdmName: text("sdm_name"),
+  sdmRelationship: text("sdm_relationship"),
+
+  presentingComplaint: text("presenting_complaint"),
+  symptomOnset: text("symptom_onset"),
+  symptomDuration: text("symptom_duration"),
+  symptomCourse: text("symptom_course"),
+  associatedSymptoms: text("associated_symptoms"),
+  aggravatingFactors: text("aggravating_factors"),
+  relievingFactors: text("relieving_factors"),
+  treatmentsTried: text("treatments_tried"),
+  healthHistory: text("health_history"),
+  medicationHistory: text("medication_history"),
+  allergies: text("allergies"),
+  assessmentFindings: text("assessment_findings"),
+  sharedDecisionMaking: text("shared_decision_making"),
+  carePlan: text("care_plan"),
+  followUpPlan: text("follow_up_plan"),
+
+  prescribedOn: date("prescribed_on", { mode: "string" }),
+  prescriptionPatientAddressLine1: text("prescription_patient_address_line1"),
+  prescriptionPatientAddressLine2: text("prescription_patient_address_line2"),
+  prescriptionPatientCity: text("prescription_patient_city"),
+  prescriptionPatientProvince: text("prescription_patient_province"),
+  prescriptionPatientPostalCode: text("prescription_patient_postal_code"),
+  prescriptionDrugName: text("prescription_drug_name"),
+  prescriptionStrength: text("prescription_strength"),
+  prescriptionQuantity: text("prescription_quantity"),
+  prescriptionDose: text("prescription_dose"),
+  prescriptionFrequency: text("prescription_frequency"),
+  prescriptionRoute: text("prescription_route"),
+  prescriberName: text("prescriber_name"),
+  prescriberAddressLine1: text("prescriber_address_line1"),
+  prescriberAddressLine2: text("prescriber_address_line2"),
+  prescriberCity: text("prescriber_city"),
+  prescriberProvince: text("prescriber_province"),
+  prescriberPostalCode: text("prescriber_postal_code"),
+  prescriberPhone: text("prescriber_phone"),
+  prescriberOcpNumber: text("prescriber_ocp_number"),
+  prescriberIsAsOfRight: boolean("prescriber_is_as_of_right"),
+  pcpNotificationAt: timestamp("pcp_notification_at", { withTimezone: true }),
+  pcpNotificationMethod: text("pcp_notification_method"),
+  patientChoiceInformedAt: timestamp("patient_choice_informed_at", { withTimezone: true }),
+
   serviceDate: date("service_date", { mode: "date" }).notNull(),
   retainUntil: date("retain_until", { mode: "date" }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   uniqueIndex("assessment_one_per_day").on(t.patientId, t.ailmentGroupCode, t.serviceDate),
+  check(
+    "assessment_v2_clinical_record_complete",
+    sql`${t.recordVersion} < 2 OR (
+      ${t.consentMethod} IN ('verbal', 'written')
+      AND ${t.consentGivenBy} IN ('patient', 'substitute_decision_maker')
+      AND ${t.consentObtainedAt} IS NOT NULL
+      AND (${t.consentGivenBy} <> 'substitute_decision_maker' OR (
+        NULLIF(BTRIM(${t.sdmName}), '') IS NOT NULL
+        AND NULLIF(BTRIM(${t.sdmRelationship}), '') IS NOT NULL
+      ))
+      AND NULLIF(BTRIM(${t.presentingComplaint}), '') IS NOT NULL
+      AND NULLIF(BTRIM(${t.symptomOnset}), '') IS NOT NULL
+      AND NULLIF(BTRIM(${t.symptomDuration}), '') IS NOT NULL
+      AND ${t.symptomCourse} IN ('acute_new', 'recurrent', 'improving', 'unchanged', 'worsening', 'intermittent')
+      AND NULLIF(BTRIM(${t.associatedSymptoms}), '') IS NOT NULL
+      AND NULLIF(BTRIM(${t.aggravatingFactors}), '') IS NOT NULL
+      AND NULLIF(BTRIM(${t.relievingFactors}), '') IS NOT NULL
+      AND NULLIF(BTRIM(${t.treatmentsTried}), '') IS NOT NULL
+      AND NULLIF(BTRIM(${t.healthHistory}), '') IS NOT NULL
+      AND NULLIF(BTRIM(${t.medicationHistory}), '') IS NOT NULL
+      AND NULLIF(BTRIM(${t.allergies}), '') IS NOT NULL
+      AND NULLIF(BTRIM(${t.assessmentFindings}), '') IS NOT NULL
+      AND NULLIF(BTRIM(${t.sharedDecisionMaking}), '') IS NOT NULL
+      AND NULLIF(BTRIM(${t.carePlan}), '') IS NOT NULL
+      AND NULLIF(BTRIM(${t.followUpPlan}), '') IS NOT NULL
+    )`,
+  ),
+  check(
+    "assessment_v2_outcome_record_complete",
+    sql`${t.recordVersion} < 2 OR (
+      (${t.outcome} = 'rx_issued'
+        AND ${t.noRxRationaleCode} IS NULL
+        AND ${t.prescribedOn} IS NOT NULL
+        AND NULLIF(BTRIM(${t.prescriptionPatientAddressLine1}), '') IS NOT NULL
+        AND NULLIF(BTRIM(${t.prescriptionPatientCity}), '') IS NOT NULL
+        AND NULLIF(BTRIM(${t.prescriptionPatientProvince}), '') IS NOT NULL
+        AND NULLIF(BTRIM(${t.prescriptionPatientPostalCode}), '') IS NOT NULL
+        AND NULLIF(BTRIM(${t.prescriptionDrugName}), '') IS NOT NULL
+        AND NULLIF(BTRIM(${t.prescriptionStrength}), '') IS NOT NULL
+        AND NULLIF(BTRIM(${t.prescriptionQuantity}), '') IS NOT NULL
+        AND NULLIF(BTRIM(${t.prescriptionDose}), '') IS NOT NULL
+        AND NULLIF(BTRIM(${t.prescriptionFrequency}), '') IS NOT NULL
+        AND NULLIF(BTRIM(${t.prescriptionRoute}), '') IS NOT NULL
+        AND NULLIF(BTRIM(${t.prescriberName}), '') IS NOT NULL
+        AND NULLIF(BTRIM(${t.prescriberAddressLine1}), '') IS NOT NULL
+        AND NULLIF(BTRIM(${t.prescriberCity}), '') IS NOT NULL
+        AND NULLIF(BTRIM(${t.prescriberProvince}), '') IS NOT NULL
+        AND NULLIF(BTRIM(${t.prescriberPostalCode}), '') IS NOT NULL
+        AND NULLIF(BTRIM(${t.prescriberPhone}), '') IS NOT NULL
+        AND ${t.prescriberIsAsOfRight} IS NOT NULL
+        AND (${t.prescriberIsAsOfRight} OR NULLIF(BTRIM(${t.prescriberOcpNumber}), '') IS NOT NULL)
+        AND ${t.pcpNotificationAt} IS NOT NULL
+        AND ${t.pcpNotificationMethod} IN ('fax', 'phone', 'secure_electronic', 'mail', 'other')
+        AND ${t.patientChoiceInformedAt} IS NOT NULL)
+      OR (${t.outcome} = 'no_rx_referral'
+        AND ${t.noRxRationaleCode} = 'referral_to_other_provider'
+        AND ${t.prescribedOn} IS NULL)
+      OR (${t.outcome} = 'no_rx_otc_or_nonpharm'
+        AND ${t.noRxRationaleCode} IN ('otc_recommended', 'non_pharmacologic_recommended', 'otc_and_non_pharmacologic')
+        AND ${t.prescribedOn} IS NULL)
+    )`,
+  ),
 ]);
 
 export const triageExit = pgTable("triage_exit", {

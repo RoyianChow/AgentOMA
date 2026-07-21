@@ -12,8 +12,10 @@ export default async function AssessmentPage({
   searchParams: Promise<{ session?: string }>;
 }) {
   // UX redirect only — the server actions this page's workspace calls
-  // re-verify session + role themselves.
-  await requirePortalPage();
+  // re-verify session + role themselves. The role gates the admin
+  // orientation-override affordance (also re-checked server-side).
+  const actor = await requirePortalPage();
+  const canOverrideOrientation = actor.role === "pharmacy_admin";
 
   const { session: sessionId } = await searchParams;
 
@@ -48,7 +50,11 @@ export default async function AssessmentPage({
       </div>
       {/* Keyed by intake id: switching rows REMOUNTS the workspace, so no
           state — typed identity included — survives from the previous intake. */}
-      <AssessmentWorkspace key={res.session.id} session={res.session} />
+      <AssessmentWorkspace
+        key={session?.id ?? "walk-in"}
+        session={session}
+        canOverrideOrientation={canOverrideOrientation}
+      />
     </div>
   );
 }

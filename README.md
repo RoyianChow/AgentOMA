@@ -1,42 +1,46 @@
 # AgentOMA
 
-A web platform for Ontario pharmacies to run publicly-funded **minor ailment** assessments —
-the program where a pharmacist can assess and prescribe for ~23 common conditions and bill the
-Ministry of Health.
+AgentOMA is a Next.js platform for Ontario pharmacies to conduct publicly funded minor-ailment assessments. It deliberately separates a zero-PHI patient kiosk from an authenticated pharmacist portal that handles clinical and billing records.
 
-Two sides, deliberately separated:
+> This is an authenticated pilot build, not a production-ready clinical service. Pharmacist review and several compliance workflow gates remain open. Start with the status documents below.
 
-- **Patient intake** (`/assessment`) — a kiosk screen. A guided, **zero-PHI** triage that narrows
-  symptoms to one funded ailment (or routes safely to 911 / a doctor), ending in a 6-character
-  handoff code.
-- **Pharmacist portal** (`/pharmacist/*`) — the pharmacist enters that code, reads the triage
-  trail, adds identity from the physical health card, and records a compliant assessment.
+## Documentation
 
-> **This repo bills a public health system and handles PHI under PHIPA.** Mistakes here are not
-> bugs — they are improper claims and privacy violations. Never derive a PIN, fee, or claim
-> maximum from memory.
-
-## Start here
-
-| Doc | What's in it |
+| Document | Purpose |
 |---|---|
-| **[`docs/PROJECT_OVERVIEW.md`](docs/PROJECT_OVERVIEW.md)** | Architecture, routes, data model, both user flows, and what's done vs. not. **Read this to orient — don't crawl the codebase.** |
-| **[`docs/COMPLIANCE.md`](docs/COMPLIANCE.md)** | Every implemented rule mapped to its section of the EO Notice. |
-| **[`AGENTS.md`](AGENTS.md)** | The canonical rules for AI agents (and a fast briefing for humans). |
-| `docs/regulatory/*.pdf` | The binding source of truth. If it and any file disagree, the PDF wins. |
+| [`docs/README.md`](docs/README.md) | Documentation index and reading order |
+| [`docs/PROJECT_OVERVIEW.md`](docs/PROJECT_OVERVIEW.md) | Current architecture, routes, data, and security model |
+| [`docs/COMPLETED_WORK.md`](docs/COMPLETED_WORK.md) | What has been implemented and verified |
+| [`docs/NEXT_STEPS.md`](docs/NEXT_STEPS.md) | Prioritized work remaining before a pilot or go-live |
+| [`docs/COMPLIANCE.md`](docs/COMPLIANCE.md) | Implementation status mapped to the EO Notice |
+| [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md) | Regulatory and clinical decisions awaiting human review |
+| [`AGENTS.md`](AGENTS.md) | Canonical safety and engineering instructions for AI agents |
 
-## Running it
+The binding regulatory source is the Ministry of Health notice in `docs/regulatory/`. Never derive billing values from this README or from memory.
 
-Needs Node 22 and a Supabase Postgres instance. On Windows, PowerShell must allow scripts
-(`Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned`) or `npm` will fail.
+## Local development
 
-```bash
-cp .env.example .env.local   # fill in DATABASE_URL / DIRECT_URL
+Requirements: Node 22, npm, Docker Desktop for database-backed tests, and a Canadian-region Supabase Postgres project for development/deployment.
+
+```powershell
 npm install
-npm run db:migrate           # schema + triggers
-npm run db:seed              # reference data (idempotent)
-npm run dev                  # http://localhost:3000
+npm run db:migrate
+npm run db:seed
+npm run dev
 ```
 
-`npm run test` runs the money-rule tests. Schema changes go **`db:generate` → review the SQL →
-`db:migrate`**; `db:push` is banned (it drops columns on a PHI database).
+On Windows, if PowerShell blocks `npm.ps1`, run this once and reopen the terminal:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
+Quality gates:
+
+```powershell
+npm exec -- tsc --noEmit
+npm run test
+npm run lint
+```
+
+Database changes use `npm run db:generate`, SQL review, then `npm run db:migrate`. `db:push` is banned because it bypasses the reviewed migration chain and can destructively alter a PHI database.

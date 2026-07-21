@@ -14,14 +14,19 @@ export default function Navbar() {
     // Check local storage or system preference on mount
     const savedTheme = localStorage.getItem("theme");
     const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const shouldUseDark =
+      savedTheme === "dark" || (!savedTheme && systemPrefersDark);
 
-    if (savedTheme === "dark" || (!savedTheme && systemPrefersDark)) {
+    if (shouldUseDark) {
       document.documentElement.classList.add("dark-theme");
-      setIsDarkMode(true);
     } else {
       document.documentElement.classList.remove("dark-theme");
-      setIsDarkMode(false);
     }
+
+    // State updates scheduled from the effect avoid a synchronous render
+    // cascade while keeping the icon aligned with the DOM-applied theme.
+    const frame = requestAnimationFrame(() => setIsDarkMode(shouldUseDark));
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   // Collapse the mobile menu after a navigation choice.
