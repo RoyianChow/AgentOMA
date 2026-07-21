@@ -12,8 +12,12 @@ import ClaimDraftPanel, { type ClaimResult } from "./ClaimDraftPanel";
 
 export default function AssessmentWorkspace({
   session,
+  canOverrideOrientation = false,
 }: {
   session: IntakeSessionDTO | null;
+  /** True only for pharmacy admins — gates the audited orientation override
+   * affordance. The override is ALSO re-verified server-side. */
+  canOverrideOrientation?: boolean;
 }) {
   const isWalkIn = session === null;
 
@@ -42,6 +46,12 @@ export default function AssessmentWorkspace({
   const [claimResult, setClaimResult] = useState<ClaimResult | null>(null);
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
 
+  // Admin orientation-override state. `orientationBlock` is set when the server
+  // refuses on the gate AND the current user can override; the admin then types
+  // a reason and re-submits with it.
+  const [orientationBlock, setOrientationBlock] = useState(false);
+  const [overrideReason, setOverrideReason] = useState("");
+
   const checkHistory = async (patientId: string, ailmentCode: string) => {
     const res = await getPatientHistoryCount(patientId, ailmentCode);
     if (res.success) {
@@ -49,12 +59,9 @@ export default function AssessmentWorkspace({
     }
   };
 
-  const handleSubmitAssessment = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-
-
-
+  // Core submit. `overrideReason` is only passed on the admin break-glass
+  // re-submit; a normal submit passes nothing and the server enforces the gate.
+  const runSubmit = async (overrideReason?: string) => {
     if (!gender) {
       setError("Please select a gender.");
       return;
@@ -64,7 +71,7 @@ export default function AssessmentWorkspace({
     setError(null);
 
     try {
-      // 2. Resolve Patient (TypeScript now knows gender is "F" | "M" | "U")
+      // Resolve Patient (TypeScript now knows gender is "F" | "M" | "U")
       const patientRes = await upsertPatient({
         firstName,
         lastName,
@@ -83,7 +90,7 @@ export default function AssessmentWorkspace({
       // Check history just to update UI right before submit, but server will check mutex
       await checkHistory(patientId, ailmentCode);
 
-      // 2. Create Assessment. Pharmacy + prescriber identity come from the
+      // Create Assessment. Pharmacy + prescriber identity come from the
       // authenticated session server-side.
       const assessmentRes = await createAssessment({
         patientId,
@@ -93,9 +100,20 @@ export default function AssessmentWorkspace({
         outcome,
         serviceDate: new Date(),
         isOdbRecipient,
+        orientationOverrideReason: overrideReason,
       });
 
       if (!assessmentRes.success) {
+        // Orientation gate: if THIS user can override, surface the audited
+        // override panel instead of a dead-end error. Otherwise show the error.
+        const orientationRequired =
+          "orientationRequired" in assessmentRes && assessmentRes.orientationRequired;
+        const canOverride =
+          "canOverride" in assessmentRes && assessmentRes.canOverride;
+        if (orientationRequired && canOverride && canOverrideOrientation) {
+          setOrientationBlock(true);
+          return;
+        }
         throw new Error(assessmentRes.error || "Failed to create assessment.");
       }
 
@@ -111,6 +129,11 @@ export default function AssessmentWorkspace({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSubmitAssessment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await runSubmit();
   };
 
   if (isDone) {
@@ -272,6 +295,61 @@ export default function AssessmentWorkspace({
               </button>
               {(!viewerChecked) && (
                 <div style={{ fontSize: "0.8rem", color: "var(--warning-text)" }}>You must attest to checking the clinical viewer below before signing.</div>
+              )}
+
+              {/* Admin orientation override (break-glass). Only appears when the
+                  server refused on the gate AND this user is an admin. It is an
+                  AUDITED override, not a silent bypass. */}
+              {orientationBlock && (
+                <div
+                  style={{
+                    marginTop: "0.75rem",
+                    padding: "1rem",
+                    borderRadius: "var(--radius-md)",
+                    background: "var(--danger-light)",
+                    border: "1px solid var(--danger)",
+                  }}
+                >
+                  <div style={{ fontWeight: 700, color: "var(--danger-text)", marginBottom: "0.4rem" }}>
+                    Orientation not on file
+                  </div>
+                  <p style={{ fontSize: "0.85rem", color: "var(--danger-text)", marginBottom: "0.6rem", lineHeight: 1.45 }}>
+                    The prescribing pharmacist has no recorded OCP Mandatory Orientation
+                    completion. The compliant fix is to record it on their profile. As an
+                    admin you may override this once, with a reason — this is <strong>logged
+                    to the audit trail</strong> and does not change that completing the module
+                    is a billing precondition.
+                  </p>
+                  <label className="form-label">Reason for override (no patient identifiers)</label>
+                  <textarea
+                    className="form-input"
+                    rows={2}
+                    value={overrideReason}
+                    onChange={(e) => setOverrideReason(e.target.value)}
+                    placeholder="e.g. Module completed 2026-07-20, OCP record pending upload"
+                  />
+                  <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.6rem" }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      style={{ background: "var(--danger)", borderColor: "var(--danger)" }}
+                      // Same clinical-viewer attestation gate as the primary
+                      // submit — the break-glass path must not be weaker.
+                      disabled={isSubmitting || !viewerChecked || overrideReason.trim().length < 4}
+                      onClick={() => runSubmit(overrideReason.trim())}
+                    >
+                      {isSubmitting ? "Saving..." : "Override & sign assessment"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      disabled={isSubmitting}
+                      onClick={() => { setOrientationBlock(false); setOverrideReason(""); }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>

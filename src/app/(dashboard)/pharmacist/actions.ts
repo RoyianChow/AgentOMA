@@ -460,6 +460,10 @@ export async function createAssessment(data: {
   // Prescriber identity comes from the authenticated profile below.
   isOdbRecipient?: boolean;
   ltc?: { isResident: boolean; providerRole?: "primary" | "secondary"; isEmergency?: boolean };
+  // Break-glass: a pharmacy ADMIN may complete a billable assessment despite the
+  // prescriber having no recorded OCP orientation, by supplying a reason. The
+  // override is audited (assessment.orientation_override). Ignored for non-admins.
+  orientationOverrideReason?: string;
 }) {
   try {
     // 0. AUTHORIZATION — here, in the action, not in proxy.ts (see SECURITY
@@ -479,12 +483,29 @@ export async function createAssessment(data: {
     //     for Minor Ailments Module" completion. This refuses HERE — server-
     //     side, before ANY row is written and before deriveClaimDraft is ever
     //     called. A UI-only gate is not a gate.
+    //
+    //     BREAK-GLASS: a pharmacy ADMIN may override with a recorded reason.
+    //     This is deliberately an AUDITED override (assessment.orientation_
+    //     override), not a silent bypass — completing a billable assessment for
+    //     an un-oriented pharmacist is a compliance risk (the EO Notice treats
+    //     the module as a billing precondition), so who did it and why is kept.
+    //     Non-admins, and admins without a reason, are still refused.
+    let orientationOverride: { reason: string } | null = null;
     if (!prescriber.orientationCompletedAt) {
-      return {
-        success: false,
-        error:
-          "The prescribing pharmacist has no recorded completion of OCP's Mandatory Orientation for Minor Ailments Module. A billable assessment cannot be completed until a pharmacy admin records it on their profile.",
-      };
+      const reason = data.orientationOverrideReason?.trim();
+      const isAdmin = actor.role === "pharmacy_admin";
+      if (isAdmin && reason) {
+        orientationOverride = { reason };
+      } else {
+        return {
+          success: false,
+          error:
+            "The prescribing pharmacist has no recorded completion of OCP's Mandatory Orientation for Minor Ailments Module. A billable assessment cannot be completed until a pharmacy admin records it on their profile.",
+          // Signals so an admin's UI can offer the audited override.
+          orientationRequired: true as const,
+          canOverride: isAdmin,
+        };
+      }
     }
 
     // 0b. Tenancy: the patient must belong to the actor's pharmacy.
@@ -625,11 +646,39 @@ export async function createAssessment(data: {
           modality: data.modality,
           outcome: data.outcome,
           billable: claim.billable,
+          // Redundant with the dedicated assessment.orientation_override event
+          // below (both best-effort). Kept on THIS event too so a single audit
+          // write failing cannot lose the override fact + its justification.
+          ...(orientationOverride
+            ? { orientationOverridden: true, orientationOverrideReason: orientationOverride.reason }
+            : {}),
           ...(claim.billable ? { pinCode: claim.draft.pinCode } : { notBillableReason: claim.reason }),
         },
       });
     } catch (auditErr) {
       console.error("AUDIT WRITE FAILED for assessment", newAssessment.id, auditErr);
+    }
+
+    // 7a. If an admin broke the glass on the orientation gate, record WHO, WHY,
+    //     and for which assessment as its own audited statement. Reason is
+    //     admin-authored justification (the UI asks them not to put patient
+    //     identifiers in it).
+    if (orientationOverride) {
+      try {
+        await writeAudit({
+          pharmacyId,
+          actorUserId: actor.userId,
+          action: "assessment.orientation_override",
+          entityType: "assessment",
+          entityId: newAssessment.id,
+          metadata: {
+            reason: orientationOverride.reason,
+            ailmentGroupCode: data.ailmentGroupCode,
+          },
+        });
+      } catch (auditErr) {
+        console.error("AUDIT WRITE FAILED for orientation override", newAssessment.id, auditErr);
+      }
     }
 
     return {

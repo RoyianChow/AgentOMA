@@ -208,6 +208,76 @@ describe("createAssessment → claim_draft", () => {
     expect(await countRows("assessment")).toBe(1);
   });
 
+  it("ADMIN OVERRIDE: an admin with no orientation completes WITH a reason, and it is audited", async () => {
+    const { createAssessment } = await import("../actions");
+    const rows = await db.execute<{ id: string }>(sql`
+      insert into "user" (name, email, role, pharmacy_id, ocp_number)
+      values ('Admin NoOrient', 'admin-noorient@test.local', 'pharmacy_admin'::user_role, ${PHARMACY_ID}::uuid, '777001')
+      returning id
+    `);
+    testAuth.actor.userId = (rows as unknown as { id: string }[])[0].id;
+    testAuth.actor.role = "pharmacy_admin";
+
+    const res = await createAssessment({
+      ...baseInput(),
+      orientationOverrideReason: "Module done 2026-07-20, OCP upload pending",
+    });
+    expect(res.success).toBe(true);
+    expect(res.claim?.billable).toBe(true);
+    expect(await countRows("assessment")).toBe(1);
+    // The break-glass is recorded as its own audited statement, with the reason.
+    const audit = (await db.execute<{ metadata: { reason: string } }>(
+      sql`select metadata from audit_log where action = 'assessment.orientation_override'`,
+    )) as unknown as { metadata: { reason: string } }[];
+    expect(audit).toHaveLength(1);
+    expect(audit[0].metadata.reason).toMatch(/OCP upload pending/);
+  });
+
+  it("ADMIN OVERRIDE: an admin with no orientation and NO reason is refused, with the override signal", async () => {
+    const { createAssessment } = await import("../actions");
+    const rows = await db.execute<{ id: string }>(sql`
+      insert into "user" (name, email, role, pharmacy_id, ocp_number)
+      values ('Admin NoReason', 'admin-noreason@test.local', 'pharmacy_admin'::user_role, ${PHARMACY_ID}::uuid, '777002')
+      returning id
+    `);
+    testAuth.actor.userId = (rows as unknown as { id: string }[])[0].id;
+    testAuth.actor.role = "pharmacy_admin";
+
+    const res = await createAssessment(baseInput());
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect("orientationRequired" in res && res.orientationRequired).toBe(true);
+      expect("canOverride" in res && res.canOverride).toBe(true);
+    }
+    expect(await countRows("assessment")).toBe(0);
+  });
+
+  it("ADMIN OVERRIDE is admin-only: a non-admin passing a reason is STILL refused and writes nothing", async () => {
+    const { createAssessment } = await import("../actions");
+    const rows = await db.execute<{ id: string }>(sql`
+      insert into "user" (name, email, role, pharmacy_id, ocp_number)
+      values ('Pharm NoOrient', 'pharm-noorient@test.local', 'pharmacist'::user_role, ${PHARMACY_ID}::uuid, '777003')
+      returning id
+    `);
+    testAuth.actor.userId = (rows as unknown as { id: string }[])[0].id;
+    testAuth.actor.role = "pharmacist";
+
+    const res = await createAssessment({
+      ...baseInput(),
+      orientationOverrideReason: "let me through",
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect("canOverride" in res && res.canOverride).toBe(false);
+    }
+    expect(await countRows("assessment")).toBe(0);
+    expect(await countRows("claim_draft")).toBe(0);
+    const overrideEvents = (await db.execute<{ n: number }>(
+      sql`select count(*)::int as n from audit_log where action = 'assessment.orientation_override'`,
+    )) as unknown as { n: number }[];
+    expect(overrideEvents[0].n).toBe(0);
+  });
+
   it("ORIENTATION GATE: an intern's completion keys off the SUPERVISOR's orientation, and bills the supervisor's OCP", async () => {
     const { createAssessment } = await import("../actions");
     // Supervisor without orientation → the intern's completion refuses.
