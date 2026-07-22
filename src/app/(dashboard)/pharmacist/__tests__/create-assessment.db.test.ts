@@ -60,6 +60,7 @@ const PHARMACY_ID = "00000000-0000-0000-0000-0000000000bb";
 let db: TestDb;
 let close: () => Promise<void>;
 let patientId: string;
+let intakeSessionId: string;
 
 async function countClaimDrafts(): Promise<number> {
   const rows = await db.execute<{ n: number }>(
@@ -95,6 +96,13 @@ beforeEach(async () => {
     returning id
   `);
   patientId = (rows as unknown as { id: string }[])[0].id;
+
+  const intakeRows = await db.execute<{ id: string }>(sql`
+    insert into intake_session (code, pharmacy_id, ailment_group_code, expires_at)
+    values ('BASE01', ${PHARMACY_ID}::uuid, 'RHINITIS', now() + interval '2 hours')
+    returning id
+  `);
+  intakeSessionId = (intakeRows as unknown as { id: string }[])[0].id;
 
   // The signed-in pharmacist. The claim's prescriber_id must come from THIS
   // row's ocp_number — the action accepts no prescriber input. Attested
@@ -181,6 +189,7 @@ const baseInput = (
   const outcome = overrides.outcome ?? "rx_issued";
   return {
     patientId,
+    intakeSessionId,
     ailmentGroupCode: overrides.ailmentGroupCode ?? "RHINITIS",
     modality: "in_person",
     outcome,
