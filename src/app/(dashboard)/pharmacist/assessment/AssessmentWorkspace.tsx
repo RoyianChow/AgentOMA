@@ -19,6 +19,13 @@ import {
   type PcpNotificationMethod,
   type SymptomCourse,
 } from "@/lib/clinical-record-types";
+import {
+  validateDateOfBirth,
+  validateOntarioHealthCard,
+} from "@/lib/patient-identity-validation";
+
+const PATIENT_IDENTITY_VALIDATION_ERROR =
+  "Correct the highlighted patient identity fields before signing.";
 
 function emptyClinicalForm() {
   return {
@@ -76,6 +83,8 @@ export default function AssessmentWorkspace({
   const [lastName, setLastName] = useState("");
   const [dob, setDob] = useState("");
   const [healthNumber, setHealthNumber] = useState("");
+  const [dobError, setDobError] = useState<string | null>(null);
+  const [healthNumberError, setHealthNumberError] = useState<string | null>(null);
   const [gender, setGender] = useState<"F" | "M" | "U" | "">("");  // Clinical Workflow
   const [viewerChecked, setViewerChecked] = useState(false);
   const [systemCount, setSystemCount] = useState<number | null>(null);
@@ -159,6 +168,15 @@ export default function AssessmentWorkspace({
   // Core submit. `overrideReason` is only passed on the admin break-glass
   // re-submit; a normal submit passes nothing and the server enforces the gate.
   const runSubmit = async (overrideReason?: string) => {
+    const dobResult = validateDateOfBirth(dob);
+    const healthNumberResult = validateOntarioHealthCard(healthNumber);
+    setDobError(dobResult.success ? null : dobResult.error);
+    setHealthNumberError(healthNumberResult.success ? null : healthNumberResult.error);
+
+    if (!dobResult.success || !healthNumberResult.success) {
+      setError(PATIENT_IDENTITY_VALIDATION_ERROR);
+      return;
+    }
     if (!gender) {
       setError("Please select a gender.");
       return;
@@ -176,8 +194,8 @@ export default function AssessmentWorkspace({
       const patientRes = await upsertPatient({
         firstName,
         lastName,
-        dob: new Date(dob),
-        healthNumber,
+        dob: dobResult.value,
+        healthNumber: healthNumberResult.value,
         gender,
       });
 
@@ -364,6 +382,19 @@ export default function AssessmentWorkspace({
               Key this strictly from the physical health card to prevent drift.
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label className="form-label" htmlFor="patient-ailment-group">
+                  Minor Ailment Group
+                </label>
+                <input
+                  id="patient-ailment-group"
+                  type="text"
+                  className="form-input"
+                  value={session.ailmentGroupCode}
+                  readOnly
+                  aria-readonly="true"
+                />
+              </div>
               <div>
                 <label className="form-label">First Name</label>
                 <input type="text" className="form-input" value={firstName} onChange={e => setFirstName(e.target.value)} required />
@@ -373,12 +404,68 @@ export default function AssessmentWorkspace({
                 <input type="text" className="form-input" value={lastName} onChange={e => setLastName(e.target.value)} required />
               </div>
               <div>
-                <label className="form-label">DOB (YYYY-MM-DD)</label>
-                <input type="date" className="form-input" value={dob} onChange={e => setDob(e.target.value)} required />
+                <label className="form-label" htmlFor="patient-dob">DOB (YYYY-MM-DD)</label>
+                <input
+                  id="patient-dob"
+                  type="date"
+                  className="form-input"
+                  value={dob}
+                  onChange={(e) => {
+                    setDob(e.target.value);
+                    setDobError(null);
+                    setError((currentError) =>
+                      currentError === PATIENT_IDENTITY_VALIDATION_ERROR ? null : currentError,
+                    );
+                  }}
+                  onBlur={() => {
+                    const result = validateDateOfBirth(dob);
+                    setDobError(result.success ? null : result.error);
+                  }}
+                  aria-invalid={dobError ? true : undefined}
+                  aria-describedby={dobError ? "patient-dob-error" : undefined}
+                  required
+                />
+                {dobError && (
+                  <div id="patient-dob-error" role="alert" style={{ color: "var(--danger)", fontSize: "0.8rem", marginTop: "0.3rem" }}>
+                    {dobError}
+                  </div>
+                )}
               </div>
               <div>
-                <label className="form-label">Health Card Number</label>
-                <input type="text" className="form-input" value={healthNumber} onChange={e => setHealthNumber(e.target.value)} required />
+                <label className="form-label" htmlFor="patient-health-number">Health Card Number</label>
+                <input
+                  id="patient-health-number"
+                  type="text"
+                  className="form-input"
+                  value={healthNumber}
+                  onChange={(e) => {
+                    setHealthNumber(e.target.value);
+                    setHealthNumberError(null);
+                    setError((currentError) =>
+                      currentError === PATIENT_IDENTITY_VALIDATION_ERROR ? null : currentError,
+                    );
+                  }}
+                  onBlur={() => {
+                    const result = validateOntarioHealthCard(healthNumber);
+                    if (result.success) {
+                      setHealthNumber(result.value);
+                      setHealthNumberError(null);
+                    } else {
+                      setHealthNumberError(result.error);
+                    }
+                  }}
+                  placeholder="1234567890 AB"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  aria-invalid={healthNumberError ? true : undefined}
+                  aria-describedby={healthNumberError ? "patient-health-number-error" : undefined}
+                  required
+                />
+                {healthNumberError && (
+                  <div id="patient-health-number-error" role="alert" style={{ color: "var(--danger)", fontSize: "0.8rem", marginTop: "0.3rem" }}>
+                    {healthNumberError}
+                  </div>
+                )}
               </div>
               <div>
                 <div>

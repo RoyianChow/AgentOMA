@@ -16,6 +16,12 @@ export type ClaimResult =
   | { billable: true; draft: ClaimDraft }
   | { billable: false; reason: NotBillableReason; message: string };
 
+const MODALITY_LABELS: Record<ClaimDraft["modality"], string> = {
+  in_person: "In person",
+  virtual_from_pharmacy: "Virtual (from pharmacy)",
+  virtual_remote: "Virtual (remote)",
+};
+
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="claim-field">
@@ -34,7 +40,8 @@ export default function ClaimDraftPanel({ result }: { result: ClaimResult }) {
         <p className="claim-panel-reason">{result.message}</p>
         <p className="claim-panel-note">
           The assessment itself has been recorded. No claim draft was created, and nothing was
-          submitted anywhere.
+          submitted to HNS. HNS adjudication remains authoritative for any claim submitted outside
+          AgentOMA.
         </p>
       </div>
     );
@@ -45,11 +52,12 @@ export default function ClaimDraftPanel({ result }: { result: ClaimResult }) {
 
   return (
     <div className="detail-section-card claim-panel">
-      <h3 className="claim-panel-title">Claim draft</h3>
+      <h3 className="claim-panel-title">Advisory claim draft handoff</h3>
 
       <div className="claim-grid">
         <Field label="PIN" value={d.pinCode} />
         <Field label="Professional fee" value={fee} />
+        <Field label="Modality" value={MODALITY_LABELS[d.modality]} />
         <Field label="Prescriber ID Reference" value={d.prescriberIdReference} />
         <Field label="Prescriber ID" value={d.prescriberId} />
         <Field label="Intervention codes" value={d.interventionCodes.join(", ")} />
@@ -59,7 +67,8 @@ export default function ClaimDraftPanel({ result }: { result: ClaimResult }) {
       </div>
 
       <p className="claim-panel-boundary">
-        For hand-entry into your dispensing software. Nothing is submitted to HNS from here.
+        Advisory draft for hand-entry into your dispensing software. This claim was not submitted
+        to HNS. HNS adjudication remains authoritative.
       </p>
       <p className="claim-panel-note">
         These values are derived from the ministry reference data and cannot be edited. If something
