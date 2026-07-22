@@ -51,8 +51,8 @@ export default async function AssessmentPage({
       {/* Keyed by intake id: switching rows REMOUNTS the workspace, so no
           state — typed identity included — survives from the previous intake. */}
       <AssessmentWorkspace
-        key={session?.id ?? "walk-in"}
-        session={session}
+        key={res.session.id}
+        session={res.session}
         canOverrideOrientation={canOverrideOrientation}
       />
     </div>

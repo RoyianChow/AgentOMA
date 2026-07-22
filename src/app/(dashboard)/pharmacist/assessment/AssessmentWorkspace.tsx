@@ -66,7 +66,7 @@ export default function AssessmentWorkspace({
   session,
   canOverrideOrientation = false,
 }: {
-  session: IntakeSessionDTO | null;
+  session: IntakeSessionDTO;
   /** True only for pharmacy admins — gates the audited orientation override
    * affordance. The override is ALSO re-verified server-side. */
   canOverrideOrientation?: boolean;
