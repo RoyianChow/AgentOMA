@@ -32,7 +32,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await resetOperationalTables(db);
   await db.execute(sql`
-    insert into pharmacy (id, store_name, odb_fee_tier)
+    insert into pharmacy (id, store_name, odb_fee_tier_code)
     values (${PHARMACY_ID}::uuid, 'Intake Test Pharmacy', 'regular_8_83')
     on conflict (id) do nothing
   `);

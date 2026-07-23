@@ -72,11 +72,14 @@ function emptyClinicalForm() {
 export default function AssessmentWorkspace({
   session,
   canOverrideOrientation = false,
+  remoteVirtualEligible,
 }: {
   session: IntakeSessionDTO;
   /** True only for pharmacy admins — gates the audited orientation override
    * affordance. The override is ALSO re-verified server-side. */
   canOverrideOrientation?: boolean;
+  /** Non-PHI pharmacy configuration resolved from seeded reference data. */
+  remoteVirtualEligible: boolean;
 }) {
   // Patient Identity
   const [firstName, setFirstName] = useState("");
@@ -89,7 +92,16 @@ export default function AssessmentWorkspace({
   const [viewerChecked, setViewerChecked] = useState(false);
   const [systemCount, setSystemCount] = useState<number | null>(null);
   const [outcome, setOutcome] = useState("rx_issued");
-  const [modality, setModality] = useState("in_person");
+  const [modality, setModality] = useState<
+    "in_person" | "virtual_from_pharmacy" | "virtual_remote"
+  >("in_person");
+  const [virtualLocation, setVirtualLocation] = useState("");
+  const [remoteReason, setRemoteReason] = useState("");
+  const [ltcResident, setLtcResident] = useState(false);
+  const [ltcProviderRole, setLtcProviderRole] = useState<
+    "" | "primary" | "secondary"
+  >("");
+  const [ltcIsEmergency, setLtcIsEmergency] = useState(false);
   const [clinical, setClinical] = useState(emptyClinicalForm);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -185,6 +197,22 @@ export default function AssessmentWorkspace({
       setError("Complete every required consent and clinical-record field before signing.");
       return;
     }
+    if (modality !== "in_person" && !virtualLocation.trim()) {
+      setError("Record your physical location for every virtual assessment.");
+      return;
+    }
+    if (modality === "virtual_remote" && !remoteReason.trim()) {
+      setError(
+        "Record why on-site staff cannot meet demand for this remote virtual assessment.",
+      );
+      return;
+    }
+    if (ltcResident && !ltcProviderRole) {
+      setError(
+        "Select whether this pharmacy is the LTC home's primary or secondary provider.",
+      );
+      return;
+    }
 
     setIsSubmitting(true);
     setError(null);
@@ -215,6 +243,10 @@ export default function AssessmentWorkspace({
         patientId,
         ailmentGroupCode: ailmentCode,
         modality,
+        virtualLocation:
+          modality === "in_person" ? undefined : virtualLocation,
+        remoteReason:
+          modality === "virtual_remote" ? remoteReason : undefined,
         intakeSessionId: session.id,
         outcome,
         serviceDate: new Date(),
@@ -279,6 +311,16 @@ export default function AssessmentWorkspace({
               : undefined,
         },
         isOdbRecipient,
+        ltc: ltcResident
+          ? {
+              isResident: true,
+              providerRole: ltcProviderRole as "primary" | "secondary",
+              isEmergency:
+                ltcProviderRole === "secondary"
+                  ? ltcIsEmergency
+                  : undefined,
+            }
+          : { isResident: false },
         orientationOverrideReason: overrideReason,
       });
 
@@ -742,18 +784,168 @@ export default function AssessmentWorkspace({
 
               <div>
                 <label className="form-label">Modality</label>
-                <select className="form-input" value={modality} onChange={e => setModality(e.target.value)}>
+                <select
+                  className="form-input"
+                  value={modality}
+                  onChange={(event) =>
+                    setModality(
+                      event.target.value as
+                        | "in_person"
+                        | "virtual_from_pharmacy"
+                        | "virtual_remote",
+                    )
+                  }
+                >
                   <option value="in_person">In Person</option>
                   <option value="virtual_from_pharmacy">Virtual (From Pharmacy)</option>
-                  <option value="virtual_remote">Virtual (Remote Exception)</option>
+                  {remoteVirtualEligible && (
+                    <option value="virtual_remote">Virtual (Remote Exception)</option>
+                  )}
                 </select>
+              </div>
+
+              {modality !== "in_person" && (
+                <div>
+                  <label className="form-label">
+                    Pharmacist&apos;s physical location
+                  </label>
+                  <input
+                    className="form-input"
+                    value={virtualLocation}
+                    onChange={(event) => setVirtualLocation(event.target.value)}
+                    placeholder="Specific location where the assessment was conducted"
+                  />
+                </div>
+              )}
+
+              {modality === "virtual_remote" && (
+                <div>
+                  <label className="form-label">
+                    Why on-site staff cannot meet virtual demand
+                  </label>
+                  <textarea
+                    className="form-input"
+                    value={remoteReason}
+                    onChange={(event) => setRemoteReason(event.target.value)}
+                    rows={3}
+                  />
+                </div>
+              )}
+
+              <div
+                style={{
+                  borderTop: "1px solid var(--border)",
+                  paddingTop: "1rem",
+                }}
+              >
+                <label
+                  style={{
+                    display: "flex",
+                    gap: "0.65rem",
+                    alignItems: "center",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={ltcResident}
+                    onChange={(event) => {
+                      setLtcResident(event.target.checked);
+                      if (!event.target.checked) {
+                        setLtcProviderRole("");
+                        setLtcIsEmergency(false);
+                      }
+                    }}
+                  />
+                  <span className="form-label" style={{ margin: 0 }}>
+                    Patient is a long-term-care home resident
+                  </span>
+                </label>
+
+                {ltcResident && (
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: "0.75rem",
+                      marginTop: "0.75rem",
+                    }}
+                  >
+                    <div>
+                      <label className="form-label">
+                        This pharmacy&apos;s provider role
+                      </label>
+                      <select
+                        className="form-input"
+                        value={ltcProviderRole}
+                        onChange={(event) => {
+                          const role = event.target.value as
+                            | ""
+                            | "primary"
+                            | "secondary";
+                          setLtcProviderRole(role);
+                          if (role !== "secondary") {
+                            setLtcIsEmergency(false);
+                          }
+                        }}
+                      >
+                        <option value="">Select...</option>
+                        <option value="primary">Primary provider</option>
+                        <option value="secondary">Secondary provider</option>
+                      </select>
+                    </div>
+
+                    {ltcProviderRole === "secondary" && (
+                      <label
+                        style={{
+                          display: "flex",
+                          gap: "0.65rem",
+                          alignItems: "center",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={ltcIsEmergency}
+                          onChange={(event) =>
+                            setLtcIsEmergency(event.target.checked)
+                          }
+                        />
+                        <span>Emergency service</span>
+                      </label>
+                    )}
+
+                    <div
+                      style={{
+                        padding: "0.75rem",
+                        borderRadius: "var(--radius-sm)",
+                        background: "var(--warning-light)",
+                        color: "var(--warning-text)",
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      The assessment will be recorded, but no claim draft will
+                      be created while ministry LTC billing guidance is
+                      pending. Talk to Royian before taking billing action.
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button
                 type="button"
                 className="btn btn-primary"
                 onClick={handleSubmitAssessment}
-                disabled={isSubmitting || !firstName || !lastName || !dob || !healthNumber || !gender || !viewerChecked || !clinicalReady}
+                disabled={
+                  isSubmitting ||
+                  !firstName ||
+                  !lastName ||
+                  !dob ||
+                  !healthNumber ||
+                  !gender ||
+                  !viewerChecked ||
+                  !clinicalReady ||
+                  (modality !== "in_person" && !virtualLocation.trim()) ||
+                  (modality === "virtual_remote" && !remoteReason.trim()) ||
+                  (ltcResident && !ltcProviderRole)
+                }
                 style={{ marginTop: "1rem" }}
               >
                 {isSubmitting ? "Saving..." : "Sign & Create Assessment"}

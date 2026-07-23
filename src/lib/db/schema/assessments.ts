@@ -1,6 +1,5 @@
 import {
   pgTable,
-  pgEnum,
   uuid,
   text,
   integer,
@@ -13,24 +12,17 @@ import {
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-
-// ODB dispensing fee tier. The rural tiers ($9.93 / $12.14 / $13.25) are the
-// only ones permitted to provide remote virtual services; a regular-fee
-// pharmacy ($8.83) selecting virtual_remote must be hard-blocked (see
-// createAssessment). Stored, never hardcoded.
-export const odbFeeTier = pgEnum("odb_fee_tier", [
-  "regular_8_83",
-  "rural_9_93",
-  "rural_12_14",
-  "rural_13_25",
-]);
+import { odbFeeTier } from "./reference";
 
 // Define a minimal pharmacy table since pharmacy_id must be a UUID FK
 export const pharmacy = pgTable("pharmacy", {
   id: uuid("id").primaryKey().defaultRandom(),
   storeName: text("store_name").notNull(),
   hnsAccountId: text("hns_account_id"),
-  odbFeeTier: odbFeeTier("odb_fee_tier").notNull().default("regular_8_83"),
+  odbFeeTierCode: text("odb_fee_tier_code")
+    .notNull()
+    .default("regular_8_83")
+    .references(() => odbFeeTier.code),
   // Practice contact is snapshotted onto every issued prescription. These are
   // nullable for legacy pharmacies; an Rx completion refuses until an admin
   // fills them in through Settings.
@@ -90,6 +82,9 @@ export const assessment = pgTable("assessment", {
   modality: text("modality").notNull(), // in_person | virtual_from_pharmacy | virtual_remote
   virtualLocation: text("virtual_location"),
   remoteReason: text("remote_reason"),
+  ltcResident: boolean("ltc_resident").notNull().default(false),
+  ltcProviderRole: text("ltc_provider_role"),
+  ltcIsEmergency: boolean("ltc_is_emergency"),
   intakeSessionId: uuid("intake_session_id").references(() => intakeSession.id),
   outcome: text("outcome").notNull(), // rx_issued | no_rx_referral | no_rx_otc_or_nonpharm
   noRxRationaleCode: text("no_rx_rationale_code"),
@@ -151,6 +146,27 @@ export const assessment = pgTable("assessment", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   uniqueIndex("assessment_one_per_day").on(t.patientId, t.ailmentGroupCode, t.serviceDate),
+  check(
+    "assessment_virtual_documentation_complete",
+    sql`(
+      ${t.modality} NOT IN ('virtual_from_pharmacy', 'virtual_remote')
+      OR NULLIF(BTRIM(${t.virtualLocation}), '') IS NOT NULL
+    ) AND (
+      ${t.modality} <> 'virtual_remote'
+      OR NULLIF(BTRIM(${t.remoteReason}), '') IS NOT NULL
+    )`,
+  ),
+  check(
+    "assessment_ltc_provider_role_valid",
+    sql`${t.ltcProviderRole} IS NULL OR ${t.ltcProviderRole} IN ('primary', 'secondary')`,
+  ),
+  check(
+    "assessment_non_ltc_facts_null",
+    sql`${t.ltcResident} OR (
+      ${t.ltcProviderRole} IS NULL
+      AND ${t.ltcIsEmergency} IS NULL
+    )`,
+  ),
   check(
     "assessment_v2_clinical_record_complete",
     sql`${t.recordVersion} < 2 OR (
@@ -269,7 +285,7 @@ export const claimDraft = pgTable(
     prescriberIdReference: text("prescriber_id_reference").notNull(),
     /** OCP registration number, or PHR888 for As-of-Right without a licence. */
     prescriberId: text("prescriber_id").notNull(),
-    /** PS always; ML for non-ODB; LT for LTC secondary emergency. */
+    /** PS always; ML for non-ODB. LTC claim drafting is parked pending ministry clarification. */
     interventionCodes: jsonb("intervention_codes").$type<string[]>().notNull(),
     carrierId: text("carrier_id"),
     quantity: integer("quantity").notNull(),

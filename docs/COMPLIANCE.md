@@ -1,6 +1,6 @@
 # Compliance map — Ontario minor-ailment services
 
-**Implementation review date:** 2026-07-21
+**Implementation review date:** 2026-07-23
 
 This document maps the current code to the Ontario Ministry of Health _Executive Officer Notice: Update to Funding for Minor Ailment Services in Ontario Pharmacies_, effective July 1, 2026. Page references point to [`regulatory/moh-executive-officer-notice-minor-ailments-en-2026-05-19.pdf`](regulatory/moh-executive-officer-notice-minor-ailments-en-2026-05-19.pdf), which is the binding source.
 
@@ -34,9 +34,9 @@ The claim-history record is still incomplete: the viewer attestation/timestamp a
 |---|---|---|---|
 | Valid OHIP/ODB eligibility number; no number means no funded claim | p.6; p.14; footnote 4 | Portal captures a number, but format/eligibility is not fully Zod-validated and enforced server-side | 🔶 |
 | Name as on card, DOB, and F/M/U for non-ODB claims | pp.11, 13 | Patient record captures name, DOB, and gender; exact-card/recipient validation remains incomplete | 🔶 |
-| LTC primary provider receives a zero-dollar fee | footnote 5, p.7; p.14 | Pure derivation and tests exist; pharmacist workspace does not yet collect the branch | 🔶 |
-| LTC secondary emergency uses `LT` | pp.14–15 | Pure derivation and tests exist; UI branch is missing | 🔶 |
-| LTC secondary non-emergency handling | p.14; footnote 5 | Conservatively refused pending ODB clarification | 🔶 |
+| LTC primary-provider handling | footnote 5, p.7; p.14 | Facts are captured, but claim drafting is deliberately refused pending ministry clarification; no `$0` claim is emitted | 🔶 |
+| LTC secondary-emergency handling and `LT` | pp.14–15 | Facts are captured, but claim drafting is deliberately refused pending ministry clarification; `LT` is not emitted | 🔶 |
+| LTC secondary non-emergency handling | p.14; footnote 5 | Facts are captured, but claim drafting is deliberately refused pending ministry clarification | 🔶 |
 | Pharmacist does not assess self/family | p.14 | Derivation refuses it, but the authoritative server workflow does not yet collect the attestation | 🔶 |
 
 The unresolved LTC interpretation is recorded in [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md).
@@ -69,7 +69,7 @@ All clinical questions, including the tick-bite timing threshold, remain open fo
 | Derived field/rule | Notice | Current implementation | Status |
 |---|---|---|---|
 | PIN from ailment, modality, and Rx outcome | Table 1 | Pure injected lookup; unknown result refuses; immutable snapshot | ✅ |
-| Fee from reference row, with zero-dollar LTC primary | p.5; Table 1; p.14 | Pure derivation and tests | ✅ |
+| Fee from the applicable reference row for non-LTC services | p.5; Table 1 | Pure derivation and tests; LTC billing remains parked rather than guessed | ✅ |
 | Prescriber reference `09`; OCP number or As-of-Right identifier | p.11 | Derived from authenticated prescriber profile | ✅ |
 | `PS`; non-ODB `ML` and Carrier `S` | p.13 | Pure derivation and tests | ✅ |
 | Quantity `2` only for remote virtual | pp.11, 14 | Pure derivation and tests | ✅ |
@@ -81,9 +81,9 @@ All clinical questions, including the tick-bite timing threshold, remain open fo
 
 | Requirement | Notice | Current implementation | Status |
 |---|---|---|---|
-| In-person or virtual from pharmacy; record physical location for virtual | pp.4, 13 | Schema/server fields exist; workspace does not collect every required virtual location | 🔶 |
-| Remote virtual only for rural fee tiers | p.4 footnote 3; p.15 | Pharmacy tier is stored; server derivation/action refuse regular tier; tests cover the rule | ✅ |
-| Remote requires reason on-site staff cannot meet demand | p.4 | Server requires `remote_reason`, but current workspace does not supply the full branch | 🔶 |
+| In-person or virtual from pharmacy; record physical location for virtual | pp.4, 13 | Schema, server action, workspace, and live database completeness check enforce the physical location | ✅ |
+| Remote virtual only when the effective fee-tier row permits it | p.4 footnote 3; p.15 | Effective-dated `odb_fee_tier.remote_virtual_eligible` drives UI visibility, server refusal, and derivation input; migration `0013` is live | ✅ |
+| Remote requires reason on-site staff cannot meet demand | p.4 | Workspace, server action, and live database completeness check require the reason | ✅ |
 | Remote quantity `2`, otherwise `1` | pp.11, 14 | Derived and tested | ✅ |
 
 ## Authentication and pharmacist eligibility
@@ -106,9 +106,10 @@ All clinical questions, including the tick-bite timing threshold, remain open fo
 | Retain ten years from last service or ten years after age 18, whichever later | p.12 | App computation plus database trigger; pediatric branch tested | ✅ |
 | Improper payments are recoverable | p.12 | Claim, consent, clinical, prescription, PCP, and audit snapshots support post-payment review | ✅ |
 | No PHI in patient intake | PHIPA posture | Intake schema/actions/tests contain symptom/handoff state only | ✅ |
+| Public self-check has no custodian-dependent persistence | PHIPA posture | `/check` collects no identifiers, keeps answers in memory, generates PDFs client-side, and is hard-blocked in production pending clinical approval | 🔶 |
 | No PHI in unnecessary client components or logs | PHIPA posture | Audit records render on the server; exports are generated server-side; continued review required for new features | ✅ |
 | PHI remains in Canada | PHIPA posture | Postgres is documented for Supabase `ca-central-1`; future object storage is not yet implemented | 🔶 |
 
 ## Current release conclusion
 
-The billing derivation, version-2 clinical/consent record, database constraints, authentication foundation, audit immutability, and retention backstops are implemented. The product is **not yet ready for clinical production** because clinical content lacks pharmacist approval and the eligibility, existing-prescription, claim-history, virtual/LTC, and orientation-override issues remain incomplete. The ordered remediation list is [`NEXT_STEPS.md`](NEXT_STEPS.md).
+The billing derivation, version-2 clinical/consent record, authentication foundation, audit immutability, retention backstops, and P0-D virtual/LTC fact capture are implemented. Migrations `0013`–`0014` are live, while all LTC claim drafting remains parked pending ministry clarification. The product is **not yet ready for clinical production** because clinical content lacks pharmacist approval and the eligibility, existing-prescription, claim-history, LTC-billing, and orientation-override issues remain incomplete. The ordered remediation list is [`NEXT_STEPS.md`](NEXT_STEPS.md).

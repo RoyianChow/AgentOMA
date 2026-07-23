@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { getIntakeSessionById, getPendingIntakeSessions } from "../actions";
 import { requirePortalPage } from "@/lib/auth-guard";
+import { db } from "@/lib/db";
+import { odbFeeTier, pharmacy } from "@/lib/db/schema";
+import { and, eq, gte, isNull, lte, or } from "drizzle-orm";
 import AssessmentWorkspace from "./AssessmentWorkspace";
 import IntakeQueue from "./IntakeQueue";
 
@@ -16,6 +19,32 @@ export default async function AssessmentPage({
   // orientation-override affordance (also re-checked server-side).
   const actor = await requirePortalPage();
   const canOverrideOrientation = actor.role === "pharmacy_admin";
+  const [feeTier] = await db
+    .select({
+      remoteVirtualEligible: odbFeeTier.remoteVirtualEligible,
+    })
+    .from(pharmacy)
+    .innerJoin(odbFeeTier, eq(pharmacy.odbFeeTierCode, odbFeeTier.code))
+    .where(
+      and(
+        eq(pharmacy.id, actor.pharmacyId),
+        lte(
+          odbFeeTier.effectiveDate,
+          new Date().toISOString().slice(0, 10),
+        ),
+        or(
+          isNull(odbFeeTier.endDate),
+          gte(
+            odbFeeTier.endDate,
+            new Date().toISOString().slice(0, 10),
+          ),
+        ),
+      ),
+    )
+    .limit(1);
+  if (!feeTier) {
+    redirect("/pharmacist/settings");
+  }
 
   const { session: sessionId } = await searchParams;
 
@@ -54,6 +83,7 @@ export default async function AssessmentPage({
         key={res.session.id}
         session={res.session}
         canOverrideOrientation={canOverrideOrientation}
+        remoteVirtualEligible={feeTier.remoteVirtualEligible}
       />
     </div>
   );

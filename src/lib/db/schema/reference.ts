@@ -35,6 +35,22 @@ export const redFlagQuestionType = pgEnum("red_flag_question_type", [
   "text",
 ]);
 
+/**
+ * ODB dispensing-fee tier reference data.
+ *
+ * `dispensingFeeCents` is the ODB dispensing fee, NOT the minor-ailment
+ * service fee. Minor-ailment fees continue to come only from `pin.fee_cents`.
+ * The eligibility flag is named after the operative rule so postal-code or
+ * other "rural" heuristics cannot silently unlock remote virtual billing.
+ */
+export const odbFeeTier = pgTable("odb_fee_tier", {
+  code: text().primaryKey(),
+  dispensingFeeCents: integer().notNull(),
+  remoteVirtualEligible: boolean().notNull(),
+  effectiveDate: date().notNull(),
+  endDate: date(),
+});
+
 export const ailmentGroup = pgTable(
   "ailment_group",
   {

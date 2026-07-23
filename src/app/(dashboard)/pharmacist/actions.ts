@@ -1,9 +1,30 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { intakeSession, assessment, patient, pharmacy, ailmentGroup, pin, claimRule, claimDraft } from "@/lib/db/schema";
+import {
+  intakeSession,
+  assessment,
+  patient,
+  pharmacy,
+  ailmentGroup,
+  pin,
+  claimRule,
+  claimDraft,
+  odbFeeTier,
+} from "@/lib/db/schema";
 import { user } from "@/lib/db/schema/auth";
-import { eq, and, sql, desc, isNull, count } from "drizzle-orm";
+import {
+  eq,
+  and,
+  sql,
+  desc,
+  isNull,
+  count,
+  getTableColumns,
+  lte,
+  gte,
+  or,
+} from "drizzle-orm";
 import { computeRetainUntil } from "@/lib/retention";
 import { writeAudit } from "@/lib/audit";
 import {
@@ -18,7 +39,6 @@ import {
   type ResolvePin,
   type AssessmentModality,
   type Outcome,
-  type OdbFeeTier,
 } from "@/lib/claims/derive-claim-draft";
 import { parseClinicalRecord } from "@/lib/clinical-record-schema";
 import type { ClinicalRecordInput } from "@/lib/clinical-record-types";
@@ -49,10 +69,6 @@ function refusalMessage(e: AuthorizationError): string {
       return "Your role does not permit this action.";
   }
 }
-
-// ODB fee tiers permitted to provide remote virtual services (EO Notice). A
-// regular-fee pharmacy ($8.83) selecting virtual_remote is hard-blocked.
-const RURAL_FEE_TIERS = ["rural_9_93", "rural_12_14", "rural_13_25"];
 
 export type PendingIntake = {
   id: string;
@@ -533,8 +549,36 @@ export async function createAssessment(data: {
       return { success: false, error: "Patient not found" };
     }
 
-    const ph = await db.query.pharmacy.findFirst({ where: eq(pharmacy.id, pharmacyId) });
-    if (!ph) return { success: false, error: "Pharmacy not found" };
+    const [ph] = await db
+      .select({
+        ...getTableColumns(pharmacy),
+        remoteVirtualEligible: odbFeeTier.remoteVirtualEligible,
+      })
+      .from(pharmacy)
+      .innerJoin(odbFeeTier, eq(pharmacy.odbFeeTierCode, odbFeeTier.code))
+      .where(
+        and(
+          eq(pharmacy.id, pharmacyId),
+          lte(
+            odbFeeTier.effectiveDate,
+            data.serviceDate.toISOString().slice(0, 10),
+          ),
+          or(
+            isNull(odbFeeTier.endDate),
+            gte(
+              odbFeeTier.endDate,
+              data.serviceDate.toISOString().slice(0, 10),
+            ),
+          ),
+        ),
+      )
+      .limit(1);
+    if (!ph) {
+      return {
+        success: false,
+        error: "Pharmacy settings or ODB dispensing-fee tier not found.",
+      };
+    }
 
     // An issued prescription must snapshot the practice address and phone from
     // authenticated pharmacy settings. They are never accepted as caller-
@@ -550,17 +594,30 @@ export async function createAssessment(data: {
       };
     }
 
-    // 1. Remote-virtual eligibility (#5). Only rural-fee-tier pharmacies may
-    //    provide remote virtual services, and the location/reason must be on file.
+    // 1. Virtual documentation and remote eligibility come from persisted
+    //    facts. The fee-tier row is seeded reference data; no tier code or
+    //    dispensing-fee amount is treated as an application rule.
+    if (
+      (data.modality === "virtual_from_pharmacy" ||
+        data.modality === "virtual_remote") &&
+      !data.virtualLocation?.trim()
+    ) {
+      return {
+        success: false,
+        error:
+          "Every virtual assessment must record the pharmacist's physical location.",
+      };
+    }
+
     if (data.modality === "virtual_remote") {
-      if (!RURAL_FEE_TIERS.includes(ph.odbFeeTier)) {
+      if (!ph.remoteVirtualEligible) {
         return {
           success: false,
           error:
-            "Remote virtual assessments are only permitted for rural-fee-tier pharmacies ($9.93 / $12.14 / $13.25). This pharmacy is on the regular ODB fee tier ($8.83).",
+            "This pharmacy's current ODB dispensing-fee tier is not eligible for remote virtual assessments.",
         };
       }
-      if (!data.remoteReason || !data.virtualLocation) {
+      if (!data.remoteReason?.trim()) {
         return {
           success: false,
           error:
@@ -568,6 +625,25 @@ export async function createAssessment(data: {
         };
       }
     }
+
+    // 1b. LTC facts are recorded on the assessment, but all LTC billing is
+    //     parked pending ministry clarification. A resident still needs the
+    //     provider-role fact so the clinical record is complete.
+    const ltcResident = data.ltc?.isResident ?? false;
+    if (ltcResident && !data.ltc?.providerRole) {
+      return {
+        success: false,
+        error:
+          "Select whether this pharmacy is the LTC home's primary or secondary provider.",
+      };
+    }
+    const ltcProviderRole = ltcResident
+      ? data.ltc?.providerRole ?? null
+      : null;
+    const ltcIsEmergency =
+      ltcResident && ltcProviderRole === "secondary"
+        ? data.ltc?.isEmergency ?? false
+        : null;
 
     // 2. Same-day mutex pre-check for a friendly message. The DATABASE trigger
     //    (assessment_same_day_mutex_trg) is the race-safe backstop; this only
@@ -605,6 +681,9 @@ export async function createAssessment(data: {
       modality: data.modality,
       virtualLocation: data.virtualLocation || null,
       remoteReason: data.remoteReason || null,
+      ltcResident,
+      ltcProviderRole,
+      ltcIsEmergency,
       intakeSessionId: data.intakeSessionId,
       outcome: data.outcome,
       noRxRationaleCode: clinical.noRxRationaleCode || null,
@@ -693,7 +772,7 @@ export async function createAssessment(data: {
         isAsOfRightWithoutOntarioLicence: prescriber.isAsOfRight,
       },
       isOdbRecipient: data.isOdbRecipient ?? true,
-      pharmacyFeeTier: ph.odbFeeTier as OdbFeeTier,
+      remoteVirtualEligible: ph.remoteVirtualEligible,
       virtualLocation: data.virtualLocation,
       remoteReason: data.remoteReason,
       ltc: data.ltc,

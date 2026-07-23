@@ -16,7 +16,7 @@
  * Field rules are from the EO Notice (effective 2026-07-01) — see
  * docs/COMPLIANCE.md §9 for the section-by-section mapping. The reference
  * tables carry PIN/fee/claim-maximum; the protocol constants below ('09', 'PS',
- * 'ML', 'LT', 'S', SSC 4) are specified in the Notice's Billing Procedures.
+ * 'ML', 'S', SSC 4) are specified in the Notice's Billing Procedures.
  *
  * NOTHING HERE TALKS TO HNS. The draft is produced, validated, persisted, and
  * exported for hand-entry into the pharmacy's dispensing software.
@@ -25,15 +25,7 @@
 export type AssessmentModality = "in_person" | "virtual_from_pharmacy" | "virtual_remote";
 export type BillingModality = "in_person" | "virtual";
 export type Outcome = "rx_issued" | "no_rx_referral" | "no_rx_otc_or_nonpharm";
-export type OdbFeeTier = "regular_8_83" | "rural_9_93" | "rural_12_14" | "rural_13_25";
 export type LtcProviderRole = "primary" | "secondary";
-
-/** Only these tiers may provide remote virtual services (EO Notice p.4 fn.3, p.15). */
-const RURAL_FEE_TIERS: ReadonlySet<string> = new Set([
-  "rural_9_93",
-  "rural_12_14",
-  "rural_13_25",
-]);
 
 /**
  * Prescriber ID Reference. Must be '09'. '01' or '99' reject with
@@ -52,7 +44,7 @@ export type NotBillableReason =
   | "EXISTING_RX_BLOCKS_CLAIM"
   | "REMOTE_VIRTUAL_REQUIRES_RURAL_FEE_TIER"
   | "REMOTE_VIRTUAL_MISSING_LOCATION_OR_REASON"
-  | "LTC_SECONDARY_NON_EMERGENCY"
+  | "LTC_PENDING_MINISTRY_CLARIFICATION"
   | "MISSING_PRESCRIBER_ID"
   /** The reference lookup had no row. NEVER defaulted — see below. */
   | "UNKNOWN_PIN_LOOKUP";
@@ -80,7 +72,8 @@ export interface DeriveClaimDraftInput {
     isAsOfRightWithoutOntarioLicence?: boolean;
   };
   isOdbRecipient: boolean;
-  pharmacyFeeTier: OdbFeeTier;
+  /** Resolved by the caller from the seeded ODB fee-tier reference row. */
+  remoteVirtualEligible: boolean;
   /** Required for any virtual assessment (documentation requirement, p.13). */
   virtualLocation?: string | null;
   /** Required for virtual_remote: why on-site staff can't meet demand (p.4). */
@@ -127,12 +120,11 @@ export const NOT_BILLABLE_MESSAGES: Record<NotBillableReason, string> = {
   EXISTING_RX_BLOCKS_CLAIM:
     "The patient already has a prescription for this that can be filled, adapted, or extended within scope (or needs verification with a reachable prescriber). No claim can be submitted.",
   REMOTE_VIRTUAL_REQUIRES_RURAL_FEE_TIER:
-    "Remote virtual assessments are only permitted for pharmacies on a rural ODB dispensing fee ($9.93 / $12.14 / $13.25). This pharmacy is on the regular tier.",
+    "This pharmacy's current ODB dispensing-fee tier is not eligible for remote virtual assessments.",
   REMOTE_VIRTUAL_MISSING_LOCATION_OR_REASON:
     "A remote virtual assessment must record the pharmacist's physical location and why on-site staff could not meet virtual demand.",
-  // See docs/OPEN_QUESTIONS.md #1 — deliberately worded as unresolved.
-  LTC_SECONDARY_NON_EMERGENCY:
-    "This pharmacy is not the LTC home's primary provider and this isn't an emergency. Billing for this case needs verification before proceeding — check with the ODB Pharmacy Help Desk (1-800-668-6641). No claim has been drafted.",
+  LTC_PENDING_MINISTRY_CLARIFICATION:
+    "The assessment has been recorded, but no claim is being drafted for an LTC resident while ministry billing guidance is pending. Talk to Royian before taking any billing action.",
   MISSING_PRESCRIBER_ID:
     "No OCP registration number is on file for this pharmacist, and they are not flagged as practising under As of Right. A claim needs a prescriber ID.",
   UNKNOWN_PIN_LOOKUP:
@@ -153,28 +145,20 @@ export function deriveClaimDraft(input: DeriveClaimDraftInput): DeriveClaimDraft
   if (input.claimMaximumReached) return refuse("CLAIM_MAXIMUM_REACHED");
   if (input.existingRxBlocks) return refuse("EXISTING_RX_BLOCKS_CLAIM");
 
+  // P0-D: all LTC billing is deliberately inert pending the ODB Help Desk
+  // answer. The clinical assessment is persisted by the caller, but no LTC
+  // case may reach PIN/fee derivation or fall through to a standard claim.
+  if (input.ltc?.isResident) {
+    return refuse("LTC_PENDING_MINISTRY_CLARIFICATION");
+  }
+
   if (input.modality === "virtual_remote") {
-    if (!RURAL_FEE_TIERS.has(input.pharmacyFeeTier)) {
+    if (!input.remoteVirtualEligible) {
       return refuse("REMOTE_VIRTUAL_REQUIRES_RURAL_FEE_TIER");
     }
     if (!input.virtualLocation?.trim() || !input.remoteReason?.trim()) {
       return refuse("REMOTE_VIRTUAL_MISSING_LOCATION_OR_REASON");
     }
-  }
-
-  const ltc = input.ltc;
-  const isLtcPrimary = !!ltc?.isResident && ltc.providerRole === "primary";
-  const isLtcSecondary = !!ltc?.isResident && ltc.providerRole === "secondary";
-  const isLtcSecondaryEmergency = isLtcSecondary && !!ltc?.isEmergency;
-
-  // TODO: VERIFY — EO Notice footnote 5 vs Exclusions; confirm with ODB Pharmacy
-  // Help Desk (1-800-668-6641) whether a $0 claim must still be filed here.
-  // Exclusions say a secondary provider may only bill in an emergency; footnote 5
-  // says an ineligible pharmacy "must submit claims ... with a zero dollar fee".
-  // We refuse (conservative: cannot produce an improper fee) rather than pick a
-  // side. See docs/OPEN_QUESTIONS.md #1. Do not resolve this by reasoning.
-  if (isLtcSecondary && !isLtcSecondaryEmergency) {
-    return refuse("LTC_SECONDARY_NON_EMERGENCY");
   }
 
   // ── Prescriber ────────────────────────────────────────────────────────────
@@ -195,14 +179,8 @@ export function deriveClaimDraft(input: DeriveClaimDraftInput): DeriveClaimDraft
   if (!pin) return refuse("UNKNOWN_PIN_LOOKUP");
 
   // ── Derived fields ────────────────────────────────────────────────────────
-  // LTC primary providers are paid through the capitation model, so the claim is
-  // filed at a zero dollar fee (a dollar amount rejects with "68 – Professional
-  // Fee Error"). Otherwise the fee is whatever the seeded PIN row says.
-  const feeCents = isLtcPrimary ? 0 : pin.feeCents;
-
   const interventionCodes = ["PS"];
   if (!input.isOdbRecipient) interventionCodes.push("ML");
-  if (isLtcSecondaryEmergency) interventionCodes.push("LT");
 
   return {
     billable: true,
@@ -212,7 +190,7 @@ export function deriveClaimDraft(input: DeriveClaimDraftInput): DeriveClaimDraft
       billingModality,
       rxIssued,
       pinCode: pin.pinCode,
-      feeCents,
+      feeCents: pin.feeCents,
       prescriberIdReference: PRESCRIBER_ID_REFERENCE,
       prescriberId,
       interventionCodes,

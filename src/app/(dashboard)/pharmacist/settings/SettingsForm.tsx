@@ -9,12 +9,18 @@ import {
   type SettingsData,
 } from "./actions";
 
-// Label derived from the enum key itself (e.g. "rural_9_93" → "Rural — $9.93")
-// so there is no hardcoded fee literal anywhere in the code.
-function feeTierLabel(tier: string): string {
-  const [kind, dollars, cents] = tier.split("_");
-  const amount = dollars && cents ? `$${dollars}.${cents}` : tier;
-  return `${kind === "regular" ? "Regular" : "Rural"} — ${amount}`;
+type FeeTierOption = {
+  code: string;
+  dispensingFeeCents: number;
+  remoteVirtualEligible: boolean;
+};
+
+function feeTierLabel(tier: FeeTierOption): string {
+  const amount = `$${(tier.dispensingFeeCents / 100).toFixed(2)}`;
+  const remote = tier.remoteVirtualEligible
+    ? "remote virtual eligible"
+    : "remote virtual not eligible";
+  return `${amount} ODB dispensing fee — ${remote}`;
 }
 
 export default function SettingsForm({
@@ -22,7 +28,7 @@ export default function SettingsForm({
   feeTiers,
 }: {
   initialData: SettingsData;
-  feeTiers: string[];
+  feeTiers: FeeTierOption[];
 }) {
   const canEdit = initialData.canEditPharmacy;
   const isTrainee = initialData.role === "intern" || initialData.role === "student";
@@ -302,13 +308,15 @@ export default function SettingsForm({
               onChange={(e) => setOdbFeeTier(e.target.value)}
               disabled={!canEdit}
             >
-              {feeTiers.map((t) => (
-                <option key={t} value={t}>{feeTierLabel(t)}</option>
+              {feeTiers.map((tier) => (
+                <option key={tier.code} value={tier.code}>
+                  {feeTierLabel(tier)}
+                </option>
               ))}
             </select>
             <span className="settings-input-hint" style={{ marginTop: "0.25rem", display: "block" }}>
-              Remote virtual assessments are only permitted on a rural tier — the regular
-              tier is blocked from remote billing.
+              Remote eligibility comes from the selected effective-dated ODB
+              dispensing-fee reference row.
             </span>
           </div>
 

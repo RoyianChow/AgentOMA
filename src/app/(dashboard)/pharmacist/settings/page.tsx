@@ -1,7 +1,9 @@
 import Link from "next/link";
 
 import { requirePortalPage } from "@/lib/auth-guard";
+import { db } from "@/lib/db";
 import { odbFeeTier } from "@/lib/db/schema";
+import { and, asc, gte, isNull, lte, or } from "drizzle-orm";
 import { getPharmacySettings } from "./actions";
 import SettingsForm from "./SettingsForm";
 
@@ -29,5 +31,29 @@ export default async function PharmacySettingsPage() {
     );
   }
 
-  return <SettingsForm initialData={res.data} feeTiers={odbFeeTier.enumValues} />;
+  const feeTiers = await db
+    .select({
+      code: odbFeeTier.code,
+      dispensingFeeCents: odbFeeTier.dispensingFeeCents,
+      remoteVirtualEligible: odbFeeTier.remoteVirtualEligible,
+    })
+    .from(odbFeeTier)
+    .where(
+      and(
+        lte(
+          odbFeeTier.effectiveDate,
+          new Date().toISOString().slice(0, 10),
+        ),
+        or(
+          isNull(odbFeeTier.endDate),
+          gte(
+            odbFeeTier.endDate,
+            new Date().toISOString().slice(0, 10),
+          ),
+        ),
+      ),
+    )
+    .orderBy(asc(odbFeeTier.dispensingFeeCents));
+
+  return <SettingsForm initialData={res.data} feeTiers={feeTiers} />;
 }

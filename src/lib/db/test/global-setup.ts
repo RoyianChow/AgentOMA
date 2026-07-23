@@ -29,7 +29,7 @@ export default async function setup() {
     const counts = await seedReferenceData(db);
 
     console.log(
-      `[test-db] migrated from zero + seeded — ailment_group:${counts.groups} pin:${counts.pins} claim_rule:${counts.rules}`,
+      `[test-db] migrated from zero + seeded — odb_fee_tier:${counts.feeTiers} ailment_group:${counts.groups} pin:${counts.pins} claim_rule:${counts.rules}`,
     );
   } finally {
     await client.end({ timeout: 5 });
