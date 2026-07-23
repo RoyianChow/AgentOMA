@@ -8,6 +8,8 @@ Use this page to find the current source instead of searching historical prompts
 2. [`COMPLETED_WORK.md`](COMPLETED_WORK.md) — implemented and verified capabilities.
 3. [`NEXT_STEPS.md`](NEXT_STEPS.md) — prioritized remaining work and go-live blockers.
 4. [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) — decisions that require a pharmacist, ODB, or product lead.
+5. [`SELF_CHECK.md`](SELF_CHECK.md) — approved boundaries and production gate
+   for the public `/check` feature.
 
 ## Safety and compliance
 

@@ -1,5 +1,5 @@
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import { ailmentGroup, pin, claimRule } from "./schema";
+import { ailmentGroup, pin, claimRule, odbFeeTier } from "./schema";
 import * as schema from "./schema";
 import {
   AILMENT_GROUPS,
@@ -7,6 +7,7 @@ import {
   EO_NOTICE_EFFECTIVE_DATE,
   feeCentsForModality,
 } from "../reference/minor-ailment-reference";
+import { ODB_FEE_TIERS } from "../reference/odb-fee-tier-reference";
 
 type Db = PostgresJsDatabase<typeof schema>;
 
@@ -20,10 +21,31 @@ type Db = PostgresJsDatabase<typeof schema>;
  * the EO Notice PDF.
  */
 export async function seedReferenceData(db: Db): Promise<{
+  feeTiers: number;
   groups: number;
   pins: number;
   rules: number;
 }> {
+  for (const tier of ODB_FEE_TIERS) {
+    await db
+      .insert(odbFeeTier)
+      .values({
+        code: tier.code,
+        dispensingFeeCents: tier.dispensingFeeCents,
+        remoteVirtualEligible: tier.remoteVirtualEligible,
+        effectiveDate: EO_NOTICE_EFFECTIVE_DATE,
+      })
+      .onConflictDoUpdate({
+        target: odbFeeTier.code,
+        set: {
+          dispensingFeeCents: tier.dispensingFeeCents,
+          remoteVirtualEligible: tier.remoteVirtualEligible,
+          effectiveDate: EO_NOTICE_EFFECTIVE_DATE,
+          endDate: null,
+        },
+      });
+  }
+
   for (const group of AILMENT_GROUPS) {
     const [row] = await db
       .insert(ailmentGroup)
@@ -85,10 +107,16 @@ export async function seedReferenceData(db: Db): Promise<{
       });
   }
 
-  const [groups, pins, rules] = await Promise.all([
+  const [feeTiers, groups, pins, rules] = await Promise.all([
+    db.select().from(odbFeeTier),
     db.select().from(ailmentGroup),
     db.select().from(pin),
     db.select().from(claimRule),
   ]);
-  return { groups: groups.length, pins: pins.length, rules: rules.length };
+  return {
+    feeTiers: feeTiers.length,
+    groups: groups.length,
+    pins: pins.length,
+    rules: rules.length,
+  };
 }

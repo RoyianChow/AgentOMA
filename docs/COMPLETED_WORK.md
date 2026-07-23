@@ -1,8 +1,10 @@
 # Completed work
 
-**Verified through:** 2026-07-21
+**Verified through:** 2026-07-23
 
-**Quality snapshot:** TypeScript clean · ESLint clean · 85 Vitest tests passing
+**Quality snapshot:** TypeScript clean · ESLint clean · 41/41 database-free
+tests passing · 85 tests passed in the last full database-backed run. The new
+P0-D integration tests still await an environment with Docker Desktop/CLI.
 
 This is the implementation record requested for the project. It describes capabilities present in the repository, not planned work. Remaining items are in [`NEXT_STEPS.md`](NEXT_STEPS.md).
 
@@ -13,7 +15,7 @@ This is the implementation record requested for the project. It describes capabi
 - Added strict server/client environment validation with `@t3-oss/env-nextjs` and Zod.
 - Reconciled migration tracking and restored the reviewed `db:generate` → `db:migrate` workflow; `db:push` was removed and banned.
 - Added effective-dated, idempotently seeded reference tables for ailment groups, PINs, fees, claim maximums, and cross-ailment rules.
-- Added pharmacy records with HNS account identifier and ODB dispensing-fee tier.
+- Added pharmacy records with HNS account identifier and an effective-dated ODB dispensing-fee reference linked through a pharmacy foreign key.
 - Scoped patient health-number uniqueness to `(pharmacy_id, health_number)`.
 
 ## Patient intake
@@ -26,12 +28,32 @@ This is the implementation record requested for the project. It describes capabi
 - Added short-lived, single-use six-character handoff sessions stored in Postgres.
 - Added per-pharmacy QR links and server-side validation of the URL's pharmacy identifier before an intake row is written.
 
+## Public self-check and pre-visit PDF
+
+- Added a pharmacy-agnostic `/check` route with its own bare layout; it is not
+  cross-wired to the marketing site, QR intake, portal, or a pharmacy record.
+- Reused `src/config/triage.ts` by import for the narrowing tree, emergency
+  signs, and red flags without copying or changing clinical content.
+- Kept the flow genuinely non-identifying: no name, health number, DOB, age,
+  sex, gender, pharmacy, or other demographic field.
+- Kept all answers in React memory and generated the PDF in the browser. The
+  path has no server action, DB/storage/cache write, browser storage, analytics,
+  or payload logging.
+- Added separate typed pre-visit and advisory document branches. The advisory
+  type has no ailment field; neither branch contains PINs, fees, maximums, or
+  claim derivation.
+- Added tests for document boundaries, absence of identifying/billing fields,
+  shared triage imports, forbidden persistence APIs, and silent PDF failure
+  handling.
+- Hard-blocked `/check` in production pending P0-A clinical sign-off. See
+  [`SELF_CHECK.md`](SELF_CHECK.md).
+
 ## Claim assembly and money rules
 
 - Implemented pure `deriveClaimDraft(input)` with an injected PIN resolver and no database calls.
 - Made unknown PIN lookups refuse with `UNKNOWN_PIN_LOOKUP`; there is no default or ailment fallback.
 - Derived PIN, fee, prescriber reference/ID, intervention codes, carrier, quantity, and SSC from validated inputs and seeded references.
-- Added conservative refusal paths for red-flag exit, claim maximum, blocking prescription, self/family assessment, ineligible remote virtual service, and unresolved LTC secondary non-emergency service.
+- Added conservative refusal paths for red-flag exit, claim maximum, blocking prescription, self/family assessment, ineligible remote virtual service, and every LTC-resident scenario pending ministry clarification.
 - Persisted billable results as immutable `claim_draft` snapshots; non-billable results create no claim row.
 - Added atomic supersession for corrections while retaining both the original and replacement.
 - Added a read-only claim panel and printable handoff export. The interface explicitly states that nothing is submitted to HNS.
@@ -76,9 +98,20 @@ This is the implementation record requested for the project. It describes capabi
 - Added pharmacy practice address/phone settings used server-side for prescription snapshots.
 - Added real-Postgres tests for complete persistence/readback, SDM consent, coded no-Rx records, server refusal, and direct database constraint refusal.
 
+## Virtual/LTC fact capture and fee-tier reference (P0-D)
+
+- Applied `0013_p0_d_odb_fee_tier_reference` with effective dates, fee cents, and an explicit `remote_virtual_eligible` rule; applied `0014_p0_d_ltc_fact_capture` with LTC and virtual-documentation checks.
+- Updated the workspace and server action to capture virtual physical location, remote-demand reason, LTC residency, provider role, and emergency status.
+- Made remote-virtual visibility and enforcement depend on the active reference row rather than a hardcoded set of fee-tier names.
+- Parked all LTC claim drafting with `LTC_PENDING_MINISTRY_CLARIFICATION`; the assessment persists and no claim draft is created.
+- Added pure and database test coverage, including a data-driven remote eligibility flip. Live verification confirmed four fee tiers, all three checks, and unchanged counts of 3 pharmacies and 12 assessments. Fresh-Docker replay of the new tests remains outstanding because Docker is unavailable in the current environment.
+- Split production reference seeding from local demo fixtures: `db:seed` writes reference rows only, while `db:seed:demo` is explicitly development-only.
+
 ## Verification and regression coverage
 
 - Vitest runs pure unit tests and real-Postgres integration tests.
 - Docker Postgres uses port 5433, is guarded against non-local database URLs, and rebuilds the migration chain from zero.
 - Tests cover claim derivation combinations, refusal paths, LTC behaviour, remote-virtual tiers, retention, one-per-day, concurrent mutex enforcement, claim persistence/supersession, invitations/auth data, audit grants/triggers, and red-flag zero-claim behaviour.
-- Current repository gates pass: 85 tests, `tsc --noEmit`, and ESLint.
+- TypeScript and ESLint are clean for the current tree. The last full
+  database-backed suite had 85 passing tests; database-free logic can also run
+  independently through `npm run test:pure`.

@@ -82,7 +82,7 @@ beforeEach(async () => {
   await resetOperationalTables(db);
   await db.execute(sql`
     insert into pharmacy (
-      id, store_name, odb_fee_tier, address_line1, city, province, postal_code, phone
+      id, store_name, odb_fee_tier_code, address_line1, city, province, postal_code, phone
     )
     values (
       ${PHARMACY_ID}::uuid, 'Test Pharmacy', 'regular_8_83',
@@ -350,6 +350,45 @@ describe("createAssessment → claim_draft", () => {
     expect(await countRows("assessment")).toBe(0);
   });
 
+  it("database rejects LTC provider facts on a non-LTC assessment", async () => {
+    let code: string | undefined;
+    try {
+      await db.execute(sql`
+        insert into assessment (
+          pharmacy_id, patient_id, ailment_group_code, modality, outcome,
+          ltc_resident, ltc_provider_role, service_date, retain_until
+        ) values (
+          ${PHARMACY_ID}::uuid, ${patientId}::uuid, 'RHINITIS', 'in_person',
+          'no_rx_otc_or_nonpharm', false, 'primary', '2026-07-16', '2036-07-16'
+        )
+      `);
+    } catch (err) {
+      code = (err as { cause?: { code?: string } }).cause?.code;
+    }
+    expect(code).toBe("23514");
+    expect(await countRows("assessment")).toBe(0);
+  });
+
+  it("database rejects virtual assessments without required documentation", async () => {
+    let code: string | undefined;
+    try {
+      await db.execute(sql`
+        insert into assessment (
+          pharmacy_id, patient_id, ailment_group_code, modality, outcome,
+          service_date, retain_until
+        ) values (
+          ${PHARMACY_ID}::uuid, ${patientId}::uuid, 'RHINITIS',
+          'virtual_from_pharmacy', 'no_rx_otc_or_nonpharm',
+          '2026-07-16', '2036-07-16'
+        )
+      `);
+    } catch (err) {
+      code = (err as { cause?: { code?: string } }).cause?.code;
+    }
+    expect(code).toBe("23514");
+    expect(await countRows("assessment")).toBe(0);
+  });
+
   it("completed-then-referral is billable with SSC 4", async () => {
     const { createAssessment } = await import("../actions");
     const res = await createAssessment(baseInput({ outcome: "no_rx_referral" }));
@@ -359,21 +398,93 @@ describe("createAssessment → claim_draft", () => {
     expect((rows as unknown as { ssc: number }[])[0].ssc).toBe(4);
   });
 
-  it("NON-billable: persists zero drafts and surfaces the reason", async () => {
+  it("LTC facts persist but billing remains inert pending ministry clarification", async () => {
     const { createAssessment } = await import("../actions");
     const res = await createAssessment({
       ...(await baseInput()),
-      ltc: { isResident: true, providerRole: "secondary", isEmergency: false },
+      ltc: { isResident: true, providerRole: "primary" },
     });
 
     // The assessment still happened and is recorded; the claim is not.
     expect(res.success).toBe(true);
     expect(res.claim?.billable).toBe(false);
     if (res.claim && !res.claim.billable) {
-      expect(res.claim.reason).toBe("LTC_SECONDARY_NON_EMERGENCY");
-      expect(res.claim.message).toMatch(/verification/i);
+      expect(res.claim.reason).toBe("LTC_PENDING_MINISTRY_CLARIFICATION");
+      expect(res.claim.message).toMatch(/recorded.*no claim.*pending/i);
     }
     expect(await countClaimDrafts()).toBe(0);
+
+    const facts = (await db.execute<{
+      ltc_resident: boolean;
+      ltc_provider_role: string | null;
+      ltc_is_emergency: boolean | null;
+    }>(sql`
+      select ltc_resident, ltc_provider_role, ltc_is_emergency
+      from assessment
+    `)) as unknown as {
+      ltc_resident: boolean;
+      ltc_provider_role: string | null;
+      ltc_is_emergency: boolean | null;
+    }[];
+    expect(facts[0]).toEqual({
+      ltc_resident: true,
+      ltc_provider_role: "primary",
+      ltc_is_emergency: null,
+    });
+  });
+
+  it("regular fee-tier data blocks remote virtual before any assessment is written", async () => {
+    const { createAssessment } = await import("../actions");
+    const res = await createAssessment({
+      ...(await baseInput()),
+      modality: "virtual_remote",
+      virtualLocation: "Home office, Toronto",
+      remoteReason: "On-site staff cannot meet current virtual demand",
+    });
+
+    expect(res.success).toBe(false);
+    if (!res.success) expect(res.error).toMatch(/not eligible/i);
+    expect(await countRows("assessment")).toBe(0);
+    expect(await countClaimDrafts()).toBe(0);
+  });
+
+  it("remote eligibility is data-driven: flipping the seeded row changes behaviour", async () => {
+    const { createAssessment } = await import("../actions");
+    await db.execute(sql`
+      update odb_fee_tier
+      set remote_virtual_eligible = true
+      where code = 'regular_8_83'
+    `);
+
+    try {
+      const res = await createAssessment({
+        ...(await baseInput()),
+        modality: "virtual_remote",
+        virtualLocation: "Home office, Toronto",
+        remoteReason: "On-site staff cannot meet current virtual demand",
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.claim?.billable).toBe(true);
+      const rows = (await db.execute<{
+        virtual_location: string;
+        remote_reason: string;
+      }>(sql`
+        select virtual_location, remote_reason
+        from assessment
+      `)) as unknown as {
+        virtual_location: string;
+        remote_reason: string;
+      }[];
+      expect(rows[0].virtual_location).toBe("Home office, Toronto");
+      expect(rows[0].remote_reason).toMatch(/on-site staff/i);
+    } finally {
+      await db.execute(sql`
+        update odb_fee_tier
+        set remote_virtual_eligible = false
+        where code = 'regular_8_83'
+      `);
+    }
   });
 
   it("NON-billable: an unknown ailment group drafts nothing (never a default PIN)", async () => {
@@ -555,7 +666,7 @@ describe("createAssessment → claim_draft", () => {
     const { getIntakeSessionById } = await import("../actions");
     const OTHER = "00000000-0000-0000-0000-0000000000dd";
     await db.execute(sql`
-      insert into pharmacy (id, store_name, odb_fee_tier)
+      insert into pharmacy (id, store_name, odb_fee_tier_code)
       values (${OTHER}::uuid, 'Other Pharmacy', 'regular_8_83')
       on conflict (id) do nothing
     `);

@@ -34,7 +34,7 @@ const base = (over: Partial<DeriveClaimDraftInput> = {}): DeriveClaimDraftInput 
   resolvePin,
   prescriber: { ocpRegistrationNumber: "123456" },
   isOdbRecipient: true,
-  pharmacyFeeTier: "regular_8_83",
+  remoteVirtualEligible: false,
   ...over,
 });
 
@@ -83,13 +83,13 @@ describe("deriveClaimDraft", () => {
       expect(d.feeCents).toBe(1500);
     });
 
-    it("virtual_remote bills on the virtual PIN column (rural tier)", () => {
+    it("virtual_remote bills on the virtual PIN column (eligible tier)", () => {
       const d = draftOf(
         deriveClaimDraft(
           base({
             modality: "virtual_remote",
             outcome: "rx_issued",
-            pharmacyFeeTier: "rural_9_93",
+            remoteVirtualEligible: true,
             virtualLocation: "home office",
             remoteReason: "no on-site staff",
           }),
@@ -196,7 +196,7 @@ describe("deriveClaimDraft", () => {
         deriveClaimDraft(
           base({
             modality: "virtual_remote",
-            pharmacyFeeTier: "rural_12_14",
+            remoteVirtualEligible: true,
             virtualLocation: "home",
             remoteReason: "surge",
           }),
@@ -237,48 +237,39 @@ describe("deriveClaimDraft", () => {
   });
 
   describe("LTC", () => {
-    it("primary provider → $0 claim (capitation), still billable", () => {
-      const d = draftOf(
-        deriveClaimDraft(base({ ltc: { isResident: true, providerRole: "primary" } })),
-      );
-      expect(d.feeCents).toBe(0);
-      expect(d.pinCode).toBe("9858181"); // PIN unchanged, only the fee is zeroed
-    });
-
-    it("secondary provider in an emergency → normal fee + LT", () => {
-      const d = draftOf(
-        deriveClaimDraft(
-          base({ ltc: { isResident: true, providerRole: "secondary", isEmergency: true } }),
-        ),
-      );
-      expect(d.interventionCodes).toContain("LT");
-      expect(d.feeCents).toBe(1900);
-    });
-
-    // Amendment 2: genuinely ambiguous — see docs/OPEN_QUESTIONS.md #1.
-    // We take the conservative branch (refuse) and the reason code records that
-    // it is unresolved, not settled.
-    it("secondary provider, non-emergency → refuses pending verification", () => {
-      const res = deriveClaimDraft(
-        base({ ltc: { isResident: true, providerRole: "secondary", isEmergency: false } }),
-      );
+    it.each([
+      { isResident: true, providerRole: "primary" as const },
+      {
+        isResident: true,
+        providerRole: "secondary" as const,
+        isEmergency: true,
+      },
+      {
+        isResident: true,
+        providerRole: "secondary" as const,
+        isEmergency: false,
+      },
+    ])("every LTC fact combination refuses pending clarification: %o", (ltc) => {
+      const res = deriveClaimDraft(base({ ltc }));
       expect(res.billable).toBe(false);
-      if (!res.billable) expect(res.reason).toBe("LTC_SECONDARY_NON_EMERGENCY");
+      if (!res.billable) {
+        expect(res.reason).toBe("LTC_PENDING_MINISTRY_CLARIFICATION");
+      }
+      expect(res).not.toHaveProperty("draft");
     });
 
     it("a non-LTC patient is unaffected", () => {
       const d = draftOf(deriveClaimDraft(base({ ltc: { isResident: false } })));
       expect(d.feeCents).toBe(1900);
-      expect(d.interventionCodes).not.toContain("LT");
     });
   });
 
   describe("remote-virtual eligibility", () => {
-    it("regular fee tier → refuses", () => {
+    it("an ineligible fee-tier row refuses", () => {
       const res = deriveClaimDraft(
         base({
           modality: "virtual_remote",
-          pharmacyFeeTier: "regular_8_83",
+          remoteVirtualEligible: false,
           virtualLocation: "home",
           remoteReason: "surge",
         }),
@@ -287,27 +278,30 @@ describe("deriveClaimDraft", () => {
       if (!res.billable) expect(res.reason).toBe("REMOTE_VIRTUAL_REQUIRES_RURAL_FEE_TIER");
     });
 
-    it.each(["rural_9_93", "rural_12_14", "rural_13_25"] as const)(
-      "rural tier %s → allowed",
-      (tier) => {
-        const res = deriveClaimDraft(
-          base({
-            modality: "virtual_remote",
-            pharmacyFeeTier: tier,
-            virtualLocation: "home",
-            remoteReason: "surge",
-          }),
-        );
-        expect(res.billable).toBe(true);
-      },
-    );
-
-    it("rural tier but no location/reason recorded → refuses", () => {
+    it("an eligible fee-tier row allows remote virtual", () => {
       const res = deriveClaimDraft(
-        base({ modality: "virtual_remote", pharmacyFeeTier: "rural_9_93", remoteReason: "surge" }),
+        base({
+          modality: "virtual_remote",
+          remoteVirtualEligible: true,
+          virtualLocation: "home",
+          remoteReason: "surge",
+        }),
+      );
+      expect(res.billable).toBe(true);
+    });
+
+    it("an eligible tier still requires location and reason", () => {
+      const res = deriveClaimDraft(
+        base({
+          modality: "virtual_remote",
+          remoteVirtualEligible: true,
+          remoteReason: "surge",
+        }),
       );
       expect(res.billable).toBe(false);
-      if (!res.billable) expect(res.reason).toBe("REMOTE_VIRTUAL_MISSING_LOCATION_OR_REASON");
+      if (!res.billable) {
+        expect(res.reason).toBe("REMOTE_VIRTUAL_MISSING_LOCATION_OR_REASON");
+      }
     });
   });
 
@@ -339,7 +333,7 @@ describe("deriveClaimDraft", () => {
         { ailmentGroupCode: "NOPE" },
         { prescriber: {} },
         { ltc: { isResident: true, providerRole: "secondary", isEmergency: false } },
-        { modality: "virtual_remote", pharmacyFeeTier: "regular_8_83" },
+        { modality: "virtual_remote", remoteVirtualEligible: false },
       ];
       for (const over of refusals) {
         const res = deriveClaimDraft(base(over));

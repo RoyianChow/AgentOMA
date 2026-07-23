@@ -3,11 +3,9 @@
 import { db } from "@/lib/db";
 import { user } from "@/lib/db/schema/auth";
 import { pharmacy, odbFeeTier } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq, gte, isNull, lte, or } from "drizzle-orm";
 import { requirePortalUser, AuthorizationError } from "@/lib/auth-guard";
 import { writeAudit } from "@/lib/audit";
-
-const FEE_TIERS = odbFeeTier.enumValues;
 
 export type SettingsData = {
   // pharmacy (admin-editable)
@@ -49,7 +47,7 @@ export async function getPharmacySettings(): Promise<
       data: {
         storeName: dbPharmacy.storeName,
         hnsAccountId: dbPharmacy.hnsAccountId,
-        odbFeeTier: dbPharmacy.odbFeeTier,
+        odbFeeTier: dbPharmacy.odbFeeTierCode,
         addressLine1: dbPharmacy.addressLine1,
         addressLine2: dbPharmacy.addressLine2,
         city: dbPharmacy.city,
@@ -132,10 +130,10 @@ export async function updateMyPrescriberIdentity(input: {
 }
 
 /**
- * Pharmacy-wide settings. ADMIN-ONLY, re-verified server-side: the ODB fee
- * tier decides remote-virtual eligibility (rural tiers only; the regular tier
- * is hard-blocked from remote in deriveClaimDraft), so a non-admin must not be
- * able to change it. proxy.ts is a UX gate only — this is the real boundary.
+ * Pharmacy-wide settings. ADMIN-ONLY, re-verified server-side: the selected
+ * effective-dated ODB fee-tier row decides remote-virtual eligibility, so a
+ * non-admin must not be able to change it. proxy.ts is a UX gate only — this
+ * is the real boundary.
  */
 export async function updatePharmacySettings(input: {
   storeName: string;
@@ -167,9 +165,25 @@ export async function updatePharmacySettings(input: {
       };
     }
 
-    // The tier must be a real enum value — never free text, or a typo would
-    // silently flip remote-virtual eligibility.
-    if (!(FEE_TIERS as readonly string[]).includes(input.odbFeeTier)) {
+    // Validate against the active seeded reference row. A caller cannot invent
+    // a tier code or derive remote eligibility from free text.
+    const selectedTier = await db.query.odbFeeTier.findFirst({
+      where: and(
+        eq(odbFeeTier.code, input.odbFeeTier),
+        lte(
+          odbFeeTier.effectiveDate,
+          new Date().toISOString().slice(0, 10),
+        ),
+        or(
+          isNull(odbFeeTier.endDate),
+          gte(
+            odbFeeTier.endDate,
+            new Date().toISOString().slice(0, 10),
+          ),
+        ),
+      ),
+    });
+    if (!selectedTier) {
       return { success: false, error: "Select a valid ODB dispensing fee tier." };
     }
 
@@ -178,7 +192,7 @@ export async function updatePharmacySettings(input: {
       .set({
         storeName,
         hnsAccountId: input.hnsAccountId.trim() || null,
-        odbFeeTier: input.odbFeeTier as (typeof FEE_TIERS)[number],
+        odbFeeTierCode: selectedTier.code,
         addressLine1,
         addressLine2: input.addressLine2.trim() || null,
         city,
