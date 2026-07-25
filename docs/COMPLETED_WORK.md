@@ -2,7 +2,7 @@
 
 **Verified through:** 2026-07-25
 
-**Quality snapshot:** TypeScript clean · ESLint clean · 133/133 tests passing,
+**Quality snapshot:** TypeScript clean · ESLint clean · 135/135 tests passing,
 including a fresh Docker Postgres migration replay through `0017`. Supabase is
 live through the same migration.
 
@@ -29,6 +29,19 @@ This is the implementation record requested for the project. It describes capabi
 - Kept the legacy pharmacy QR parameter for link compatibility while removing
   its tenant-selection power: the server always uses `PHARMACY_ID`, and a
   forged/malformed/absent query value resolves only to the configured pharmacy.
+
+## Public guided demo
+
+- Added `/demo` as a public, interactive five-stage tour covering handoff,
+  structured assessment, claim handoff, follow-up, and record governance.
+- Kept the tour fully synthetic and in memory. It accepts no patient input,
+  opens no authenticated portal session, and has no database, browser-storage,
+  clinical-triage, claim-derivation, or HNS path.
+- Omitted PINs, fees, claim maximums, and clinical recommendations while still
+  explaining which live boundaries derive and protect those records.
+- Added architecture tests that fail if the demo imports persistence/auth
+  layers, frozen triage content, claim derivation, browser storage, identifying
+  fields, or PIN-like values.
 
 ## Public self-check and pre-visit PDF
 
@@ -172,5 +185,5 @@ This is the implementation record requested for the project. It describes capabi
 - Docker Postgres uses port 5433, is guarded against non-local database URLs, and rebuilds the migration chain from zero.
 - Tests cover claim derivation combinations, refusal paths, LTC behaviour, remote-virtual tiers, retention, one-per-day, concurrent mutex enforcement, claim persistence/supersession, follow-up completion/supersession/concurrency/export, invitations/auth data, audit grants/triggers, and red-flag zero-claim behaviour.
 - TypeScript and ESLint are clean for the current tree. The full database-backed
-  suite has 133 passing tests; database-free logic can also run independently
+  suite has 135 passing tests; database-free logic can also run independently
   through `npm run test:pure`.

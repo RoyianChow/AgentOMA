@@ -1,0 +1,487 @@
+.page {
+  min-height: calc(100vh - 4.5rem);
+  padding: 5rem max(1.25rem, calc((100vw - 1180px) / 2)) 6rem;
+  background:
+    radial-gradient(circle at 88% 8%, var(--primary-light), transparent 28rem),
+    var(--bg-primary);
+}
+
+.intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 3rem;
+  align-items: end;
+  margin-bottom: 3rem;
+}
+
+.introCopy {
+  max-width: 760px;
+}
+
+.eyebrow,
+.screenLabel,
+.stageHeading > span,
+.finish > div > span {
+  display: block;
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.intro h1 {
+  max-width: 800px;
+  margin: 0.8rem 0 1rem;
+  font-size: clamp(2.35rem, 5vw, 4.75rem);
+  line-height: 1.02;
+}
+
+.introCopy > p {
+  max-width: 680px;
+  font-size: 1.08rem;
+}
+
+.boundaryCard {
+  padding: 1.4rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-md);
+}
+
+.boundaryCard > strong {
+  display: block;
+  margin-bottom: 0.9rem;
+  font-size: 0.95rem;
+}
+
+.boundaryCard ul {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.boundaryCard li {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.boundaryCard svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 auto;
+  color: var(--success);
+}
+
+.tour {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  min-height: 680px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-xl);
+}
+
+.stageRail {
+  padding: 1.5rem 1rem;
+  border-right: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+}
+
+.stageRailHeader {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.stageRailHeader strong {
+  color: var(--primary);
+}
+
+.progressTrack {
+  height: 4px;
+  margin: 0.8rem 0.5rem 1.4rem;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--border-color);
+}
+
+.progressFill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+  transition: width var(--transition-normal);
+}
+
+.stageRail ol {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stageButton {
+  width: 100%;
+  min-height: 58px;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.7rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.stageButton:hover {
+  border-color: var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.stageButtonActive {
+  border-color: var(--primary);
+  background: var(--bg-secondary);
+  color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.stageNumber {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.stageButtonActive .stageNumber {
+  background: var(--primary);
+  color: white;
+}
+
+.stageContent {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: clamp(1.5rem, 4vw, 3.5rem);
+}
+
+.stageHeading {
+  max-width: 760px;
+}
+
+.stageHeading h2 {
+  margin: 0.55rem 0 0.75rem;
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+}
+
+.stageHeading p {
+  max-width: 700px;
+}
+
+.viewport {
+  margin-top: 2rem;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.windowBar {
+  min-height: 46px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.windowDots {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.windowDots span {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--border-color);
+}
+
+.screen {
+  padding: clamp(1.2rem, 3vw, 2rem);
+}
+
+.screenHeader {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.screenHeader h3 {
+  margin-top: 0.3rem;
+}
+
+.status {
+  padding: 0.45rem 0.7rem;
+  border-radius: var(--radius-full);
+  background: var(--primary-light);
+  color: var(--primary-hover);
+  font-size: 0.76rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.fieldCard {
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+}
+
+.fieldCard > span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.fieldCard strong {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.fieldCard .fieldEmphasis {
+  color: var(--primary);
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+}
+
+.callout {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  background: var(--warning-light);
+}
+
+.callout > span {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  color: var(--warning-text);
+  font-family: serif;
+  font-weight: 800;
+}
+
+.callout p {
+  color: var(--warning-text);
+  font-size: 0.85rem;
+}
+
+.stageActions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: auto;
+  padding-top: 2rem;
+}
+
+.primaryButton,
+.secondaryButton,
+.signInLink {
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.2rem;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform var(--transition-fast),
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.primaryButton,
+.signInLink {
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: white;
+}
+
+.primaryButton:hover,
+.signInLink:hover {
+  background: var(--primary-hover);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.secondaryButton {
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.secondaryButton:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.secondaryButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.finish {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2.5rem;
+  padding: 2rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+}
+
+.finish h2 {
+  margin: 0.35rem 0 0.45rem;
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+}
+
+.signInLink {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 850px) {
+  .page {
+    padding-top: 3rem;
+  }
+
+  .intro {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .tour {
+    grid-template-columns: 1fr;
+  }
+
+  .stageRail {
+    border-right: 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .stageRail ol {
+    grid-template-columns: repeat(5, minmax(9rem, 1fr));
+    overflow-x: auto;
+    padding-bottom: 0.35rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding-inline: 1rem;
+  }
+
+  .intro h1 {
+    font-size: 2.5rem;
+  }
+
+  .stageContent {
+    padding: 1.1rem;
+  }
+
+  .fieldGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .screenHeader,
+  .finish {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .status {
+    align-self: flex-start;
+  }
+
+  .stageActions {
+    margin-top: 0;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    flex: 1;
+  }
+
+  .signInLink {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progressFill,
+  .stageButton,
+  .primaryButton,
+  .secondaryButton,
+  .signInLink {
+    transition: none;
+  }
+}

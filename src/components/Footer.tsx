@@ -28,6 +28,9 @@ export default function Footer() {
             <div className="footer-links-title">For Providers</div>
             <ul className="footer-links-list">
               <li>
+                <a href="/demo">Guided Product Demo</a>
+              </li>
+              <li>
                 <a href="/pharmacist">Pharmacist Portal</a>
               </li>
               <li>
