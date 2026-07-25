@@ -8,11 +8,9 @@ export const dynamic = "force-dynamic";
  * Patient-facing minor ailment intake — runs on the PATIENT'S OWN PHONE.
  *
  * Server component. It supplies reference data (claim maximums) to the client
- * flow and resolves which pharmacy this intake belongs to from the
- * per-pharmacy QR link (/assessment?pharmacy=<uuid>) — validated against the
- * pharmacy table. No (or an unknown) pharmacy → a "scan your pharmacy's code"
- * screen, never the triage flow: there would be nothing to attach the intake
- * to. The action re-validates the id server-side on submission.
+ * flow and resolves the one configured pharmacy. The legacy
+ * /assessment?pharmacy=<uuid> query remains accepted, but it cannot select or
+ * switch a tenant. Missing server configuration renders a safe stop.
  *
  * TODO(reference tables): once `ailment_group` is seeded, replace
  * getClaimMaximums() with a DB query filtered on effective_date, so a future
@@ -70,5 +68,5 @@ export default async function AssessmentPage({
 
   const claimMaximums = getClaimMaximums();
 
-  return <TriageFlow claimMaximums={claimMaximums} pharmacyId={pharmacy.id} />;
+  return <TriageFlow claimMaximums={claimMaximums} />;
 }

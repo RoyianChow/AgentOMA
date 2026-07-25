@@ -65,7 +65,6 @@ export async function issueInvitationAction(input: {
     // ADMIN-ONLY, verified server-side in the action (proxy.ts is UX only).
     const actor = await requirePortalUser(["pharmacy_admin"]);
     const res = await issueInvitation({
-      pharmacyId: actor.pharmacyId,
       invitedByUserId: actor.userId,
       email: input.email,
       role: input.role,

@@ -16,7 +16,7 @@ import { computeRetainUntil } from "../../retention";
  *     impersonates the app role directly.
  */
 
-const PHARMACY_ID = "00000000-0000-0000-0000-0000000000ee";
+const PHARMACY_ID = "00000000-0000-0000-0000-000000000000";
 let db: TestDb;
 let close: () => Promise<void>;
 

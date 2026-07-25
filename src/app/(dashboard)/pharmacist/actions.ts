@@ -65,6 +65,8 @@ function refusalMessage(e: AuthorizationError): string {
       return "Two-factor authentication must be set up before using the portal.";
     case "NO_PHARMACY":
       return "Your account is not assigned to a pharmacy. Ask your pharmacy admin.";
+    case "PHARMACY_MISMATCH":
+      return "Your account is not assigned to this pharmacy. Ask your pharmacy admin.";
     case "FORBIDDEN_ROLE":
       return "Your role does not permit this action.";
   }
@@ -361,6 +363,7 @@ export async function upsertPatient(data: {
     try {
       await writeAudit({
         pharmacyId,
+        patientId: row.id,
         actorUserId: userId,
         action: "patient.created",
         entityType: "patient",
@@ -801,6 +804,7 @@ export async function createAssessment(data: {
     try {
       await writeAudit({
         pharmacyId,
+        patientId: data.patientId,
         actorUserId: actor.userId,
         action: claim.billable ? "assessment.created.claim_drafted" : "assessment.created.no_claim",
         entityType: "assessment",
@@ -831,6 +835,7 @@ export async function createAssessment(data: {
       try {
         await writeAudit({
           pharmacyId,
+          patientId: data.patientId,
           actorUserId: actor.userId,
           action: "assessment.orientation_override",
           entityType: "assessment",

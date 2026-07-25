@@ -17,6 +17,10 @@ import { odbFeeTier } from "./reference";
 // Define a minimal pharmacy table since pharmacy_id must be a UUID FK
 export const pharmacy = pgTable("pharmacy", {
   id: uuid("id").primaryKey().defaultRandom(),
+  // Deliberately constant. The unique + check pair makes a second pharmacy
+  // unrepresentable while retaining pharmacy_id as defence-in-depth on child
+  // records.
+  singletonKey: integer("singleton_key").notNull().default(1),
   storeName: text("store_name").notNull(),
   hnsAccountId: text("hns_account_id"),
   odbFeeTierCode: text("odb_fee_tier_code")
@@ -33,7 +37,10 @@ export const pharmacy = pgTable("pharmacy", {
   postalCode: text("postal_code"),
   phone: text("phone"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [
+  uniqueIndex("pharmacy_singleton_key_unique").on(t.singletonKey),
+  check("pharmacy_singleton_key_is_one", sql`${t.singletonKey} = 1`),
+]);
 
 
 export const patient = pgTable(
@@ -306,10 +313,12 @@ export const claimDraft = pgTable(
 export const auditLog = pgTable("audit_log", {
   id: uuid("id").primaryKey().defaultRandom(),
   pharmacyId: uuid("pharmacy_id").references(() => pharmacy.id),
+  patientId: uuid("patient_id").references(() => patient.id, { onDelete: "set null" }),
   actorUserId: uuid("actor_user_id"),
   action: text("action").notNull(),
   entityType: text("entity_type").notNull(),
   entityId: uuid("entity_id"),
+  source: text("source").notNull().default("server"),
   metadata: jsonb("metadata"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

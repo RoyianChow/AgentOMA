@@ -2,3 +2,4 @@
 export * from "./reference";
 export * from "./assessments";
 export * from "./auth";
+export * from "./governance";

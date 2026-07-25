@@ -49,12 +49,9 @@ type ExistingRx = "none" | "refillable" | "other_prescriber" | "unsure";
 
 interface Props {
   claimMaximums: Record<AilmentId, number>;
-  /** From the per-pharmacy QR link, validated by the page AND re-validated by
-   * the server action. Which pharmacy gets the intake — never who the patient is. */
-  pharmacyId: string;
 }
 
-export default function TriageFlow({ claimMaximums, pharmacyId }: Props) {
+export default function TriageFlow({ claimMaximums }: Props) {
   const [phase, setPhase] = useState<Phase>("emergency");
   const [emergencyChecks, setEmergencyChecks] = useState<string[]>([]);
   const [nodeId, setNodeId] = useState<string>(TRIAGE_ROOT);
@@ -134,10 +131,7 @@ export default function TriageFlow({ claimMaximums, pharmacyId }: Props) {
   async function handoff() {
     setIsSubmitting(true);
     try {
-      // pharmacyId came from the QR link; the action re-validates it against
-      // the pharmacy table before writing anything.
       const res = await createIntakeSession({
-        pharmacyId,
         ailmentGroupCode: ailment || "",
         trail: stack.map((s, i) => {
           const node = NODES[s.nodeId];

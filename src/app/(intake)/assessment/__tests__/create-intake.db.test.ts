@@ -16,7 +16,7 @@ vi.mock("@/lib/db", async () => {
 
 import { makeTestDb, resetOperationalTables, type TestDb } from "@/lib/db/test/harness";
 
-const PHARMACY_ID = "00000000-0000-0000-0000-0000000000cc";
+const PHARMACY_ID = "00000000-0000-0000-0000-000000000000";
 let db: TestDb;
 let close: () => Promise<void>;
 
@@ -38,25 +38,17 @@ beforeEach(async () => {
   `);
 });
 
-const baseInput = (pharmacyId: string) => ({
-  pharmacyId,
+const baseInput = () => ({
   ailmentGroupCode: "RHINITIS",
   trail: [{ question: "Where's the problem?", answer: "Nose" }],
   priorCountSelfReport: 0,
   existingRxSelfReport: null,
 });
 
-async function countIntakes(): Promise<number> {
-  const rows = await db.execute<{ n: number }>(
-    sql`select count(*)::int as n from intake_session`,
-  );
-  return (rows as unknown as { n: number }[])[0].n;
-}
-
 describe("createIntakeSession (patient-phone handoff)", () => {
   it("valid pharmacy from the QR link: creates the session under that pharmacy with a real code", async () => {
     const { createIntakeSession } = await import("../actions");
-    const res = await createIntakeSession(baseInput(PHARMACY_ID));
+    const res = await createIntakeSession(baseInput());
 
     expect(res.success).toBe(true);
     expect(res.code).toMatch(/^[A-HJ-NP-Z2-9]{6}$/); // 6 chars, no 0/O/1/I/L
@@ -69,31 +61,32 @@ describe("createIntakeSession (patient-phone handoff)", () => {
     expect(rows[0].code).toBe(res.code);
   });
 
-  it("unknown pharmacy uuid: refuses and writes nothing", async () => {
+  it("a forged pharmacy field is ignored and cannot redirect the write", async () => {
     const { createIntakeSession } = await import("../actions");
-    const res = await createIntakeSession(
-      baseInput("11111111-2222-3333-4444-555555555555"),
-    );
-    expect(res.success).toBe(false);
-    expect(res.code).toBeUndefined();
-    expect(await countIntakes()).toBe(0);
+    const forged = {
+      ...baseInput(),
+      pharmacyId: "11111111-2222-3333-4444-555555555555",
+    };
+    const res = await createIntakeSession(forged);
+    expect(res.success).toBe(true);
+    const rows = (await db.execute<{ pharmacy_id: string }>(
+      sql`select pharmacy_id from intake_session`,
+    )) as unknown as { pharmacy_id: string }[];
+    expect(rows).toEqual([{ pharmacy_id: PHARMACY_ID }]);
   });
 
-  it("garbage (non-uuid) pharmacy param: refuses cleanly and writes nothing", async () => {
-    const { createIntakeSession } = await import("../actions");
-    const res = await createIntakeSession(baseInput("'; drop table pharmacy;--"));
-    expect(res.success).toBe(false);
-    expect(await countIntakes()).toBe(0);
-  });
-
-  it("resolvePharmacy: known id resolves, unknown and malformed do not", async () => {
+  it("foreign, malformed, and absent QR values all resolve the configured pharmacy", async () => {
     const { resolvePharmacy } = await import("../actions");
-    expect(await resolvePharmacy(PHARMACY_ID)).toMatchObject({
-      id: PHARMACY_ID,
-      storeName: "Intake Test Pharmacy",
-    });
-    expect(await resolvePharmacy("11111111-2222-3333-4444-555555555555")).toBeNull();
-    expect(await resolvePharmacy("not-a-uuid")).toBeNull();
-    expect(await resolvePharmacy(undefined)).toBeNull();
+    for (const requested of [
+      PHARMACY_ID,
+      "11111111-2222-3333-4444-555555555555",
+      "not-a-uuid",
+      undefined,
+    ]) {
+      expect(await resolvePharmacy(requested)).toMatchObject({
+        id: PHARMACY_ID,
+        storeName: "Intake Test Pharmacy",
+      });
+    }
   });
 });

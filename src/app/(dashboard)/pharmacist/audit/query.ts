@@ -3,6 +3,7 @@ import { and, eq, gte, lte, or, ilike, sql, desc, count, isNull, type SQL } from
 import { db } from "@/lib/db";
 import { assessment, patient, claimDraft } from "@/lib/db/schema";
 import type { PortalUser } from "@/lib/auth-guard";
+import { recordAuditWriteFailure, writeAudit } from "@/lib/audit";
 
 /**
  * Server-only audit queries. NOT a "use server" file on purpose: these return
@@ -229,6 +230,7 @@ export async function queryAuditRecordById(
   const [row] = await db
     .select({
       id: assessment.id,
+      patientId: patient.id,
       serviceDate: assessment.serviceDate,
       createdAt: assessment.createdAt,
       ailmentGroupCode: assessment.ailmentGroupCode,
@@ -308,6 +310,31 @@ export async function queryAuditRecordById(
     .limit(1);
 
   if (!row) return null;
+
+  // Access to an individual clinical record is itself part of the record.
+  // Best-effort here so a transient secondary audit failure does not expose
+  // PHI in an exception; the event contains identifiers only.
+  try {
+    await writeAudit({
+      pharmacyId: actor.pharmacyId,
+      patientId: row.patientId,
+      actorUserId: actor.userId,
+      action: "record.accessed",
+      entityType: "assessment",
+      entityId: row.id,
+      source: "audit_record_view",
+    });
+  } catch (error) {
+    await recordAuditWriteFailure(
+      {
+        action: "record.accessed",
+        entityType: "assessment",
+        entityId: row.id,
+        source: "audit_record_view",
+      },
+      error,
+    );
+  }
 
   return {
     id: row.id,

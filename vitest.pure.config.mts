@@ -11,7 +11,10 @@ export default defineConfig({
     environment: "node",
     include: ["src/**/*.test.ts"],
     exclude: ["src/**/*.db.test.ts"],
-    env: { SKIP_ENV_VALIDATION: "1" },
+    env: {
+      SKIP_ENV_VALIDATION: "1",
+      PHARMACY_ID: "00000000-0000-0000-0000-000000000000",
+    },
   },
   resolve: {
     alias: {

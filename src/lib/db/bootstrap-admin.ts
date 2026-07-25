@@ -3,7 +3,7 @@
 // only because an invitation needs an admin to issue it.
 //
 //   BOOTSTRAP_ADMIN_EMAIL=... BOOTSTRAP_ADMIN_PASSWORD=... \
-//   BOOTSTRAP_ADMIN_NAME="..." BOOTSTRAP_PHARMACY_ID=<uuid> \
+//   BOOTSTRAP_ADMIN_NAME="..." PHARMACY_ID=<uuid> \
 //   npm run auth:bootstrap-admin
 //
 // Credentials come from the operator's environment for this single run — they
@@ -19,16 +19,18 @@ import { db } from "./index";
 import { pharmacy } from "./schema";
 import { user } from "./schema/auth";
 import { createCredentialUser } from "../invitations";
+import { env } from "../../env";
+import { requireConfiguredPharmacyId } from "../pharmacy-config";
 
 async function main() {
-  const email = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
-  const password = process.env.BOOTSTRAP_ADMIN_PASSWORD;
-  const name = process.env.BOOTSTRAP_ADMIN_NAME?.trim();
-  const pharmacyId = process.env.BOOTSTRAP_PHARMACY_ID?.trim();
+  const email = env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
+  const password = env.BOOTSTRAP_ADMIN_PASSWORD;
+  const name = env.BOOTSTRAP_ADMIN_NAME?.trim();
+  const pharmacyId = requireConfiguredPharmacyId();
 
-  if (!email || !password || !name || !pharmacyId) {
+  if (!email || !password || !name) {
     throw new Error(
-      "Set BOOTSTRAP_ADMIN_EMAIL, BOOTSTRAP_ADMIN_PASSWORD, BOOTSTRAP_ADMIN_NAME and BOOTSTRAP_PHARMACY_ID."
+      "Set BOOTSTRAP_ADMIN_EMAIL, BOOTSTRAP_ADMIN_PASSWORD, BOOTSTRAP_ADMIN_NAME and PHARMACY_ID."
     );
   }
   if (password.length < 12) {
@@ -56,7 +58,6 @@ async function main() {
       email,
       passwordHash,
       role: "pharmacy_admin",
-      pharmacyId,
     })
   );
 

@@ -6,6 +6,7 @@ import { hashPassword } from "better-auth/crypto";
 import { db } from "@/lib/db";
 import { account, invitation, user } from "@/lib/db/schema/auth";
 import type { PortalRole } from "@/lib/auth-guard";
+import { requireConfiguredPharmacyId } from "@/lib/pharmacy-config";
 
 /**
  * Invitation-only onboarding. Public signup is disabled entirely
@@ -42,12 +43,12 @@ export type IssueResult =
   | IssueRefusal;
 
 export async function issueInvitation(params: {
-  pharmacyId: string;
   invitedByUserId: string;
   email: string;
   role: PortalRole;
   supervisingPharmacistId?: string | null;
 }): Promise<IssueResult> {
+  const pharmacyId = requireConfiguredPharmacyId();
   const email = params.email.trim().toLowerCase();
   const needsSupervisor = params.role === "intern" || params.role === "student";
   const supervisorId = params.supervisingPharmacistId ?? null;
@@ -69,7 +70,7 @@ export async function issueInvitation(params: {
       .limit(1);
     const supervisorOk =
       supervisor &&
-      supervisor.pharmacyId === params.pharmacyId &&
+      supervisor.pharmacyId === pharmacyId &&
       (supervisor.role === "pharmacist" || supervisor.role === "pharmacy_admin");
     if (!supervisorOk) {
       return {
@@ -99,7 +100,7 @@ export async function issueInvitation(params: {
   const [row] = await db
     .insert(invitation)
     .values({
-      pharmacyId: params.pharmacyId,
+      pharmacyId,
       email,
       role: params.role,
       supervisingPharmacistId: needsSupervisor ? supervisorId : null,
@@ -113,7 +114,7 @@ export async function issueInvitation(params: {
   try {
     const { writeAudit } = await import("@/lib/audit");
     await writeAudit({
-      pharmacyId: params.pharmacyId,
+      pharmacyId,
       actorUserId: params.invitedByUserId,
       action: "invitation.issued",
       entityType: "invitation",
@@ -169,6 +170,13 @@ export async function acceptInvitation(params: {
       message: "This invitation link is not valid.",
     };
   }
+  if (invite.pharmacyId !== requireConfiguredPharmacyId()) {
+    return {
+      ok: false,
+      reason: "INVALID_TOKEN",
+      message: "This invitation link is not valid.",
+    };
+  }
   if (invite.usedAt) {
     return {
       ok: false,
@@ -209,7 +217,6 @@ export async function acceptInvitation(params: {
         email: invite.email,
         passwordHash,
         role: invite.role,
-        pharmacyId: invite.pharmacyId,
         supervisingPharmacistId: invite.supervisingPharmacistId,
       });
 
@@ -226,7 +233,6 @@ export async function acceptInvitation(params: {
         try {
           const { writeAudit } = await import("@/lib/audit");
           await writeAudit({
-            pharmacyId: invite.pharmacyId,
             actorUserId: result.userId,
             action: "invitation.accepted",
             entityType: "invitation",
@@ -266,10 +272,10 @@ export async function createCredentialUser(
     email: string;
     passwordHash: string;
     role: PortalRole;
-    pharmacyId: string;
     supervisingPharmacistId?: string | null;
   }
 ): Promise<{ id: string }> {
+  const pharmacyId = requireConfiguredPharmacyId();
   const [created] = await tx
     .insert(user)
     .values({
@@ -277,7 +283,7 @@ export async function createCredentialUser(
       email: params.email,
       emailVerified: false,
       role: params.role,
-      pharmacyId: params.pharmacyId,
+      pharmacyId,
       supervisingPharmacistId: params.supervisingPharmacistId ?? null,
     })
     .returning({ id: user.id });
