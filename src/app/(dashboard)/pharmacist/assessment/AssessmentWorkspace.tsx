@@ -49,6 +49,9 @@ function emptyClinicalForm() {
     sharedDecisionMaking: "",
     carePlan: "",
     followUpPlan: "",
+    followUpDueDate: "",
+    followUpMethod: "",
+    followUpMonitoringParameters: "",
     noRxRationaleCode: "",
     noRxRationaleNotes: "",
     prescribedOn: "",
@@ -81,6 +84,9 @@ export default function AssessmentWorkspace({
   /** Non-PHI pharmacy configuration resolved from seeded reference data. */
   remoteVirtualEligible: boolean;
 }) {
+  // Necessary PHI lives only in this authenticated page's in-memory state
+  // until the server action persists the signed record. Never mirror it into
+  // browser storage, URLs, analytics, or diagnostic logs.
   // Patient Identity
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -145,6 +151,9 @@ export default function AssessmentWorkspace({
     clinical.sharedDecisionMaking,
     clinical.carePlan,
     clinical.followUpPlan,
+    clinical.followUpDueDate,
+    clinical.followUpMethod,
+    clinical.followUpMonitoringParameters,
   ].every((value) => value.trim().length > 0);
   const consentReady =
     clinical.consentGivenBy !== "substitute_decision_maker" ||
@@ -309,6 +318,11 @@ export default function AssessmentWorkspace({
                   ).toISOString(),
                 }
               : undefined,
+        },
+        followUpPlan: {
+          dueDate: clinical.followUpDueDate,
+          method: clinical.followUpMethod as "phone" | "in_person",
+          monitoringParameters: clinical.followUpMonitoringParameters,
         },
         isOdbRecipient,
         ltc: ltcResident
@@ -624,6 +638,78 @@ export default function AssessmentWorkspace({
                 <textarea className="form-input" rows={3} value={clinical[field]} onChange={(e) => setClinicalField(field, e.target.value)} />
               </div>
             ))}
+
+            <div
+              style={{
+                marginTop: "1.25rem",
+                padding: "1rem",
+                background: "var(--bg-tertiary)",
+                border: "1px solid var(--border-color)",
+                borderRadius: "var(--radius-md)",
+              }}
+            >
+              <h4 style={{ marginBottom: "0.4rem" }}>Required follow-up schedule</h4>
+              <p
+                style={{
+                  color: "var(--text-muted)",
+                  fontSize: "0.84rem",
+                  marginBottom: "1rem",
+                }}
+              >
+                Follow-up remains this pharmacy&apos;s responsibility even if the
+                patient fills the prescription at another pharmacy.
+              </p>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "0.8rem",
+                }}
+              >
+                <div>
+                  <label className="form-label">Due date</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={clinical.followUpDueDate}
+                    onChange={(event) =>
+                      setClinicalField("followUpDueDate", event.target.value)
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="form-label">Intended method</label>
+                  <select
+                    className="form-input"
+                    value={clinical.followUpMethod}
+                    onChange={(event) =>
+                      setClinicalField("followUpMethod", event.target.value)
+                    }
+                  >
+                    <option value="">Select...</option>
+                    <option value="phone">Phone</option>
+                    <option value="in_person">In person</option>
+                  </select>
+                </div>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label className="form-label">
+                    Monitoring parameters from the care plan
+                  </label>
+                  <textarea
+                    className="form-input"
+                    rows={3}
+                    value={clinical.followUpMonitoringParameters}
+                    onChange={(event) =>
+                      setClinicalField(
+                        "followUpMonitoringParameters",
+                        event.target.value,
+                      )
+                    }
+                    placeholder="What safety and efficacy findings will be evaluated?"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="detail-section-card">

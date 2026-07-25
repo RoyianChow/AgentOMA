@@ -170,6 +170,19 @@ describe("holds and deliberate destruction", () => {
       )
     `);
     await db.execute(sql`
+      insert into follow_up (
+        assessment_id, due_date, method, monitoring_parameters,
+        recorded_by_user_id, retain_until
+      ) values (
+        ${assessmentId}::uuid,
+        '2010-01-03',
+        'phone',
+        'Synthetic destruction fixture',
+        ${firstAdmin}::uuid,
+        '2099-01-01'
+      )
+    `);
+    await db.execute(sql`
       insert into audit_log (
         pharmacy_id, patient_id, actor_user_id, action, entity_type, entity_id
       ) values (
@@ -237,6 +250,7 @@ describe("holds and deliberate destruction", () => {
       patients: number;
       assessments: number;
       claims: number;
+      follow_ups: number;
       linked_audits: number;
       destruction_events: number;
     }>(sql`
@@ -244,6 +258,7 @@ describe("holds and deliberate destruction", () => {
         (select count(*)::int from patient where id = ${patientId}::uuid) as patients,
         (select count(*)::int from assessment where patient_id = ${patientId}::uuid) as assessments,
         (select count(*)::int from claim_draft where assessment_id = ${assessmentId}::uuid) as claims,
+        (select count(*)::int from follow_up where assessment_id = ${assessmentId}::uuid) as follow_ups,
         (select count(*)::int from audit_log where patient_id = ${patientId}::uuid) as linked_audits,
         (
           select count(*)::int
@@ -255,6 +270,7 @@ describe("holds and deliberate destruction", () => {
       patients: number;
       assessments: number;
       claims: number;
+      follow_ups: number;
       linked_audits: number;
       destruction_events: number;
     }[];
@@ -262,6 +278,7 @@ describe("holds and deliberate destruction", () => {
       patients: 0,
       assessments: 0,
       claims: 0,
+      follow_ups: 0,
       linked_audits: 0,
       destruction_events: 1,
     });
@@ -360,7 +377,20 @@ describe("correction overlays", () => {
 
 describe("patient export", () => {
   it("stores a manifest with hashes and a patient-linked access audit event", async () => {
-    const { patientId } = await seedPatient("2026-01-01");
+    const { patientId, assessmentId } = await seedPatient("2026-01-01");
+    await db.execute(sql`
+      insert into follow_up (
+        assessment_id, due_date, method, monitoring_parameters,
+        recorded_by_user_id, retain_until
+      ) values (
+        ${assessmentId}::uuid,
+        '2026-01-03',
+        'phone',
+        'Synthetic export fixture',
+        ${firstAdmin}::uuid,
+        '2099-01-01'
+      )
+    `);
     const { assemblePatientExport } = await import("@/lib/governance");
     const exported = await assemblePatientExport(
       actor(firstAdmin),
@@ -369,6 +399,13 @@ describe("patient export", () => {
     );
 
     expect(exported.manifest.artifacts.length).toBeGreaterThan(1);
+    expect(exported.bundle.schemaVersion).toBe(2);
+    expect(exported.bundle.record.followUps).toHaveLength(1);
+    expect(
+      exported.manifest.artifacts.some(
+        (artifact) => artifact.recordType === "follow_up",
+      ),
+    ).toBe(true);
     expect(exported.manifest.bundleSha256).toMatch(/^[a-f0-9]{64}$/);
     expect(
       exported.manifest.artifacts.every((artifact) =>

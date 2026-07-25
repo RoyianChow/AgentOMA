@@ -50,20 +50,24 @@ connection. Store only outputs that contain counts, object names, and hashes.
 1. Confirm `__drizzle_migrations` reaches the same migration as production.
 2. Confirm exactly one `pharmacy` row and run `npm run db:inspect-tenancy`.
 3. Compare row counts for:
-   `patient`, `intake_session`, `assessment`, `claim_draft`, `audit_log`,
-   `patient_record_retention`, `record_hold`, `export_manifest`,
-   `access_correction_request`, and `record_correction`.
+   `patient`, `intake_session`, `assessment`, `claim_draft`, `follow_up`,
+   `audit_log`, `patient_record_retention`, `record_hold`,
+   `export_manifest`, `access_correction_request`, and `record_correction`.
 4. Compare deterministic aggregate hashes generated from stable identifiers
    and timestamps. Do not export clinical payloads into the evidence file.
 5. Confirm these triggers exist and are enabled:
    `assessment_same_day_mutex_trg`, `audit_log_no_mutate`,
    `claim_draft_no_mutate`, `assessment_retention_recompute_trg`,
    all `*_hold_delete_guard` triggers, and the patient/assessment/intake
-   immutability triggers.
+   immutability triggers. Also confirm `follow_up_validate_links_trg`,
+   `follow_up_no_mutate`, and `follow_up_retain_until_trg`, plus the
+   deferrable `follow_up_one_active_plan_per_assessment` constraint.
 6. `SET ROLE agentoma_app` and verify:
    - audit UPDATE/DELETE is denied;
    - claim field mutation/DELETE is denied;
-   - patient/assessment/intake DELETE is denied;
+   - patient/assessment/intake/follow-up DELETE is denied;
+   - ordinary follow-up field updates are denied while the final
+     `superseded_by_id` correction link remains permitted;
    - authorized governance functions remain executable.
 7. Verify the three preserved Demo auth users, their account/session relations,
    and TOTP rows by aggregate count only. Do not display secrets or backup

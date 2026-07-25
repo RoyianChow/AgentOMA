@@ -20,6 +20,11 @@
 
 ## Completed P0 slice
 
+- **Follow-up tracking:** billable
+  completion requires a structured plan, the dashboard/worklist tracks
+  due/overdue and not-reached/reached attempts, corrections supersede, audit
+  events exist, and patient export includes the rows. Live `0017` and the
+  from-zero Docker suite both pass verification.
 - **P0-B — defensible clinical record and informed consent:** completed in migration `0012_clinical_record_and_consent`. New version-2 assessments require structured consent, presenting complaint, histories, findings, shared decision-making, care/follow-up, coded no-Rx rationale, and outcome-specific prescription/PCP evidence. Legacy version-1 records remain readable and are labelled as such.
 - **P0-D — virtual/LTC fact capture and fee-tier reference:** migrations
   `0013`–`0014` are live. The workspace captures the required facts, remote
@@ -50,6 +55,9 @@
 
 - Applied migrations `0015`–`0016` to Supabase with `db:migrate` and reseeded
   idempotent Demo fixtures with `db:seed:demo`.
+- Applied follow-up migration `0017` after fresh-Docker replay and explicit SQL
+  review; its immutable records, constraints, triggers, and app-role grants are
+  live.
 - Post-migration inspection reports one Demo Pharmacy, three preserved users
   with TOTP, no duplicate cross-pharmacy health-number groups, no assessment
   tenant mismatch, and clean aggregate counts.

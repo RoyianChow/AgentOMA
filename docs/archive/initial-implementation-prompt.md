@@ -52,36 +52,11 @@ Replace with real persistence:
 
 ### Reference seed data (from the EO Notice, Table 1)
 
-Fees: **$19 in-person, $15 virtual — paid regardless of whether a prescription is issued.**
-Four PINs per ailment group: Rx Issued (In-Person), No Rx Issued (In-Person), Rx Issued (Virtual), No Rx Issued (Virtual), in that column order.
-
-| Ailment group | Max claims / 365d | Rx In-Person | No Rx In-Person | Rx Virtual | No Rx Virtual |
-|---|---|---|---|---|---|
-| Rhinitis (allergic, viral) | 4 | 9858181 | 9858182 | 9858183 | 9858184 |
-| Candidal stomatitis (oral thrush) | 4 | 9858185 | 9858186 | 9858187 | 9858188 |
-| Conjunctivitis (bacterial, allergic, viral) | 3 | 9858189 | 9858190 | 9858191 | 9858192 |
-| Dermatitis (atopic, eczema, allergic, contact, diaper, seborrheic) | 6 | 9858193 | 9858194 | 9858195 | 9858196 |
-| Dysmenorrhea | 2 | 9858197 | 9858198 | 9858199 | 9858200 |
-| GERD | 3 | 9858201 | 9858202 | 9858203 | 9858204 |
-| Hemorrhoids | 3 | 9858205 | 9858206 | 9858207 | 9858208 |
-| Herpes labialis (cold sores) | 8 | 9858209 | 9858210 | 9858211 | 9858212 |
-| Impetigo | 2 | 9858213 | 9858214 | 9858215 | 9858216 |
-| Insect bites / urticaria | 8 | 9858217 | 9858218 | 9858219 | 9858220 |
-| Musculoskeletal sprains & strains | 4 | 9858221 | 9858222 | 9858223 | 9858224 |
-| Tick bites (Lyme PEP) | 4 | 9858225 | 9858226 | 9858227 | 9858228 |
-| Urinary tract infection (uncomplicated) | 3 | 9858229 | 9858230 | 9858231 | 9858232 |
-| Acne (mild) | 4 | 9858248 | 9858250 | 9858251 | 9858252 |
-| Canker sores (oral aphthae) | 4 | 9858253 | 9858254 | 9858255 | 9858256 |
-| Nausea & vomiting of pregnancy | 3 | 9858261 | 9858262 | 9858263 | 9858264 |
-| Pinworms / threadworms | 3 | 9858265 | 9858266 | 9858267 | 9858268 |
-| Vulvovaginal candidiasis | 4 | 9858269 | 9858270 | 9858271 | 9858272 |
-| Calluses, corns and warts | 2 | 9858404 | 9858405 | 9858406 | 9858407 |
-| Tinea corporis / cruris | 3 | 9858408 | 9858409 | 9858410 | 9858411 |
-| Headache (mild, tension-type) | 3 | 9858412 | 9858413 | 9858414 | 9858415 |
-| Pediculosis (head lice) | 3 | 9858428 | 9858429 | 9858430 | 9858431 |
-| Xerophthalmia (dry eye) | 2 | 9858432 | 9858433 | 9858434 | 9858435 |
-
-Note the Acne row: the No-Rx-In-Person PIN is **9858250**, not 9858249. Do not "fix" it.
+The original prompt duplicated the complete fee, PIN, and claim-maximum table
+here. That copy has been removed so this archive cannot become a second billing
+source. Current values live only in `src/config/ailment-reference.ts`, the
+seeded reference tables, and the binding Ministry PDF linked from
+[`../COMPLIANCE.md`](../COMPLIANCE.md).
 
 Two mutual-exclusion rules to encode as data, not as ad-hoc `if` statements:
 - Insect bites/urticaria and tick bites **cannot both be claimed on the same day** for the same person.

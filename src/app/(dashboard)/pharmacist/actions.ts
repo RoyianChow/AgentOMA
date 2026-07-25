@@ -10,6 +10,7 @@ import {
   pin,
   claimRule,
   claimDraft,
+  followUp,
   odbFeeTier,
 } from "@/lib/db/schema";
 import { user } from "@/lib/db/schema/auth";
@@ -26,7 +27,7 @@ import {
   or,
 } from "drizzle-orm";
 import { computeRetainUntil } from "@/lib/retention";
-import { writeAudit } from "@/lib/audit";
+import { writeAudit, writeAuditWith } from "@/lib/audit";
 import {
   requirePortalUser,
   AuthorizationError,
@@ -42,6 +43,10 @@ import {
 } from "@/lib/claims/derive-claim-draft";
 import { parseClinicalRecord } from "@/lib/clinical-record-schema";
 import type { ClinicalRecordInput } from "@/lib/clinical-record-types";
+import {
+  parseFollowUpPlan,
+  type FollowUpPlanInput,
+} from "@/lib/follow-up-schema";
 
 // SECURITY MODEL — why every action below starts with requirePortalUser():
 // proxy.ts only performs an optimistic cookie-presence redirect for UX; a
@@ -483,6 +488,9 @@ export async function createAssessment(data: {
   // P0-C owns eligibility/billability inputs below; do not fold those facts
   // into the clinical record or change deriveClaimDraft here.
   clinicalRecord: ClinicalRecordInput;
+  // Structured, schedulable follow-up. This becomes mandatory only after the
+  // pure derivation confirms that the completed assessment is billable.
+  followUpPlan?: FollowUpPlanInput;
   // --- claim inputs: facts about the patient/visit, not the prescriber.
   // Prescriber identity comes from the authenticated profile below.
   isOdbRecipient?: boolean;
@@ -673,10 +681,36 @@ export async function createAssessment(data: {
       return { success: false, error: "Intake session not found for this pharmacy." };
     }
 
+    // Derive before any clinical row is written. A missing structured follow-up
+    // can therefore refuse a billable completion without leaving an assessment,
+    // consumed intake, or claim row behind.
+    const claim = deriveClaimDraft({
+      ailmentGroupCode: data.ailmentGroupCode,
+      modality: data.modality as AssessmentModality,
+      outcome: data.outcome as Outcome,
+      resolvePin: await loadResolvePin(),
+      prescriber: {
+        ocpRegistrationNumber: prescriber.ocpNumber,
+        isAsOfRightWithoutOntarioLicence: prescriber.isAsOfRight,
+      },
+      isOdbRecipient: data.isOdbRecipient ?? true,
+      remoteVirtualEligible: ph.remoteVirtualEligible,
+      virtualLocation: data.virtualLocation,
+      remoteReason: data.remoteReason,
+      ltc: data.ltc,
+    });
+    const scheduledFollowUp = claim.billable
+      ? parseFollowUpPlan(data.followUpPlan, data.serviceDate)
+      : null;
+    if (scheduledFollowUp && !scheduledFollowUp.success) {
+      return { success: false, error: scheduledFollowUp.error };
+    }
+
     // 4. Insert Assessment. The recording user is the ACTOR (audit truth —
     //    who performed the work), even when the claim's prescriber is their
     //    supervisor.
-    const [newAssessment] = await db.insert(assessment).values({
+    const { newAssessment, followUpId } = await db.transaction(async (tx) => {
+    const [newAssessment] = await tx.insert(assessment).values({
       pharmacyId,
       pharmacistUserId: actor.userId,
       patientId: data.patientId,
@@ -753,36 +787,33 @@ export async function createAssessment(data: {
     }).returning({ id: assessment.id });
 
     // 5. Consume the intake session — single-use.
-    await db.update(intakeSession)
+    const consumed = await tx.update(intakeSession)
       .set({
         consumedAt: new Date(),
         consumedByAssessmentId: newAssessment.id,
       })
-      .where(eq(intakeSession.id, data.intakeSessionId));
+      .where(
+        and(
+          eq(intakeSession.id, data.intakeSessionId),
+          eq(intakeSession.pharmacyId, pharmacyId),
+          isNull(intakeSession.consumedAt),
+        ),
+      )
+      .returning({ id: intakeSession.id });
+    if (consumed.length !== 1) {
+      throw new Error("The intake session has already been consumed.");
+    }
 
     // 6. Derive the claim draft. The assessment itself is recorded either way —
     //    the pharmacist did the work — but a NON-BILLABLE result persists NO
     //    claim_draft row. deriveClaimDraft stays pure: we do the PIN lookup here
     //    and pass it in. Prescriber identity is the PROFILE's (resolved in
     //    step 0 — the supervisor's for interns/students), never caller input.
-    const claim = deriveClaimDraft({
-      ailmentGroupCode: data.ailmentGroupCode,
-      modality: data.modality as AssessmentModality,
-      outcome: data.outcome as Outcome,
-      resolvePin: await loadResolvePin(),
-      prescriber: {
-        ocpRegistrationNumber: prescriber.ocpNumber,
-        isAsOfRightWithoutOntarioLicence: prescriber.isAsOfRight,
-      },
-      isOdbRecipient: data.isOdbRecipient ?? true,
-      remoteVirtualEligible: ph.remoteVirtualEligible,
-      virtualLocation: data.virtualLocation,
-      remoteReason: data.remoteReason,
-      ltc: data.ltc,
-    });
-
     if (claim.billable) {
-      await db.insert(claimDraft).values({
+      if (!scheduledFollowUp?.success) {
+        throw new Error("A billable assessment requires a follow-up plan.");
+      }
+      await tx.insert(claimDraft).values({
         assessmentId: newAssessment.id,
         ailmentGroupCode: claim.draft.ailmentGroupCode,
         modality: claim.draft.modality,
@@ -797,7 +828,33 @@ export async function createAssessment(data: {
         quantity: claim.draft.quantity,
         ssc: claim.draft.ssc,
       });
+
+      const [plan] = await tx
+        .insert(followUp)
+        .values({
+          assessmentId: newAssessment.id,
+          dueDate: scheduledFollowUp.data.dueDate,
+          method: scheduledFollowUp.data.method,
+          monitoringParameters: scheduledFollowUp.data.monitoringParameters,
+          recordedByUserId: actor.userId,
+          retainUntil: retainUntil.toISOString().slice(0, 10),
+        })
+        .returning({ id: followUp.id });
+
+      await writeAuditWith(tx, {
+        pharmacyId,
+        patientId: data.patientId,
+        actorUserId: actor.userId,
+        action: "follow_up.created",
+        entityType: "follow_up",
+        entityId: plan.id,
+        source: "assessment_completion",
+      });
+      return { newAssessment, followUpId: plan.id };
     }
+
+    return { newAssessment, followUpId: null };
+    });
 
     // 7. Audit (append-only). Best-effort: a failed audit write must not undo a
     //    created assessment, but it is logged loudly. No PHI in metadata.
@@ -853,6 +910,7 @@ export async function createAssessment(data: {
     return {
       success: true,
       assessmentId: newAssessment.id,
+      followUpId,
       claim: claim.billable
         ? { billable: true as const, draft: claim.draft }
         : {

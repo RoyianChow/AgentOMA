@@ -119,7 +119,9 @@ beforeEach(async () => {
   testAuth.actor.supervisingPharmacistId = null;
 });
 
-async function countRows(table: "assessment" | "claim_draft"): Promise<number> {
+async function countRows(
+  table: "assessment" | "claim_draft" | "follow_up",
+): Promise<number> {
   const rows = await db.execute<{ n: number }>(
     sql`select count(*)::int as n from ${sql.raw(table)}`,
   );
@@ -195,6 +197,12 @@ const baseInput = (
     outcome,
     serviceDate: new Date("2026-07-16"),
     clinicalRecord: clinicalRecordFor(outcome),
+    followUpPlan: {
+      dueDate: "2026-07-18",
+      method: "phone" as const,
+      monitoringParameters:
+        "Synthetic safety, symptom response, and treatment-tolerance checks",
+    },
     isOdbRecipient: true,
   };
 };
@@ -207,6 +215,7 @@ describe("createAssessment → claim_draft", () => {
     expect(res.success).toBe(true);
     expect(res.claim?.billable).toBe(true);
     expect(await countClaimDrafts()).toBe(1);
+    expect(await countRows("follow_up")).toBe(1);
 
     const rows = await db.execute<{
       pin_code: string;
@@ -223,6 +232,60 @@ describe("createAssessment → claim_draft", () => {
     expect(d.prescriber_id).toBe("123456");
     expect(d.quantity).toBe(1);
     expect(d.ssc).toBeNull();
+
+    const plans = (await db.execute<{
+      assessment_id: string;
+      due_date: string;
+      method: string;
+      monitoring_parameters: string;
+    }>(sql`
+      select assessment_id, due_date::text, method, monitoring_parameters
+      from follow_up
+      where plan_id is null and superseded_by_id is null
+    `)) as unknown as {
+      assessment_id: string;
+      due_date: string;
+      method: string;
+      monitoring_parameters: string;
+    }[];
+    expect(plans).toEqual([
+      {
+        assessment_id: res.success ? res.assessmentId : "",
+        due_date: "2026-07-18",
+        method: "phone",
+        monitoring_parameters:
+          "Synthetic safety, symptom response, and treatment-tolerance checks",
+      },
+    ]);
+    const followUpAudit = (await db.execute<{ count: number }>(sql`
+      select count(*)::int
+      from audit_log
+      where action = 'follow_up.created'
+        and entity_id = (
+          select id from follow_up
+          where assessment_id = ${res.success ? res.assessmentId : ""}::uuid
+        )
+    `)) as unknown as { count: number }[];
+    expect(followUpAudit[0].count).toBe(1);
+  });
+
+  it("refuses a billable completion without a structured follow-up plan before any write", async () => {
+    const { createAssessment } = await import("../actions");
+    const res = await createAssessment({
+      ...baseInput(),
+      followUpPlan: undefined,
+    });
+
+    expect(res.success).toBe(false);
+    if (!res.success) expect(res.error).toMatch(/follow-up/i);
+    expect(await countRows("assessment")).toBe(0);
+    expect(await countRows("claim_draft")).toBe(0);
+    expect(await countRows("follow_up")).toBe(0);
+
+    const intake = (await db.execute<{ consumed_at: string | null }>(sql`
+      select consumed_at from intake_session where id = ${intakeSessionId}::uuid
+    `)) as unknown as { consumed_at: string | null }[];
+    expect(intake[0].consumed_at).toBeNull();
   });
 
   it("persists a complete version-2 clinical, consent, prescription, and PCP record", async () => {
@@ -277,6 +340,12 @@ describe("createAssessment → claim_draft", () => {
     if (!res.assessmentId) return;
     const detail = await queryAuditRecordById({ ...testAuth.actor }, res.assessmentId);
     expect(detail?.clinical?.followUpPlan).toBe("Synthetic monitoring and follow-up plan");
+    expect(detail?.followUps).toHaveLength(1);
+    expect(detail?.followUps[0]).toMatchObject({
+      dueDate: "2026-07-18",
+      method: "phone",
+      reached: null,
+    });
     expect(detail?.prescription?.patientAddress).toContain("200 Synthetic Avenue");
     expect(detail?.prescription?.prescriberAddress).toContain("100 Test Street");
   });
@@ -696,5 +765,6 @@ describe("createAssessment → claim_draft", () => {
     const assessments = await db.execute<{ n: number }>(sql`select count(*)::int as n from assessment`);
     expect((assessments as unknown as { n: number }[])[0].n).toBe(0);
     expect(await countClaimDrafts()).toBe(0);
+    expect(await countRows("follow_up")).toBe(0);
   });
 });

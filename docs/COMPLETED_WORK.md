@@ -2,8 +2,8 @@
 
 **Verified through:** 2026-07-25
 
-**Quality snapshot:** TypeScript clean · ESLint clean · 124/124 tests passing,
-including a fresh Docker Postgres migration replay through `0016`. Supabase is
+**Quality snapshot:** TypeScript clean · ESLint clean · 133/133 tests passing,
+including a fresh Docker Postgres migration replay through `0017`. Supabase is
 live through the same migration.
 
 This is the implementation record requested for the project. It describes capabilities present in the repository, not planned work. Remaining items are in [`NEXT_STEPS.md`](NEXT_STEPS.md).
@@ -76,7 +76,7 @@ This is the implementation record requested for the project. It describes capabi
 - Disabled public signup and added single-use, expiring pharmacy-admin invitations.
 - Added roles for pharmacy admin, pharmacist, intern, student, and technician.
 - Added pharmacist profile fields for OCP number, As-of-Right status, orientation completion, and intern/student supervision.
-- Protected `/pharmacist/*`; `proxy.ts` provides navigation UX only, while each server action independently verifies session, role, and pharmacy scope.
+- Protected `/pharmacist/*`; `src/proxy.ts` provides navigation UX only, while each server action independently verifies session, role, and pharmacy scope.
 - Removed all `MOCK_PHARMACY_ID` usage and derives pharmacy/prescriber identity from the session.
 - Added orientation gating and tests, including supervisor handling for interns/students. An audited admin override currently exists and is explicitly listed as a pre-production decision in [`NEXT_STEPS.md`](NEXT_STEPS.md).
 
@@ -88,6 +88,30 @@ This is the implementation record requested for the project. It describes capabi
 - Added audit events for intake/patient creation, assessments, claim drafts, orientation actions, invitations, and export access.
 - Replaced legacy local-storage pharmacy settings with authenticated, database-backed pharmacy and pharmacist profile settings.
 - Added pharmacy team management and orientation recording.
+
+## Follow-up tracking
+
+- Made a structured follow-up plan part of billable completion: due date,
+  phone/in-person method, and monitoring parameters are required before the
+  assessment, intake consumption, claim draft, or follow-up row is committed.
+- Added the server-rendered `/pharmacist/follow-ups` worklist and a compact
+  dashboard due list with visible overdue state.
+- Added reached and attempted-not-reached records, safety/efficacy evaluation,
+  next-step disposition, and notes. A not-reached attempt remains open.
+- Added an explicit reminder that the assessing pharmacy retains follow-up
+  responsibility when the prescription is filled elsewhere.
+- Made plan and attempt records append-only. Corrections insert a replacement
+  and permanently supersede the original; duplicate simultaneous completion
+  is serialized.
+- Added audit events for plan creation, attempt recording, and supersession.
+  Assessment detail/PDF and complete-patient export schema v2 include the
+  follow-up record.
+- Added retention inheritance and patient-wide horizon extension for follow-up
+  rows, app-role grant restrictions, and governed-destruction coverage.
+- Generated `0017_tense_pandemic` through `db:generate`, passed a fresh Docker
+  migration replay, then applied it to Supabase after explicit SQL approval.
+  Live checks confirm all three triggers, the deferrable exclusion constraint,
+  and least-privilege `agentoma_app` grants.
 
 ## Single-tenant boundary and record governance
 
@@ -146,7 +170,7 @@ This is the implementation record requested for the project. It describes capabi
 
 - Vitest runs pure unit tests and real-Postgres integration tests.
 - Docker Postgres uses port 5433, is guarded against non-local database URLs, and rebuilds the migration chain from zero.
-- Tests cover claim derivation combinations, refusal paths, LTC behaviour, remote-virtual tiers, retention, one-per-day, concurrent mutex enforcement, claim persistence/supersession, invitations/auth data, audit grants/triggers, and red-flag zero-claim behaviour.
+- Tests cover claim derivation combinations, refusal paths, LTC behaviour, remote-virtual tiers, retention, one-per-day, concurrent mutex enforcement, claim persistence/supersession, follow-up completion/supersession/concurrency/export, invitations/auth data, audit grants/triggers, and red-flag zero-claim behaviour.
 - TypeScript and ESLint are clean for the current tree. The full database-backed
-  suite has 124 passing tests; database-free logic can also run independently
+  suite has 133 passing tests; database-free logic can also run independently
   through `npm run test:pure`.
