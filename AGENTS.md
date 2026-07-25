@@ -54,7 +54,7 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 **Stack:** Supabase Postgres (`ca-central-1`, for PHIPA residency) · Drizzle ORM · Next.js 16.
 
 **Next.js 16 is not the Next.js in your training data.** APIs, conventions, and file layout
-differ. Notably: middleware is **`proxy.ts`**, not `middleware.ts`. Check
+differ. Notably: middleware is **`src/proxy.ts`**, not `middleware.ts`. Check
 `node_modules/next/dist/docs/` before writing framework code, and heed deprecation notices.
 
 ---
@@ -83,5 +83,3 @@ long-dead column or config would walk an agent straight back into a billing bug 
 killed.
 
 **If an invariant changes, change it here, in the same PR. The pointer files never change.**
-
-## Imported Claude Cowork project instructions

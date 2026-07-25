@@ -55,6 +55,9 @@
 
 - Applied migrations `0015`–`0016` to Supabase with `db:migrate` and reseeded
   idempotent Demo fixtures with `db:seed:demo`.
+- Applied follow-up migration `0017` after fresh-Docker replay and explicit SQL
+  review; its immutable records, constraints, triggers, and app-role grants are
+  live.
 - Post-migration inspection reports one Demo Pharmacy, three preserved users
   with TOTP, no duplicate cross-pharmacy health-number groups, no assessment
   tenant mismatch, and clean aggregate counts.

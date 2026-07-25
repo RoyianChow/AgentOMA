@@ -1,4 +1,5 @@
-// Connection smoke test — queries the reference tables and prints a summary.
+// Read-only connection smoke test. It prints aggregate/reference evidence only,
+// never patient rows or clinical payloads, so verification cannot leak PHI.
 //
 //   npm run db:verify
 import "dotenv/config";

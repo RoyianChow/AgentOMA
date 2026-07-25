@@ -30,7 +30,7 @@ sent to a doctor. We write like that is true, because it is.
 
 ---
 
-## The three invariants that never bend
+## The four invariants that never bend
 
 Everything else is negotiable. These are not.
 
@@ -54,6 +54,13 @@ Everything else is negotiable. These are not.
    and can still reject. So the UI says "likely eligible" or "at or near maximum
    — verify in the clinical viewer." It never says "eligible: yes." It never
    implies a claim *will* be paid. Honesty about what we can't see is a feature.
+
+4. **The application serves one pharmacy.**
+   The configured server-side pharmacy is the only tenant boundary. A URL,
+   browser value, QR code, or session payload cannot select another pharmacy,
+   and the database singleton constraint makes a second pharmacy row
+   unrepresentable. Keeping tenant filters as defence in depth does not turn
+   this deployment into a multi-tenant product.
 
 Break one of these and you haven't shipped a regression — you've broken the
 promise the whole thing is built on.
@@ -97,10 +104,10 @@ zero on every run, which makes the migration chain prove its own sufficiency.
 
 Not a PIN, not a fee, not a claim maximum, not an intervention code. They come
 from the seeded reference tables and nowhere else. If a value looks wrong, it is
-probably right and your memory is wrong — Acne's No-Rx in-person PIN really is
-`9858250`, and "correcting" it to the number you'd expect would be the bug. When
-a value genuinely isn't there, the rule is: **stop and ask.** Never fill the gap
-with a plausible guess.
+probably right and your memory is wrong — the published non-sequential Acne
+entry is protected by a regression test for exactly that reason. When a value
+genuinely isn't there, the rule is: **stop and ask.** Never fill the gap with a
+plausible guess.
 
 ### We hold the line on clinical content.
 
@@ -175,6 +182,6 @@ voice. That's the soul.
 
 ---
 
-*If you're an agent picking this up cold: orient from the docs, respect the three
+*If you're an agent picking this up cold: orient from the docs, respect the four
 invariants, refuse before you default, and when a number isn't in the reference
 tables — stop and ask. The rest you can learn from the code.*

@@ -101,7 +101,7 @@ a second administrator.
 - Invitations are single-use, expiring, pharmacy-scoped, and role-scoped.
 - Supported roles are `pharmacy_admin`, `pharmacist`, `intern`, `student`, and `technician`.
 - TOTP is mandatory. Sessions use a 30-minute rolling policy and server-side revocation.
-- `proxy.ts` is an optimistic navigation gate only. It performs no authorization.
+- `src/proxy.ts` is an optimistic navigation gate only. It performs no authorization.
 - Every portal server action calls the server-side guard to verify session,
   active role, TOTP, and assignment to the configured `PHARMACY_ID`. A session
   cannot select or switch pharmacies. Billing completion also resolves the

@@ -1,28 +1,49 @@
 # Documentation index
 
-Use this page to find the current source instead of searching historical prompts.
+This is the map for every maintained Markdown instruction, decision record,
+runbook, status page, and historical note in the repository. Use current
+documents for implementation decisions; archived prompts and worklogs are
+provenance only.
 
-## Read first
+## Start here
 
-1. [`PROJECT_OVERVIEW.md`](PROJECT_OVERVIEW.md) — current architecture, workflows, security, and migration state.
-2. [`COMPLETED_WORK.md`](COMPLETED_WORK.md) — implemented and verified capabilities.
-3. [`NEXT_STEPS.md`](NEXT_STEPS.md) — prioritized remaining work and go-live blockers.
-4. [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) — decisions that require a pharmacist, ODB, or product lead.
-5. [`SELF_CHECK.md`](SELF_CHECK.md) — approved boundaries and production gate
-   for the public `/check` feature.
-6. [`SESSION_HANDOFF.md`](SESSION_HANDOFF.md) — exact live migration state
-   and the next operator checkpoint.
+| Document | Authority and purpose |
+|---|---|
+| [`../README.md`](../README.md) | Short project entry point, setup commands, and quality gates. |
+| [`README.md`](README.md) | This complete documentation inventory. |
+| [`PROJECT_OVERVIEW.md`](PROJECT_OVERVIEW.md) | Current architecture, routes, data model, security boundaries, and migration state. Read first for repository orientation. |
+| [`COMPLETED_WORK.md`](COMPLETED_WORK.md) | Capabilities implemented and verified in the current tree. |
+| [`NEXT_STEPS.md`](NEXT_STEPS.md) | Prioritized production blockers and remaining engineering work. |
+| [`SESSION_HANDOFF.md`](SESSION_HANDOFF.md) | Current operational checkpoint, live database evidence, and next operator actions. |
 
-## Safety and compliance
+## Compliance, decisions, and operations
 
-- [`COMPLIANCE.md`](COMPLIANCE.md) maps implemented and missing controls to the Executive Officer Notice.
-- [`regulatory/`](regulatory/) contains the binding Ministry source document.
-- [`PRODUCT_PRINCIPLES.md`](PRODUCT_PRINCIPLES.md) explains the product's safety posture and non-negotiable invariants.
-- [`RESTORE_DRILL.md`](RESTORE_DRILL.md) is the reviewed backup/restore evidence procedure.
-- [`../AGENTS.md`](../AGENTS.md) is the single canonical instruction document for AI agents.
+| Document | Authority and purpose |
+|---|---|
+| [`COMPLIANCE.md`](COMPLIANCE.md) | Traceability from implemented controls and gaps to the Executive Officer Notice. |
+| [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) | Unresolved clinical, billing, and policy decisions that agents must not answer. |
+| [`SELF_CHECK.md`](SELF_CHECK.md) | Approved zero-identifying-data boundary and production gate for public `/check`. |
+| [`PRODUCT_PRINCIPLES.md`](PRODUCT_PRINCIPLES.md) | Product rationale behind refusal-first billing, privacy, and record-integrity choices. |
+| [`RESTORE_DRILL.md`](RESTORE_DRILL.md) | Canadian-region backup/restore evidence procedure; this is a runbook, not proof that the first drill has occurred. |
+| [`regulatory/`](regulatory/) | Binding Ministry source PDF. Read only when a compliance question requires it. |
 
-Never copy the PIN table or clinical rules into another document. Billing values belong in the versioned reference source and seeded tables; clinical rules remain subject to pharmacist review.
+## Agent instructions
+
+[`../AGENTS.md`](../AGENTS.md) is the only canonical agent-instruction file.
+[`../CLAUDE.md`](../CLAUDE.md), [`../GEMINI.md`](../GEMINI.md),
+[`../.cursor/rules/oma.mdc`](../.cursor/rules/oma.mdc), and
+[`../.github/copilot-instructions.md`](../.github/copilot-instructions.md) are
+tool-specific pointers and must not duplicate repository rules.
 
 ## Historical material
 
-[`archive/`](archive/) contains superseded implementation prompts and planning notes. They are retained for provenance only and must not be used as current architecture or compliance guidance.
+| Document | Historical scope |
+|---|---|
+| [`archive/README.md`](archive/README.md) | Archive warning and pointer back to current documentation. |
+| [`archive/initial-implementation-prompt.md`](archive/initial-implementation-prompt.md) | Superseded initial migration/feature brief; not current architecture or compliance guidance. |
+| [`archive/oma-pilot-plan.md`](archive/oma-pilot-plan.md) | Superseded pilot plan retained for decision provenance. |
+| [`worklogs/audit-clickable-task-4.md`](worklogs/audit-clickable-task-4.md) | Historical implementation evidence for the audit-record navigation slice. |
+
+Never copy the PIN table or clinical rules into documentation. Billing values
+belong in `src/config/ailment-reference.ts` and the seeded reference tables;
+clinical rules remain in `src/config/triage.ts` pending pharmacist review.

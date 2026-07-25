@@ -95,7 +95,7 @@ All clinical questions, including the tick-bite timing threshold, remain open fo
 | Clinical viewer check | p.6 | UI attestation/link exists; durable evidence model is incomplete | 🔶 |
 | Portal protects PHI | PHIPA posture | better-auth, mandatory TOTP, invitation-only roles, rolling/revocable sessions, server-action authorization | ✅ |
 
-`proxy.ts` performs no authorization. It is an optimistic redirect only. Every server action independently verifies the better-auth session, active role, and pharmacy scope; billable completion additionally resolves prescriber eligibility server-side.
+`src/proxy.ts` performs no authorization. It is an optimistic redirect only. Every server action independently verifies the better-auth session, active role, and pharmacy scope; billable completion additionally resolves prescriber eligibility server-side.
 
 ## Audit, retention, and privacy
 

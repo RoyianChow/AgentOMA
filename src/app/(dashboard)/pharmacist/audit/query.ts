@@ -328,6 +328,9 @@ export async function queryAuditRecordById(
 
   if (!row) return null;
 
+  // Audit detail includes superseded rows on purpose: the current worklist
+  // hides replaced versions, while the clinical history must show the original
+  // entry, its replacement, and the immutable link between them.
   const followUps = await db
     .select()
     .from(followUp)

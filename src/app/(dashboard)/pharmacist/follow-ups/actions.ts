@@ -34,6 +34,8 @@ function attemptedDate(value: string): Date {
   if (!parsed.success) {
     throw new FollowUpActionInputError("Choose a valid attempted date.");
   }
+  // A date-only clinical fact has no meaningful instant. Noon UTC keeps the
+  // displayed calendar day stable across Canadian time zones and DST changes.
   const date = new Date(`${parsed.data}T12:00:00.000Z`);
   if (Number.isNaN(date.getTime())) {
     throw new FollowUpActionInputError("Choose a valid attempted date.");
@@ -42,6 +44,8 @@ function attemptedDate(value: string): Date {
 }
 
 function safeMessage(error: unknown): string {
+  // Only reviewed workflow messages may cross the redirect boundary. Unknown
+  // exceptions stay generic so database details or PHI cannot enter the URL.
   if (error instanceof AuthorizationError) {
     return "Your session or role no longer permits this action.";
   }

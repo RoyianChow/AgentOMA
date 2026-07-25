@@ -99,6 +99,9 @@ export async function collectPatientRecord(actor: PortalUser, patientId: string)
     corrections,
     priorManifests,
   ] = await Promise.all([
+    // Complete-patient exports intentionally retain superseded versions.
+    // Filtering to active rows would erase the correction history that makes
+    // an immutable clinical record defensible.
     assessmentIds.length
       ? db
           .select()

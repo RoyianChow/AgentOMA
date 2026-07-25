@@ -2,6 +2,9 @@
 
 **Updated:** 2026-07-25  
 **Branch:** `feat/moh-compliance-migration`  
+**Repository status:** working tree clean after the documentation/comment audit;
+branch is three commits ahead of `origin/feat/moh-compliance-migration` and has
+not been pushed.
 **Stopping point:** follow-up tracking is implemented, Docker-verified, and
 live in Supabase through migration `0017`
 
@@ -52,8 +55,9 @@ live in Supabase through migration `0017`
 
 ## Live governance and retention evidence
 
-- All 16 required money-rule, immutability, retention, hold, and correction
-  triggers are installed.
+- The previously verified money-rule, immutability, retention, hold, and
+  correction triggers remain installed; `0017` adds and live verification
+  confirms all three follow-up triggers.
 - The runtime database connection identifies as non-owner `agentoma_app`; it
   owns no public tables.
 - `agentoma_app` cannot update/delete `audit_log` or delete patient,
@@ -93,7 +97,8 @@ live in Supabase through migration `0017`
 ## Verification
 
 - Docker Postgres: `localhost:5433`, guarded against non-local URLs.
-- Fresh migration replay from zero through staged `0017`: green.
+- Fresh migration replay from zero through `0017`: green; the same migration
+  is live in Supabase.
 - `tsc --noEmit`: green.
 - ESLint: green.
 - Vitest: 13 files, 133 tests, all green.

@@ -1,5 +1,11 @@
 # Worklog — Audit Clickable Rows (Task 4)
 
+> **Historical implementation evidence.** Counts, branch names, and quality
+> snapshots below describe this completed slice at the time it landed. For the
+> current system, read [`../PROJECT_OVERVIEW.md`](../PROJECT_OVERVIEW.md),
+> [`../COMPLETED_WORK.md`](../COMPLETED_WORK.md), and
+> [`../SESSION_HANDOFF.md`](../SESSION_HANDOFF.md).
+
 **Branch:** `claude/audit-clickable-task-4-r7r7e5`
 **Commit:** `2a58d46` — *feat(audit): clickable rows -> server-rendered record dialog + per-record PDF*
 **Date:** 2026-07-20

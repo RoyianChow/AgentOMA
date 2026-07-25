@@ -287,6 +287,8 @@ export async function recordFollowUpAttempt(
         method: plan.method,
         monitoringParameters: plan.monitoringParameters,
         attemptedAt: parsed.data.attemptedAt,
+        // Not reached is valid evidence of an attempt, but it does not close
+        // the plan; a later attempt remains due until one reaches the patient.
         completedAt: parsed.data.reached ? new Date() : null,
         reached: parsed.data.reached,
         evaluation: parsed.data.reached ? parsed.data.evaluation : null,
@@ -442,6 +444,9 @@ export async function supersedeFollowUp(
       };
     }
 
+    // Corrections preserve both versions. Insert first, then set the original's
+    // one permitted mutable field in the same transaction; the deferrable
+    // active-record constraint validates the final supersession graph.
     const [replacement] = await tx
       .insert(followUp)
       .values(replacementValues)

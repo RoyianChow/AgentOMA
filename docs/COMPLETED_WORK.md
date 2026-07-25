@@ -76,7 +76,7 @@ This is the implementation record requested for the project. It describes capabi
 - Disabled public signup and added single-use, expiring pharmacy-admin invitations.
 - Added roles for pharmacy admin, pharmacist, intern, student, and technician.
 - Added pharmacist profile fields for OCP number, As-of-Right status, orientation completion, and intern/student supervision.
-- Protected `/pharmacist/*`; `proxy.ts` provides navigation UX only, while each server action independently verifies session, role, and pharmacy scope.
+- Protected `/pharmacist/*`; `src/proxy.ts` provides navigation UX only, while each server action independently verifies session, role, and pharmacy scope.
 - Removed all `MOCK_PHARMACY_ID` usage and derives pharmacy/prescriber identity from the session.
 - Added orientation gating and tests, including supervisor handling for interns/students. An audited admin override currently exists and is explicitly listed as a pre-production decision in [`NEXT_STEPS.md`](NEXT_STEPS.md).
 

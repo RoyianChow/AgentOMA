@@ -84,6 +84,9 @@ export default function AssessmentWorkspace({
   /** Non-PHI pharmacy configuration resolved from seeded reference data. */
   remoteVirtualEligible: boolean;
 }) {
+  // Necessary PHI lives only in this authenticated page's in-memory state
+  // until the server action persists the signed record. Never mirror it into
+  // browser storage, URLs, analytics, or diagnostic logs.
   // Patient Identity
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
