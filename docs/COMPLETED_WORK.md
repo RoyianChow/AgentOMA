@@ -1,10 +1,10 @@
 # Completed work
 
-**Verified through:** 2026-07-23
+**Verified through:** 2026-07-25
 
-**Quality snapshot:** TypeScript clean · ESLint clean · 41/41 database-free
-tests passing · 85 tests passed in the last full database-backed run. The new
-P0-D integration tests still await an environment with Docker Desktop/CLI.
+**Quality snapshot:** TypeScript clean · ESLint clean · 124/124 tests passing,
+including a fresh Docker Postgres migration replay through `0016`. Supabase is
+live through the same migration.
 
 This is the implementation record requested for the project. It describes capabilities present in the repository, not planned work. Remaining items are in [`NEXT_STEPS.md`](NEXT_STEPS.md).
 
@@ -26,7 +26,9 @@ This is the implementation record requested for the project. It describes capabi
 - Kept emergency/red-flag exits terminal and separate from completed assessments.
 - Enforced the zero-PHI intake design: the patient device submits symptoms and self-reports only.
 - Added short-lived, single-use six-character handoff sessions stored in Postgres.
-- Added per-pharmacy QR links and server-side validation of the URL's pharmacy identifier before an intake row is written.
+- Kept the legacy pharmacy QR parameter for link compatibility while removing
+  its tenant-selection power: the server always uses `PHARMACY_ID`, and a
+  forged/malformed/absent query value resolves only to the configured pharmacy.
 
 ## Public self-check and pre-visit PDF
 
@@ -87,6 +89,38 @@ This is the implementation record requested for the project. It describes capabi
 - Replaced legacy local-storage pharmacy settings with authenticated, database-backed pharmacy and pharmacist profile settings.
 - Added pharmacy team management and orientation recording.
 
+## Single-tenant boundary and record governance
+
+- Added validated server-only `PHARMACY_ID` configuration and pinned portal,
+  intake, invitation, audit, bootstrap, and demo-seed writes to it.
+- Added a database singleton constraint that makes a second pharmacy row
+  unrepresentable while retaining `pharmacy_id` filters as defence in depth.
+- Added a read-only tenancy inspection command that reports only pharmacy
+  identity, aggregate counts, duplicate-health-number groups, and cross-pharmacy
+  relationship defects.
+- Applied the approved cleanup migration: the two disposable TEST tenants and
+  their clinical rows were deleted, Demo Pharmacy's three auth/TOTP users were
+  preserved, and the known cross-pharmacy relationship defect was removed.
+- Added effective retention policy tables and a database recomputation path:
+  the latest service extends all prior assessment horizons for a returning
+  patient.
+- Added complete server-assembled patient export with a stored manifest,
+  per-artifact SHA-256 hashes, and a patient-linked audit event.
+- Added patient- and record-scoped holds whose active state blocks destruction
+  in database triggers.
+- Added PHIPA access/correction request tracking and immutable correction
+  overlays with final supersession.
+- Added deliberate destruction dry runs with counts/hashes. Execution requires
+  elapsed retention, no active hold, a different pharmacy administrator, and a
+  database-written audit event before governed records are removed. No cron or
+  automatic deletion exists.
+- Added restore-drill and audit-write-failure evidence models, admin-only
+  server-rendered aggregate reports, and [`RESTORE_DRILL.md`](RESTORE_DRILL.md).
+- Applied governance migrations `0015`–`0016` to Supabase after from-zero Docker
+  verification. Live checks confirmed one pharmacy, clean tenancy, all required
+  triggers, effective app-role revocations, nine governance tables, and
+  patient-wide retention horizons with the pediatric case at 2047.
+
 ## Defensible clinical record and consent (P0-B)
 
 - Added version-2 assessment snapshots with database-enforced completeness while preserving readable legacy version-1 records.
@@ -104,7 +138,8 @@ This is the implementation record requested for the project. It describes capabi
 - Updated the workspace and server action to capture virtual physical location, remote-demand reason, LTC residency, provider role, and emergency status.
 - Made remote-virtual visibility and enforcement depend on the active reference row rather than a hardcoded set of fee-tier names.
 - Parked all LTC claim drafting with `LTC_PENDING_MINISTRY_CLARIFICATION`; the assessment persists and no claim draft is created.
-- Added pure and database test coverage, including a data-driven remote eligibility flip. Live verification confirmed four fee tiers, all three checks, and unchanged counts of 3 pharmacies and 12 assessments. Fresh-Docker replay of the new tests remains outstanding because Docker is unavailable in the current environment.
+- Added pure and database test coverage, including a data-driven remote
+  eligibility flip. Fresh-Docker replay is now green.
 - Split production reference seeding from local demo fixtures: `db:seed` writes reference rows only, while `db:seed:demo` is explicitly development-only.
 
 ## Verification and regression coverage
@@ -112,6 +147,6 @@ This is the implementation record requested for the project. It describes capabi
 - Vitest runs pure unit tests and real-Postgres integration tests.
 - Docker Postgres uses port 5433, is guarded against non-local database URLs, and rebuilds the migration chain from zero.
 - Tests cover claim derivation combinations, refusal paths, LTC behaviour, remote-virtual tiers, retention, one-per-day, concurrent mutex enforcement, claim persistence/supersession, invitations/auth data, audit grants/triggers, and red-flag zero-claim behaviour.
-- TypeScript and ESLint are clean for the current tree. The last full
-  database-backed suite had 85 passing tests; database-free logic can also run
-  independently through `npm run test:pure`.
+- TypeScript and ESLint are clean for the current tree. The full database-backed
+  suite has 124 passing tests; database-free logic can also run independently
+  through `npm run test:pure`.

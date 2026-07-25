@@ -19,6 +19,7 @@
     "db:seed": "tsx src/lib/db/seed.ts",
     "db:seed:demo": "tsx src/lib/db/seed-demo.ts",
     "db:verify": "tsx src/lib/db/verify.ts",
+    "db:inspect-tenancy": "tsx src/lib/db/inspect-tenancy.ts",
     "auth:bootstrap-admin": "tsx src/lib/db/bootstrap-admin.ts"
   },
   "dependencies": {

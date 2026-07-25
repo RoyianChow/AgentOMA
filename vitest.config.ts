@@ -17,7 +17,10 @@ export default defineConfig({
     // Tests never read the live environment (the db module is mocked to the
     // local test database), but some modules under test import src/env.ts at
     // module scope — skip zod validation rather than demand a full .env in CI.
-    env: { SKIP_ENV_VALIDATION: "1" },
+    env: {
+      SKIP_ENV_VALIDATION: "1",
+      PHARMACY_ID: "00000000-0000-0000-0000-000000000000",
+    },
     // The DB test files share ONE database and truncate between tests, so they
     // must not run in parallel with each other — otherwise one file's reset
     // wipes another's fixtures mid-test and the failures look like rule bugs.

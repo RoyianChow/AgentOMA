@@ -11,17 +11,15 @@ import "dotenv/config";
 import { db } from "./index";
 import { ailmentGroup, pin, claimRule, pharmacy, patient, assessment } from "./schema";
 import { and, eq } from "drizzle-orm";
-// The seed keeps ONE fixed demo pharmacy — a deliberate decision, not a
-// leftover: dev and the intake kiosk need a pharmacy row to exist, and a
-// stable id keeps the seed idempotent. Runtime code never references this id;
-// the portal takes its pharmacy from the authenticated session and the kiosk
-// resolves the (single) pharmacy row server-side.
-const SEED_DEMO_PHARMACY_ID = "00000000-0000-0000-0000-000000000000";
+// Operational fixtures are always attached to the one server-configured
+// pharmacy. The seed never introduces a second tenant.
 import { computeRetainUntil } from "../retention";
+import { requireConfiguredPharmacyId } from "../pharmacy-config";
 import { seedReferenceData } from "./seed-reference";
 import { EO_NOTICE_EFFECTIVE_DATE } from "../reference/minor-ailment-reference";
 
 async function seed() {
+  const pharmacyId = requireConfiguredPharmacyId();
   console.log(
     `Seeding reference data (effective ${EO_NOTICE_EFFECTIVE_DATE})...`,
   );
@@ -34,7 +32,7 @@ async function seed() {
   // exists the app runs against this fixed placeholder pharmacy.
   await db
     .insert(pharmacy)
-    .values({ id: SEED_DEMO_PHARMACY_ID, storeName: "Demo Pharmacy" })
+    .values({ id: pharmacyId, storeName: "Demo Pharmacy" })
     .onConflictDoNothing({ target: pharmacy.id });
 
   // Sam Child — a minor, seeded to exercise the age-18 retention branch (#7).
@@ -47,7 +45,7 @@ async function seed() {
   const insertedSam = await db
     .insert(patient)
     .values({
-      pharmacyId: SEED_DEMO_PHARMACY_ID,
+      pharmacyId,
       firstName: "Sam",
       lastName: "Child",
       dob: samDob,
@@ -61,7 +59,7 @@ async function seed() {
   if (!samId) {
     const existing = await db.query.patient.findFirst({
       where: and(
-        eq(patient.pharmacyId, SEED_DEMO_PHARMACY_ID),
+        eq(patient.pharmacyId, pharmacyId),
         eq(patient.healthNumber, samHealthNumber),
       ),
     });
@@ -71,7 +69,7 @@ async function seed() {
   await db
     .insert(assessment)
     .values({
-      pharmacyId: SEED_DEMO_PHARMACY_ID,
+      pharmacyId,
       patientId: samId,
       ailmentGroupCode: "RHINITIS",
       modality: "in_person",

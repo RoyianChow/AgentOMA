@@ -14,8 +14,7 @@ vi.mock("@/lib/db", async () => {
 
 import { makeTestDb, resetOperationalTables, type TestDb } from "@/lib/db/test/harness";
 
-const PHARMACY_ID = "00000000-0000-0000-0000-0000000000aa";
-const OTHER_PHARMACY_ID = "00000000-0000-0000-0000-0000000000ab";
+const PHARMACY_ID = "00000000-0000-0000-0000-000000000000";
 let db: TestDb;
 let close: () => Promise<void>;
 let adminId: string;
@@ -23,11 +22,10 @@ let adminId: string;
 async function insertUser(
   role: string,
   email: string,
-  pharmacyId: string = PHARMACY_ID,
 ): Promise<string> {
   const rows = await db.execute<{ id: string }>(sql`
     insert into "user" (name, email, role, pharmacy_id)
-    values ('Seeded User', ${email}, ${role}::user_role, ${pharmacyId}::uuid)
+    values ('Seeded User', ${email}, ${role}::user_role, ${PHARMACY_ID}::uuid)
     returning id
   `);
   return (rows as unknown as { id: string }[])[0].id;
@@ -46,9 +44,7 @@ beforeEach(async () => {
   await resetOperationalTables(db);
   await db.execute(sql`
     insert into pharmacy (id, store_name, odb_fee_tier_code)
-    values
-      (${PHARMACY_ID}::uuid, 'Invite Test Pharmacy', 'regular_8_83'),
-      (${OTHER_PHARMACY_ID}::uuid, 'Other Pharmacy', 'regular_8_83')
+    values (${PHARMACY_ID}::uuid, 'Invite Test Pharmacy', 'regular_8_83')
     on conflict (id) do nothing
   `);
   adminId = await insertUser("pharmacy_admin", "admin@example.com");
@@ -58,7 +54,6 @@ describe("issueInvitation", () => {
   it("stores only the token hash, never the raw token", async () => {
     const { issueInvitation, hashInvitationToken } = await import("../invitations");
     const res = await issueInvitation({
-      pharmacyId: PHARMACY_ID,
       invitedByUserId: adminId,
       email: "New.Pharmacist@Example.com",
       role: "pharmacist",
@@ -78,7 +73,6 @@ describe("issueInvitation", () => {
   it("refuses an intern invitation without a supervising pharmacist", async () => {
     const { issueInvitation } = await import("../invitations");
     const res = await issueInvitation({
-      pharmacyId: PHARMACY_ID,
       invitedByUserId: adminId,
       email: "intern@example.com",
       role: "intern",
@@ -86,25 +80,17 @@ describe("issueInvitation", () => {
     expect(res).toMatchObject({ ok: false, reason: "SUPERVISOR_REQUIRED" });
   });
 
-  it("refuses a supervisor from another pharmacy or a non-pharmacist supervisor", async () => {
+  it("refuses a non-pharmacist supervisor", async () => {
     const { issueInvitation } = await import("../invitations");
-    const outsidePharmacist = await insertUser(
-      "pharmacist",
-      "outside@example.com",
-      OTHER_PHARMACY_ID,
-    );
     const technician = await insertUser("technician", "tech@example.com");
 
-    for (const supervisingPharmacistId of [outsidePharmacist, technician]) {
-      const res = await issueInvitation({
-        pharmacyId: PHARMACY_ID,
-        invitedByUserId: adminId,
-        email: "student@example.com",
-        role: "student",
-        supervisingPharmacistId,
-      });
-      expect(res).toMatchObject({ ok: false, reason: "SUPERVISOR_INVALID" });
-    }
+    const res = await issueInvitation({
+      invitedByUserId: adminId,
+      email: "student@example.com",
+      role: "student",
+      supervisingPharmacistId: technician,
+    });
+    expect(res).toMatchObject({ ok: false, reason: "SUPERVISOR_INVALID" });
   });
 });
 
@@ -116,7 +102,6 @@ describe("acceptInvitation", () => {
         ? await insertUser("pharmacist", `supervisor-${Date.now()}@example.com`)
         : null;
     const res = await issueInvitation({
-      pharmacyId: PHARMACY_ID,
       invitedByUserId: adminId,
       email: "invitee@example.com",
       role,

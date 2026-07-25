@@ -54,6 +54,6 @@ export async function resetOperationalTables(db: TestDb): Promise<void> {
   // "user" is quoted because it's a reserved word; cascade covers the
   // dependent auth tables' FKs.
   await db.execute(
-    sql`truncate table claim_draft, audit_log, assessment, intake_session, patient, triage_exit, invitation, two_factor, rate_limit, session, account, verification, "user" restart identity cascade`,
+    sql`truncate table destruction_run, audit_write_failure, restore_drill, record_correction, access_correction_request, export_manifest, record_hold, patient_record_retention, claim_draft, audit_log, assessment, intake_session, patient, triage_exit, invitation, two_factor, rate_limit, session, account, verification, "user", pharmacy restart identity cascade`,
   );
 }

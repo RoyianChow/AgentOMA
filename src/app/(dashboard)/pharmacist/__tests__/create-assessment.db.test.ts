@@ -56,7 +56,7 @@ vi.mock("@/lib/auth-guard", () => {
 import { makeTestDb, resetOperationalTables, type TestDb } from "@/lib/db/test/harness";
 import type { ClinicalRecordInput } from "@/lib/clinical-record-types";
 
-const PHARMACY_ID = "00000000-0000-0000-0000-0000000000bb";
+const PHARMACY_ID = "00000000-0000-0000-0000-000000000000";
 let db: TestDb;
 let close: () => Promise<void>;
 let patientId: string;
@@ -662,31 +662,22 @@ describe("createAssessment → claim_draft", () => {
     expect(reload.success).toBe(false);
   });
 
-  it("another pharmacy's intake and an expired intake cannot be loaded", async () => {
+  it("the database rejects a second pharmacy and expired intakes cannot be loaded", async () => {
     const { getIntakeSessionById } = await import("../actions");
     const OTHER = "00000000-0000-0000-0000-0000000000dd";
-    await db.execute(sql`
-      insert into pharmacy (id, store_name, odb_fee_tier_code)
-      values (${OTHER}::uuid, 'Other Pharmacy', 'regular_8_83')
-      on conflict (id) do nothing
-    `);
-    const rows = await db.execute<{ a: string; b: string }>(sql`
-      with foreign_intake as (
-        insert into intake_session (code, pharmacy_id, ailment_group_code, expires_at)
-        values ('QQTAB3', ${OTHER}::uuid, 'RHINITIS', now() + interval '2 hours')
-        returning id
-      ), expired_intake as (
-        insert into intake_session (code, pharmacy_id, ailment_group_code, expires_at)
-        values ('QQTAB4', ${PHARMACY_ID}::uuid, 'RHINITIS', now() - interval '1 minute')
-        returning id
-      )
-      select (select id from foreign_intake) as a, (select id from expired_intake) as b
-    `);
-    const { a: foreignId, b: expiredId } = (rows as unknown as { a: string; b: string }[])[0];
+    await expect(
+      db.execute(sql`
+        insert into pharmacy (id, store_name, odb_fee_tier_code)
+        values (${OTHER}::uuid, 'Other Pharmacy', 'regular_8_83')
+      `),
+    ).rejects.toThrow();
 
-    // The mocked actor belongs to PHARMACY_ID — the foreign intake must not
-    // resolve, and neither must the expired one.
-    expect((await getIntakeSessionById(foreignId)).success).toBe(false);
+    const rows = await db.execute<{ id: string }>(sql`
+      insert into intake_session (code, pharmacy_id, ailment_group_code, expires_at)
+      values ('QQTAB4', ${PHARMACY_ID}::uuid, 'RHINITIS', now() - interval '1 minute')
+      returning id
+    `);
+    const expiredId = (rows as unknown as { id: string }[])[0].id;
     expect((await getIntakeSessionById(expiredId)).success).toBe(false);
   });
 

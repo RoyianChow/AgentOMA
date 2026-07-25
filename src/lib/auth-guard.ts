@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "./auth";
 import { userRole } from "./db/schema/auth";
+import { getConfiguredPharmacyId } from "./pharmacy-config";
 
 export const PORTAL_ROLES = userRole.enumValues;
 export type PortalRole = (typeof PORTAL_ROLES)[number];
@@ -16,6 +17,7 @@ export type AuthzRefusal =
   | "UNAUTHENTICATED"
   | "TOTP_ENROLLMENT_REQUIRED"
   | "NO_PHARMACY"
+  | "PHARMACY_MISMATCH"
   | "FORBIDDEN_ROLE";
 
 /**
@@ -81,8 +83,12 @@ export async function requirePortalUser(
   if (!role || !(PORTAL_ROLES as readonly string[]).includes(role)) {
     throw new AuthorizationError("FORBIDDEN_ROLE");
   }
-  if (!user.pharmacyId) {
+  const configuredPharmacyId = getConfiguredPharmacyId();
+  if (!configuredPharmacyId || !user.pharmacyId) {
     throw new AuthorizationError("NO_PHARMACY");
+  }
+  if (user.pharmacyId !== configuredPharmacyId) {
+    throw new AuthorizationError("PHARMACY_MISMATCH");
   }
   if (allowedRoles && !allowedRoles.includes(role as PortalRole)) {
     throw new AuthorizationError("FORBIDDEN_ROLE");
@@ -90,7 +96,7 @@ export async function requirePortalUser(
 
   return {
     userId: user.id,
-    pharmacyId: user.pharmacyId,
+    pharmacyId: configuredPharmacyId,
     role: role as PortalRole,
     name: user.name,
     email: user.email,
@@ -117,6 +123,7 @@ export async function requirePortalPage(
         case "TOTP_ENROLLMENT_REQUIRED":
           redirect("/enroll-2fa");
         case "NO_PHARMACY":
+        case "PHARMACY_MISMATCH":
         case "FORBIDDEN_ROLE":
           redirect("/sign-in?error=account");
       }

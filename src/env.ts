@@ -20,6 +20,15 @@ export const env = createEnv({
     // Direct (non-pooled) connection string used by migrations / drizzle-kit.
     // Optional: falls back to DATABASE_URL when unset.
     DIRECT_URL: z.string().min(1).optional(),
+    // Single-tenant boundary. The app safe-fails when unset; no request or
+    // session value may substitute for this server-owned identifier.
+    PHARMACY_ID: z.string().uuid("PHARMACY_ID must be a UUID").optional(),
+
+    // One-off first-admin bootstrap. These remain server-only and are optional
+    // during normal app/runtime operation.
+    BOOTSTRAP_ADMIN_EMAIL: z.string().email().optional(),
+    BOOTSTRAP_ADMIN_PASSWORD: z.string().min(12).optional(),
+    BOOTSTRAP_ADMIN_NAME: z.string().min(1).optional(),
 
     // --- better-auth (the sole identity layer) ------------------------------
     BETTER_AUTH_SECRET: z

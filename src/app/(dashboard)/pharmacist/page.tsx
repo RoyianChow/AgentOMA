@@ -90,7 +90,7 @@ export default async function PharmacistDashboard() {
   // UX redirect for signed-out visitors. The actions below ALSO re-verify the
   // session themselves — that's the enforcement; this just avoids rendering an
   // empty dashboard.
-  await requirePortalPage();
+  const actor = await requirePortalPage();
 
   const [stats, pending, recent] = await Promise.all([
     getDashboardStats(),
@@ -166,6 +166,11 @@ export default async function PharmacistDashboard() {
               <Link href="/pharmacist/settings" className="btn btn-secondary">
                 Profile &amp; Settings
               </Link>
+              {actor.role === "pharmacy_admin" && (
+                <Link href="/pharmacist/governance" className="btn btn-secondary">
+                  Record Governance
+                </Link>
+              )}
             </div>
           </div>
 

@@ -79,6 +79,15 @@ export default function Navbar() {
           >
             Assessment
           </Link>
+
+          <Link
+            href="/check"
+            onClick={closeMenu}
+            className={`navbar-link ${pathname === "/check" ? "active" : ""}`}
+          >
+            Self-Check
+          </Link>
+
           <Link
             href="/pharmacist"
             onClick={closeMenu}

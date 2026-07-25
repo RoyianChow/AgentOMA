@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { intakeSession, pharmacy, triageExit } from "@/lib/db/schema";
+import { getConfiguredPharmacyId } from "@/lib/pharmacy-config";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
 
@@ -15,45 +16,42 @@ function generateCode(): string {
   return result;
 }
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 /**
  * The intake runs on the PATIENT'S OWN PHONE (no session, no device config) —
- * the pharmacy comes from the per-pharmacy QR link: /assessment?pharmacy=<uuid>.
- * That is a user-controlled URL param, so it is validated here, server-side,
- * against the pharmacy table before anything is written. It must resolve to an
- * existing row or no intake session is created.
+ * the QR keeps /assessment?pharmacy=<uuid> for compatibility, but that
+ * user-controlled value never selects a tenant. The server always resolves
+ * the one configured PHARMACY_ID. Missing configuration fails closed.
  *
  * A pharmacy id is not PHI; the intake stays zero-PHI.
  */
 export async function resolvePharmacy(
-  pharmacyId: string | undefined
+  requestedPharmacyId?: string
 ): Promise<{ id: string; storeName: string } | null> {
-  if (!pharmacyId || !UUID_RE.test(pharmacyId)) return null;
+  // Kept only for legacy QR compatibility; deliberately never used to query.
+  void requestedPharmacyId;
+  const configuredPharmacyId = getConfiguredPharmacyId();
+  if (!configuredPharmacyId) return null;
   const [row] = await db
     .select({ id: pharmacy.id, storeName: pharmacy.storeName })
     .from(pharmacy)
-    .where(eq(pharmacy.id, pharmacyId))
+    .where(eq(pharmacy.id, configuredPharmacyId))
     .limit(1);
   return row ?? null;
 }
 
 export async function createIntakeSession(data: {
-  pharmacyId: string;
   ailmentGroupCode: string;
   trail: { question: string; answer: string }[];
   priorCountSelfReport: number | null;
   existingRxSelfReport: string | null;
 }) {
   try {
-    // Never trust the client-supplied id blindly — re-validate on every call.
-    const ph = await resolvePharmacy(data.pharmacyId);
+    // Re-resolve server configuration on every write; no client tenant exists.
+    const ph = await resolvePharmacy();
     if (!ph) {
-      console.error("createIntakeSession: unknown pharmacy id from client:", data.pharmacyId);
       return {
         success: false,
-        error: "This link isn't tied to a pharmacy. Please re-scan the pharmacy's code.",
+        error: "This pharmacy intake is not configured. Please ask pharmacy staff for help.",
       };
     }
     const pharmacyId = ph.id;

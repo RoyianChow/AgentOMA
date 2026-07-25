@@ -21,7 +21,7 @@ import {
 let db: TestDb;
 let close: () => Promise<void>;
 
-const PHARMACY_ID = "00000000-0000-0000-0000-0000000000aa";
+const PHARMACY_ID = "00000000-0000-0000-0000-000000000000";
 let patientId: string;
 
 /**
