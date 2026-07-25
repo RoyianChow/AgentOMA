@@ -2,11 +2,11 @@
 
 **Updated:** 2026-07-25  
 **Branch:** `feat/moh-compliance-migration`  
-**Repository status:** working tree clean after the documentation/comment audit;
-branch is three commits ahead of `origin/feat/moh-compliance-migration` and has
-not been pushed.
+**Repository status:** the guided-demo feature is present as uncommitted work;
+the branch matched `origin/feat/moh-compliance-migration` at task start.
 **Stopping point:** follow-up tracking is implemented, Docker-verified, and
-live in Supabase through migration `0017`
+live in Supabase through migration `0017`; the public synthetic `/demo` tour is
+implemented without persistence or portal access
 
 ## Database state
 
@@ -93,6 +93,9 @@ live in Supabase through migration `0017`
   notes, and immutable corrections. The dashboard shows open/overdue items.
 - Follow-up create/record/supersede actions are audited, and complete-patient
   export schema v2 includes all follow-up rows.
+- `/demo` is a public five-stage guided tour using static synthetic content. It
+  accepts no inputs and imports no database, auth, triage, claim-derivation, or
+  browser-storage path; the actual portal remains protected.
 
 ## Verification
 
@@ -101,7 +104,7 @@ live in Supabase through migration `0017`
   is live in Supabase.
 - `tsc --noEmit`: green.
 - ESLint: green.
-- Vitest: 13 files, 133 tests, all green.
+- Vitest: 14 files, 135 tests, all green.
 - Governance tests prove retention extension, hold-blocked destruction,
   second-admin execution, immutable correction supersession, and hashed export
   manifests.

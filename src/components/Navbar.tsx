@@ -73,6 +73,13 @@ export default function Navbar() {
             Home
           </Link>
           <Link
+            href="/demo"
+            onClick={closeMenu}
+            className={`navbar-link ${pathname === "/demo" ? "active" : ""}`}
+          >
+            Demo
+          </Link>
+          <Link
             href="/assessment"
             onClick={closeMenu}
             className={`navbar-link ${pathname === "/assessment" ? "active" : ""}`}
@@ -96,11 +103,11 @@ export default function Navbar() {
             Pharmacist Portal
           </Link>
           <Link
-            href="/assessment"
+            href="/demo"
             onClick={closeMenu}
             className="btn btn-primary btn-sm navbar-menu-cta"
           >
-            Start Triage
+            Try Demo
           </Link>
         </div>
 
@@ -140,8 +147,8 @@ export default function Navbar() {
               </svg>
             )}
           </button>
-          <Link href="/assessment" className="btn btn-primary btn-sm navbar-cta">
-            Start Triage
+          <Link href="/demo" className="btn btn-primary btn-sm navbar-cta">
+            Try Demo
           </Link>
 
           <button

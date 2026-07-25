@@ -4,7 +4,7 @@
 
 **Current stage:** authenticated pilot foundation; **not production-ready**
 
-**Verification at this snapshot:** TypeScript clean, ESLint clean, and 133/133
+**Verification at this snapshot:** TypeScript clean, ESLint clean, and 135/135
 tests pass. The full suite rebuilt a fresh Docker Postgres database from zero
 through migration `0017`. Supabase is also live through `0017`; post-migration inspection
 reports one Demo Pharmacy, no cross-pharmacy relationships, three preserved
@@ -17,6 +17,7 @@ AgentOMA supports Ontario pharmacy minor-ailment services. The Ministry of Healt
 | Surface | Route | Purpose | PHI policy |
 |---|---|---|---|
 | Marketing site | `/` | Public product information | No PHI |
+| Guided demo | `/demo` | Interactive synthetic tour of intake, assessment, claim handoff, follow-up, and governance | No inputs, persistence, auth bypass, clinical advice, or billing values |
 | Public self-check | `/check` | Pharmacy-agnostic symptom self-check and client-generated pre-visit/advisory PDF; development review only | Zero identifying data; nothing sent or persisted |
 | Patient intake | `/assessment` | Mobile kiosk triage and six-character handoff | Collects zero PHI by design |
 | Authentication | `/sign-in`, `/enroll-2fa`, `/accept-invitation` | Invitation-only portal access and mandatory TOTP | Authentication data only |
@@ -49,6 +50,16 @@ Next.js route groups isolate layouts without changing URLs:
 Firebase is no longer part of the stack. PHI and operational data use Canadian-region Postgres. Future Rx/referral document storage is planned for Supabase Storage but is not implemented.
 
 ## Current workflows
+
+### Guided product demo
+
+`/demo` is a public, read-only product tour under the marketing layout. Five
+synthetic stages explain the zero-PHI handoff, structured pharmacist record,
+reference-derived claim boundary, follow-up obligation, and immutable
+audit/governance history. It accepts no user data and has no database, auth,
+triage, claim-derivation, browser-storage, or HNS integration. Architecture
+tests enforce that separation; the real pharmacist portal remains
+invitation-only with mandatory TOTP.
 
 ### Patient intake
 

@@ -27,7 +27,7 @@ export default function Home() {
               for pharmacists to streamline minor ailment consultations.
             </p>
             <div className="hero-actions">
-              <Link href="/assessment" className="btn btn-accent btn-lg">
+              <Link href="/demo" className="btn btn-accent btn-lg">
                 <svg
                   width="18"
                   height="18"
@@ -38,12 +38,12 @@ export default function Home() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
-                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  <path d="m8 5 11 7-11 7V5Z" />
                 </svg>
-                Patient Assessment
+                Try Guided Demo
               </Link>
-              <Link href="/pharmacist" className="btn btn-secondary btn-lg">
-                Pharmacist Dashboard
+              <Link href="/sign-in" className="btn btn-secondary btn-lg">
+                Pharmacist Sign In
                 <svg
                   width="18"
                   height="18"
@@ -213,15 +213,15 @@ export default function Home() {
           <div className="cta-box">
             <h2>Ready to streamline minor ailment consultations?</h2>
             <p>
-              Experience AgentOMA as a patient to see the clinical triaging in action,
-              or login to the dashboard as a pharmacist to manage pending cases.
+              Explore the complete workflow with synthetic information, or sign
+              in to the protected portal as an invited pharmacy team member.
             </p>
             <div className="hero-actions" style={{ display: "inline-flex" }}>
-              <Link href="/assessment" className="btn btn-primary btn-lg">
-                Start Patient Assessment
+              <Link href="/demo" className="btn btn-primary btn-lg">
+                Try the Guided Demo
               </Link>
-              <Link href="/pharmacist" className="btn btn-secondary btn-lg">
-                Enter Pharmacist Portal
+              <Link href="/sign-in" className="btn btn-secondary btn-lg">
+                Pharmacist Sign In
               </Link>
             </div>
           </div>

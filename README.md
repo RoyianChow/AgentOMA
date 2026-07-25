@@ -4,6 +4,10 @@ AgentOMA is a Next.js platform for Ontario pharmacies to conduct publicly funded
 
 > This is an authenticated pilot build, not a production-ready clinical service. Pharmacist review and several compliance workflow gates remain open. Start with the status documents below.
 
+Visitors can explore the workflow safely at `/demo`. The guided tour uses
+synthetic, in-memory content only; it does not sign into the portal, write to
+the database, derive billing codes, or submit anything to HNS.
+
 ## Documentation
 
 | Document | Purpose |
