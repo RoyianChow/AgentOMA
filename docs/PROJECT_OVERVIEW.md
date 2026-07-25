@@ -1,14 +1,13 @@
 # AgentOMA project overview
 
-**Status snapshot:** 2026-07-23
+**Status snapshot:** 2026-07-25
 
 **Current stage:** authenticated pilot foundation; **not production-ready**
 
-**Verification at this snapshot:** TypeScript clean, ESLint clean, and 41/41
-database-free tests pass. The live database is through `0014`, with four fee
-tiers and unchanged counts of 3 pharmacies and 12 assessments. The last full
-database-backed suite had 85 passing tests; the new P0-D integration tests await
-an environment with Docker Desktop/CLI available.
+**Verification at this snapshot:** TypeScript clean, ESLint clean, and 124/124
+tests pass. The full suite rebuilt a fresh Docker Postgres database from zero
+through staged migrations `0015`–`0016`. The live Supabase database remains at
+`0014` until those migrations receive lead SQL approval.
 
 AgentOMA supports Ontario pharmacy minor-ailment services. The Ministry of Health Executive Officer Notice effective July 1, 2026 is the source of truth for covered ailment groups, claim maximums, fees, PINs, and billing rules. See [`COMPLIANCE.md`](COMPLIANCE.md) for traceability and [`NEXT_STEPS.md`](NEXT_STEPS.md) for the remaining go-live work.
 
@@ -21,6 +20,7 @@ AgentOMA supports Ontario pharmacy minor-ailment services. The Ministry of Healt
 | Patient intake | `/assessment` | Mobile kiosk triage and six-character handoff | Collects zero PHI by design |
 | Authentication | `/sign-in`, `/enroll-2fa`, `/accept-invitation` | Invitation-only portal access and mandatory TOTP | Authentication data only |
 | Pharmacist portal | `/pharmacist/*` | Intake retrieval, patient identity, assessment, claim draft, audit, settings, team | Contains PHI; authenticated and pharmacy-scoped |
+| Record governance | `/pharmacist/governance` | Admin-only retention, export, hold, correction, destruction-review, audit-failure, and restore-drill controls | Server-rendered; complete exports use an authenticated download route |
 | FHIR route | `/api/fhir` | Preserved export scaffold | Disabled with `403`; not available to clients |
 
 Next.js route groups isolate layouts without changing URLs:
@@ -72,9 +72,18 @@ The route returns 404 in production until P0-A pharmacist sign-off. See
 
 An authenticated user can retrieve a handoff or start a walk-in assessment, enter identity from the health card, view platform claim history, attest to a clinical-viewer check, record informed consent, complete the structured clinical record, choose modality/outcome, and—when issuing a prescription—record patient address, medication directions, PCP notification, and the choice-of-pharmacy discussion.
 
-The server resolves the pharmacy and prescriber from the authenticated session. It derives a read-only `claim_draft` from seeded reference data and shows it for hand-entry into dispensing software. AgentOMA does **not** submit claims to HNS.
+The server resolves the prescriber from the authenticated session and pins every
+read/write to the server-configured `PHARMACY_ID`. It derives a read-only
+`claim_draft` from seeded reference data and shows it for hand-entry into
+dispensing software. AgentOMA does **not** submit claims to HNS.
 
-The portal also provides server-rendered audit records, CSV/PDF export, pharmacy settings, team invitations, and orientation recording.
+The portal also provides server-rendered audit records, CSV/PDF export, pharmacy
+settings, team invitations, orientation recording, and an admin-only governance
+surface. Governance can create complete patient exports with per-artifact
+hashes, place database-enforced holds, layer immutable corrections, prepare
+destruction dry runs, and record restore-drill evidence. Actual destruction is
+never automatic: it requires an elapsed retention horizon, no active hold, and
+a second administrator.
 
 ## Security and authorization
 
@@ -83,7 +92,12 @@ The portal also provides server-rendered audit records, CSV/PDF export, pharmacy
 - Supported roles are `pharmacy_admin`, `pharmacist`, `intern`, `student`, and `technician`.
 - TOTP is mandatory. Sessions use a 30-minute rolling policy and server-side revocation.
 - `proxy.ts` is an optimistic navigation gate only. It performs no authorization.
-- Every portal server action calls the server-side guard to verify session, active role, and pharmacy scope. Billing completion also resolves the eligible prescriber and orientation record.
+- Every portal server action calls the server-side guard to verify session,
+  active role, TOTP, and assignment to the configured `PHARMACY_ID`. A session
+  cannot select or switch pharmacies. Billing completion also resolves the
+  eligible prescriber and orientation record.
+- The legacy `?pharmacy=` QR parameter is ignored for tenancy; it always resolves
+  the configured pharmacy or safe-fails when configuration is absent.
 - `MOCK_PHARMACY_ID` has been removed.
 - The application runs through a non-owner database role so audit and claim-draft grants are effective.
 
@@ -101,13 +115,25 @@ Reference data is effective-dated and seeded idempotently:
 
 Operational and PHI data:
 
-- `pharmacy`: store identity, HNS account identifier, and foreign key to the current ODB fee-tier code.
+- `pharmacy`: the single configured store identity, HNS account identifier, and
+  current ODB fee-tier code. A check plus unique singleton key makes a second
+  row unrepresentable after migration `0015`.
 - `patient`: pharmacy-scoped identity and health-card fields.
 - `intake_session`: zero-PHI handoff state.
 - `triage_exit`: terminal non-billable exits.
 - `assessment`: versioned service snapshot containing consent, structured complaint/history/findings/plan, coded no-Rx rationale, outcome-specific prescription/PCP fields, modality/outcome, virtual location/reason, LTC facts, and retention date.
 - `claim_draft`: immutable billing snapshot with supersession for corrections.
 - `audit_log`: append-only activity trail.
+- `retention_policy` and `patient_record_retention`: effective policy plus the
+  patient-wide horizon recomputed from the latest service.
+- `record_hold`: patient- or record-scoped hold history; active rows block
+  destruction in database triggers.
+- `export_manifest`: complete-export artifact IDs and SHA-256 hashes.
+- `access_correction_request` and `record_correction`: access workflow and
+  immutable correction overlays with supersession.
+- `destruction_run`: dry-run evidence and two-admin execution status.
+- `restore_drill` and `audit_write_failure`: recovery evidence and non-PHI
+  secondary audit-failure records.
 
 Authentication data:
 
@@ -120,10 +146,20 @@ Authentication data:
 - `retain_until` is recomputed by a database trigger using the longer adult/minor retention branch.
 - `audit_log` rejects updates and deletes, and the application role lacks those privileges.
 - `claim_draft` rejects deletion and field mutation. Corrections insert a replacement and permanently set `superseded_by_id`; only one active draft can exist per assessment at commit.
+- The newest service extends retention across every prior assessment for that
+  patient; claim drafts and patient-linked audit events inherit that horizon.
+- Patient and assessment source records are immutable; corrections are layered,
+  not rewritten. Intake rows permit only their one-time consumption update.
+- Active patient-wide or record-specific holds block destruction at the
+  database layer.
+- Reviewed destruction writes its audit event first, refuses the preparing
+  administrator as executor, and is the only database path allowed to remove
+  governed records.
 
 ## Migration state
 
-The live database is applied through `0014`:
+The live database is applied through `0014`. `0015`–`0016` are generated,
+reviewed in Docker from zero, and **not yet applied to Supabase**:
 
 | Range | Purpose |
 |---|---|
@@ -135,8 +171,13 @@ The live database is applied through `0014`:
 | `0012_clinical_record_and_consent` | P0-B version-2 consent/clinical/prescription snapshot, completeness checks, pharmacy practice contact |
 | `0013_p0_d_odb_fee_tier_reference` | Effective-dated ODB dispensing-fee reference table and pharmacy foreign-key migration |
 | `0014_p0_d_ltc_fact_capture` | LTC assessment facts plus virtual/LTC database completeness checks |
+| `0015_tidy_luke_cage` (staged) | Delete the two approved disposable TEST tenants, preserve Demo auth/TOTP rows, and enforce one pharmacy |
+| `0016_brown_lightspeed` (staged) | Patient-wide retention, export manifests, holds, correction overlays, deliberate destruction, restore evidence, governance audit/reporting |
 
-Use `db:generate` then `db:migrate`. Never use `db:push`. `db:seed` is reference-only; local demo records require the separate `db:seed:demo` command, which must never run against production.
+Use `db:generate`, review the SQL, then `db:migrate`. Never use `db:push`.
+`db:seed` is reference-only. `db:seed:demo` now attaches synthetic records to
+`PHARMACY_ID`; for this approved disposable pilot database it will be run only
+after the single-tenant migration and verification.
 
 ## What is complete and what is not
 

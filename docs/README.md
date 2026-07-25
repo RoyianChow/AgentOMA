@@ -10,12 +10,15 @@ Use this page to find the current source instead of searching historical prompts
 4. [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) — decisions that require a pharmacist, ODB, or product lead.
 5. [`SELF_CHECK.md`](SELF_CHECK.md) — approved boundaries and production gate
    for the public `/check` feature.
+6. [`SESSION_HANDOFF.md`](SESSION_HANDOFF.md) — exact live/staged migration state
+   and the next operator checkpoint.
 
 ## Safety and compliance
 
 - [`COMPLIANCE.md`](COMPLIANCE.md) maps implemented and missing controls to the Executive Officer Notice.
 - [`regulatory/`](regulatory/) contains the binding Ministry source document.
 - [`PRODUCT_PRINCIPLES.md`](PRODUCT_PRINCIPLES.md) explains the product's safety posture and non-negotiable invariants.
+- [`RESTORE_DRILL.md`](RESTORE_DRILL.md) is the reviewed backup/restore evidence procedure.
 - [`../AGENTS.md`](../AGENTS.md) is the single canonical instruction document for AI agents.
 
 Never copy the PIN table or clinical rules into another document. Billing values belong in the versioned reference source and seeded tables; clinical rules remain subject to pharmacist review.

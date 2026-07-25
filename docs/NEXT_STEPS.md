@@ -1,6 +1,6 @@
 # Next steps
 
-**Prioritized:** 2026-07-23
+**Prioritized:** 2026-07-25
 
 **Release posture:** do not treat the current build as production-ready until the P0 items are resolved and re-verified.
 
@@ -21,22 +21,42 @@
 ## Completed P0 slice
 
 - **P0-B — defensible clinical record and informed consent:** completed in migration `0012_clinical_record_and_consent`. New version-2 assessments require structured consent, presenting complaint, histories, findings, shared decision-making, care/follow-up, coded no-Rx rationale, and outcome-specific prescription/PCP evidence. Legacy version-1 records remain readable and are labelled as such.
-- **P0-D — virtual/LTC fact capture and fee-tier reference:** migrations `0013`–`0014` are live. The workspace captures the required facts, remote eligibility is data-driven, and all LTC claim drafting is parked. Post-migration verification found four fee tiers, all checks present, and unchanged operational counts of 3 pharmacies and 12 assessments.
+- **P0-D — virtual/LTC fact capture and fee-tier reference:** migrations
+  `0013`–`0014` are live. The workspace captures the required facts, remote
+  eligibility is data-driven, and all LTC claim drafting is parked. The current
+  pre-cleanup live audit still has 3 pharmacies and 12 assessments; staged
+  `0015` removes the approved disposable TEST rows.
 
 ## P1 — pilot readiness
 
-1. Keep `/api/fhir` disabled until the ICD-10 mapping receives pharmacist review and the export has authenticated, pharmacy-scoped authorization. Do not expand the current mapping meanwhile.
-2. Add a production password-reset delivery channel and verify rate limits, token expiry, and revocation end to end.
-3. Provision and test at least two pharmacies to prove tenant isolation, invitation scoping, settings, and audit exports outside the seeded single-pharmacy path.
-4. Add Supabase Storage for Rx/referral documents with Canadian-region configuration, least-privilege access, retention metadata, and audit events.
-5. Make assessment, invitation, settings, and external-response boundaries consistently Zod-validated; preserve safe, non-PHI error messages.
-6. Review audit-write transaction boundaries. Several audit writes are best-effort after the clinical write; decide which events must be atomic for post-payment review.
-7. Conduct usability and accessibility testing on a 375px device with sick/one-handed users and pharmacist counter workflows.
+1. **Review and apply staged migrations `0015`–`0016`.** The Docker from-zero
+   suite is green, but Supabase remains at `0014`. Review the exact SQL, take a
+   verified backup, apply with `db:migrate`, run `db:seed:demo`, then require
+   `db:inspect-tenancy` to report one Demo Pharmacy, three preserved users, no
+   tenant mismatch, and clean aggregate counts.
+2. Exercise `/pharmacist/governance` with a realistic synthetic case: complete
+   export, patient and record holds, request decision, correction supersession,
+   destruction dry run, second-admin refusal/approval, and restore-drill record.
+   Do not test actual destruction on retained real records.
+3. Perform the first isolated Canadian-region restore drill using
+   [`RESTORE_DRILL.md`](RESTORE_DRILL.md), record counts/hashes in `restore_drill`,
+   and close any failed check before pilot.
+4. Keep `/api/fhir` disabled until the ICD-10 mapping receives pharmacist review and the export has authenticated, pharmacy-scoped authorization. Do not expand the current mapping meanwhile.
+5. Add a production password-reset delivery channel and verify rate limits, token expiry, and revocation end to end.
+6. Add Supabase Storage for Rx/referral documents with Canadian-region configuration, least-privilege access, retention metadata, and audit events.
+7. Make assessment, invitation, settings, and external-response boundaries consistently Zod-validated; preserve safe, non-PHI error messages.
+8. Review the remaining best-effort audit boundaries. Governance mutations are
+   transactional, and record-access failures have a secondary failure table;
+   older assessment/settings/invitation paths still need an explicit atomicity
+   decision.
+9. Conduct usability and accessibility testing on a 375px device with sick/one-handed users and pharmacist counter workflows.
 
 ## P2 — engineering maturity
 
 1. Add CI that runs TypeScript, ESLint, pure tests, and a fresh-Postgres migration/integration suite on every pull request.
-2. Add deployment and recovery runbooks: Canadian-region verification, role/password provisioning, migration rollback strategy, backup/restore drill, retention/destruction procedure, and privacy-incident response.
+2. Add the remaining deployment runbooks: Canadian-region verification,
+   role/password provisioning, migration rollback strategy, and privacy-incident
+   response. The backup/restore and reviewed-destruction foundations now exist.
 3. Reduce portal dependence on the large global stylesheet and document a component-level styling convention without changing intake behaviour.
 4. Review public marketing claims so they accurately describe deterministic triage and pharmacist verification rather than implying automated diagnosis.
 

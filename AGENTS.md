@@ -12,6 +12,8 @@
   1. A red-flag exit writes **ZERO** claim rows.
   2. The patient intake collects **ZERO** PHI.
   3. The 365-day count is **advisory** — never a promise of payment.
+  4. The app serves **ONE** pharmacy: every tenant read/write uses server-only
+     `PHARMACY_ID`; client, QR, or session data never selects a pharmacy.
 
 ---
 
