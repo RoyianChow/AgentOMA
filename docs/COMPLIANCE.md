@@ -103,28 +103,27 @@ All clinical questions, including the tick-bite timing threshold, remain open fo
 |---|---|---|---|
 | Defensible activity trail for post-payment review | p.12 | Pharmacy-scoped append-only audit events and server-generated exports | ✅ |
 | Audit records cannot be updated/deleted by the app | p.12 | Trigger plus `agentoma_app` privilege revocation; real-Postgres grant tests | ✅ |
-| Retain ten years from last service or ten years after age 18, whichever later | p.12 | Existing DB backstop is live; staged `0016` adds patient-wide recomputation so a returning service extends every prior record. Docker tests are green; Supabase application is pending SQL approval | 🔶 |
-| Complete, readily retrievable patient record | PHIPA/OCP recordkeeping posture | Staged server-only export includes patient, assessments, all claim drafts, linked intakes/audits, retention/holds/corrections, plus a manifest and per-artifact hashes | 🔶 |
-| Holds prevent destruction | PHIPA/OCP recordkeeping posture | Staged patient/record holds block deletion in database triggers, including controlled destruction | 🔶 |
-| Corrections preserve historical truth | PHIPA access/correction posture | Staged immutable correction overlays use final supersession; source records are not rewritten | 🔶 |
-| Destruction is deliberate, reviewed, and audited | PHIPA/OCP recordkeeping posture | Staged dry-run evidence plus database execution requires elapsed retention, no hold, and a second admin; no automatic cron exists | 🔶 |
-| Recovery is tested and evidenced | PHIPA security posture | Staged `restore_drill` model and [`RESTORE_DRILL.md`](RESTORE_DRILL.md); first isolated Canadian-region drill remains to be performed | 🔶 |
+| Retain ten years from last service or ten years after age 18, whichever later | p.12 | Live `0016` patient-wide recomputation extends every prior record after a returning service; live horizon comparison is clean and the pediatric fixture retains through 2047 | ✅ |
+| Complete, readily retrievable patient record | PHIPA/OCP recordkeeping posture | Live server-only export includes patient, assessments, all claim drafts, linked intakes/audits, retention/holds/corrections, plus a manifest and per-artifact hashes | ✅ |
+| Holds prevent destruction | PHIPA/OCP recordkeeping posture | Live patient/record holds block deletion in database triggers, including controlled destruction | ✅ |
+| Corrections preserve historical truth | PHIPA access/correction posture | Live immutable correction overlays use final supersession; source records are not rewritten | ✅ |
+| Destruction is deliberate, reviewed, and audited | PHIPA/OCP recordkeeping posture | Live dry-run evidence plus database execution requires elapsed retention, no hold, and a second admin; no automatic cron exists | ✅ |
+| Recovery is tested and evidenced | PHIPA security posture | The `restore_drill` model and [`RESTORE_DRILL.md`](RESTORE_DRILL.md) are live; the first isolated Canadian-region drill remains to be performed | 🔶 |
 | Improper payments are recoverable | p.12 | Claim, consent, clinical, prescription, PCP, and audit snapshots support post-payment review | ✅ |
 | No PHI in patient intake | PHIPA posture | Intake schema/actions/tests contain symptom/handoff state only | ✅ |
 | Public self-check has no custodian-dependent persistence | PHIPA posture | `/check` collects no identifiers, keeps answers in memory, generates PDFs client-side, and is hard-blocked in production pending clinical approval | 🔶 |
 | No PHI in unnecessary client components or logs | PHIPA posture | Audit records render on the server; exports are generated server-side; continued review required for new features | ✅ |
 | PHI remains in Canada | PHIPA posture | Postgres is documented for Supabase `ca-central-1`; future object storage is not yet implemented | 🔶 |
-| One pharmacy by construction | PHIPA tenancy posture | Staged `PHARMACY_ID` pinning and singleton DB constraint remove tenant switching; approved TEST-tenant cleanup is not live until `0015` review/application | 🔶 |
+| One pharmacy by construction | PHIPA tenancy posture | Live `PHARMACY_ID` pinning and singleton DB constraint remove tenant switching; post-migration inspection reports one Demo Pharmacy and no cross-pharmacy relationships | ✅ |
 
 ## Current release conclusion
 
 The billing derivation, version-2 clinical/consent record, authentication
 foundation, audit immutability, and P0-D virtual/LTC fact capture are
-implemented. Migrations `0013`–`0014` are live. Single-tenancy and governance
-migrations `0015`–`0016` pass from-zero Docker tests but remain unapplied pending
-lead SQL review. All LTC claim drafting remains parked. The product is **not yet
+implemented. The full migration chain through `0016` is live and independently
+replays from zero in Docker. All LTC claim drafting remains parked. The product is **not yet
 ready for clinical production** because clinical content lacks pharmacist
 approval and the eligibility, existing-prescription, claim-history, LTC-billing,
-orientation-override, migration-application, and first restore-drill items
+orientation-override, and first restore-drill items
 remain incomplete. The ordered remediation list is
 [`NEXT_STEPS.md`](NEXT_STEPS.md).

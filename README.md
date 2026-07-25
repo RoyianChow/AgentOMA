@@ -15,7 +15,7 @@ AgentOMA is a Next.js platform for Ontario pharmacies to conduct publicly funded
 | [`docs/COMPLIANCE.md`](docs/COMPLIANCE.md) | Implementation status mapped to the EO Notice |
 | [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md) | Regulatory and clinical decisions awaiting human review |
 | [`docs/SELF_CHECK.md`](docs/SELF_CHECK.md) | Public `/check` boundaries, implementation map, and production gate |
-| [`docs/SESSION_HANDOFF.md`](docs/SESSION_HANDOFF.md) | Current live/staged migration state and operator handoff |
+| [`docs/SESSION_HANDOFF.md`](docs/SESSION_HANDOFF.md) | Current live migration state and operator handoff |
 | [`docs/RESTORE_DRILL.md`](docs/RESTORE_DRILL.md) | Canadian-region backup/restore drill procedure |
 | [`AGENTS.md`](AGENTS.md) | Canonical safety and engineering instructions for AI agents |
 

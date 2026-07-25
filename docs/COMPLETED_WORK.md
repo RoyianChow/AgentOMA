@@ -3,7 +3,8 @@
 **Verified through:** 2026-07-25
 
 **Quality snapshot:** TypeScript clean · ESLint clean · 124/124 tests passing,
-including a fresh Docker Postgres migration replay through staged `0016`.
+including a fresh Docker Postgres migration replay through `0016`. Supabase is
+live through the same migration.
 
 This is the implementation record requested for the project. It describes capabilities present in the repository, not planned work. Remaining items are in [`NEXT_STEPS.md`](NEXT_STEPS.md).
 
@@ -97,9 +98,9 @@ This is the implementation record requested for the project. It describes capabi
 - Added a read-only tenancy inspection command that reports only pharmacy
   identity, aggregate counts, duplicate-health-number groups, and cross-pharmacy
   relationship defects.
-- Staged an approved cleanup migration that removes the two disposable TEST
-  tenants and their clinical rows while refusing to alter Demo Pharmacy's three
-  auth/TOTP users.
+- Applied the approved cleanup migration: the two disposable TEST tenants and
+  their clinical rows were deleted, Demo Pharmacy's three auth/TOTP users were
+  preserved, and the known cross-pharmacy relationship defect was removed.
 - Added effective retention policy tables and a database recomputation path:
   the latest service extends all prior assessment horizons for a returning
   patient.
@@ -115,8 +116,10 @@ This is the implementation record requested for the project. It describes capabi
   automatic deletion exists.
 - Added restore-drill and audit-write-failure evidence models, admin-only
   server-rendered aggregate reports, and [`RESTORE_DRILL.md`](RESTORE_DRILL.md).
-- Governance migrations `0015`–`0016` are verified from zero in Docker but are
-  not yet live; applying them remains gated on lead review of the exact SQL.
+- Applied governance migrations `0015`–`0016` to Supabase after from-zero Docker
+  verification. Live checks confirmed one pharmacy, clean tenancy, all required
+  triggers, effective app-role revocations, nine governance tables, and
+  patient-wide retention horizons with the pediatric case at 2047.
 
 ## Defensible clinical record and consent (P0-B)
 

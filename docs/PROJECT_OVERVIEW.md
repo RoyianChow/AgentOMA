@@ -6,8 +6,9 @@
 
 **Verification at this snapshot:** TypeScript clean, ESLint clean, and 124/124
 tests pass. The full suite rebuilt a fresh Docker Postgres database from zero
-through staged migrations `0015`–`0016`. The live Supabase database remains at
-`0014` until those migrations receive lead SQL approval.
+through `0016`. Supabase is also live through `0016`; post-migration inspection
+reports one Demo Pharmacy, no cross-pharmacy relationships, three preserved
+users with TOTP, and matching patient-wide retention horizons.
 
 AgentOMA supports Ontario pharmacy minor-ailment services. The Ministry of Health Executive Officer Notice effective July 1, 2026 is the source of truth for covered ailment groups, claim maximums, fees, PINs, and billing rules. See [`COMPLIANCE.md`](COMPLIANCE.md) for traceability and [`NEXT_STEPS.md`](NEXT_STEPS.md) for the remaining go-live work.
 
@@ -158,8 +159,8 @@ Authentication data:
 
 ## Migration state
 
-The live database is applied through `0014`. `0015`–`0016` are generated,
-reviewed in Docker from zero, and **not yet applied to Supabase**:
+The live Supabase database and the from-zero Docker test database are applied
+through `0016`:
 
 | Range | Purpose |
 |---|---|
@@ -171,13 +172,13 @@ reviewed in Docker from zero, and **not yet applied to Supabase**:
 | `0012_clinical_record_and_consent` | P0-B version-2 consent/clinical/prescription snapshot, completeness checks, pharmacy practice contact |
 | `0013_p0_d_odb_fee_tier_reference` | Effective-dated ODB dispensing-fee reference table and pharmacy foreign-key migration |
 | `0014_p0_d_ltc_fact_capture` | LTC assessment facts plus virtual/LTC database completeness checks |
-| `0015_tidy_luke_cage` (staged) | Delete the two approved disposable TEST tenants, preserve Demo auth/TOTP rows, and enforce one pharmacy |
-| `0016_brown_lightspeed` (staged) | Patient-wide retention, export manifests, holds, correction overlays, deliberate destruction, restore evidence, governance audit/reporting |
+| `0015_tidy_luke_cage` | Deleted the two approved disposable TEST tenants, preserved Demo auth/TOTP rows, and enforced one pharmacy |
+| `0016_brown_lightspeed` | Patient-wide retention, export manifests, holds, correction overlays, deliberate destruction, restore evidence, governance audit/reporting |
 
 Use `db:generate`, review the SQL, then `db:migrate`. Never use `db:push`.
-`db:seed` is reference-only. `db:seed:demo` now attaches synthetic records to
-`PHARMACY_ID`; for this approved disposable pilot database it will be run only
-after the single-tenant migration and verification.
+`db:seed` is reference-only. `db:seed:demo` attaches synthetic records to
+`PHARMACY_ID`; it was run after the live single-tenant migration and remains
+idempotent.
 
 ## What is complete and what is not
 
@@ -185,7 +186,8 @@ Implemented work is recorded in [`COMPLETED_WORK.md`](COMPLETED_WORK.md). The
 highest-priority gaps are clinical-content sign-off (which also gates `/check`),
 unresolved LTC billing guidance, server-enforced
 eligibility/existing-prescription/history gates, and
-removal or approval of the orientation override. See
+removal or approval of the orientation override. A first isolated restore drill
+also remains outstanding. See
 [`NEXT_STEPS.md`](NEXT_STEPS.md) for an ordered plan and
 [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) for decisions that must come from a
 pharmacist or ODB.

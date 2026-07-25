@@ -10,7 +10,7 @@ Use this page to find the current source instead of searching historical prompts
 4. [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) — decisions that require a pharmacist, ODB, or product lead.
 5. [`SELF_CHECK.md`](SELF_CHECK.md) — approved boundaries and production gate
    for the public `/check` feature.
-6. [`SESSION_HANDOFF.md`](SESSION_HANDOFF.md) — exact live/staged migration state
+6. [`SESSION_HANDOFF.md`](SESSION_HANDOFF.md) — exact live migration state
    and the next operator checkpoint.
 
 ## Safety and compliance
