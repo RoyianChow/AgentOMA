@@ -6,7 +6,7 @@
 
 **Verification at this snapshot:** TypeScript clean, ESLint clean, and 133/133
 tests pass. The full suite rebuilt a fresh Docker Postgres database from zero
-through staged migration `0017`. Supabase remains live through `0016`; post-migration inspection
+through migration `0017`. Supabase is also live through `0017`; post-migration inspection
 reports one Demo Pharmacy, no cross-pharmacy relationships, three preserved
 users with TOTP, and matching patient-wide retention horizons.
 
@@ -84,8 +84,8 @@ structured follow-up plan with due date, intended method, and monitoring
 parameters. The server-rendered follow-up worklist shows open/overdue items and
 records reached or not-reached attempts, safety/efficacy evaluation, next
 steps, and notes. Corrections insert replacements and supersede the original;
-they never edit clinical history. This code is staged behind migration `0017`,
-which has passed a from-zero Docker replay but is not yet applied to Supabase.
+they never edit clinical history. Migration `0017` is live and has also passed
+a from-zero Docker replay.
 
 The portal also provides server-rendered audit records, CSV/PDF export, pharmacy
 settings, team invitations, orientation recording, and an admin-only governance
@@ -174,8 +174,8 @@ Authentication data:
 
 ## Migration state
 
-The live Supabase database is applied through `0016`. The repository and
-from-zero Docker test database include reviewed, staged migration `0017`:
+The live Supabase database, repository, and from-zero Docker test database are
+applied through `0017`:
 
 | Range | Purpose |
 |---|---|
@@ -189,7 +189,7 @@ from-zero Docker test database include reviewed, staged migration `0017`:
 | `0014_p0_d_ltc_fact_capture` | LTC assessment facts plus virtual/LTC database completeness checks |
 | `0015_tidy_luke_cage` | Deleted the two approved disposable TEST tenants, preserved Demo auth/TOTP rows, and enforced one pharmacy |
 | `0016_brown_lightspeed` | Patient-wide retention, export manifests, holds, correction overlays, deliberate destruction, restore evidence, governance audit/reporting |
-| `0017_tense_pandemic` (staged; not live) | Follow-up plans/attempts, immutable supersession, one-active-plan constraint, retention propagation, and app-role grants |
+| `0017_tense_pandemic` | Follow-up plans/attempts, immutable supersession, one-active-plan constraint, retention propagation, and app-role grants |
 
 Use `db:generate`, review the SQL, then `db:migrate`. Never use `db:push`.
 `db:seed` is reference-only. `db:seed:demo` attaches synthetic records to

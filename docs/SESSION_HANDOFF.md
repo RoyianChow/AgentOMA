@@ -2,13 +2,12 @@
 
 **Updated:** 2026-07-25  
 **Branch:** `feat/moh-compliance-migration`  
-**Stopping point:** follow-up tracking is implemented and Docker-verified in
-staged migration `0017`; Supabase remains migrated and seeded through `0016`
+**Stopping point:** follow-up tracking is implemented, Docker-verified, and
+live in Supabase through migration `0017`
 
 ## Database state
 
-- Supabase is applied through `0016_brown_lightspeed`.
-- The repository and fresh-Docker test path include
+- Supabase, the repository, and the fresh-Docker test path are applied through
   `0017_tense_pandemic`, which adds:
   - immutable follow-up plan and attempt rows linked to assessments;
   - a deferrable one-active-plan exclusion constraint;
@@ -16,7 +15,6 @@ staged migration `0017`; Supabase remains migrated and seeded through `0016`
     supersede-not-edit triggers;
   - app-role `UPDATE`/`DELETE` revocation with only
     `superseded_by_id` update permission.
-  `0017` has **not** been run against Supabase.
 - `0015_tidy_luke_cage`:
   - deleted the two approved disposable TEST tenants and their dependent
     clinical rows;
@@ -31,7 +29,7 @@ staged migration `0017`; Supabase remains migrated and seeded through `0016`
   - dry-run-first, two-admin, hold-aware deliberate destruction;
   - restore-drill and audit-write-failure evidence;
   - source-record immutability and app-role revokes.
-- All 17 migration timestamps are recorded. `0015` and `0016` match their
+- All 18 migration timestamps are recorded. `0015` and `0016` match their
   checked-in hashes exactly. The stored `0012` hash matches the same checked-in
   SQL rendered with CRLF line endings; the checkout is LF, so this is an
   encoding representation difference, not SQL drift.
@@ -69,6 +67,10 @@ staged migration `0017`; Supabase remains migrated and seeded through `0016`
   2047.
 - Reference verification reports 4 ODB tiers, 23 ailment groups, 92 PINs, and
   2 claim rules.
+- Live `follow_up` verification reports zero pre-existing rows, all three
+  expected triggers, a deferrable active-plan exclusion constraint, runtime
+  role `agentoma_app`, no DELETE or ordinary field UPDATE permission, and only
+  the approved `superseded_by_id` UPDATE grant.
 
 ## Implemented application boundary
 
@@ -104,12 +106,10 @@ staged migration `0017`; Supabase remains migrated and seeded through `0016`
 
 ## Next operator steps
 
-1. Review [`0017_tense_pandemic.sql`](../src/lib/db/migrations/0017_tense_pandemic.sql).
-   After explicit approval, run `npm run db:migrate` against Supabase, then
-   verify the `follow_up` table, three triggers, exclusion constraint, and
-   `agentoma_app` grants before using the new workflow.
-2. Smoke-test sign-in/TOTP for all intended roles and
+1. Smoke-test sign-in/TOTP for all intended roles and
    `/pharmacist/governance` against synthetic records.
+2. Exercise a synthetic billable completion and both reached/not-reached
+   follow-up paths, then confirm assessment PDF and patient export output.
 3. Exercise complete export, patient and record holds, request decision,
    correction supersession, destruction dry run, and second-admin refusal.
    Do not execute destruction against retained records.

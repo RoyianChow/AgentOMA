@@ -3,9 +3,8 @@
 **Verified through:** 2026-07-25
 
 **Quality snapshot:** TypeScript clean · ESLint clean · 133/133 tests passing,
-including a fresh Docker Postgres migration replay through staged `0017`.
-Supabase remains live through `0016`; `0017` awaits SQL review and live
-migration approval.
+including a fresh Docker Postgres migration replay through `0017`. Supabase is
+live through the same migration.
 
 This is the implementation record requested for the project. It describes capabilities present in the repository, not planned work. Remaining items are in [`NEXT_STEPS.md`](NEXT_STEPS.md).
 
@@ -109,8 +108,10 @@ This is the implementation record requested for the project. It describes capabi
   follow-up record.
 - Added retention inheritance and patient-wide horizon extension for follow-up
   rows, app-role grant restrictions, and governed-destruction coverage.
-- Generated `0017_tense_pandemic` through `db:generate`; it passes a fresh
-  Docker migration replay but is deliberately not yet applied to Supabase.
+- Generated `0017_tense_pandemic` through `db:generate`, passed a fresh Docker
+  migration replay, then applied it to Supabase after explicit SQL approval.
+  Live checks confirm all three triggers, the deferrable exclusion constraint,
+  and least-privilege `agentoma_app` grants.
 
 ## Single-tenant boundary and record governance
 

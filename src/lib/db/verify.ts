@@ -9,13 +9,14 @@ import {
   ailmentGroup,
   assessment,
   claimRule,
+  followUp,
   odbFeeTier,
   pharmacy,
   pin,
 } from "./schema";
 
 async function main() {
-  const [feeTiers, groups, pins, rules, pharmacies, assessments] =
+  const [feeTiers, groups, pins, rules, pharmacies, assessments, followUps] =
     await Promise.all([
     db.select().from(odbFeeTier),
     db.select().from(ailmentGroup),
@@ -28,6 +29,7 @@ async function main() {
         })
         .from(pharmacy),
       db.select({ id: assessment.id }).from(assessment),
+      db.select({ id: followUp.id }).from(followUp),
     ]);
 
   console.log("Connected to Supabase Postgres.");
@@ -39,6 +41,7 @@ async function main() {
   console.log(`  claim_rule:    ${rules.length} rows (expected 2 after seed)`);
   console.log(`  pharmacy:      ${pharmacies.length} rows`);
   console.log(`  assessment:    ${assessments.length} rows`);
+  console.log(`  follow_up:     ${followUps.length} rows`);
   const pharmacyTierCounts = [
     ...new Set(pharmacies.map((row) => row.odbFeeTierCode)),
   ]
@@ -62,6 +65,52 @@ async function main() {
   `);
   console.log(
     `  P0-D checks:    ${constraints.map((row) => row.conname).join(", ")}`,
+  );
+
+  const [followUpState] = await db.execute<{
+    trigger_count: number;
+    active_plan_constraint_deferrable: boolean;
+    current_role: string;
+    can_delete: boolean;
+    can_update_due_date: boolean;
+    can_update_supersession: boolean;
+  }>(sql`
+    select
+      (
+        select count(*)::int
+        from pg_trigger
+        where tgrelid = 'follow_up'::regclass
+          and not tgisinternal
+          and tgname in (
+            'follow_up_validate_links_trg',
+            'follow_up_no_mutate',
+            'follow_up_retain_until_trg'
+          )
+      ) as trigger_count,
+      (
+        select condeferrable
+        from pg_constraint
+        where conrelid = 'follow_up'::regclass
+          and conname = 'follow_up_one_active_plan_per_assessment'
+      ) as active_plan_constraint_deferrable,
+      current_user::text as current_role,
+      has_table_privilege(current_user, 'follow_up', 'DELETE') as can_delete,
+      has_column_privilege(
+        current_user,
+        'follow_up',
+        'due_date',
+        'UPDATE'
+      ) as can_update_due_date,
+      has_column_privilege(
+        current_user,
+        'follow_up',
+        'superseded_by_id',
+        'UPDATE'
+      ) as can_update_supersession
+  `);
+  console.log(
+    "  follow_up safeguards:",
+    JSON.stringify(followUpState),
   );
 
   const acne = groups.find((g) => g.code === "ACNE");
