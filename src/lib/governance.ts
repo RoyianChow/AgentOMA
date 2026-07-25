@@ -13,6 +13,7 @@ import {
   claimDraft,
   destructionRun,
   exportManifest,
+  followUp,
   intakeSession,
   patient,
   patientRecordRetention,
@@ -90,6 +91,7 @@ export async function collectPatientRecord(actor: PortalUser, patientId: string)
 
   const [
     claimDrafts,
+    followUps,
     intakeSessions,
     retentionRows,
     holds,
@@ -102,6 +104,12 @@ export async function collectPatientRecord(actor: PortalUser, patientId: string)
           .select()
           .from(claimDraft)
           .where(inArray(claimDraft.assessmentId, assessmentIds))
+      : [],
+    assessmentIds.length
+      ? db
+          .select()
+          .from(followUp)
+          .where(inArray(followUp.assessmentId, assessmentIds))
       : [],
     intakeIds.length
       ? db
@@ -160,6 +168,7 @@ export async function collectPatientRecord(actor: PortalUser, patientId: string)
     ...assessmentIds,
     ...intakeIds,
     ...claimDrafts.map((row) => row.id),
+    ...followUps.map((row) => row.id),
   ];
   const auditEntries = await db
     .select()
@@ -178,6 +187,7 @@ export async function collectPatientRecord(actor: PortalUser, patientId: string)
     patient: patientRow,
     assessments,
     claimDrafts,
+    followUps,
     intakeSessions,
     auditEntries,
     retention: retentionRows[0] ?? null,
@@ -195,6 +205,7 @@ function recordArtifacts(
     ["patient", [record.patient]],
     ["assessment", record.assessments],
     ["claim_draft", record.claimDrafts],
+    ["follow_up", record.followUps],
     ["intake_session", record.intakeSessions],
     ["audit_log", record.auditEntries],
     ["retention", record.retention ? [record.retention] : []],
@@ -233,7 +244,7 @@ export async function assemblePatientExport(
   const { artifacts } = recordArtifacts(record);
   const generatedAt = new Date();
   const bundle = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt: generatedAt.toISOString(),
     record,
   };

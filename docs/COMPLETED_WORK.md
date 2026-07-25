@@ -2,9 +2,10 @@
 
 **Verified through:** 2026-07-25
 
-**Quality snapshot:** TypeScript clean · ESLint clean · 124/124 tests passing,
-including a fresh Docker Postgres migration replay through `0016`. Supabase is
-live through the same migration.
+**Quality snapshot:** TypeScript clean · ESLint clean · 133/133 tests passing,
+including a fresh Docker Postgres migration replay through staged `0017`.
+Supabase remains live through `0016`; `0017` awaits SQL review and live
+migration approval.
 
 This is the implementation record requested for the project. It describes capabilities present in the repository, not planned work. Remaining items are in [`NEXT_STEPS.md`](NEXT_STEPS.md).
 
@@ -89,6 +90,28 @@ This is the implementation record requested for the project. It describes capabi
 - Replaced legacy local-storage pharmacy settings with authenticated, database-backed pharmacy and pharmacist profile settings.
 - Added pharmacy team management and orientation recording.
 
+## Follow-up tracking
+
+- Made a structured follow-up plan part of billable completion: due date,
+  phone/in-person method, and monitoring parameters are required before the
+  assessment, intake consumption, claim draft, or follow-up row is committed.
+- Added the server-rendered `/pharmacist/follow-ups` worklist and a compact
+  dashboard due list with visible overdue state.
+- Added reached and attempted-not-reached records, safety/efficacy evaluation,
+  next-step disposition, and notes. A not-reached attempt remains open.
+- Added an explicit reminder that the assessing pharmacy retains follow-up
+  responsibility when the prescription is filled elsewhere.
+- Made plan and attempt records append-only. Corrections insert a replacement
+  and permanently supersede the original; duplicate simultaneous completion
+  is serialized.
+- Added audit events for plan creation, attempt recording, and supersession.
+  Assessment detail/PDF and complete-patient export schema v2 include the
+  follow-up record.
+- Added retention inheritance and patient-wide horizon extension for follow-up
+  rows, app-role grant restrictions, and governed-destruction coverage.
+- Generated `0017_tense_pandemic` through `db:generate`; it passes a fresh
+  Docker migration replay but is deliberately not yet applied to Supabase.
+
 ## Single-tenant boundary and record governance
 
 - Added validated server-only `PHARMACY_ID` configuration and pinned portal,
@@ -146,7 +169,7 @@ This is the implementation record requested for the project. It describes capabi
 
 - Vitest runs pure unit tests and real-Postgres integration tests.
 - Docker Postgres uses port 5433, is guarded against non-local database URLs, and rebuilds the migration chain from zero.
-- Tests cover claim derivation combinations, refusal paths, LTC behaviour, remote-virtual tiers, retention, one-per-day, concurrent mutex enforcement, claim persistence/supersession, invitations/auth data, audit grants/triggers, and red-flag zero-claim behaviour.
+- Tests cover claim derivation combinations, refusal paths, LTC behaviour, remote-virtual tiers, retention, one-per-day, concurrent mutex enforcement, claim persistence/supersession, follow-up completion/supersession/concurrency/export, invitations/auth data, audit grants/triggers, and red-flag zero-claim behaviour.
 - TypeScript and ESLint are clean for the current tree. The full database-backed
-  suite has 124 passing tests; database-free logic can also run independently
+  suite has 133 passing tests; database-free logic can also run independently
   through `npm run test:pure`.

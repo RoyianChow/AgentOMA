@@ -8,6 +8,7 @@ import {
 } from "./actions";
 import { requirePortalPage } from "@/lib/auth-guard";
 import { AILMENT_LABELS, type AilmentId } from "@/config/triage";
+import { listFollowUps, type FollowUpWorkItem } from "@/lib/follow-ups";
 import DashboardRefresher from "./DashboardRefresher";
 import SignOutButton from "./SignOutButton";
 import styles from "./Dashboard.module.css";
@@ -86,17 +87,37 @@ function RecentRow({ a }: { a: RecentAssessment }) {
   );
 }
 
+function FollowUpRow({ item }: { item: FollowUpWorkItem }) {
+  return (
+    <li className={styles.followUpRow}>
+      <Link href="/pharmacist/follow-ups" className={styles.followUpLink}>
+        <span>
+          <span className={styles.recentName}>{item.patientName}</span>
+          <span className={styles.followUpMeta}>
+            {ailmentLabel(item.ailmentGroupCode)} · due {item.dueDate}
+          </span>
+        </span>
+        {item.isOverdue && <span className={styles.overdueBadge}>Overdue</span>}
+      </Link>
+    </li>
+  );
+}
+
 export default async function PharmacistDashboard() {
   // UX redirect for signed-out visitors. The actions below ALSO re-verify the
   // session themselves — that's the enforcement; this just avoids rendering an
   // empty dashboard.
   const actor = await requirePortalPage();
 
-  const [stats, pending, recent] = await Promise.all([
+  const canManageFollowUps =
+    actor.role === "pharmacy_admin" || actor.role === "pharmacist";
+  const [stats, pending, recent, followUps] = await Promise.all([
     getDashboardStats(),
     getPendingIntakeSessions(),
     getRecentAssessments(8),
+    canManageFollowUps ? listFollowUps(actor, 50) : Promise.resolve([]),
   ]);
+  const openFollowUps = followUps.filter((item) => item.isOpen).slice(0, 6);
 
   return (
     <div className={`${styles.page} animate-fade-in`}>
@@ -155,6 +176,26 @@ export default async function PharmacistDashboard() {
         </div>
 
         <div className={styles.rightCol}>
+          {canManageFollowUps && (
+            <div className={styles.card}>
+              <div className={styles.cardHeader}>
+                <h2>Follow-ups due</h2>
+                <Link href="/pharmacist/follow-ups" className={styles.cardHeaderLink}>
+                  View all
+                </Link>
+              </div>
+              {openFollowUps.length > 0 ? (
+                <ul className={styles.followUpList}>
+                  {openFollowUps.map((item) => (
+                    <FollowUpRow key={item.id} item={item} />
+                  ))}
+                </ul>
+              ) : (
+                <div className={styles.emptyState}>No follow-ups are currently open.</div>
+              )}
+            </div>
+          )}
+
           <div className={styles.card}>
             <div className={styles.cardHeader}>
               <h2>Quick Actions</h2>

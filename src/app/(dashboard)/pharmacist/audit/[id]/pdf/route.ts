@@ -156,6 +156,37 @@ async function pdfOf(rec: AuditRecordDetail): Promise<ArrayBuffer> {
     ]);
   }
 
+  if (rec.followUps.length > 0) {
+    table(
+      "Follow-up record",
+      rec.followUps.map((followUp, index) => [
+        followUp.planId ? `Attempt ${index + 1}` : "Plan",
+        [
+          `Due: ${followUp.dueDate}`,
+          `Method: ${followUp.method.replaceAll("_", " ")}`,
+          `Monitoring: ${followUp.monitoringParameters}`,
+          followUp.attemptedAt
+            ? `Attempted: ${new Date(followUp.attemptedAt).toLocaleString("en-CA")}`
+            : "",
+          followUp.reached !== null
+            ? `Reached: ${followUp.reached ? "Yes" : "No"}`
+            : "",
+          followUp.evaluation ? `Safety / efficacy: ${followUp.evaluation}` : "",
+          followUp.nextStep
+            ? `Next step: ${followUp.nextStep.replaceAll("_", " ")}`
+            : "",
+          followUp.note ? `Note: ${followUp.note}` : "",
+          followUp.supersededById ? "Status: corrected by a later record" : "",
+          followUp.correctionReason
+            ? `Correction reason: ${followUp.correctionReason}`
+            : "",
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      ]),
+    );
+  }
+
   if (rec.prescription) {
     table("Prescription and PCP notification", [
       ["Date prescribed", rec.prescription.prescribedOn],

@@ -1,0 +1,228 @@
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.header h1 {
+  margin: 0 0 0.3rem;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.notice {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  margin-bottom: 1.5rem;
+}
+
+.alert,
+.success {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+}
+
+.alert {
+  color: var(--danger);
+  background: var(--danger-light);
+}
+
+.success {
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+.section {
+  margin-top: 1.75rem;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.8rem;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.list {
+  display: grid;
+  gap: 1rem;
+}
+
+.card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  padding: 1.1rem;
+}
+
+.cardOverdue {
+  border-left: 5px solid var(--danger);
+}
+
+.cardComplete {
+  opacity: 0.9;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.patient {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.meta {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  margin-top: 0.2rem;
+}
+
+.status {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+.statusOverdue {
+  color: var(--danger);
+  background: var(--danger-light);
+}
+
+.monitoring {
+  margin-top: 0.9rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  white-space: pre-wrap;
+}
+
+.subheading {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin: 1rem 0 0.5rem;
+}
+
+.attempt {
+  border-top: 1px solid var(--border-color);
+  padding: 0.75rem 0;
+}
+
+.attempt p {
+  margin: 0.3rem 0 0;
+  white-space: pre-wrap;
+}
+
+.form,
+.correctionForm {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.8rem;
+}
+
+.full {
+  grid-column: 1 / -1;
+}
+
+.form label,
+.correctionForm label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.form input,
+.form select,
+.form textarea,
+.correctionForm input,
+.correctionForm select,
+.correctionForm textarea {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  padding: 0.6rem 0.7rem;
+  font: inherit;
+}
+
+.form textarea,
+.correctionForm textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.details {
+  margin-top: 0.75rem;
+}
+
+.details summary {
+  cursor: pointer;
+  color: var(--primary);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.empty {
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .header,
+  .cardHeader {
+    flex-direction: column;
+  }
+
+  .form,
+  .correctionForm {
+    grid-template-columns: 1fr;
+  }
+
+  .full,
+  .actions {
+    grid-column: 1;
+  }
+}

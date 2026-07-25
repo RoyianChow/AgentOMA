@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   check,
+  boolean,
   date,
   index,
   integer,
@@ -13,7 +14,7 @@ import {
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
-import { patient, pharmacy } from "./assessments";
+import { assessment, patient, pharmacy } from "./assessments";
 import { user } from "./auth";
 
 export type ExportArtifact = {
@@ -55,6 +56,80 @@ export const patientRecordRetention = pgTable("patient_record_retention", {
   retainUntil: date("retain_until", { mode: "string" }).notNull(),
   recomputedAt: timestamp("recomputed_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Immutable follow-up plans and attempts.
+ *
+ * A plan has `plan_id = NULL` and no attempt/result fields. Each genuine
+ * contact attempt is a separate row linked through `plan_id`, so "not reached"
+ * can be recorded without erasing the still-open obligation. Corrections insert
+ * a replacement row and permanently set the original's `superseded_by_id`.
+ *
+ * Migration 0017 adds the immutability trigger, app-role revokes, and a
+ * deferrable one-active-plan-per-assessment exclusion constraint that Drizzle
+ * cannot model.
+ */
+export const followUp = pgTable("follow_up", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  assessmentId: uuid("assessment_id")
+    .notNull()
+    .references(() => assessment.id, { onDelete: "cascade" }),
+  planId: uuid("plan_id").references((): AnyPgColumn => followUp.id),
+  dueDate: date("due_date", { mode: "string" }).notNull(),
+  method: text("method").notNull(),
+  monitoringParameters: text("monitoring_parameters").notNull(),
+  attemptedAt: timestamp("attempted_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  reached: boolean("reached"),
+  evaluation: text("evaluation"),
+  nextStep: text("next_step"),
+  note: text("note"),
+  recordedByUserId: uuid("recorded_by_user_id")
+    .notNull()
+    .references(() => user.id),
+  retainUntil: date("retain_until", { mode: "string" }).notNull(),
+  correctionReason: text("correction_reason"),
+  supersededById: uuid("superseded_by_id").references(
+    (): AnyPgColumn => followUp.id,
+  ),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("follow_up_assessment_idx").on(t.assessmentId),
+  index("follow_up_plan_idx").on(t.planId),
+  index("follow_up_due_date_idx").on(t.dueDate),
+  check("follow_up_method_valid", sql`${t.method} IN ('phone', 'in_person')`),
+  check(
+    "follow_up_next_step_valid",
+    sql`${t.nextStep} IS NULL OR ${t.nextStep} IN (
+      'resolved', 'continue', 'refer', 'new_assessment_needed'
+    )`,
+  ),
+  check(
+    "follow_up_row_shape",
+    sql`(
+      ${t.planId} IS NULL
+      AND ${t.attemptedAt} IS NULL
+      AND ${t.completedAt} IS NULL
+      AND ${t.reached} IS NULL
+      AND ${t.evaluation} IS NULL
+      AND ${t.nextStep} IS NULL
+    ) OR (
+      ${t.planId} IS NOT NULL
+      AND ${t.attemptedAt} IS NOT NULL
+      AND ${t.reached} IS NOT NULL
+      AND ${t.nextStep} IS NOT NULL
+      AND (
+        (${t.reached} = true
+          AND ${t.completedAt} IS NOT NULL
+          AND NULLIF(BTRIM(${t.evaluation}), '') IS NOT NULL)
+        OR
+        (${t.reached} = false
+          AND ${t.completedAt} IS NULL
+          AND ${t.evaluation} IS NULL)
+      )
+    )`,
+  ),
+]);
 
 /**
  * Holds intentionally retain the stable subject UUID even after an authorized

@@ -12,6 +12,12 @@ import {
   type PcpNotificationMethod,
   type SymptomCourse,
 } from "@/lib/clinical-record-types";
+import {
+  FOLLOW_UP_METHOD_LABELS,
+  FOLLOW_UP_NEXT_STEP_LABELS,
+  type FollowUpMethod,
+  type FollowUpNextStep,
+} from "@/lib/follow-up-schema";
 
 /**
  * SERVER component — this is where the PHI is rendered. It is passed as
@@ -172,6 +178,49 @@ export default function RecordDetail({ record }: { record: AuditRecordDetail }) 
       ) : (
         <div className={styles.legacyRecord}>
           Legacy record: this assessment predates structured clinical and consent capture.
+        </div>
+      )}
+
+      {record.followUps.length > 0 && (
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>Follow-up record</div>
+          <div className={styles.grid}>
+            {record.followUps.map((followUp) => (
+              <div className={styles.field} key={followUp.id}>
+                <span className={styles.fieldLabel}>
+                  {followUp.planId ? "Attempt" : "Plan"}
+                  {followUp.supersededById ? " · corrected" : ""}
+                </span>
+                <span className={styles.fieldValue}>
+                  Due {followUp.dueDate} ·{" "}
+                  {FOLLOW_UP_METHOD_LABELS[followUp.method as FollowUpMethod] ??
+                    followUp.method}
+                  {"\n"}
+                  Monitoring: {followUp.monitoringParameters}
+                  {followUp.attemptedAt
+                    ? `\nAttempted: ${new Date(followUp.attemptedAt).toLocaleString("en-CA")}`
+                    : ""}
+                  {followUp.reached !== null
+                    ? `\nReached: ${followUp.reached ? "Yes" : "No"}`
+                    : ""}
+                  {followUp.evaluation
+                    ? `\nSafety / efficacy: ${followUp.evaluation}`
+                    : ""}
+                  {followUp.nextStep
+                    ? `\nNext step: ${
+                        FOLLOW_UP_NEXT_STEP_LABELS[
+                          followUp.nextStep as FollowUpNextStep
+                        ] ?? followUp.nextStep
+                      }`
+                    : ""}
+                  {followUp.note ? `\nNote: ${followUp.note}` : ""}
+                  {followUp.correctionReason
+                    ? `\nCorrection reason: ${followUp.correctionReason}`
+                    : ""}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

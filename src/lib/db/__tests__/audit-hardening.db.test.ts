@@ -134,4 +134,16 @@ describe("agentoma_app role: audit_log is append-only AT THE GRANT LEVEL", () =>
       await asAppRole(sql.raw(`update claim_draft set superseded_by_id = null where false`)),
     ).toBeNull();
   });
+
+  it("follow_up: full-row UPDATE and DELETE denied; only superseded_by_id is updatable", async () => {
+    expect(await asAppRole(sql.raw(`update follow_up set due_date = current_date`))).toBe(
+      "42501",
+    );
+    expect(await asAppRole(sql.raw(`delete from follow_up`))).toBe("42501");
+    expect(
+      await asAppRole(
+        sql.raw(`update follow_up set superseded_by_id = null where false`),
+      ),
+    ).toBeNull();
+  });
 });

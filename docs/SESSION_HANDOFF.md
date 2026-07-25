@@ -2,13 +2,21 @@
 
 **Updated:** 2026-07-25  
 **Branch:** `feat/moh-compliance-migration`  
-**Stopping point:** Supabase migrated and seeded through `0016`; live
-post-migration verification complete
+**Stopping point:** follow-up tracking is implemented and Docker-verified in
+staged migration `0017`; Supabase remains migrated and seeded through `0016`
 
 ## Database state
 
-- Supabase and the fresh-Docker test path are applied through
-  `0016_brown_lightspeed`.
+- Supabase is applied through `0016_brown_lightspeed`.
+- The repository and fresh-Docker test path include
+  `0017_tense_pandemic`, which adds:
+  - immutable follow-up plan and attempt rows linked to assessments;
+  - a deferrable one-active-plan exclusion constraint;
+  - link validation, retention inheritance/recomputation, and
+    supersede-not-edit triggers;
+  - app-role `UPDATE`/`DELETE` revocation with only
+    `superseded_by_id` update permission.
+  `0017` has **not** been run against Supabase.
 - `0015_tidy_luke_cage`:
   - deleted the two approved disposable TEST tenants and their dependent
     clinical rows;
@@ -71,28 +79,43 @@ post-migration verification complete
 - `npm run db:inspect-tenancy` is read-only and emits aggregate tenancy evidence
   only.
 - `/pharmacist/governance` is pharmacy-admin-only and fully server-rendered.
+- Billable assessment completion requires a structured follow-up due date,
+  phone/in-person method, and monitoring parameters before any clinical or
+  claim row is written.
+- `/pharmacist/follow-ups` is server-rendered and pharmacy-scoped. It records
+  reached and not-reached attempts, safety/efficacy evaluation, disposition,
+  notes, and immutable corrections. The dashboard shows open/overdue items.
+- Follow-up create/record/supersede actions are audited, and complete-patient
+  export schema v2 includes all follow-up rows.
 
 ## Verification
 
 - Docker Postgres: `localhost:5433`, guarded against non-local URLs.
-- Fresh migration replay from zero through `0016`: green.
+- Fresh migration replay from zero through staged `0017`: green.
 - `tsc --noEmit`: green.
 - ESLint: green.
-- Vitest: 12 files, 124 tests, all green.
+- Vitest: 13 files, 133 tests, all green.
 - Governance tests prove retention extension, hold-blocked destruction,
   second-admin execution, immutable correction supersession, and hashed export
   manifests.
+- Follow-up tests prove the completion requirement, not-reached handling,
+  reached closure, supersession/rollback, grant-level immutability, retention
+  extension, export/destruction inclusion, and one-winner concurrent closure.
 
 ## Next operator steps
 
-1. Smoke-test sign-in/TOTP for all intended roles and
+1. Review [`0017_tense_pandemic.sql`](../src/lib/db/migrations/0017_tense_pandemic.sql).
+   After explicit approval, run `npm run db:migrate` against Supabase, then
+   verify the `follow_up` table, three triggers, exclusion constraint, and
+   `agentoma_app` grants before using the new workflow.
+2. Smoke-test sign-in/TOTP for all intended roles and
    `/pharmacist/governance` against synthetic records.
-2. Exercise complete export, patient and record holds, request decision,
+3. Exercise complete export, patient and record holds, request decision,
    correction supersession, destruction dry run, and second-admin refusal.
    Do not execute destruction against retained records.
-3. Perform and record the first isolated Canadian-region restore drill using
+4. Perform and record the first isolated Canadian-region restore drill using
    [`RESTORE_DRILL.md`](RESTORE_DRILL.md).
-4. Continue the P0 clinical, LTC, orientation, eligibility, prescription, and
+5. Continue the P0 clinical, LTC, orientation, eligibility, prescription, and
    claim-history blockers in [`NEXT_STEPS.md`](NEXT_STEPS.md).
 
 ## Fences

@@ -1,7 +1,7 @@
-import { and, eq, gte, lte, or, ilike, sql, desc, count, isNull, type SQL } from "drizzle-orm";
+import { and, asc, eq, gte, lte, or, ilike, sql, desc, count, isNull, type SQL } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { assessment, patient, claimDraft } from "@/lib/db/schema";
+import { assessment, patient, claimDraft, followUp } from "@/lib/db/schema";
 import type { PortalUser } from "@/lib/auth-guard";
 import { recordAuditWriteFailure, writeAudit } from "@/lib/audit";
 
@@ -221,6 +221,23 @@ export type AuditRecordDetail = {
     quantity: number;
     ssc: number | null;
   } | null;
+  followUps: Array<{
+    id: string;
+    planId: string | null;
+    dueDate: string;
+    method: string;
+    monitoringParameters: string;
+    attemptedAt: string | null;
+    completedAt: string | null;
+    reached: boolean | null;
+    evaluation: string | null;
+    nextStep: string | null;
+    note: string | null;
+    correctionReason: string | null;
+    supersededById: string | null;
+    recordedByUserId: string;
+    createdAt: string;
+  }>;
 };
 
 export async function queryAuditRecordById(
@@ -310,6 +327,12 @@ export async function queryAuditRecordById(
     .limit(1);
 
   if (!row) return null;
+
+  const followUps = await db
+    .select()
+    .from(followUp)
+    .where(eq(followUp.assessmentId, row.id))
+    .orderBy(asc(followUp.createdAt));
 
   // Access to an individual clinical record is itself part of the record.
   // Best-effort here so a transient secondary audit failure does not expose
@@ -459,6 +482,23 @@ export async function queryAuditRecordById(
           ssc: row.ssc,
         }
       : null,
+    followUps: followUps.map((item) => ({
+      id: item.id,
+      planId: item.planId,
+      dueDate: item.dueDate,
+      method: item.method,
+      monitoringParameters: item.monitoringParameters,
+      attemptedAt: item.attemptedAt?.toISOString() ?? null,
+      completedAt: item.completedAt?.toISOString() ?? null,
+      reached: item.reached,
+      evaluation: item.evaluation,
+      nextStep: item.nextStep,
+      note: item.note,
+      correctionReason: item.correctionReason,
+      supersededById: item.supersededById,
+      recordedByUserId: item.recordedByUserId,
+      createdAt: item.createdAt.toISOString(),
+    })),
   };
 }
 

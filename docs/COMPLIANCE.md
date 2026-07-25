@@ -61,8 +61,8 @@ All clinical questions, including the tick-bite timing threshold, remain open fo
 | Presenting complaint, health/medication history, findings, shared decision-making, care plan | p.5 | Version-2 assessment snapshot stores separately queryable complaint/history/findings/decision/plan fields | ✅ |
 | Complete prescription record and PCP notification | pp.5, 12 | Rx outcome requires patient address, drug/strength/quantity/directions, server-derived prescriber snapshot, and PCP timestamp/method | ✅ |
 | Structured rationale when no prescription is issued | p.12 | Outcome-compatible documentation code is required; notes are supplementary only | ✅ |
-| Inform patient prescription may be filled anywhere; follow-up still owed | p.5 | Rx record requires a choice-of-pharmacy information timestamp; follow-up plan is required for every outcome | ✅ |
-| Follow-up monitoring, safety/efficacy, and next steps | pp.5, 12 | Required follow-up/monitoring field, server validation, and DB completeness check | ✅ |
+| Inform patient prescription may be filled anywhere; follow-up still owed | p.5 | Rx record requires a choice-of-pharmacy information timestamp; billable completion requires a structured follow-up plan, and the worklist repeats the continuing-duty warning | 🔶 |
+| Follow-up monitoring, safety/efficacy, and next steps | pp.5, 12 | Staged `0017` adds immutable plans/attempts, due/overdue tracking, reached/not-reached outcomes, evaluation, disposition, audit events, retention propagation, and export inclusion; from-zero Docker tests pass, but Supabase is still at `0016` | 🔶 |
 
 ## Claim assembly
 
@@ -104,7 +104,7 @@ All clinical questions, including the tick-bite timing threshold, remain open fo
 | Defensible activity trail for post-payment review | p.12 | Pharmacy-scoped append-only audit events and server-generated exports | ✅ |
 | Audit records cannot be updated/deleted by the app | p.12 | Trigger plus `agentoma_app` privilege revocation; real-Postgres grant tests | ✅ |
 | Retain ten years from last service or ten years after age 18, whichever later | p.12 | Live `0016` patient-wide recomputation extends every prior record after a returning service; live horizon comparison is clean and the pediatric fixture retains through 2047 | ✅ |
-| Complete, readily retrievable patient record | PHIPA/OCP recordkeeping posture | Live server-only export includes patient, assessments, all claim drafts, linked intakes/audits, retention/holds/corrections, plus a manifest and per-artifact hashes | ✅ |
+| Complete, readily retrievable patient record | PHIPA/OCP recordkeeping posture | Server-only export schema v2 includes follow-up rows with patient, assessments, claim drafts, linked intakes/audits, retention/holds/corrections, manifest, and per-artifact hashes; follow-up portion awaits live `0017` | 🔶 |
 | Holds prevent destruction | PHIPA/OCP recordkeeping posture | Live patient/record holds block deletion in database triggers, including controlled destruction | ✅ |
 | Corrections preserve historical truth | PHIPA access/correction posture | Live immutable correction overlays use final supersession; source records are not rewritten | ✅ |
 | Destruction is deliberate, reviewed, and audited | PHIPA/OCP recordkeeping posture | Live dry-run evidence plus database execution requires elapsed retention, no hold, and a second admin; no automatic cron exists | ✅ |
@@ -120,8 +120,8 @@ All clinical questions, including the tick-bite timing threshold, remain open fo
 
 The billing derivation, version-2 clinical/consent record, authentication
 foundation, audit immutability, and P0-D virtual/LTC fact capture are
-implemented. The full migration chain through `0016` is live and independently
-replays from zero in Docker. All LTC claim drafting remains parked. The product is **not yet
+implemented. The live migration chain is through `0016`; staged `0017`
+independently replays from zero in Docker. All LTC claim drafting remains parked. The product is **not yet
 ready for clinical production** because clinical content lacks pharmacist
 approval and the eligibility, existing-prescription, claim-history, LTC-billing,
 orientation-override, and first restore-drill items
