@@ -6,6 +6,10 @@ import { pharmacy, odbFeeTier } from "@/lib/db/schema";
 import { and, eq, gte, isNull, lte, or } from "drizzle-orm";
 import { requirePortalUser, AuthorizationError } from "@/lib/auth-guard";
 import { writeAudit } from "@/lib/audit";
+import {
+  pharmacySettingsBoundarySchema,
+  prescriberIdentitySettingsSchema,
+} from "@/lib/settings-boundary-schema";
 
 export type SettingsData = {
   // pharmacy (admin-editable)
@@ -82,14 +86,21 @@ export async function updateMyPrescriberIdentity(input: {
 }): Promise<{ success: true } | { success: false; error: string }> {
   try {
     const actor = await requirePortalUser();
+    const parsed = prescriberIdentitySettingsSchema.safeParse(input);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: "Check the prescriber identity fields and try again.",
+      };
+    }
 
     let ocpNumber: string | null;
-    if (input.isAsOfRight) {
+    if (parsed.data.isAsOfRight) {
       // As-of-Right uses PHR888 (handled in deriveClaimDraft). Don't force a
       // fake OCP number, and clear any stale one so it can't mislead.
       ocpNumber = null;
     } else {
-      const trimmed = input.ocpNumber.trim();
+      const trimmed = parsed.data.ocpNumber;
       // The EO Notice doesn't codify an OCP-number format; this is a sanity
       // check (OCP registration numbers are numeric), not an authority. Kept
       // permissive on length so it can't reject a valid registrant.
@@ -105,7 +116,7 @@ export async function updateMyPrescriberIdentity(input: {
 
     await db
       .update(user)
-      .set({ ocpNumber, isAsOfRight: input.isAsOfRight })
+      .set({ ocpNumber, isAsOfRight: parsed.data.isAsOfRight })
       .where(eq(user.id, actor.userId));
 
     try {
@@ -115,7 +126,10 @@ export async function updateMyPrescriberIdentity(input: {
         action: "user.prescriber_identity_updated",
         entityType: "user",
         entityId: actor.userId,
-        metadata: { isAsOfRight: input.isAsOfRight, hasOcpNumber: ocpNumber !== null },
+        metadata: {
+          isAsOfRight: parsed.data.isAsOfRight,
+          hasOcpNumber: ocpNumber !== null,
+        },
       });
     } catch (auditErr) {
       console.error("AUDIT WRITE FAILED for prescriber identity", actor.userId, auditErr);
@@ -148,15 +162,23 @@ export async function updatePharmacySettings(input: {
 }): Promise<{ success: true } | { success: false; error: string }> {
   try {
     const actor = await requirePortalUser(["pharmacy_admin"]);
+    const parsed = pharmacySettingsBoundarySchema.safeParse(input);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: "Check the required pharmacy settings and try again.",
+      };
+    }
+    const settings = parsed.data;
 
-    const storeName = input.storeName.trim();
+    const storeName = settings.storeName;
     if (!storeName) return { success: false, error: "Store name is required." };
 
-    const addressLine1 = input.addressLine1.trim();
-    const city = input.city.trim();
-    const province = input.province.trim();
-    const postalCode = input.postalCode.trim();
-    const phone = input.phone.trim();
+    const addressLine1 = settings.addressLine1;
+    const city = settings.city;
+    const province = settings.province;
+    const postalCode = settings.postalCode;
+    const phone = settings.phone;
     if (!addressLine1 || !city || !province || !postalCode || !phone) {
       return {
         success: false,
@@ -169,7 +191,7 @@ export async function updatePharmacySettings(input: {
     // a tier code or derive remote eligibility from free text.
     const selectedTier = await db.query.odbFeeTier.findFirst({
       where: and(
-        eq(odbFeeTier.code, input.odbFeeTier),
+        eq(odbFeeTier.code, settings.odbFeeTier),
         lte(
           odbFeeTier.effectiveDate,
           new Date().toISOString().slice(0, 10),
@@ -191,10 +213,10 @@ export async function updatePharmacySettings(input: {
       .update(pharmacy)
       .set({
         storeName,
-        hnsAccountId: input.hnsAccountId.trim() || null,
+        hnsAccountId: settings.hnsAccountId || null,
         odbFeeTierCode: selectedTier.code,
         addressLine1,
-        addressLine2: input.addressLine2.trim() || null,
+        addressLine2: settings.addressLine2 || null,
         city,
         province,
         postalCode,
@@ -209,7 +231,7 @@ export async function updatePharmacySettings(input: {
         action: "pharmacy.settings_updated",
         entityType: "pharmacy",
         entityId: actor.pharmacyId,
-        metadata: { odbFeeTier: input.odbFeeTier },
+        metadata: { odbFeeTier: settings.odbFeeTier },
       });
     } catch (auditErr) {
       console.error("AUDIT WRITE FAILED for pharmacy settings", actor.pharmacyId, auditErr);

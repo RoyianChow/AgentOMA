@@ -19,7 +19,16 @@ Status: ✅ implemented and tested · 🔶 partial or awaiting human approval ·
 | Platform count is advisory because other pharmacies are not visible | p.7 | UI/export state this limitation | ✅ |
 | One claim per person/ailment/day | p.2; p.14 | Unique database index; concurrent duplicate is rejected | ✅ |
 
-The claim-history record is still incomplete: the viewer attestation/timestamp and all three evidence signals are not yet persisted together, and the completion action does not yet receive every maximum-state fact. See [`NEXT_STEPS.md`](NEXT_STEPS.md).
+AgentOMA's platform counting convention is deliberately explicit because the
+EO Notice does not unambiguously define the exact trailing-window boundary.
+For an assessment service date, `platformAssessmentCount` counts prior
+assessment rows for the same patient and ailment group where
+`service_date > service_date_input - interval '365 days'` and
+`service_date < service_date_input`. The count is advisory: it cannot see other
+pharmacies, does not itself prove that the HNS maximum was reached, and never
+promises payment. The completion evidence preserves the patient self-report,
+platform count/window, and pharmacist-attested clinical-viewer state side by
+side; HNS adjudication remains authoritative.
 
 ## Cross-ailment and scope rules
 

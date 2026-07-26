@@ -92,12 +92,26 @@ export default function AssessmentWorkspace({
   const [lastName, setLastName] = useState("");
   const [dob, setDob] = useState("");
   const [healthNumber, setHealthNumber] = useState("");
+  const [identifierType, setIdentifierType] = useState<
+    "ohip_health_number" | "odb_mccss" | "odb_hccss"
+  >("ohip_health_number");
+  const [identifierIssuer, setIdentifierIssuer] = useState("");
+  const [documentInspected, setDocumentInspected] = useState(false);
   const [dobError, setDobError] = useState<string | null>(null);
   const [healthNumberError, setHealthNumberError] = useState<string | null>(null);
   const [gender, setGender] = useState<"F" | "M" | "U" | "">("");  // Clinical Workflow
   const [viewerChecked, setViewerChecked] = useState(false);
+  const [viewerSource, setViewerSource] = useState<
+    "" | "ConnectingOntario" | "ClinicalConnect"
+  >("");
+  const [maximumState, setMaximumState] = useState<
+    "" | "not_confirmed_met" | "at_or_near" | "confirmed_met" | "unknown"
+  >("");
   const [systemCount, setSystemCount] = useState<number | null>(null);
-  const [outcome, setOutcome] = useState("rx_issued");
+  const [systemMaximum, setSystemMaximum] = useState<number | null>(null);
+  const [outcome, setOutcome] = useState<
+    "rx_issued" | "no_rx_referral" | "no_rx_otc_or_nonpharm"
+  >("rx_issued");
   const [modality, setModality] = useState<
     "in_person" | "virtual_from_pharmacy" | "virtual_remote"
   >("in_person");
@@ -118,7 +132,22 @@ export default function AssessmentWorkspace({
   // about the patient the derivation needs, so it is collected, not guessed.
   // Prescriber identity is NOT collected here: it comes from the signed-in
   // pharmacist's profile server-side (the supervisor's for interns/students).
-  const [isOdbRecipient, setIsOdbRecipient] = useState(true);
+  const [isOdbRecipient, setIsOdbRecipient] = useState<"" | "yes" | "no">("");
+  const [selfOrFamily, setSelfOrFamily] = useState<
+    "" | "not_self_or_family" | "self" | "family"
+  >("");
+  const [sameAilmentPrescription, setSameAilmentPrescription] = useState<
+    "" | "none" | "fillable" | "adaptable" | "extendable" | "unresolved"
+  >("");
+  const [verificationConsultation, setVerificationConsultation] = useState<
+    | ""
+    | "not_required"
+    | "required_prescriber_reachable"
+    | "required_prescriber_unreachable"
+    | "unresolved"
+  >("");
+  const [patientSelfReportLocation, setPatientSelfReportLocation] =
+    useState("");
   const [claimResult, setClaimResult] = useState<ClaimResult | null>(null);
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
 
@@ -178,11 +207,32 @@ export default function AssessmentWorkspace({
     ].every((value) => value.trim().length > 0);
   const noRxReady = outcome === "rx_issued" || clinical.noRxRationaleCode.length > 0;
   const clinicalReady = commonClinicalReady && consentReady && prescriptionReady && noRxReady;
+  const completionFactsReady =
+    identifierIssuer.trim().length > 0 &&
+    documentInspected &&
+    isOdbRecipient !== "" &&
+    selfOrFamily !== "" &&
+    sameAilmentPrescription !== "" &&
+    sameAilmentPrescription !== "unresolved" &&
+    verificationConsultation !== "" &&
+    verificationConsultation !== "unresolved" &&
+    viewerSource !== "" &&
+    viewerChecked &&
+    maximumState !== "";
 
-  const checkHistory = async (patientId: string, ailmentCode: string) => {
-    const res = await getPatientHistoryCount(patientId, ailmentCode);
+  const checkHistory = async (
+    patientId: string,
+    intakeSessionId: string,
+    serviceDate: Date,
+  ) => {
+    const res = await getPatientHistoryCount(
+      patientId,
+      intakeSessionId,
+      serviceDate,
+    );
     if (res.success) {
       setSystemCount(res.count);
+      setSystemMaximum(res.maximum);
     }
   };
 
@@ -190,7 +240,18 @@ export default function AssessmentWorkspace({
   // re-submit; a normal submit passes nothing and the server enforces the gate.
   const runSubmit = async (overrideReason?: string) => {
     const dobResult = validateDateOfBirth(dob);
-    const healthNumberResult = validateOntarioHealthCard(healthNumber);
+    const displayedIdentifier = healthNumber.trim();
+    const healthNumberResult =
+      identifierType === "ohip_health_number"
+        ? validateOntarioHealthCard(healthNumber)
+        : displayedIdentifier.length >= 1 &&
+            displayedIdentifier.length <= 64 &&
+            !/[\u0000-\u001F\u007F]/.test(displayedIdentifier)
+          ? ({ success: true, value: displayedIdentifier } as const)
+          : ({
+              success: false,
+              error: "Enter the identifier exactly as displayed.",
+            } as const);
     setDobError(dobResult.success ? null : dobResult.error);
     setHealthNumberError(healthNumberResult.success ? null : healthNumberResult.error);
 
@@ -200,6 +261,33 @@ export default function AssessmentWorkspace({
     }
     if (!gender) {
       setError("Please select a gender.");
+      return;
+    }
+    if (!identifierIssuer.trim() || !documentInspected) {
+      setError(
+        "Inspect the eligibility document and complete its required evidence.",
+      );
+      return;
+    }
+    if (
+      isOdbRecipient === "" ||
+      selfOrFamily === "" ||
+      sameAilmentPrescription === "" ||
+      verificationConsultation === "" ||
+      viewerSource === "" ||
+      maximumState === "" ||
+      !viewerChecked
+    ) {
+      setError("Complete every required eligibility and claim-gate fact.");
+      return;
+    }
+    if (
+      sameAilmentPrescription === "unresolved" ||
+      verificationConsultation === "unresolved"
+    ) {
+      setError(
+        "Resolve the existing-prescription evidence before completing this assessment.",
+      );
       return;
     }
     if (!clinicalReady) {
@@ -231,8 +319,9 @@ export default function AssessmentWorkspace({
       const patientRes = await upsertPatient({
         firstName,
         lastName,
-        dob: dobResult.value,
+        dob,
         healthNumber: healthNumberResult.value,
+        identifierType,
         gender,
       });
 
@@ -241,16 +330,14 @@ export default function AssessmentWorkspace({
       }
 
       const patientId = patientRes.patientId;
-      const ailmentCode = session.ailmentGroupCode;
-
+      const serviceDate = new Date();
       // Check history just to update UI right before submit, but server will check mutex
-      await checkHistory(patientId, ailmentCode);
+      await checkHistory(patientId, session.id, serviceDate);
 
       // Create Assessment. Pharmacy + prescriber identity come from the
       // authenticated session server-side.
       const assessmentRes = await createAssessment({
         patientId,
-        ailmentGroupCode: ailmentCode,
         modality,
         virtualLocation:
           modality === "in_person" ? undefined : virtualLocation,
@@ -258,7 +345,7 @@ export default function AssessmentWorkspace({
           modality === "virtual_remote" ? remoteReason : undefined,
         intakeSessionId: session.id,
         outcome,
-        serviceDate: new Date(),
+        serviceDate,
         clinicalRecord: {
           consent: {
             method: clinical.consentMethod as ConsentMethod,
@@ -324,7 +411,22 @@ export default function AssessmentWorkspace({
           method: clinical.followUpMethod as "phone" | "in_person",
           monitoringParameters: clinical.followUpMonitoringParameters,
         },
-        isOdbRecipient,
+        isOdbRecipient: isOdbRecipient === "yes",
+        eligibilityDocument: {
+          identifierType,
+          identifierIssuer,
+          documentInspectedAttestation: true,
+        },
+        selfOrFamily,
+        sameAilmentPrescription,
+        verificationConsultation,
+        patientSelfReportLocation:
+          patientSelfReportLocation.trim() || null,
+        clinicalViewer: {
+          source: viewerSource,
+          attestation: true,
+          maximumState,
+        },
         ltc: ltcResident
           ? {
               isResident: true,
@@ -355,6 +457,10 @@ export default function AssessmentWorkspace({
       // A non-billable result is NOT an error — the assessment was recorded, and
       // the panel explains why no claim was drafted.
       setClaimResult(assessmentRes.claim ?? null);
+      if (assessmentRes.historyEvidence) {
+        setSystemCount(assessmentRes.historyEvidence.platformAssessmentCount);
+        setSystemMaximum(assessmentRes.historyEvidence.seededMaximum365);
+      }
       if ("assessmentId" in assessmentRes) {
         setAssessmentId(assessmentRes.assessmentId as string);
       }
@@ -365,6 +471,8 @@ export default function AssessmentWorkspace({
       setLastName("");
       setDob("");
       setHealthNumber("");
+      setIdentifierIssuer("");
+      setDocumentInspected(false);
       setGender("");
       setClinical(emptyClinicalForm());
       setIsDone(true);
@@ -393,6 +501,23 @@ export default function AssessmentWorkspace({
           {claimResult && (
             <div style={{ textAlign: "left", marginBottom: "1.5rem" }}>
               <ClaimDraftPanel result={claimResult} />
+              {systemCount !== null && systemMaximum !== null && (
+                <div
+                  style={{
+                    marginTop: "1rem",
+                    padding: "0.85rem",
+                    background: "var(--bg-tertiary)",
+                    borderRadius: "var(--radius-sm)",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  Persisted history evidence: patient self-report{" "}
+                  {session.priorCountSelfReport ?? "not provided"}; platform
+                  trailing-365-day assessment count {systemCount}; seeded maximum{" "}
+                  {systemMaximum}. This evidence is advisory, and HNS
+                  adjudication remains authoritative.
+                </div>
+              )}
               {claimResult.billable && assessmentId && (
                 <div style={{ marginTop: "1rem", textAlign: "center" }}>
                   <Link href={`/pharmacist/assessment/${assessmentId}/export`} className="btn btn-primary">
@@ -435,7 +560,9 @@ export default function AssessmentWorkspace({
               </Link>
             </div>
             <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
-              Key this strictly from the physical health card to prevent drift.
+              Key identity exactly from the inspected eligibility document. A
+              syntactically valid identifier alone does not establish active
+              eligibility.
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
               <div style={{ gridColumn: "1 / -1" }}>
@@ -452,11 +579,56 @@ export default function AssessmentWorkspace({
                 />
               </div>
               <div>
-                <label className="form-label">First Name</label>
+                <label className="form-label" htmlFor="identifier-type">
+                  Eligibility identifier type
+                </label>
+                <select
+                  id="identifier-type"
+                  className="form-input"
+                  value={identifierType}
+                  onChange={(event) => {
+                    setIdentifierType(
+                      event.target.value as
+                        | "ohip_health_number"
+                        | "odb_mccss"
+                        | "odb_hccss",
+                    );
+                    setHealthNumber("");
+                    setHealthNumberError(null);
+                  }}
+                  required
+                >
+                  <option value="ohip_health_number">
+                    OHIP health number
+                  </option>
+                  <option value="odb_mccss">
+                    ODB eligibility number — MCCSS
+                  </option>
+                  <option value="odb_hccss">
+                    ODB eligibility number — HCCSS
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label className="form-label" htmlFor="identifier-issuer">
+                  Identifier issuer
+                </label>
+                <input
+                  id="identifier-issuer"
+                  type="text"
+                  className="form-input"
+                  value={identifierIssuer}
+                  onChange={(event) => setIdentifierIssuer(event.target.value)}
+                  maxLength={100}
+                  required
+                />
+              </div>
+              <div>
+                <label className="form-label">First name as displayed</label>
                 <input type="text" className="form-input" value={firstName} onChange={e => setFirstName(e.target.value)} required />
               </div>
               <div>
-                <label className="form-label">Last Name</label>
+                <label className="form-label">Last name as displayed</label>
                 <input type="text" className="form-input" value={lastName} onChange={e => setLastName(e.target.value)} required />
               </div>
               <div>
@@ -488,7 +660,11 @@ export default function AssessmentWorkspace({
                 )}
               </div>
               <div>
-                <label className="form-label" htmlFor="patient-health-number">Health Card Number</label>
+                <label className="form-label" htmlFor="patient-health-number">
+                  {identifierType === "ohip_health_number"
+                    ? "OHIP number and optional version code"
+                    : "Eligibility number exactly as displayed"}
+                </label>
                 <input
                   id="patient-health-number"
                   type="text"
@@ -502,15 +678,31 @@ export default function AssessmentWorkspace({
                     );
                   }}
                   onBlur={() => {
-                    const result = validateOntarioHealthCard(healthNumber);
-                    if (result.success) {
-                      setHealthNumber(result.value);
-                      setHealthNumberError(null);
+                    if (identifierType === "ohip_health_number") {
+                      const result = validateOntarioHealthCard(healthNumber);
+                      if (result.success) {
+                        setHealthNumber(result.value);
+                        setHealthNumberError(null);
+                      } else {
+                        setHealthNumberError(result.error);
+                      }
                     } else {
-                      setHealthNumberError(result.error);
+                      const displayed = healthNumber.trim();
+                      setHealthNumber(displayed);
+                      setHealthNumberError(
+                        displayed.length >= 1 &&
+                          displayed.length <= 64 &&
+                          !/[\u0000-\u001F\u007F]/.test(displayed)
+                          ? null
+                          : "Enter the identifier exactly as displayed.",
+                      );
                     }
                   }}
-                  placeholder="1234567890 AB"
+                  placeholder={
+                    identifierType === "ohip_health_number"
+                      ? "1234567890 AB"
+                      : undefined
+                  }
                   autoCapitalize="characters"
                   spellCheck={false}
                   aria-invalid={healthNumberError ? true : undefined}
@@ -541,6 +733,27 @@ export default function AssessmentWorkspace({
                   </select>
                 </div>
               </div>
+              <label
+                style={{
+                  gridColumn: "1 / -1",
+                  display: "flex",
+                  gap: "0.75rem",
+                  alignItems: "flex-start",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={documentInspected}
+                  onChange={(event) =>
+                    setDocumentInspected(event.target.checked)
+                  }
+                  required
+                />
+                <span style={{ fontSize: "0.85rem" }}>
+                  I inspected the eligibility document and confirm that the
+                  identifier, displayed name, and date of birth above match it.
+                </span>
+              </label>
             </div>
           </div>
 
@@ -722,24 +935,167 @@ export default function AssessmentWorkspace({
                 (for interns and students, your supervising pharmacist&apos;s OCP
                 number) — it is never typed here.
               </div>
-              <label style={{ display: "flex", gap: "0.5rem", alignItems: "center", fontSize: "0.9rem" }}>
-                <input
-                  type="checkbox"
-                  checked={isOdbRecipient}
-                  onChange={(e) => setIsOdbRecipient(e.target.checked)}
-                />
-                Patient has ODB coverage
-                <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                  (non-ODB adds intervention code ML and Carrier ID S)
-                </span>
-              </label>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "1rem",
+                }}
+              >
+                <div>
+                  <label className="form-label" htmlFor="odb-recipient">
+                    ODB recipient
+                  </label>
+                  <select
+                    id="odb-recipient"
+                    className="form-input"
+                    value={isOdbRecipient}
+                    onChange={(event) =>
+                      setIsOdbRecipient(
+                        event.target.value as "" | "yes" | "no",
+                      )
+                    }
+                    required
+                  >
+                    <option value="">Select...</option>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="form-label" htmlFor="self-or-family">
+                    Self/family relationship
+                  </label>
+                  <select
+                    id="self-or-family"
+                    className="form-input"
+                    value={selfOrFamily}
+                    onChange={(event) =>
+                      setSelfOrFamily(
+                        event.target.value as
+                          | ""
+                          | "not_self_or_family"
+                          | "self"
+                          | "family",
+                      )
+                    }
+                    required
+                  >
+                    <option value="">Select...</option>
+                    <option value="not_self_or_family">
+                      Not self or family
+                    </option>
+                    <option value="self">Self</option>
+                    <option value="family">Family</option>
+                  </select>
+                </div>
+                <div>
+                  <label
+                    className="form-label"
+                    htmlFor="same-ailment-prescription"
+                  >
+                    Same-ailment prescription
+                  </label>
+                  <select
+                    id="same-ailment-prescription"
+                    className="form-input"
+                    value={sameAilmentPrescription}
+                    onChange={(event) =>
+                      setSameAilmentPrescription(
+                        event.target.value as
+                          | ""
+                          | "none"
+                          | "fillable"
+                          | "adaptable"
+                          | "extendable"
+                          | "unresolved",
+                      )
+                    }
+                    required
+                  >
+                    <option value="">Select...</option>
+                    <option value="none">None</option>
+                    <option value="fillable">Fillable</option>
+                    <option value="adaptable">Adaptable</option>
+                    <option value="extendable">Extendable</option>
+                    <option value="unresolved">Unresolved</option>
+                  </select>
+                </div>
+                <div>
+                  <label
+                    className="form-label"
+                    htmlFor="verification-consultation"
+                  >
+                    Verification consultation
+                  </label>
+                  <select
+                    id="verification-consultation"
+                    className="form-input"
+                    value={verificationConsultation}
+                    onChange={(event) =>
+                      setVerificationConsultation(
+                        event.target.value as
+                          | ""
+                          | "not_required"
+                          | "required_prescriber_reachable"
+                          | "required_prescriber_unreachable"
+                          | "unresolved",
+                      )
+                    }
+                    required
+                  >
+                    <option value="">Select...</option>
+                    <option value="not_required">Not required</option>
+                    <option value="required_prescriber_reachable">
+                      Required — prescriber reachable
+                    </option>
+                    <option value="required_prescriber_unreachable">
+                      Required — prescriber unreachable
+                    </option>
+                    <option value="unresolved">Unresolved</option>
+                  </select>
+                </div>
+                <div>
+                  <label
+                    className="form-label"
+                    htmlFor="patient-self-report-location"
+                  >
+                    Prior-assessment location, if reported
+                  </label>
+                  <input
+                    id="patient-self-report-location"
+                    className="form-input"
+                    value={patientSelfReportLocation}
+                    onChange={(event) =>
+                      setPatientSelfReportLocation(event.target.value)
+                    }
+                    maxLength={200}
+                  />
+                </div>
+              </div>
+              {(sameAilmentPrescription === "unresolved" ||
+                verificationConsultation === "unresolved") && (
+                <div
+                  role="alert"
+                  style={{
+                    color: "var(--danger)",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  This evidence is unresolved, not a confirmed exclusion.
+                  Resolve it before completing the assessment.
+                </div>
+              )}
               <div>
                 <label className="form-label">Outcome</label>
                 <select
                   className="form-input"
                   value={outcome}
                   onChange={(e) => {
-                    const next = e.target.value;
+                    const next = e.target.value as
+                      | "rx_issued"
+                      | "no_rx_referral"
+                      | "no_rx_otc_or_nonpharm";
                     setOutcome(next);
                     setClinical((current) => ({
                       ...current,
@@ -1026,7 +1382,7 @@ export default function AssessmentWorkspace({
                   !dob ||
                   !healthNumber ||
                   !gender ||
-                  !viewerChecked ||
+                  !completionFactsReady ||
                   !clinicalReady ||
                   (modality !== "in_person" && !virtualLocation.trim()) ||
                   (modality === "virtual_remote" && !remoteReason.trim()) ||
@@ -1038,6 +1394,12 @@ export default function AssessmentWorkspace({
               </button>
               {(!viewerChecked) && (
                 <div style={{ fontSize: "0.8rem", color: "var(--warning-text)" }}>You must attest to checking the clinical viewer below before signing.</div>
+              )}
+              {!completionFactsReady && (
+                <div style={{ fontSize: "0.8rem", color: "var(--warning-text)" }}>
+                  Complete every eligibility, relationship, prescription, and
+                  clinical-viewer gate below.
+                </div>
               )}
               {!clinicalReady && (
                 <div style={{ fontSize: "0.8rem", color: "var(--warning-text)" }}>
@@ -1083,7 +1445,7 @@ export default function AssessmentWorkspace({
                       style={{ background: "var(--danger)", borderColor: "var(--danger)" }}
                       // Same clinical-viewer attestation gate as the primary
                       // submit — the break-glass path must not be weaker.
-                      disabled={isSubmitting || !viewerChecked || !clinicalReady || overrideReason.trim().length < 4}
+                      disabled={isSubmitting || !completionFactsReady || !clinicalReady || overrideReason.trim().length < 4}
                       onClick={() => runSubmit(overrideReason.trim())}
                     >
                       {isSubmitting ? "Saving..." : "Override & sign assessment"}
@@ -1138,7 +1500,7 @@ export default function AssessmentWorkspace({
             <div style={{ borderTop: "2px solid var(--border-color)", paddingTop: "1rem" }}>
               <h4 style={{ fontSize: "0.9rem", color: "var(--text-secondary)", marginBottom: "0.75rem" }}>Claim Limits & History</h4>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
                 <div style={{ padding: "0.75rem", background: "var(--bg-tertiary)", borderRadius: "var(--radius-sm)" }}>
                   <div style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-muted)" }}>Patient Self-Report (Count)</div>
                   <div style={{ fontSize: "1.1rem", fontWeight: 700 }}>
@@ -1156,13 +1518,116 @@ export default function AssessmentWorkspace({
                 </div>
 
                 <div style={{ padding: "0.75rem", background: "var(--primary-light)", borderRadius: "var(--radius-sm)" }}>
-                  <div style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary)" }}>Platform 365-Day Count</div>
+                  <div style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary)" }}>Platform Assessment Count</div>
                   <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--primary-dark)" }}>
                     {systemCount !== null ? systemCount : "-"}
                   </div>
                 </div>
+                <div style={{ padding: "0.75rem", background: "var(--primary-light)", borderRadius: "var(--radius-sm)" }}>
+                  <div style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary)" }}>Seeded 365-Day Maximum</div>
+                  <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--primary-dark)" }}>
+                    {systemMaximum !== null ? systemMaximum : "-"}
+                  </div>
+                </div>
               </div>
 
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "0.75rem",
+                  marginBottom: "0.75rem",
+                }}
+              >
+                <div>
+                  <label
+                    className="form-label"
+                    htmlFor="clinical-viewer-source"
+                  >
+                    Clinical viewer source
+                  </label>
+                  <select
+                    id="clinical-viewer-source"
+                    className="form-input"
+                    value={viewerSource}
+                    onChange={(event) =>
+                      setViewerSource(
+                        event.target.value as
+                          | ""
+                          | "ConnectingOntario"
+                          | "ClinicalConnect",
+                      )
+                    }
+                    required
+                  >
+                    <option value="">Select...</option>
+                    <option value="ConnectingOntario">
+                      ConnectingOntario
+                    </option>
+                    <option value="ClinicalConnect">ClinicalConnect</option>
+                  </select>
+                </div>
+                <div>
+                <label
+                  className="form-label"
+                  htmlFor="clinical-viewer-maximum"
+                >
+                  Clinical viewer maximum status
+                </label>
+                <select
+                  id="clinical-viewer-maximum"
+                  className="form-input"
+                  value={maximumState}
+                  onChange={(event) =>
+                    setMaximumState(
+                      event.target.value as
+                        | ""
+                        | "not_confirmed_met"
+                        | "at_or_near"
+                        | "confirmed_met"
+                        | "unknown",
+                    )
+                  }
+                  required
+                >
+                  <option value="">Select after checking...</option>
+                  <option value="not_confirmed_met">
+                    Not confirmed met
+                  </option>
+                  <option value="at_or_near">At or near</option>
+                  <option value="confirmed_met">Confirmed met</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+                </div>
+              </div>
+              {(maximumState === "unknown" ||
+                maximumState === "at_or_near") && (
+                <div
+                  role="alert"
+                  style={{
+                    marginBottom: "0.75rem",
+                    color: "var(--warning-text)",
+                    fontSize: "0.84rem",
+                  }}
+                >
+                  This state is advisory and requires the clinical-viewer
+                  verification below. It does not promise payment or prove
+                  that the HNS maximum was reached.
+                </div>
+              )}
+              {maximumState === "confirmed_met" && (
+                <div
+                  role="alert"
+                  style={{
+                    marginBottom: "0.75rem",
+                    color: "var(--danger-text)",
+                    fontSize: "0.84rem",
+                  }}
+                >
+                  A confirmed-met state prevents a claim draft. The assessment
+                  and its evidence can still be recorded.
+                </div>
+              )}
               <label style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start", padding: "1rem", background: "var(--warning-light)", borderRadius: "var(--radius-md)", border: "1px solid var(--warning-border)", cursor: "pointer" }}>
                 <input
                   type="checkbox"
@@ -1172,7 +1637,9 @@ export default function AssessmentWorkspace({
                 />
                 <div style={{ fontSize: "0.85rem", color: "var(--warning-text)", lineHeight: 1.4 }}>
                   <strong>Clinical Viewer Attestation</strong><br />
-                  I confirm that I have checked the provincial clinical viewer and verified the patient has not exceeded the funded maximums for this ailment group in the trailing 365 days.
+                  I confirm that I checked the provincial clinical viewer and
+                  that the selected maximum status accurately records what I
+                  reviewed. HNS adjudication remains authoritative.
                 </div>
               </label>
             </div>

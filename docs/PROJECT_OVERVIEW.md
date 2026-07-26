@@ -143,6 +143,12 @@ Operational and PHI data:
 - `intake_session`: zero-PHI handoff state.
 - `triage_exit`: terminal non-billable exits.
 - `assessment`: versioned service snapshot containing consent, structured complaint/history/findings/plan, coded no-Rx rationale, outcome-specific prescription/PCP fields, modality/outcome, virtual location/reason, LTC facts, and retention date.
+- `assessment_billability_evidence`: immutable one-to-one version-1 completion
+  evidence containing the inspected eligibility document, structured
+  self/family and existing-prescription gates, patient self-report, advisory
+  platform assessment count with its exact exclusive trailing window, and
+  pharmacist-attested clinical-viewer maximum state. It does not change the
+  P0-B assessment record-version-2 contract.
 - `claim_draft`: immutable billing snapshot with supersession for corrections.
 - `follow_up`: immutable plan and attempt records linked one-to-many to an
   assessment; reached attempts close the work item, while not-reached attempts
@@ -206,6 +212,10 @@ Use `db:generate`, review the SQL, then `db:migrate`. Never use `db:push`.
 `db:seed` is reference-only. `db:seed:demo` attaches synthetic records to
 `PHARMACY_ID`; it was run after the live single-tenant migration and remains
 idempotent.
+
+Migration `0018_clever_mister_fear` is generated in the P0-C working branch
+for the immutable `assessment_billability_evidence` sidecar and has not been
+applied by this work.
 
 ## What is complete and what is not
 

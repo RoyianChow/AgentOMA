@@ -153,6 +153,7 @@ export const assessment = pgTable("assessment", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   uniqueIndex("assessment_one_per_day").on(t.patientId, t.ailmentGroupCode, t.serviceDate),
+  uniqueIndex("assessment_id_pharmacy_id_unique").on(t.id, t.pharmacyId),
   check(
     "assessment_virtual_documentation_complete",
     sql`(

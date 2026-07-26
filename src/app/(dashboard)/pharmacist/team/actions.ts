@@ -10,6 +10,7 @@ import {
   type PortalRole,
 } from "@/lib/auth-guard";
 import { issueInvitation } from "@/lib/invitations";
+import { issueInvitationActionSchema } from "@/lib/invitation-boundary-schema";
 import { env } from "@/env";
 
 export type TeamMember = {
@@ -64,11 +65,16 @@ export async function issueInvitationAction(input: {
   try {
     // ADMIN-ONLY, verified server-side in the action (proxy.ts is UX only).
     const actor = await requirePortalUser(["pharmacy_admin"]);
+    const parsed = issueInvitationActionSchema.safeParse(input);
+    if (!parsed.success) {
+      return { ok: false, error: "Check the invitation details and try again." };
+    }
     const res = await issueInvitation({
       invitedByUserId: actor.userId,
-      email: input.email,
-      role: input.role,
-      supervisingPharmacistId: input.supervisingPharmacistId ?? null,
+      email: parsed.data.email,
+      role: parsed.data.role,
+      supervisingPharmacistId:
+        parsed.data.supervisingPharmacistId ?? null,
     });
     if (!res.ok) return { ok: false, error: res.message };
 

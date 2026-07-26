@@ -12,6 +12,7 @@ import {
   claimDraft,
   followUp,
   odbFeeTier,
+  assessmentBillabilityEvidence,
 } from "@/lib/db/schema";
 import { user } from "@/lib/db/schema/auth";
 import {
@@ -24,6 +25,8 @@ import {
   getTableColumns,
   lte,
   gte,
+  gt,
+  lt,
   or,
 } from "drizzle-orm";
 import { computeRetainUntil } from "@/lib/retention";
@@ -42,11 +45,20 @@ import {
   type Outcome,
 } from "@/lib/claims/derive-claim-draft";
 import { parseClinicalRecord } from "@/lib/clinical-record-schema";
-import type { ClinicalRecordInput } from "@/lib/clinical-record-types";
 import {
   parseFollowUpPlan,
-  type FollowUpPlanInput,
 } from "@/lib/follow-up-schema";
+import {
+  assessmentCompletionBoundarySchema,
+  claimHistoryRequestBoundarySchema,
+  computeTrailingWindow,
+  hasUnresolvedExistingPrescriptionEvidence,
+  patientIdentityBoundarySchema,
+  reduceExistingRxBlocks,
+  reduceSelfOrFamily,
+  type AssessmentCompletionBoundary,
+  type PatientIdentityBoundary,
+} from "@/lib/p0-c-boundary-schema";
 
 // SECURITY MODEL — why every action below starts with requirePortalUser():
 // proxy.ts only performs an optimistic cookie-presence redirect for UX; a
@@ -328,25 +340,27 @@ async function checkSameDayMutex(patientId: string, ailmentGroupCode: string, se
   return { allowed: true };
 }
 
-export async function upsertPatient(data: {
-  firstName: string;
-  lastName: string;
-  dob: Date;
-  healthNumber: string;
-  gender: "F" | "M" | "U";
-}): Promise<
+export async function upsertPatient(data: PatientIdentityBoundary): Promise<
   { success: true; patientId: string } | { success: false; error: string }
 > {
   try {
     // Session + role re-verified here, not in proxy.ts (see SECURITY MODEL).
     // The patient row lands in the ACTOR's pharmacy — never a caller-supplied
     // one.
-    const { pharmacyId, userId } = await requirePortalUser();
+    const { pharmacyId, userId } = await requirePortalUser(RECORDING_ROLES);
+    const parsed = patientIdentityBoundarySchema.safeParse(data);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: "Check the required patient identity fields and try again.",
+      };
+    }
+    const identity = parsed.data;
 
     const existing = await db.query.patient.findFirst({
       where: and(
         eq(patient.pharmacyId, pharmacyId),
-        eq(patient.healthNumber, data.healthNumber)
+        eq(patient.healthNumber, identity.healthNumber)
       ),
     });
     if (existing) return { success: true, patientId: existing.id };
@@ -355,12 +369,11 @@ export async function upsertPatient(data: {
       .insert(patient)
       .values({
         pharmacyId,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        // Convert the Date object to a YYYY-MM-DD string for Postgres
-        dob: data.dob.toISOString().split("T")[0],
-        healthNumber: data.healthNumber,
-        gender: data.gender,
+        firstName: identity.firstName,
+        lastName: identity.lastName,
+        dob: identity.dob,
+        healthNumber: identity.healthNumber,
+        gender: identity.gender,
       })
       .returning({ id: patient.id });
 
@@ -374,8 +387,8 @@ export async function upsertPatient(data: {
         entityType: "patient",
         entityId: row.id,
       });
-    } catch (auditErr) {
-      console.error("AUDIT WRITE FAILED for patient", row.id, auditErr);
+    } catch {
+      console.error("AUDIT WRITE FAILED for patient.");
     }
 
     return { success: true, patientId: row.id };
@@ -383,7 +396,7 @@ export async function upsertPatient(data: {
     if (err instanceof AuthorizationError) {
       return { success: false, error: refusalMessage(err) };
     }
-    console.error("Failed to upsert patient:", err);
+    console.error("Failed to upsert patient.");
     return { success: false, error: "Database error" };
   }
 }
@@ -475,31 +488,7 @@ async function loadResolvePin(): Promise<ResolvePin> {
   return (code, modality, rxIssued) => byKey.get(`${code}|${modality}|${rxIssued}`);
 }
 
-export async function createAssessment(data: {
-  patientId: string;
-  ailmentGroupCode: string;
-  modality: string;
-  virtualLocation?: string;
-  remoteReason?: string;
-  intakeSessionId: string;
-  outcome: string;
-  serviceDate: Date;
-  // P0-B owns this clinical/consent payload and its record_version=2 schema.
-  // P0-C owns eligibility/billability inputs below; do not fold those facts
-  // into the clinical record or change deriveClaimDraft here.
-  clinicalRecord: ClinicalRecordInput;
-  // Structured, schedulable follow-up. This becomes mandatory only after the
-  // pure derivation confirms that the completed assessment is billable.
-  followUpPlan?: FollowUpPlanInput;
-  // --- claim inputs: facts about the patient/visit, not the prescriber.
-  // Prescriber identity comes from the authenticated profile below.
-  isOdbRecipient?: boolean;
-  ltc?: { isResident: boolean; providerRole?: "primary" | "secondary"; isEmergency?: boolean };
-  // Break-glass: a pharmacy ADMIN may complete a billable assessment despite the
-  // prescriber having no recorded OCP orientation, by supplying a reason. The
-  // override is audited (assessment.orientation_override). Ignored for non-admins.
-  orientationOverrideReason?: string;
-}) {
+export async function createAssessment(data: AssessmentCompletionBoundary) {
   try {
     // 0. AUTHORIZATION — here, in the action, not in proxy.ts (see SECURITY
     //    MODEL above). Pharmacy and pharmacist identity both come from the
@@ -507,6 +496,15 @@ export async function createAssessment(data: {
     //    another pharmacy. Technicians cannot record assessments.
     const actor = await requirePortalUser(RECORDING_ROLES);
     const pharmacyId = actor.pharmacyId;
+    const boundary = assessmentCompletionBoundarySchema.safeParse(data);
+    if (!boundary.success) {
+      return {
+        success: false,
+        error:
+          "Check the required assessment, eligibility, and evidence fields and try again.",
+      };
+    }
+    data = boundary.data;
 
     const prescriber = await resolvePrescriberIdentity(actor);
     if (!prescriber.ok) {
@@ -522,7 +520,22 @@ export async function createAssessment(data: {
     }
     const clinical = clinicalResult.data;
 
-    // 0b. ORIENTATION GATE. The prescriber on the claim (the supervisor, for
+    // 0b. Unresolved prescription evidence is not a confirmed exclusion. The
+    // pharmacist must resolve it before completing the assessment.
+    if (
+      hasUnresolvedExistingPrescriptionEvidence({
+        sameAilmentPrescription: data.sameAilmentPrescription,
+        verificationConsultation: data.verificationConsultation,
+      })
+    ) {
+      return {
+        success: false,
+        error:
+          "Resolve the existing-prescription evidence before completing this assessment.",
+      };
+    }
+
+    // 0c. ORIENTATION GATE. The prescriber on the claim (the supervisor, for
     //     an intern/student) must have a recorded OCP "Mandatory Orientation
     //     for Minor Ailments Module" completion. This refuses HERE — server-
     //     side, before ANY row is written and before deriveClaimDraft is ever
@@ -552,12 +565,90 @@ export async function createAssessment(data: {
       }
     }
 
-    // 0c. Tenancy: the patient must belong to the actor's pharmacy.
+    // 0d. Tenancy: the patient must belong to the actor's pharmacy.
     const pat = await db.query.patient.findFirst({
       where: and(eq(patient.id, data.patientId), eq(patient.pharmacyId, pharmacyId)),
     });
     if (!pat) {
       return { success: false, error: "Patient not found" };
+    }
+    const persistedIdentity = patientIdentityBoundarySchema.safeParse({
+      firstName: pat.firstName,
+      lastName: pat.lastName,
+      dob: pat.dob,
+      healthNumber: pat.healthNumber,
+      gender: pat.gender,
+      identifierType: data.eligibilityDocument.identifierType,
+    });
+    if (!persistedIdentity.success) {
+      return {
+        success: false,
+        error: "The persisted eligibility identifier cannot be verified.",
+      };
+    }
+    const eligibilityIdentifier = persistedIdentity.data.healthNumber;
+    const healthCardVersionCode =
+      data.eligibilityDocument.identifierType === "ohip_health_number"
+        ? eligibilityIdentifier.slice(10) || null
+        : null;
+    const identifierNumber =
+      data.eligibilityDocument.identifierType === "ohip_health_number"
+        ? eligibilityIdentifier.slice(0, 10)
+        : eligibilityIdentifier;
+    const nameExactlyAsDisplayed =
+      `${persistedIdentity.data.firstName} ${persistedIdentity.data.lastName}`;
+
+    // Persisted intake data is authoritative for the ailment and the patient's
+    // self-reported count. The browser supplies only the opaque intake id.
+    const intake = await db.query.intakeSession.findFirst({
+      where: and(
+        eq(intakeSession.id, data.intakeSessionId),
+        pendingPredicate(pharmacyId),
+      ),
+    });
+    if (!intake) {
+      return {
+        success: false,
+        error:
+          "This intake is no longer available. Start from a pending intake and try again.",
+      };
+    }
+    if (
+      intake.priorCountSelfReport !== null &&
+      (!Number.isInteger(intake.priorCountSelfReport) ||
+        intake.priorCountSelfReport < 0)
+    ) {
+      return {
+        success: false,
+        error: "The linked intake contains invalid claim-history evidence.",
+      };
+    }
+    const ailmentGroupCode = intake.ailmentGroupCode;
+    const serviceDateText = data.serviceDate.toISOString().slice(0, 10);
+    const [effectiveAilment] = await db
+      .select({
+        id: ailmentGroup.id,
+        maxClaimsPer365Days: ailmentGroup.maxClaimsPer365Days,
+      })
+      .from(ailmentGroup)
+      .where(
+        and(
+          eq(ailmentGroup.code, ailmentGroupCode),
+          lte(ailmentGroup.effectiveDate, serviceDateText),
+          or(
+            isNull(ailmentGroup.endDate),
+            gte(ailmentGroup.endDate, serviceDateText),
+          ),
+        ),
+      )
+      .orderBy(desc(ailmentGroup.effectiveDate))
+      .limit(1);
+    if (!effectiveAilment || effectiveAilment.maxClaimsPer365Days <= 0) {
+      return {
+        success: false,
+        error:
+          "No effective claim-limit reference exists for this intake. Do not proceed with billing.",
+      };
     }
 
     const [ph] = await db
@@ -572,13 +663,13 @@ export async function createAssessment(data: {
           eq(pharmacy.id, pharmacyId),
           lte(
             odbFeeTier.effectiveDate,
-            data.serviceDate.toISOString().slice(0, 10),
+            serviceDateText,
           ),
           or(
             isNull(odbFeeTier.endDate),
             gte(
               odbFeeTier.endDate,
-              data.serviceDate.toISOString().slice(0, 10),
+              serviceDateText,
             ),
           ),
         ),
@@ -659,7 +750,11 @@ export async function createAssessment(data: {
     // 2. Same-day mutex pre-check for a friendly message. The DATABASE trigger
     //    (assessment_same_day_mutex_trg) is the race-safe backstop; this only
     //    improves the common-case UX.
-    const mutexCheck = await checkSameDayMutex(data.patientId, data.ailmentGroupCode, new Date(data.serviceDate));
+    const mutexCheck = await checkSameDayMutex(
+      data.patientId,
+      ailmentGroupCode,
+      new Date(data.serviceDate),
+    );
     if (!mutexCheck.allowed) {
       return { success: false, error: mutexCheck.reason };
     }
@@ -671,50 +766,86 @@ export async function createAssessment(data: {
 
     // 3b. Every assessment must trace back to a real, submitted intake — no
     //     walk-in/cold-start path. It must belong to this pharmacy.
-    const intake = await db.query.intakeSession.findFirst({
-      where: and(
-        eq(intakeSession.id, data.intakeSessionId),
-        eq(intakeSession.pharmacyId, pharmacyId)
-      ),
+    // 4. Insert Assessment. The recording user is the ACTOR (audit truth —
+    //    who performed the work), even when the claim's prescriber is their
+    //    supervisor.
+    const resolvePin = await loadResolvePin();
+    const trailingWindow = computeTrailingWindow(data.serviceDate);
+    const isSelfOrFamily = reduceSelfOrFamily(data.selfOrFamily);
+    const existingRxBlocks = reduceExistingRxBlocks({
+      sameAilmentPrescription: data.sameAilmentPrescription,
+      verificationConsultation: data.verificationConsultation,
     });
-    if (!intake) {
-      return { success: false, error: "Intake session not found for this pharmacy." };
-    }
+    const completion = await db.transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(
+        ${`p0-c:${pharmacyId}:${data.patientId}:${ailmentGroupCode}`},
+        0
+      ))`,
+    );
 
-    // Derive before any clinical row is written. A missing structured follow-up
-    // can therefore refuse a billable completion without leaving an assessment,
-    // consumed intake, or claim row behind.
+    const [history] = await tx
+      .select({ value: sql<number>`count(*)::int` })
+      .from(assessment)
+      .where(
+        and(
+          eq(assessment.pharmacyId, pharmacyId),
+          eq(assessment.patientId, data.patientId),
+          eq(assessment.ailmentGroupCode, ailmentGroupCode),
+          gt(
+            assessment.serviceDate,
+            sql`(${serviceDateText}::date - interval '365 days')`,
+          ),
+          lt(assessment.serviceDate, new Date(data.serviceDate)),
+        ),
+      );
+    const platformAssessmentCount = Number(history?.value ?? 0);
+    const patientSelfReportApproximateCount = intake.priorCountSelfReport;
+    const patientSelfReportStatus =
+      patientSelfReportApproximateCount === null
+        ? ("not_sure" as const)
+        : patientSelfReportApproximateCount === 0
+          ? ("no" as const)
+          : ("yes" as const);
+    // Counts are advisory snapshots. Only an explicit confirmed_met maximum
+    // state blocks the draft; HNS adjudication remains authoritative.
+    const claimMaximumReached =
+      data.clinicalViewer.maximumState === "confirmed_met";
+
     const claim = deriveClaimDraft({
-      ailmentGroupCode: data.ailmentGroupCode,
+      ailmentGroupCode,
       modality: data.modality as AssessmentModality,
       outcome: data.outcome as Outcome,
-      resolvePin: await loadResolvePin(),
+      resolvePin,
       prescriber: {
         ocpRegistrationNumber: prescriber.ocpNumber,
         isAsOfRightWithoutOntarioLicence: prescriber.isAsOfRight,
       },
-      isOdbRecipient: data.isOdbRecipient ?? true,
+      isOdbRecipient: data.isOdbRecipient,
       remoteVirtualEligible: ph.remoteVirtualEligible,
       virtualLocation: data.virtualLocation,
       remoteReason: data.remoteReason,
       ltc: data.ltc,
+      isSelfOrFamily,
+      existingRxBlocks,
+      claimMaximumReached,
     });
     const scheduledFollowUp = claim.billable
       ? parseFollowUpPlan(data.followUpPlan, data.serviceDate)
       : null;
     if (scheduledFollowUp && !scheduledFollowUp.success) {
-      return { success: false, error: scheduledFollowUp.error };
+      return {
+        success: false as const,
+        error: scheduledFollowUp.error,
+      };
     }
+    const attestedAt = new Date();
 
-    // 4. Insert Assessment. The recording user is the ACTOR (audit truth —
-    //    who performed the work), even when the claim's prescriber is their
-    //    supervisor.
-    const { newAssessment, followUpId } = await db.transaction(async (tx) => {
     const [newAssessment] = await tx.insert(assessment).values({
       pharmacyId,
       pharmacistUserId: actor.userId,
       patientId: data.patientId,
-      ailmentGroupCode: data.ailmentGroupCode,
+      ailmentGroupCode,
       modality: data.modality,
       virtualLocation: data.virtualLocation || null,
       remoteReason: data.remoteReason || null,
@@ -786,6 +917,39 @@ export async function createAssessment(data: {
       retainUntil,
     }).returning({ id: assessment.id });
 
+    await tx.insert(assessmentBillabilityEvidence).values({
+      assessmentId: newAssessment.id,
+      pharmacyId,
+      evidenceVersion: 1,
+      patientSelfReportStatus,
+      patientSelfReportApproximateCount,
+      patientSelfReportLocation:
+        data.patientSelfReportLocation?.trim() || null,
+      platformAssessmentCount,
+      trailingWindowStart: trailingWindow.start,
+      trailingWindowEnd: trailingWindow.end,
+      viewerSource: data.clinicalViewer.source,
+      viewerAttestation: data.clinicalViewer.attestation,
+      viewerAttestedAt: attestedAt,
+      viewerPharmacistId: actor.userId,
+      maximumState: data.clinicalViewer.maximumState,
+      selfOrFamily: data.selfOrFamily,
+      sameAilmentPrescription: data.sameAilmentPrescription,
+      verificationConsultation: data.verificationConsultation,
+      identifierType: data.eligibilityDocument.identifierType,
+      identifierIssuer: data.eligibilityDocument.identifierIssuer,
+      identifierNumber,
+      healthCardVersionCode,
+      nameExactlyAsDisplayed,
+      dateOfBirth: persistedIdentity.data.dob,
+      documentInspectedAttestation:
+        data.eligibilityDocument.documentInspectedAttestation,
+      verifyingPharmacistId: actor.userId,
+      verifiedAt: attestedAt,
+      isOdbRecipient: data.isOdbRecipient,
+      gender: data.isOdbRecipient ? null : persistedIdentity.data.gender,
+    });
+
     // 5. Consume the intake session — single-use.
     const consumed = await tx.update(intakeSession)
       .set({
@@ -850,11 +1014,43 @@ export async function createAssessment(data: {
         entityId: plan.id,
         source: "assessment_completion",
       });
-      return { newAssessment, followUpId: plan.id };
+      return {
+        success: true as const,
+        newAssessment,
+        followUpId: plan.id,
+        claim,
+        historyEvidence: {
+          patientSelfReportStatus,
+          patientSelfReportApproximateCount,
+          platformAssessmentCount,
+          seededMaximum365: effectiveAilment.maxClaimsPer365Days,
+          maximumState: data.clinicalViewer.maximumState,
+          trailingWindowStart: trailingWindow.start,
+          trailingWindowEnd: trailingWindow.end,
+        },
+      };
     }
 
-    return { newAssessment, followUpId: null };
+    return {
+      success: true as const,
+      newAssessment,
+      followUpId: null,
+      claim,
+      historyEvidence: {
+        patientSelfReportStatus,
+        patientSelfReportApproximateCount,
+        platformAssessmentCount,
+        seededMaximum365: effectiveAilment.maxClaimsPer365Days,
+        maximumState: data.clinicalViewer.maximumState,
+        trailingWindowStart: trailingWindow.start,
+        trailingWindowEnd: trailingWindow.end,
+      },
+    };
     });
+    if (!completion.success) {
+      return { success: false, error: completion.error };
+    }
+    const { newAssessment, followUpId, claim, historyEvidence } = completion;
 
     // 7. Audit (append-only). Best-effort: a failed audit write must not undo a
     //    created assessment, but it is logged loudly. No PHI in metadata.
@@ -867,7 +1063,7 @@ export async function createAssessment(data: {
         entityType: "assessment",
         entityId: newAssessment.id,
         metadata: {
-          ailmentGroupCode: data.ailmentGroupCode,
+          ailmentGroupCode,
           modality: data.modality,
           outcome: data.outcome,
           billable: claim.billable,
@@ -880,8 +1076,8 @@ export async function createAssessment(data: {
           ...(claim.billable ? { pinCode: claim.draft.pinCode } : { notBillableReason: claim.reason }),
         },
       });
-    } catch (auditErr) {
-      console.error("AUDIT WRITE FAILED for assessment", newAssessment.id, auditErr);
+    } catch {
+      console.error("AUDIT WRITE FAILED for assessment.");
     }
 
     // 7a. If an admin broke the glass on the orientation gate, record WHO, WHY,
@@ -899,11 +1095,11 @@ export async function createAssessment(data: {
           entityId: newAssessment.id,
           metadata: {
             reason: orientationOverride.reason,
-            ailmentGroupCode: data.ailmentGroupCode,
+            ailmentGroupCode,
           },
         });
-      } catch (auditErr) {
-        console.error("AUDIT WRITE FAILED for orientation override", newAssessment.id, auditErr);
+      } catch {
+        console.error("AUDIT WRITE FAILED for orientation override.");
       }
     }
 
@@ -911,6 +1107,7 @@ export async function createAssessment(data: {
       success: true,
       assessmentId: newAssessment.id,
       followUpId,
+      historyEvidence,
       claim: claim.billable
         ? { billable: true as const, draft: claim.draft }
         : {
@@ -923,8 +1120,8 @@ export async function createAssessment(data: {
     if (err instanceof AuthorizationError) {
       return { success: false, error: refusalMessage(err) };
     }
-    console.error("Failed to create assessment:", err);
     const code = typeof err === "object" && err !== null && "code" in err ? (err as { code?: string }).code : undefined;
+    console.error("Failed to create assessment.", code ? { code } : undefined);
     // One claim per person / ailment / day (unique index).
     if (code === "23505") {
       return { success: false, error: "Patient already has an assessment for this ailment today." };
@@ -940,31 +1137,89 @@ export async function createAssessment(data: {
   }
 }
 
-export async function getPatientHistoryCount(patientId: string, ailmentGroupCode: string) {
+export async function getPatientHistoryCount(
+  patientId: string,
+  intakeSessionId: string,
+  serviceDate: Date,
+) {
   try {
     // Session + role re-verified here, not in proxy.ts (see SECURITY MODEL).
-    // The count is computed only for a patient of the actor's own pharmacy.
-    const { pharmacyId } = await requirePortalUser();
+    // The count is computed only for a patient and pending intake belonging to
+    // the actor's own pharmacy. The ailment comes from that persisted intake.
+    const { pharmacyId } = await requirePortalUser(RECORDING_ROLES);
+    const request = claimHistoryRequestBoundarySchema.safeParse({
+      patientId,
+      intakeSessionId,
+      serviceDate,
+    });
+    if (!request.success) {
+      return { success: false, count: 0, maximum: null };
+    }
     const pat = await db.query.patient.findFirst({
-      where: and(eq(patient.id, patientId), eq(patient.pharmacyId, pharmacyId)),
-    });
-    if (!pat) return { success: false, count: 0 };
-
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-
-    const countResult = await db.query.assessment.findMany({
       where: and(
-        eq(assessment.patientId, patientId),
-        eq(assessment.ailmentGroupCode, ailmentGroupCode),
-        sql`${assessment.serviceDate} >= ${oneYearAgo.toISOString().split('T')[0]}::date`
-      )
+        eq(patient.id, request.data.patientId),
+        eq(patient.pharmacyId, pharmacyId),
+      ),
     });
-    return { success: true, count: countResult.length };
+    const intake = await db.query.intakeSession.findFirst({
+      where: and(
+        eq(intakeSession.id, request.data.intakeSessionId),
+        pendingPredicate(pharmacyId),
+      ),
+    });
+    if (!pat || !intake) {
+      return { success: false, count: 0, maximum: null };
+    }
+
+    const serviceDateText = request.data.serviceDate
+      .toISOString()
+      .slice(0, 10);
+    const trailingWindow = computeTrailingWindow(request.data.serviceDate);
+    const [[history], [reference]] = await Promise.all([
+      db
+        .select({ value: sql<number>`count(*)::int` })
+        .from(assessment)
+        .where(
+          and(
+            eq(assessment.pharmacyId, pharmacyId),
+            eq(assessment.patientId, request.data.patientId),
+            eq(assessment.ailmentGroupCode, intake.ailmentGroupCode),
+            gt(
+              assessment.serviceDate,
+              sql`(${serviceDateText}::date - interval '365 days')`,
+            ),
+            lt(assessment.serviceDate, request.data.serviceDate),
+          ),
+        ),
+      db
+        .select({ maximum: ailmentGroup.maxClaimsPer365Days })
+        .from(ailmentGroup)
+        .where(
+          and(
+            eq(ailmentGroup.code, intake.ailmentGroupCode),
+            lte(ailmentGroup.effectiveDate, serviceDateText),
+            or(
+              isNull(ailmentGroup.endDate),
+              gte(ailmentGroup.endDate, serviceDateText),
+            ),
+          ),
+        )
+        .orderBy(desc(ailmentGroup.effectiveDate))
+        .limit(1),
+    ]);
+    return {
+      success: true,
+      count: Number(history?.value ?? 0),
+      maximum: reference?.maximum ?? null,
+      trailingWindowStart: trailingWindow.start,
+      trailingWindowEnd: trailingWindow.end,
+    };
   } catch (err) {
-    if (err instanceof AuthorizationError) return { success: false, count: 0 };
-    console.error("Failed to get patient history:", err);
-    return { success: false, count: 0 };
+    if (err instanceof AuthorizationError) {
+      return { success: false, count: 0, maximum: null };
+    }
+    console.error("Failed to get patient history.");
+    return { success: false, count: 0, maximum: null };
   }
 }
 
