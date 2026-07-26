@@ -3,7 +3,7 @@
 **Verified through:** 2026-07-26
 
 **Quality snapshot:** the current tree is TypeScript- and ESLint-clean, passes
-70/70 database-free tests, and builds `/check` as a production static route.
+73/73 database-free tests, and builds `/check` as a production static route.
 The last complete run on 2026-07-25 passed 135/135 tests, including a
 fresh Docker Postgres migration replay through `0017`. Supabase is live through
 the same migration.
@@ -60,6 +60,10 @@ This is the implementation record requested for the project. It describes capabi
 - Added separate typed pre-visit and advisory document branches. The advisory
   type has no ailment field; neither branch contains PINs, fees, maximums, or
   claim derivation.
+- Reworked both PDFs into a modern AgentOMA-branded report with structured
+  response cards and bottom-of-page fine print. Removed repetitive
+  `self-reported` labels while retaining one clear statement that answers are
+  unverified; emergency guidance stays prominent.
 - Added tests for document boundaries, absence of identifying/billing fields,
   shared triage imports, forbidden persistence APIs, and silent PDF failure
   handling.
