@@ -3,9 +3,14 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import { DEMO_BOUNDARY, DEMO_STAGES } from "@/lib/demo/tour";
+import { DEMO_BOUNDARY, DEMO_STAGES, PATIENT_STEPS } from "@/lib/demo/tour";
+import { AILMENT_LABELS, ALL_AILMENT_IDS } from "@/config/triage";
 
 import styles from "./DemoExperience.module.css";
+
+// The 23 funded Ontario minor-ailment groups, in plain-language labels, sourced
+// from the verified triage config (no PINs, fees, or claim maximums here).
+const CONDITIONS = ALL_AILMENT_IDS.map((id) => AILMENT_LABELS[id]);
 
 function CheckIcon() {
   return (
@@ -34,10 +39,12 @@ export default function DemoExperience() {
       <section className={styles.intro}>
         <div className={styles.introCopy}>
           <span className={styles.eyebrow}>Interactive guided demo</span>
-          <h1>See the complete pharmacy workflow without entering patient data.</h1>
+          <h1>Ontario minor ailments, assessed at the pharmacy — start on your phone.</h1>
           <p>
-            Walk through intake, pharmacist documentation, claim preparation,
-            follow-up, and record governance using a fully synthetic example.
+            A walk-in patient begins the assessment from the waiting room, and
+            the pharmacist finishes it at the desk. See the whole flow — for both
+            sides of the counter — using a synthetic pink-eye example. Nothing
+            here is real and nothing is saved.
           </p>
         </div>
 
@@ -53,6 +60,49 @@ export default function DemoExperience() {
           </ul>
         </div>
       </section>
+
+      <section className={styles.patientFlow} aria-label="How a walk-in works">
+        <h2>How a walk-in works</h2>
+        <ol className={styles.stepGrid}>
+          {PATIENT_STEPS.map((s) => (
+            <li key={s.step} className={styles.stepCard}>
+              <span className={styles.stepNumber} aria-hidden="true">{s.step}</span>
+              <div>
+                <strong>{s.title}</strong>
+                <p>{s.body}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className={styles.conditions} aria-label="Funded minor ailments">
+        <div className={styles.conditionsHead}>
+          <div>
+            <span className={styles.eyebrow}>What pharmacists can assess</span>
+            <h2>{CONDITIONS.length} funded Ontario minor ailments</h2>
+          </div>
+          <p>
+            An Ontario pharmacist can assess — and, where appropriate, prescribe
+            for — each of these publicly funded conditions. The self-check guides
+            a walk-in patient to the right one before they reach the counter.
+          </p>
+        </div>
+        <ul className={styles.conditionGrid}>
+          {CONDITIONS.map((label) => (
+            <li key={label} className={styles.conditionChip}>{label}</li>
+          ))}
+        </ul>
+      </section>
+
+      <div className={styles.tourIntro}>
+        <span className={styles.eyebrow}>End to end</span>
+        <h2>Follow one visit through the whole workflow</h2>
+        <p>
+          From the patient&apos;s self-check to the pharmacist&apos;s record, the
+          claim draft, follow-up, and the audit trail — step through each stage.
+        </p>
+      </div>
 
       <section className={styles.tour} aria-label="AgentOMA guided demo">
         <nav className={styles.stageRail} aria-label="Demo stages">

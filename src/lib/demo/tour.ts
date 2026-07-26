@@ -15,77 +15,106 @@ export type DemoStage = {
 };
 
 export const DEMO_BOUNDARY = [
-  "Synthetic information only",
-  "Nothing is saved",
-  "No portal access or HNS submission",
+  "Synthetic example — no real patient",
+  "Nothing is saved to any record",
+  "No portal access or claim submission",
 ] as const;
 
+/**
+ * The three-step patient side of the walk-in flow, shown as a quick strip above
+ * the detailed tour. Deliberately plain-language: this is what a patient in the
+ * pharmacy actually does.
+ */
+export const PATIENT_STEPS = [
+  {
+    step: "1",
+    title: "Scan at the counter",
+    body: "Point your phone at the pharmacy's code — no app, no account, no sign-up.",
+  },
+  {
+    step: "2",
+    title: "Answer a few questions",
+    body: "Plain-language questions narrow what's going on to one of the funded conditions. It never asks for your name, birth date, or health card.",
+  },
+  {
+    step: "3",
+    title: "Hand a code to the pharmacist",
+    body: "You get a short reference code. Show it at the counter and the pharmacist picks up exactly where you left off.",
+  },
+] as const;
+
+/**
+ * Synthetic walk-in journey — a made-up "pink eye" visit — walked end to end so
+ * both sides of the counter are clear. No real PINs, fees, or patient data
+ * appear here; billing values are described, never shown (the live workflow
+ * resolves them from effective-dated reference data).
+ */
 export const DEMO_STAGES: ReadonlyArray<DemoStage> = [
   {
     id: "handoff",
-    navLabel: "Patient handoff",
+    navLabel: "Walk-in self-check",
     eyebrow: "Stage 1 of 5",
-    title: "A zero-identifying-data intake reaches the pharmacy",
+    title: "A walk-in patient starts the assessment on their own phone",
     summary:
-      "The patient-facing kiosk prepares a short-lived reference without collecting a name, birth date, or health number.",
+      "In the waiting area the patient scans the pharmacy's code and answers a few plain-language questions. The tool narrows their concern to one of Ontario's funded minor ailments and hands the pharmacist a head start — with zero identifying data collected.",
     screenTitle: "Intake queue",
     status: "Waiting for pharmacist",
     fields: [
-      { label: "Reference code", value: "DEMO24", emphasis: true },
-      { label: "Patient identity", value: "Not collected" },
-      { label: "Self-reported path", value: "Ready for pharmacist review" },
+      { label: "Reference code", value: "PNK-24", emphasis: true },
+      { label: "Self-reported concern", value: "Pink eye (example)" },
+      { label: "Patient identity", value: "Not collected on the phone" },
       { label: "Data state", value: "Synthetic preview only" },
     ],
     callout:
-      "In the live workflow, identity is entered from the physical health card only at the authenticated pharmacist desk.",
+      "The phone never holds a name, birth date, or health card. Identity is entered from the physical card only at the authenticated pharmacist desk.",
   },
   {
     id: "record",
-    navLabel: "Clinical record",
+    navLabel: "Pharmacist review",
     eyebrow: "Stage 2 of 5",
-    title: "The pharmacist documents a defensible assessment",
+    title: "The pharmacist opens the intake and verifies in person",
     summary:
-      "The workspace brings consent, history, findings, shared decisions, care planning, and outcome evidence into one structured record.",
+      "The pharmacist calls the reference code, keys identity from the health card, and reviews the patient's self-reported answers — then verifies the self-diagnosis and documents consent, history, findings, and the care plan in one structured record.",
     screenTitle: "Assessment workspace",
     status: "Documentation in progress",
     fields: [
-      { label: "Patient", value: "Sample patient — synthetic" },
+      { label: "Loaded from", value: "Reference code PNK-24" },
+      { label: "Assessment", value: "Pharmacist verifies the self-diagnosis" },
       { label: "Consent", value: "Method, giver, and time recorded" },
-      { label: "Clinical record", value: "Required sections complete" },
-      { label: "Authorization", value: "Session, role, and pharmacy rechecked" },
+      { label: "Authorization", value: "Session, role, and pharmacy re-checked" },
     ],
     callout:
-      "The real server action re-verifies authorization. The navigation proxy is never trusted as an access-control boundary.",
+      "The self-check speeds the visit; it never replaces the pharmacist. The real server action re-verifies authorization — the navigation proxy is never an access boundary.",
   },
   {
     id: "claim",
     navLabel: "Claim handoff",
     eyebrow: "Stage 3 of 5",
-    title: "A billable outcome produces a read-only draft",
+    title: "A billable outcome produces a read-only claim draft",
     summary:
-      "Billing fields are derived from the completed assessment and effective-dated reference data; the pharmacist does not type them.",
+      "Whether a prescription is written or not, a completed assessment is a funded service. The billing fields are derived from the outcome and effective-dated reference data — the pharmacist types none of them.",
     screenTitle: "Claim draft",
     status: "Ready for hand-entry",
     fields: [
-      { label: "PIN", value: "Resolved from versioned reference data" },
-      { label: "Fee", value: "Resolved from the applicable reference row" },
+      { label: "PIN & fee", value: "Resolved from versioned reference data" },
       { label: "Prescriber fields", value: "Resolved from the signed-in profile" },
+      { label: "Patient cost", value: "Covered by OHIP for eligible patients" },
       { label: "Submission", value: "Not submitted to HNS", emphasis: true },
     ],
     callout:
-      "The live panel is for hand-entry into dispensing software. AgentOMA prepares and stores a draft; it does not submit a claim.",
+      "AgentOMA prepares and stores a draft for hand-entry into dispensing software — it does not submit a claim or guarantee payment. The patient may fill any prescription at the pharmacy of their choice.",
   },
   {
     id: "follow-up",
     navLabel: "Follow-up",
     eyebrow: "Stage 4 of 5",
-    title: "The service continues after the assessment",
+    title: "The service continues after the patient leaves",
     summary:
-      "Every billable completion creates a follow-up plan so due work remains visible even when a prescription is filled elsewhere.",
+      "Every billable completion creates a follow-up plan, so the pharmacist's duty of care stays visible even when the prescription is filled at another pharmacy.",
     screenTitle: "Follow-ups due",
     status: "Open",
     fields: [
-      { label: "Due", value: "Two days after service — demo" },
+      { label: "Due", value: "Two days after service — example" },
       { label: "Method", value: "Phone" },
       { label: "Monitoring", value: "Safety and efficacy review planned" },
       { label: "Attempt outcome", value: "Reached or not reached is recorded" },
@@ -97,9 +126,9 @@ export const DEMO_STAGES: ReadonlyArray<DemoStage> = [
     id: "governance",
     navLabel: "Audit & governance",
     eyebrow: "Stage 5 of 5",
-    title: "The record stays reviewable after the visit",
+    title: "The record stays reviewable for a Ministry audit",
     summary:
-      "Append-only audit evidence, immutable corrections, retention controls, and complete exports support pharmacy review and governance.",
+      "Append-only audit evidence, immutable corrections, database-enforced retention, and complete exports give the pharmacy its defensible record if the Ministry reviews a claim.",
     screenTitle: "Record governance",
     status: "History preserved",
     fields: [
@@ -109,6 +138,6 @@ export const DEMO_STAGES: ReadonlyArray<DemoStage> = [
       { label: "Retention", value: "Computed and database-enforced" },
     ],
     callout:
-      "This tour is read-only. The live governance area requires an authenticated pharmacy administrator and remains pharmacy-scoped.",
+      "This tour is read-only. The live governance area requires an authenticated pharmacy administrator and stays scoped to a single pharmacy.",
   },
 ];

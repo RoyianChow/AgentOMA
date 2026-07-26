@@ -76,6 +76,120 @@
   color: var(--success);
 }
 
+/* ── How a walk-in works (3-step patient strip) ─────────────────────────── */
+.patientFlow {
+  margin-bottom: 3rem;
+}
+
+.patientFlow > h2,
+.conditionsHead h2,
+.tourIntro h2 {
+  margin: 0.4rem 0 0;
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+}
+
+.stepGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stepCard {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  padding: 1.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.stepCard strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 1.02rem;
+}
+
+.stepCard p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.stepNumber {
+  width: 2.1rem;
+  height: 2.1rem;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+/* ── Funded conditions showcase ─────────────────────────────────────────── */
+.conditions {
+  margin-bottom: 3rem;
+  padding: 2rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-md);
+}
+
+.conditionsHead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 1.5rem;
+  align-items: end;
+  margin-bottom: 1.5rem;
+}
+
+.conditionsHead p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.conditionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.conditionChip {
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* ── Tour intro heading ─────────────────────────────────────────────────── */
+.tourIntro {
+  max-width: 760px;
+  margin-bottom: 1.5rem;
+}
+
+.tourIntro p {
+  margin: 0.6rem 0 0;
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
 .tour {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
@@ -421,6 +535,15 @@
 
   .tour {
     grid-template-columns: 1fr;
+  }
+
+  .stepGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .conditionsHead {
+    grid-template-columns: 1fr;
+    align-items: start;
   }
 
   .stageRail {
