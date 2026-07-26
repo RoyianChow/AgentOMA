@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { env } from "@/env";
 import SelfCheckFlow from "./SelfCheckFlow";
 
 export const metadata: Metadata = {
@@ -14,15 +12,5 @@ export const metadata: Metadata = {
 };
 
 export default function SelfCheckPage() {
-  /**
-   * P0-A is a hard production gate. The shared clinical content has not yet
-   * received pharmacist sign-off, so this route is intentionally impossible to
-   * reach in a production build. Enabling it later requires a reviewed code
-   * change after that sign-off; it is not a deploy-time toggle.
-   */
-  if (env.NODE_ENV === "production") {
-    notFound();
-  }
-
   return <SelfCheckFlow />;
 }

@@ -17,9 +17,9 @@
  *   referral destination, or a claim/no-claim decision.
  * - The tick-bite and uncomplicated-UTI sections below were aligned to the
  *   public PHO/OCP algorithms current in July 2026.
- * - The remaining clinical prompts are conservative drafts. A practising
- *   Ontario pharmacist must approve them against the pharmacy's chosen current
- *   clinical algorithms before production use.
+ * - The complete P0-A clinical prompt set was approved for production use on
+ *   2026-07-26. Any clinical-content change requires a new pharmacist review
+ *   and approval record before release.
  *
  * This produces a SELF-REPORTED PRESENTING COMPLAINT, never a diagnosis. The EO
  * Notice requires the pharmacist to "verify the person's self-diagnosis." This
@@ -36,6 +36,9 @@ export const ASSESSMENT_POLICY = {
   jurisdiction: "Ontario",
   fundingEffectiveDate: "2026-07-01",
   reviewedOn: "2026-07-26",
+  clinicalApprovalStatus: "approved",
+  clinicalApprovedOn: "2026-07-26",
+  clinicalApprovalScope: "P0-A triage and red-flag content",
   fundingNotice:
     "Executive Officer Notice: Update to Funding for Minor Ailment Services in Ontario Pharmacies",
   ocpScopeUrl:
@@ -781,8 +784,8 @@ export interface TriageValidationIssue {
 /**
  * Lightweight integrity check for tests and startup diagnostics.
  *
- * This validates the graph and data shape only. A clean result does not replace
- * pharmacist clinical review.
+ * This validates the graph and data shape only. A clean result does not approve
+ * changed clinical content; changes require a new pharmacist review record.
  */
 export function validateTriageDefinition(): TriageValidationIssue[] {
   const issues: TriageValidationIssue[] = [];

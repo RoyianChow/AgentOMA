@@ -111,11 +111,11 @@ plausible guess.
 
 ### We hold the line on clinical content.
 
-Every triage question and red flag is marked `PHARMACIST REVIEW REQUIRED` until a
-pharmacist signs off. The tick-bite 72-hour threshold is explicitly labelled a
-*guess* and must be replaced with OCP's Lyme PEP algorithm before go-live — and
-until then, nobody "improves" it by reasoning, because reasoning about a
-time-critical clinical threshold is exactly the mistake. Clinical truth comes
+The current `src/config/triage.ts` artifact received P0-A clinical approval on
+2026-07-26, including the tick-bite and UTI sections. Its normalized SHA-256 is
+bound in [`CLINICAL_APPROVAL.md`](CLINICAL_APPROVAL.md). Any change to a clinical
+question, route, red flag, emergency sign, threshold, or outcome invalidates
+that approval until a pharmacist reviews the new artifact. Clinical truth comes
 from a clinician, not from an agent's confidence.
 
 ---

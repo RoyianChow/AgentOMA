@@ -1,10 +1,11 @@
 # Public self-check and pre-visit PDF
 
-**Status:** implemented for development review; hard-blocked in production
+**Status:** clinically approved and available in production
 
 **Route:** `/check`
 
-**Release gate:** P0-A pharmacist sign-off on `src/config/triage.ts`
+**Clinical approval:** P0-A satisfied on 2026-07-26; see
+[`CLINICAL_APPROVAL.md`](CLINICAL_APPROVAL.md)
 
 This page is the current decision and implementation record for the
 pharmacy-agnostic, unauthenticated self-check. It supersedes earlier feature
@@ -31,9 +32,9 @@ The pharmacist still performs and documents the actual assessment.
 - **No demographics.** It collects no name, date of birth, age, sex, gender, or
   other identifying field. The frozen red-flag questions already ask the
   relevant self-reported safety questions.
-- **No production release before P0-A.** `src/app/(self-check)/check/page.tsx`
-  returns a 404 in every production build. Removing that gate requires a
-  reviewed code change after clinical sign-off.
+- **Production release is tied to the approved artifact.** The route is public
+  after P0-A sign-off. A hash-backed test prevents changed clinical content from
+  silently inheriting the approval.
 
 ## Outcome branches
 
@@ -60,9 +61,14 @@ nothing has been billed or submitted.
 | Browser-only PDF generation | `src/lib/self-check/pdf.ts` |
 | Safety/tombstone tests | `src/lib/self-check/__tests__/` |
 | Shared frozen clinical source | `src/config/triage.ts` |
+| Approval and change control | `docs/CLINICAL_APPROVAL.md` |
 
 ## Reversal control
 
 Showing billing data, persisting answers, or collecting a health number or
 demographic identifier is a new feature brief. Each change requires privacy and
 clinical review; it must not be introduced as a quiet amendment.
+
+Changing any clinical question, route, emergency sign, red flag, threshold, or
+outcome also invalidates the recorded P0-A approval until a pharmacist reviews
+the new artifact.
