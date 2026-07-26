@@ -1,12 +1,14 @@
 # AgentOMA project overview
 
-**Status snapshot:** 2026-07-25
+**Status snapshot:** 2026-07-26
 
 **Current stage:** authenticated pilot foundation; **not production-ready**
 
-**Verification at this snapshot:** TypeScript clean, ESLint clean, and 135/135
-tests pass. The full suite rebuilt a fresh Docker Postgres database from zero
-through migration `0017`. Supabase is also live through `0017`; post-migration inspection
+**Verification at this snapshot:** the current tree is TypeScript-clean,
+ESLint-clean, passes all 70 database-free tests, and produces `/check` as a
+static route in a successful production build. The last complete suite run on
+2026-07-25 passed 135/135 tests and rebuilt a fresh Docker Postgres database
+from zero through migration `0017`. Supabase is also live through `0017`; post-migration inspection
 reports one Demo Pharmacy, no cross-pharmacy relationships, three preserved
 users with TOTP, and matching patient-wide retention horizons.
 
@@ -18,7 +20,7 @@ AgentOMA supports Ontario pharmacy minor-ailment services. The Ministry of Healt
 |---|---|---|---|
 | Marketing site | `/` | Public product information | No PHI |
 | Guided demo | `/demo` | Interactive synthetic tour of intake, assessment, claim handoff, follow-up, and governance | No inputs, persistence, auth bypass, clinical advice, or billing values |
-| Public self-check | `/check` | Pharmacy-agnostic symptom self-check and client-generated pre-visit/advisory PDF; development review only | Zero identifying data; nothing sent or persisted |
+| Public self-check | `/check` | Clinically approved, pharmacy-agnostic symptom self-check and client-generated pre-visit/advisory PDF | Zero identifying data; nothing sent or persisted |
 | Patient intake | `/assessment` | Mobile kiosk triage and six-character handoff | Collects zero PHI by design |
 | Authentication | `/sign-in`, `/enroll-2fa`, `/accept-invitation` | Invitation-only portal access and mandatory TOTP | Authentication data only |
 | Pharmacist portal | `/pharmacist/*` | Intake retrieval, patient identity, assessment, claim draft, follow-up, audit, settings, team | Contains PHI; authenticated and pharmacy-scoped |
@@ -57,8 +59,10 @@ Firebase is no longer part of the stack. PHI and operational data use Canadian-r
 synthetic stages explain the zero-PHI handoff, structured pharmacist record,
 reference-derived claim boundary, follow-up obligation, and immutable
 audit/governance history. It accepts no user data and has no database, auth,
-triage, claim-derivation, browser-storage, or HNS integration. Architecture
-tests enforce that separation; the real pharmacist portal remains
+clinical-routing, red-flag, claim-derivation, browser-storage, or HNS
+integration. It imports only `AILMENT_LABELS` and `ALL_AILMENT_IDS` from the
+approved triage module to avoid duplicating the public condition names.
+Architecture tests enforce that narrow import boundary; the real pharmacist portal remains
 invitation-only with mandatory TOTP.
 
 ### Patient intake
@@ -67,7 +71,10 @@ The kiosk runs an emergency check, a deterministic narrowing tree, ailment-speci
 
 An assessable flow creates a short-lived, single-use `intake_session` containing symptom answers and a handoff code—never a name, date of birth, health number, or other patient identifier. Emergency and red-flag exits remain structurally separate from completed assessments; a red-flag exit creates no assessment or claim draft.
 
-Clinical content in `src/config/triage.ts` still requires pharmacist review. Do not treat the intake as a diagnosis.
+The current `src/config/triage.ts` artifact received P0-A clinical approval on
+2026-07-26. The approval is hash-bound in
+[`CLINICAL_APPROVAL.md`](CLINICAL_APPROVAL.md); changed clinical content requires
+a new pharmacist review. The intake remains a routing aid, not a diagnosis.
 
 ### Public self-check
 
@@ -78,8 +85,9 @@ server request or retained browser storage. The advisory document type cannot
 carry a suspected ailment; no branch contains a PIN, fee, maximum, or claim
 derivation.
 
-The route returns 404 in production until P0-A pharmacist sign-off. See
-[`SELF_CHECK.md`](SELF_CHECK.md) for the approved decisions and release gate.
+The P0-A gate was satisfied on 2026-07-26, and the route is available in
+production. See [`SELF_CHECK.md`](SELF_CHECK.md) for its approved privacy and
+product boundaries.
 
 ### Pharmacist portal
 
@@ -132,7 +140,7 @@ Reference data is effective-dated and seeded idempotently:
 - `pin`: four modality/outcome PIN rows per group with fee cents.
 - `claim_rule`: data-driven same-day mutex and scope rules.
 - `odb_fee_tier`: effective-dated dispensing-fee rows with an explicit remote-virtual eligibility flag.
-- `ailment_red_flag`: schema for reviewed clinical rules; clinical content remains gated on pharmacist approval.
+- `ailment_red_flag`: schema for reviewed clinical rules; future clinical-content changes require renewed approval.
 
 Operational and PHI data:
 
@@ -210,8 +218,7 @@ idempotent.
 ## What is complete and what is not
 
 Implemented work is recorded in [`COMPLETED_WORK.md`](COMPLETED_WORK.md). The
-highest-priority gaps are clinical-content sign-off (which also gates `/check`),
-unresolved LTC billing guidance, server-enforced
+highest-priority gaps are unresolved LTC billing guidance, server-enforced
 eligibility/existing-prescription/history gates, and
 removal or approval of the orientation override. A first isolated restore drill
 also remains outstanding. See

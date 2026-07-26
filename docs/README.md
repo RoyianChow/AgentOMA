@@ -22,7 +22,8 @@ provenance only.
 |---|---|
 | [`COMPLIANCE.md`](COMPLIANCE.md) | Traceability from implemented controls and gaps to the Executive Officer Notice. |
 | [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) | Unresolved clinical, billing, and policy decisions that agents must not answer. |
-| [`SELF_CHECK.md`](SELF_CHECK.md) | Approved zero-identifying-data boundary and production gate for public `/check`. |
+| [`CLINICAL_APPROVAL.md`](CLINICAL_APPROVAL.md) | Hash-bound P0-A approval record and clinical change-control boundary. |
+| [`SELF_CHECK.md`](SELF_CHECK.md) | Approved zero-identifying-data boundary and production posture for public `/check`. |
 | [`PRODUCT_PRINCIPLES.md`](PRODUCT_PRINCIPLES.md) | Product rationale behind refusal-first billing, privacy, and record-integrity choices. |
 | [`RESTORE_DRILL.md`](RESTORE_DRILL.md) | Canadian-region backup/restore evidence procedure; this is a runbook, not proof that the first drill has occurred. |
 | [`regulatory/`](regulatory/) | Binding Ministry source PDF. Read only when a compliance question requires it. |
@@ -46,4 +47,6 @@ tool-specific pointers and must not duplicate repository rules.
 
 Never copy the PIN table or clinical rules into documentation. Billing values
 belong in `src/config/ailment-reference.ts` and the seeded reference tables;
-clinical rules remain in `src/config/triage.ts` pending pharmacist review.
+the approved clinical rules remain in `src/config/triage.ts` and are bound to
+[`CLINICAL_APPROVAL.md`](CLINICAL_APPROVAL.md). Any content change requires a
+new pharmacist review.

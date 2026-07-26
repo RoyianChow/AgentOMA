@@ -24,8 +24,12 @@ describe("public guided demo", () => {
     expect(DEMO_STAGES).toHaveLength(5);
     expect(new Set(DEMO_STAGES.map((stage) => stage.id)).size).toBe(5);
     expect(DEMO_STAGES.every((stage) => stage.fields.length >= 4)).toBe(true);
-    expect(DEMO_BOUNDARY).toContain("Synthetic information only");
-    expect(DEMO_BOUNDARY).toContain("Nothing is saved");
+    expect(
+      DEMO_BOUNDARY.some((item) => item.toLowerCase().includes("synthetic")),
+    ).toBe(true);
+    expect(
+      DEMO_BOUNDARY.some((item) => item.startsWith("Nothing is saved")),
+    ).toBe(true);
   });
 
   it("cannot persist data, bypass auth, or expose billing and clinical authority", () => {
@@ -38,8 +42,19 @@ describe("public guided demo", () => {
     );
     expect(source).not.toMatch(/localStorage|sessionStorage|indexedDB/);
     expect(source).not.toMatch(/console\.(log|warn|error|debug)/);
+    expect(source).not.toMatch(/deriveClaimDraft|ailment-reference/);
+
+    const triageImport = source.match(
+      /import\s*\{([^}]+)\}\s*from\s*["']@\/config\/triage["']/,
+    );
+    const importedNames = triageImport?.[1]
+      .split(",")
+      .map((name) => name.trim())
+      .sort();
+
+    expect(importedNames).toEqual(["AILMENT_LABELS", "ALL_AILMENT_IDS"]);
     expect(source).not.toMatch(
-      /deriveClaimDraft|ailment-reference|@\/config\/triage/,
+      /\b(?:ASSESSMENT_POLICY|EMERGENCY_SIGNS|NODES|RED_FLAGS|TRIAGE_ROOT|UTI_PRESENTATION_CRITERIA|validateTriageDefinition)\b/,
     );
     expect(source).not.toMatch(/healthNumber|healthCard|dateOfBirth|\bdob\b/);
     expect(source).not.toMatch(/<input|<textarea|contentEditable/);

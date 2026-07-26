@@ -1,10 +1,12 @@
 # Completed work
 
-**Verified through:** 2026-07-25
+**Verified through:** 2026-07-26
 
-**Quality snapshot:** TypeScript clean · ESLint clean · 135/135 tests passing,
-including a fresh Docker Postgres migration replay through `0017`. Supabase is
-live through the same migration.
+**Quality snapshot:** the current tree is TypeScript- and ESLint-clean, passes
+70/70 database-free tests, and builds `/check` as a production static route.
+The last complete run on 2026-07-25 passed 135/135 tests, including a
+fresh Docker Postgres migration replay through `0017`. Supabase is live through
+the same migration.
 
 This is the implementation record requested for the project. It describes capabilities present in the repository, not planned work. Remaining items are in [`NEXT_STEPS.md`](NEXT_STEPS.md).
 
@@ -36,12 +38,13 @@ This is the implementation record requested for the project. It describes capabi
   structured assessment, claim handoff, follow-up, and record governance.
 - Kept the tour fully synthetic and in memory. It accepts no patient input,
   opens no authenticated portal session, and has no database, browser-storage,
-  clinical-triage, claim-derivation, or HNS path.
+  clinical-routing, red-flag, claim-derivation, or HNS path. It reuses only the
+  approved public ailment IDs and labels rather than duplicating them.
 - Omitted PINs, fees, claim maximums, and clinical recommendations while still
   explaining which live boundaries derive and protect those records.
 - Added architecture tests that fail if the demo imports persistence/auth
-  layers, frozen triage content, claim derivation, browser storage, identifying
-  fields, or PIN-like values.
+  layers, any triage export beyond `AILMENT_LABELS` and `ALL_AILMENT_IDS`, claim
+  derivation, browser storage, identifying fields, or PIN-like values.
 
 ## Public self-check and pre-visit PDF
 
@@ -60,8 +63,11 @@ This is the implementation record requested for the project. It describes capabi
 - Added tests for document boundaries, absence of identifying/billing fields,
   shared triage imports, forbidden persistence APIs, and silent PDF failure
   handling.
-- Hard-blocked `/check` in production pending P0-A clinical sign-off. See
-  [`SELF_CHECK.md`](SELF_CHECK.md).
+- Recorded P0-A clinical approval for the complete current `triage.ts` artifact,
+  including tick-bite and UTI content, with a line-ending-stable SHA-256
+  tombstone test. See [`CLINICAL_APPROVAL.md`](CLINICAL_APPROVAL.md).
+- Removed the production-only 404 after sign-off; `/check` is now publicly
+  available under the same zero-identifying-data and no-persistence boundary.
 
 ## Claim assembly and money rules
 

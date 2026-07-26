@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -47,7 +48,7 @@ describe("public self-check architecture", () => {
     expect(flow).not.toMatch(/const\s+(NODES|RED_FLAGS|EMERGENCY_SIGNS)\s*=/);
   });
 
-  it("keeps the route unreachable in production pending P0-A sign-off", () => {
+  it("releases the route only against the recorded P0-A-approved source", () => {
     const page = readFileSync(
       join(
         process.cwd(),
@@ -59,8 +60,21 @@ describe("public self-check architecture", () => {
       ),
       "utf8",
     );
+    const triage = readFileSync(
+      join(process.cwd(), "src", "config", "triage.ts"),
+      "utf8",
+    );
+    const approval = readFileSync(
+      join(process.cwd(), "docs", "CLINICAL_APPROVAL.md"),
+      "utf8",
+    );
+    const approvedHash = createHash("sha256")
+      .update(triage.replace(/\r\n/g, "\n"))
+      .digest("hex");
 
-    expect(page).toContain('env.NODE_ENV === "production"');
-    expect(page).toContain("notFound()");
+    expect(page).not.toContain("notFound()");
+    expect(page).not.toContain("env.NODE_ENV");
+    expect(triage).toContain('clinicalApprovalStatus: "approved"');
+    expect(approval).toContain(`\`${approvedHash}\``);
   });
 });

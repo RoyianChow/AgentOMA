@@ -1,24 +1,55 @@
 /**
  * PATIENT TRIAGE TREE
  *
- * Narrows a patient's "something is wrong with me" down to one of the 23 funded
- * Ontario minor-ailment groups, or routes safely out.
+ * Narrows a patient's presenting concern to one of the 23 publicly funded
+ * Ontario minor-ailment claim categories, or routes the patient to a pharmacist
+ * without forcing a category.
  *
  * Client-safe: contains no PINs, no fees, no claim maximums, no PHI.
  * Claim maximums are passed in from the server (see assessment/page.tsx).
  *
- * ⚠️  PHARMACIST REVIEW REQUIRED — EVERY QUESTION AND EVERY RED FLAG BELOW.
+ * IMPORTANT CLINICAL BOUNDARY
  *
- *     These are drafted from general clinical knowledge. They are NOT OCP's
- *     assessment and prescribing algorithms. Before this touches a real patient,
- *     the pilot pharmacist must review and sign off on each line. The tick-bite
- *     timing threshold in particular is a guess and must be corrected against the
- *     actual Lyme PEP algorithm — it is time-critical and being wrong is unsafe.
+ * - This is an intake and routing aid, not a diagnostic, prescribing, referral,
+ *   or billing-decision engine.
+ * - A matched item in RED_FLAGS must stop self-service and trigger pharmacist
+ *   review. Code must not automatically turn a match into a diagnosis, a
+ *   referral destination, or a claim/no-claim decision.
+ * - The tick-bite and uncomplicated-UTI sections below were aligned to the
+ *   public PHO/OCP algorithms current in July 2026.
+ * - The complete P0-A clinical prompt set was approved for production use on
+ *   2026-07-26. Any clinical-content change requires a new pharmacist review
+ *   and approval record before release.
  *
  * This produces a SELF-REPORTED PRESENTING COMPLAINT, never a diagnosis. The EO
  * Notice requires the pharmacist to "verify the person's self-diagnosis." This
  * is the input to that, not a replacement for it.
+ *
+ * Public funding eligibility is separate. Server/pharmacist workflows must also
+ * verify the Ontario health number, pharmacy/provider eligibility, condition
+ * claim maximum, same-day claim rule, red-flag status, service location,
+ * self/family and LTC restrictions, and the existing-prescription exclusions in
+ * the EO Notice effective July 1, 2026.
  */
+
+export const ASSESSMENT_POLICY = {
+  jurisdiction: "Ontario",
+  fundingEffectiveDate: "2026-07-01",
+  reviewedOn: "2026-07-26",
+  clinicalApprovalStatus: "approved",
+  clinicalApprovedOn: "2026-07-26",
+  clinicalApprovalScope: "P0-A triage and red-flag content",
+  fundingNotice:
+    "Executive Officer Notice: Update to Funding for Minor Ailment Services in Ontario Pharmacies",
+  ocpScopeUrl:
+    "https://ocpinfo.com/pharmacy-professionals/expanded-scope-of-practice/minor-ailments/",
+  tickBiteAlgorithmUrl:
+    "https://www.publichealthontario.ca/-/media/Documents/L/2023/lyme-disease-assessment-prescribing-algorithm-antibiotic-prophylaxis.pdf",
+  utiAlgorithmUrl:
+    "https://www.ocpinfo.com/wp-content/uploads/2022/12/assessment-prescribing-algorithm-urinary-tract-infection-english.pdf",
+  utiInclusiveCareUrl:
+    "https://ocpinfo.com/ocp-resources/providing-respectful-and-inclusive-minor-ailment-assessments-for-a-uti/",
+} as const;
 
 export type AilmentId =
   | "rhinitis"
@@ -47,7 +78,7 @@ export type AilmentId =
 
 /** Patient-facing labels. Plain language, no clinical jargon. */
 export const AILMENT_LABELS: Record<AilmentId, string> = {
-  rhinitis: "Runny or blocked nose",
+  rhinitis: "Runny, blocked, or congested nose",
   candidal_stomatitis: "Oral thrush",
   conjunctivitis: "Pink eye",
   dermatitis: "Eczema or dermatitis",
@@ -58,45 +89,69 @@ export const AILMENT_LABELS: Record<AilmentId, string> = {
   impetigo: "Impetigo",
   insect_urticaria: "Insect bites or hives",
   msk: "Sprain or strain",
-  tick_bite: "Tick bite",
-  uti: "Urinary tract infection",
+  tick_bite: "Recent tick bite (Lyme disease prevention)",
+  uti: "Possible urinary tract infection (UTI)",
   acne: "Mild acne",
   canker_sores: "Canker sore",
   nvp: "Morning sickness",
   pinworms: "Pinworms",
   vvc: "Vaginal yeast infection",
-  calluses_corns_warts: "Callus, corn, or wart",
-  tinea: "Ringworm or jock itch",
-  headache: "Tension headache",
+  calluses_corns_warts: "Callus, corn, or wart (not on the face or genitals)",
+  tinea: "Ringworm on the body or jock itch",
+  headache: "Mild tension-type headache",
   pediculosis: "Head lice",
   xerophthalmia: "Dry eye",
 };
 
 export const ALL_AILMENT_IDS = Object.keys(AILMENT_LABELS) as AilmentId[];
 
-/* ── Outcomes ───────────────────────────────────────────────────────────────
-   Five, not two. The fourth is the one people miss.
+/* ── Tree outcomes ──────────────────────────────────────────────────────────
+   The tree itself has only three terminal shapes:
 
-   emergency    911 / ER. Not an assessment.                        no claim
-   assessable   Funded ailment, no red flags.                       CLAIM
-   refer        Funded ailment BUT a red flag fired.                NO CLAIM
-   not_funded   Real condition, pharmacist can advise, not on list. NO CLAIM
-   unsure       Can't narrow. Talk to the pharmacist.               n/a
+   ailment       Candidate funded category; pharmacist assessment is required.
+   not_funded    Outside this publicly funded list; pharmacist can still advise.
+   unsure        No safe category; hand off to the pharmacist.
+
+   Emergency screening happens before the tree. Referral and claim eligibility
+   are later pharmacist/server decisions and are intentionally not tree outcomes.
    ────────────────────────────────────────────────────────────────────────── */
 export type DeadEnd = "not_funded" | "unsure";
 
-export interface TriageOption {
+interface TriageOptionBase {
   label: string;
   sub?: string;
   /** Highlights the option — used for time-critical paths (tick bites). */
   urgent?: boolean;
-  /** Exactly one of these three. */
-  ailment?: AilmentId;
-  next?: string;
-  outcome?: DeadEnd;
-  /** Required when outcome === "not_funded". Shown to the patient. */
-  reason?: string;
 }
+
+/** Exactly one destination is required; TypeScript rejects mixed destinations. */
+export type TriageOption = TriageOptionBase &
+  (
+    | {
+      ailment: AilmentId;
+      next?: never;
+      outcome?: never;
+      reason?: never;
+    }
+    | {
+      next: string;
+      ailment?: never;
+      outcome?: never;
+      reason?: never;
+    }
+    | {
+      outcome: "unsure";
+      ailment?: never;
+      next?: never;
+      reason?: never;
+    }
+    | {
+      outcome: "not_funded";
+      reason: string;
+      ailment?: never;
+      next?: never;
+    }
+  );
 
 export interface TriageNode {
   title: string;
@@ -104,40 +159,55 @@ export interface TriageNode {
   options: TriageOption[];
 }
 
-/** Always first. Never skippable. PHARMACIST REVIEW REQUIRED. */
+/** Always first and never skippable. A positive answer exits self-service. */
 export const EMERGENCY_SIGNS: string[] = [
   "Chest pain or pressure, especially spreading to the arm, jaw, or back",
   "Trouble breathing, or swelling of the lips, tongue, or throat",
   "The worst headache of your life, or one that came on like a thunderclap",
   "Sudden weakness, numbness, confusion, slurred speech, or vision loss",
-  "Fever with a stiff neck and a rash",
+  "Fever with a severe headache or stiff neck, with or without a rash",
   "Heavy bleeding that will not stop",
-  "Fainting, or feeling like you are about to pass out",
-  "Severe pain anywhere that is getting rapidly worse",
+  "A seizure, loss of consciousness, or difficulty waking normally",
+  "Fainting with chest pain, trouble breathing, severe bleeding, or failure to recover fully",
 ];
+
+export const EMERGENCY_ACTION =
+  "Call 911 or go to the nearest emergency department now. Do not continue this questionnaire.";
 
 export const TRIAGE_ROOT = "region";
 
 export const NODES: Record<string, TriageNode> = {
   region: {
-    title: "Where's the problem?",
-    help: "Pick the thing bothering you most. You can raise anything else with the pharmacist afterwards.",
+    title: "Where is the main problem?",
+    help: "Choose the concern that is bothering you most. Tell the pharmacist about every other symptom too.",
     options: [
       { label: "Skin, hair, or nails", next: "skin_where" },
       { label: "Eyes", next: "eye" },
-      { label: "Nose or sinuses", sub: "Runny, blocked, sneezing, congested", ailment: "rhinitis" },
+      {
+        label: "Nose or sinuses",
+        sub: "Runny, blocked, sneezing, congested",
+        ailment: "rhinitis",
+      },
       { label: "Mouth, lips, or tongue", next: "mouth" },
       { label: "Heartburn, or feeling sick to the stomach", next: "gi" },
       { label: "Back passage or bottom", next: "bottom" },
       { label: "Peeing, or vaginal symptoms", next: "urogenital" },
-      { label: "Period pain", sub: "Cramping that comes with your period", ailment: "dysmenorrhea" },
-      { label: "A muscle, joint, or back", sub: "After an injury, a fall, or overdoing it", ailment: "msk" },
+      {
+        label: "Period pain",
+        sub: "Cramping that comes with your period",
+        ailment: "dysmenorrhea",
+      },
+      {
+        label: "A muscle, joint, or back",
+        sub: "After an injury, a fall, or overdoing it",
+        ailment: "msk",
+      },
       { label: "Headache", next: "headache_type" },
       { label: "Something else, or I'm not sure", outcome: "unsure" },
     ],
   },
 
-  /* ── Skin: the crowded branch. Nine candidates. ───────────────────────── */
+  /* ── Skin: the crowded branch. ────────────────────────────────────────── */
   skin_where: {
     title: "Where on the body?",
     options: [
@@ -147,7 +217,12 @@ export const NODES: Record<string, TriageNode> = {
       { label: "Body, arms, or legs", next: "skin_body" },
       { label: "Groin, inner thigh, or buttocks", next: "skin_groin" },
       { label: "Hands or feet", next: "skin_extremity" },
-      { label: "A baby's nappy area", sub: "Red, sore skin under the diaper", ailment: "dermatitis" },
+      {
+        label: "A baby's diaper or nappy area",
+        sub: "Red, sore skin under the diaper",
+        ailment: "dermatitis",
+      },
+      { label: "Somewhere else, or I'm not sure", outcome: "unsure" },
     ],
   },
 
@@ -170,6 +245,7 @@ export const NODES: Record<string, TriageNode> = {
         reason:
           "Ringworm of the scalp isn't on Ontario's funded list — only ringworm on the body and in the groin are. The pharmacist can still look at it and point you in the right direction.",
       },
+      { label: "Something else, or I'm not sure", outcome: "unsure" },
     ],
   },
 
@@ -187,13 +263,17 @@ export const NODES: Record<string, TriageNode> = {
         sub: "It tingled or burned before it appeared, and it comes back in the same spot",
         ailment: "herpes_labialis",
       },
-      { label: "Golden-yellow crusty sores that are spreading", ailment: "impetigo" },
+      {
+        label: "Golden-yellow crusty sores that are spreading",
+        ailment: "impetigo",
+      },
       {
         label: "A rough, raised wart",
         outcome: "not_funded",
         reason:
           "Warts on the face aren't on the funded list — Ontario specifically excludes the face and genitals. This one is worth having a doctor look at.",
       },
+      { label: "Something else, or I'm not sure", outcome: "unsure" },
     ],
   },
 
@@ -222,20 +302,38 @@ export const NODES: Record<string, TriageNode> = {
         sub: "Hives",
         ailment: "insect_urticaria",
       },
-      { label: "Itchy bumps after being outside or around insects", ailment: "insect_urticaria" },
+      {
+        label: "Itchy bumps after being outside or around insects",
+        ailment: "insect_urticaria",
+      },
       {
         label: "A round scaly patch with a raised edge and a clearer middle",
         sub: "Slowly getting bigger — ringworm",
         ailment: "tinea",
       },
+      {
+        label: "Mild pimples, blackheads, or whiteheads",
+        sub: "For example, on the chest, shoulders, or upper back",
+        ailment: "acne",
+      },
+      {
+        label: "A rough, raised growth, sometimes with tiny black dots",
+        sub: "A common wart away from the face and genitals",
+        ailment: "calluses_corns_warts",
+      },
       { label: "Golden-yellow crusty sores", ailment: "impetigo" },
+      { label: "Something else, or I'm not sure", outcome: "unsure" },
     ],
   },
 
   skin_groin: {
     title: "What's happening there?",
     options: [
-      { label: "Itchy, red, scaly rash in the skin folds", sub: "Jock itch", ailment: "tinea" },
+      {
+        label: "Itchy, red, scaly rash in the skin folds",
+        sub: "Jock itch",
+        ailment: "tinea",
+      },
       { label: "Vaginal itching, soreness, or discharge", next: "urogenital" },
       { label: "Red, itchy, dry rash — like eczema", ailment: "dermatitis" },
       {
@@ -244,6 +342,7 @@ export const NODES: Record<string, TriageNode> = {
         reason:
           "Genital warts aren't on the funded list — Ontario specifically excludes them. Please see a doctor or a sexual health clinic.",
       },
+      { label: "Something else, or I'm not sure", outcome: "unsure" },
     ],
   },
 
@@ -260,13 +359,18 @@ export const NODES: Record<string, TriageNode> = {
         sub: "A wart or verruca",
         ailment: "calluses_corns_warts",
       },
-      { label: "Dry, cracked, itchy skin", sub: "Eczema or dermatitis", ailment: "dermatitis" },
+      {
+        label: "Dry, cracked, itchy skin",
+        sub: "Eczema or dermatitis",
+        ailment: "dermatitis",
+      },
       {
         label: "Itchy, scaly, cracked skin between the toes",
         outcome: "not_funded",
         reason:
           "Athlete's foot isn't on Ontario's funded list. The pharmacist can absolutely still recommend a treatment — it just isn't a billable minor ailment assessment.",
       },
+      { label: "Something else, or I'm not sure", outcome: "unsure" },
     ],
   },
 
@@ -277,6 +381,11 @@ export const NODES: Record<string, TriageNode> = {
       {
         label: "Red or pink, gritty, with discharge or crusting",
         sub: "Lids sometimes stuck together in the morning",
+        ailment: "conjunctivitis",
+      },
+      {
+        label: "Very itchy and watery, often in both eyes",
+        sub: "Sometimes with sneezing or other allergy symptoms",
         ailment: "conjunctivitis",
       },
       {
@@ -308,7 +417,11 @@ export const NODES: Record<string, TriageNode> = {
         sub: "On the tongue or inside the cheeks, sore or burning",
         ailment: "candidal_stomatitis",
       },
-      { label: "Golden crusty sores around the mouth that are spreading", ailment: "impetigo" },
+      {
+        label: "Golden crusty sores around the mouth that are spreading",
+        ailment: "impetigo",
+      },
+      { label: "Something else, or I'm not sure", outcome: "unsure" },
     ],
   },
 
@@ -328,6 +441,7 @@ export const NODES: Record<string, TriageNode> = {
         reason:
           "Nausea and vomiting outside of pregnancy isn't on Ontario's funded list. The pharmacist can still talk it through with you, and will tell you if you should see a doctor.",
       },
+      { label: "Something else, or I'm not sure", outcome: "unsure" },
     ],
   },
 
@@ -345,6 +459,7 @@ export const NODES: Record<string, TriageNode> = {
         sub: "You may have seen tiny white thread-like worms",
         ailment: "pinworms",
       },
+      { label: "Something else, or I'm not sure", outcome: "unsure" },
     ],
   },
 
@@ -352,8 +467,14 @@ export const NODES: Record<string, TriageNode> = {
   urogenital: {
     title: "What are the symptoms?",
     options: [
-      { label: "Burning or stinging when peeing, going often or urgently", ailment: "uti" },
-      { label: "Vaginal itching, soreness, and thick white discharge", ailment: "vvc" },
+      {
+        label: "Burning or stinging when peeing, going often or urgently",
+        ailment: "uti",
+      },
+      {
+        label: "Vaginal itching, soreness, and thick white discharge",
+        ailment: "vvc",
+      },
       { label: "Something else", outcome: "unsure" },
     ],
   },
@@ -375,18 +496,57 @@ export const NODES: Record<string, TriageNode> = {
         reason:
           "That sounds more like migraine, which isn't on Ontario's funded minor ailment list — only tension-type headache is. The pharmacist can still help, and will tell you whether you should see a doctor.",
       },
+      { label: "Something else, or I'm not sure", outcome: "unsure" },
     ],
   },
 };
 
 /**
- * RED FLAGS — one set per ailment.
+ * Official July 2026 PHO/OCP Lyme prophylaxis criteria.
  *
- * If ANY of these fires: the patient is referred, and NO CLAIM MAY BE SUBMITTED.
- * This is different from a completed assessment that ends in a referral (which
- * IS billable, with SSC = 4). Do not collapse the two.
+ * All four must be satisfied before doxycycline prophylaxis is considered.
+ * Failure to satisfy a criterion means "do not prescribe prophylaxis"; it is
+ * not, by itself, an automatic urgent referral. Every patient should receive
+ * 30-day symptom-monitoring advice from the pharmacist.
+ */
+export const TICK_BITE_PEP_CRITERIA: string[] = [
+  "The tick was removed within the past 72 hours",
+  "The bite occurred in a higher-risk area where blacklegged ticks have been identified",
+  "The tick was likely attached for 24 hours or more",
+  "Doxycycline is not contraindicated for this patient",
+];
+
+/**
+ * Official OCP symptom threshold for considering acute uncomplicated UTI.
  *
- * ⚠️  PHARMACIST REVIEW REQUIRED on every line.
+ * The presentation is acute dysuria OR at least two of: new urgency/frequency,
+ * suprapubic pain/discomfort, and hematuria. The pharmacist must still rule out
+ * every complicating factor and recurrence/relapse trigger below.
+ */
+export const UTI_PRESENTATION_CRITERIA = {
+  acuteDysuriaIsSufficient: true,
+  alternativeMinimumCount: 2,
+  alternativeSymptoms: [
+    "New urinary urgency or frequency",
+    "Suprapubic pain or discomfort",
+    "Hematuria",
+  ],
+} as const;
+
+export const UTI_PRIVATE_QUESTION_INTRO =
+  "Some UTI questions concern private anatomy because it affects safe treatment. You may pause or stop at any time.";
+
+/**
+ * PRESCREEN ESCALATION TRIGGERS — one set per ailment.
+ *
+ * A match stops automated intake and requires pharmacist review. These strings
+ * deliberately do not decide whether the item is an official Ministry/OCP red
+ * flag, whether referral is required, or whether a claim may be submitted.
+ *
+ * The EO Notice distinguishes an ineligible/red-flag presentation (no paid
+ * claim) from a completed eligible assessment whose care plan includes referral
+ * (the appropriate No-Rx PIN and SSC 4 may apply). Only the pharmacist and
+ * billing workflow can make that distinction.
  */
 export const RED_FLAGS: Record<AilmentId, string[]> = {
   rhinitis: [
@@ -415,7 +575,7 @@ export const RED_FLAGS: Record<AilmentId, string[]> = {
     "Moderate or severe pain in the eye",
     "Strong sensitivity to light",
     "There's discharge or crusting",
-    "You wear contact lenses",
+    "You wear contact lenses and the eye is red, painful, or sensitive to light",
     "Recent eye surgery",
     "Dry eyes along with a dry mouth and aching joints",
   ],
@@ -452,13 +612,13 @@ export const RED_FLAGS: Record<AilmentId, string[]> = {
     "The bite looks infected — spreading redness, warmth, or pus",
     "Fever",
   ],
-  // ⚠️ TIME-CRITICAL. The 72-hour figure below is a GUESS and must be replaced
-  //    with the threshold from OCP's Lyme PEP algorithm before go-live.
+  // PHO/OCP algorithm: symptoms after a tick bite require physician/NP referral.
+  // The separate 72-hour, risk-area, attachment-time, and doxycycline checks
+  // above determine prophylaxis eligibility; they are not red flags themselves.
   tick_bite: [
-    "It has been more than 72 hours since the tick was removed",
     "An expanding rash, sometimes like a bull's-eye",
-    "Fever, chills, headache, or aching joints",
-    "You already feel unwell",
+    "Fever, chills, headache, stiff neck, unusual tiredness, or loss of appetite",
+    "Muscle or joint aches, joint swelling, or swollen glands after the tick bite",
   ],
   tinea: [
     "It covers a large part of the body",
@@ -495,7 +655,7 @@ export const RED_FLAGS: Record<AilmentId, string[]> = {
     "Signs of dehydration — very dark urine, dizziness, not passing urine",
     "Severe abdominal pain",
     "Fever",
-    "The vomiting started after about week 9 of pregnancy",
+    "The nausea or vomiting started for the first time later in the pregnancy",
   ],
   hemorrhoids: [
     "Heavy bleeding",
@@ -512,19 +672,21 @@ export const RED_FLAGS: Record<AilmentId, string[]> = {
     "It hasn't cleared after treatment",
     "Blood in the stool, weight loss, or abdominal pain",
   ],
-  // The first three are the complicating factors named in footnote 7 of the
-  // EO Notice (male sex, pregnancy, age < 12).
+  // Aligned to OCP's public uncomplicated-UTI algorithm. Hematuria can form part
+  // of the qualifying symptom pattern; isolated gross hematuria is different and
+  // requires investigation.
   uti: [
-    "The person is male",
+    "The patient does not have female genitourinary anatomy, or the relevant anatomy is uncertain",
     "The person is pregnant",
     "The person is under 12 years old",
-    "Fever or chills",
+    "Fever or shaking chills",
     "Pain in the back or side, below the ribs",
     "Nausea or vomiting",
-    "Blood in the urine",
-    "Symptoms have lasted more than 7 days",
-    "You've had 2 or more in the last 6 months",
-    "You have a catheter, diabetes, or a weakened immune system",
+    "Visible blood is the main symptom, or there is confusion or delirium without typical UTI symptoms",
+    "You have a weakened immune system",
+    "You have a catheter, neurogenic bladder, kidney stones, kidney disease, or another urinary tract abnormality",
+    "Symptoms returned within 4 weeks of finishing antibiotic treatment",
+    "You've had 2 or more UTIs in 6 months, or 3 or more in 12 months",
   ],
   vvc: [
     "This is the first time you've ever had this",
@@ -576,19 +738,172 @@ export const RED_FLAGS: Record<AilmentId, string[]> = {
 };
 
 /** Which ailments are still reachable from this node. Drives the pool counter. */
-export function computePool(nodeId: string, seen: Set<string> = new Set()): Set<AilmentId> {
-  const node = NODES[nodeId];
+export function computePool(
+  nodeId: string,
+  seen: Set<string> = new Set(),
+): Set<AilmentId> {
   const out = new Set<AilmentId>();
+  if (seen.has(nodeId)) return out;
+
+  const node = NODES[nodeId];
   if (!node) return out;
+
+  const nextSeen = new Set(seen);
+  nextSeen.add(nodeId);
 
   for (const opt of node.options) {
     if (opt.ailment) {
       out.add(opt.ailment);
-    } else if (opt.next && !seen.has(opt.next)) {
-      const nextSeen = new Set(seen);
-      nextSeen.add(opt.next);
+    } else if (opt.next) {
       for (const a of computePool(opt.next, nextSeen)) out.add(a);
     }
   }
   return out;
+}
+
+export type TriageValidationCode =
+  | "missing_root"
+  | "empty_node"
+  | "invalid_destination"
+  | "missing_node"
+  | "missing_reason"
+  | "forced_category"
+  | "cycle"
+  | "unreachable_node"
+  | "unreachable_ailment"
+  | "missing_red_flags";
+
+export interface TriageValidationIssue {
+  code: TriageValidationCode;
+  message: string;
+  nodeId?: string;
+  optionIndex?: number;
+  ailment?: AilmentId;
+}
+
+/**
+ * Lightweight integrity check for tests and startup diagnostics.
+ *
+ * This validates the graph and data shape only. A clean result does not approve
+ * changed clinical content; changes require a new pharmacist review record.
+ */
+export function validateTriageDefinition(): TriageValidationIssue[] {
+  const issues: TriageValidationIssue[] = [];
+
+  if (!NODES[TRIAGE_ROOT]) {
+    issues.push({
+      code: "missing_root",
+      message: `Triage root "${TRIAGE_ROOT}" does not exist.`,
+      nodeId: TRIAGE_ROOT,
+    });
+    return issues;
+  }
+
+  for (const [nodeId, node] of Object.entries(NODES)) {
+    if (node.options.length === 0) {
+      issues.push({
+        code: "empty_node",
+        message: `Node "${nodeId}" has no options.`,
+        nodeId,
+      });
+    }
+
+    if (!node.options.some((option) => option.outcome === "unsure")) {
+      issues.push({
+        code: "forced_category",
+        message: `Node "${nodeId}" has no safe "unsure" handoff.`,
+        nodeId,
+      });
+    }
+
+    node.options.forEach((option, optionIndex) => {
+      const destinationCount = [
+        option.ailment,
+        option.next,
+        option.outcome,
+      ].filter((value) => value !== undefined).length;
+
+      if (destinationCount !== 1) {
+        issues.push({
+          code: "invalid_destination",
+          message: `Option ${optionIndex} in "${nodeId}" must have exactly one destination.`,
+          nodeId,
+          optionIndex,
+        });
+      }
+
+      if (option.next && !NODES[option.next]) {
+        issues.push({
+          code: "missing_node",
+          message: `Option ${optionIndex} in "${nodeId}" points to missing node "${option.next}".`,
+          nodeId,
+          optionIndex,
+        });
+      }
+
+      if (option.outcome === "not_funded" && !option.reason.trim()) {
+        issues.push({
+          code: "missing_reason",
+          message: `Non-funded option ${optionIndex} in "${nodeId}" needs a patient-facing reason.`,
+          nodeId,
+          optionIndex,
+        });
+      }
+    });
+  }
+
+  const reachableNodes = new Set<string>();
+  const activePath = new Set<string>();
+
+  const visit = (nodeId: string): void => {
+    if (activePath.has(nodeId)) {
+      issues.push({
+        code: "cycle",
+        message: `Triage graph contains a cycle through "${nodeId}".`,
+        nodeId,
+      });
+      return;
+    }
+    if (reachableNodes.has(nodeId) || !NODES[nodeId]) return;
+
+    activePath.add(nodeId);
+    for (const option of NODES[nodeId].options) {
+      if (option.next) visit(option.next);
+    }
+    activePath.delete(nodeId);
+    reachableNodes.add(nodeId);
+  };
+
+  visit(TRIAGE_ROOT);
+
+  for (const nodeId of Object.keys(NODES)) {
+    if (!reachableNodes.has(nodeId)) {
+      issues.push({
+        code: "unreachable_node",
+        message: `Node "${nodeId}" cannot be reached from "${TRIAGE_ROOT}".`,
+        nodeId,
+      });
+    }
+  }
+
+  const reachableAilments = computePool(TRIAGE_ROOT);
+  for (const ailment of ALL_AILMENT_IDS) {
+    if (!reachableAilments.has(ailment)) {
+      issues.push({
+        code: "unreachable_ailment",
+        message: `Ailment "${ailment}" cannot be reached from "${TRIAGE_ROOT}".`,
+        ailment,
+      });
+    }
+
+    if (!RED_FLAGS[ailment]?.length) {
+      issues.push({
+        code: "missing_red_flags",
+        message: `Ailment "${ailment}" has no prescreen escalation triggers.`,
+        ailment,
+      });
+    }
+  }
+
+  return issues;
 }
