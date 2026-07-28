@@ -1,11 +1,11 @@
 # AgentOMA project overview
 
-**Status snapshot:** 2026-07-26
+**Status snapshot:** 2026-07-27
 
 **Current stage:** authenticated pilot foundation; **not production-ready**
 
 **Verification at this snapshot:** the current tree is TypeScript-clean,
-ESLint-clean, passes all 70 database-free tests, and produces `/check` as a
+ESLint-clean, passes all 74 database-free tests, and produces `/check` as a
 static route in a successful production build. The last complete suite run on
 2026-07-25 passed 135/135 tests and rebuilt a fresh Docker Postgres database
 from zero through migration `0017`. Supabase is also live through `0017`; post-migration inspection

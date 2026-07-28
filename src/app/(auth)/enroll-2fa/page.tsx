@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { authClient } from "@/lib/auth-client";
+import { enterPortalAfterAuthentication } from "@/lib/auth-navigation";
 
 function secretFromTotpUri(uri: string): string | null {
   const m = /[?&]secret=([^&]+)/.exec(uri);
@@ -17,7 +17,6 @@ function secretFromTotpUri(uri: string): string | null {
  * single-factor session can reach.
  */
 export default function EnrollTwoFactorPage() {
-  const router = useRouter();
   const [step, setStep] = useState<"password" | "verify">("password");
   const [password, setPassword] = useState("");
   const [totpUri, setTotpUri] = useState<string | null>(null);
@@ -30,28 +29,38 @@ export default function EnrollTwoFactorPage() {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const res = await authClient.twoFactor.enable({ password });
-    setBusy(false);
-    if (res.error) {
-      setError(res.error.message ?? "Could not start enrollment.");
-      return;
+    try {
+      const res = await authClient.twoFactor.enable({ password });
+      if (res.error) {
+        setError("Could not start enrollment. Check your password and try again.");
+        return;
+      }
+      setTotpUri(res.data.totpURI);
+      setBackupCodes(res.data.backupCodes);
+      setStep("verify");
+    } catch {
+      setError("Could not start enrollment. Check your connection and try again.");
+    } finally {
+      setBusy(false);
     }
-    setTotpUri(res.data.totpURI);
-    setBackupCodes(res.data.backupCodes);
-    setStep("verify");
   }
 
   async function verify(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const res = await authClient.twoFactor.verifyTotp({ code });
-    setBusy(false);
-    if (res.error) {
-      setError(res.error.message ?? "That code was not accepted.");
-      return;
+    try {
+      const res = await authClient.twoFactor.verifyTotp({ code });
+      if (res.error) {
+        setError("That code was not accepted. Enter the current 6-digit code.");
+        return;
+      }
+      enterPortalAfterAuthentication();
+    } catch {
+      setError("Verification could not be completed. Check your connection and try again.");
+    } finally {
+      setBusy(false);
     }
-    router.push("/pharmacist");
   }
 
   const secret = totpUri ? secretFromTotpUri(totpUri) : null;
