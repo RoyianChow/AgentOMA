@@ -1,9 +1,9 @@
 # Completed work
 
-**Verified through:** 2026-07-26
+**Verified through:** 2026-07-27
 
 **Quality snapshot:** the current tree is TypeScript- and ESLint-clean, passes
-70/70 database-free tests, and builds `/check` as a production static route.
+74/74 database-free tests, and builds `/check` as a production static route.
 The last complete run on 2026-07-25 passed 135/135 tests, including a
 fresh Docker Postgres migration replay through `0017`. Supabase is live through
 the same migration.
@@ -60,6 +60,10 @@ This is the implementation record requested for the project. It describes capabi
 - Added separate typed pre-visit and advisory document branches. The advisory
   type has no ailment field; neither branch contains PINs, fees, maximums, or
   claim derivation.
+- Reworked both PDFs into a modern AgentOMA-branded report with structured
+  response cards and bottom-of-page fine print. Removed repetitive
+  `self-reported` labels while retaining one clear statement that answers are
+  unverified; emergency guidance stays prominent.
 - Added tests for document boundaries, absence of identifying/billing fields,
   shared triage imports, forbidden persistence APIs, and silent PDF failure
   handling.
@@ -92,6 +96,10 @@ This is the implementation record requested for the project. It describes capabi
 
 - Added better-auth with the Drizzle adapter as the sole identity layer.
 - Added email/password login, mandatory TOTP, 30-minute rolling sessions, server-side sign-out/revocation, and persistent rate limiting.
+- Made successful password/TOTP authentication perform a fresh browser
+  navigation after the httpOnly session cookie is issued, preventing stale
+  pre-auth route state from trapping users on the verification screen. Auth
+  transport failures now restore the form with safe, non-sensitive feedback.
 - Disabled public signup and added single-use, expiring pharmacy-admin invitations.
 - Added roles for pharmacy admin, pharmacist, intern, student, and technician.
 - Added pharmacist profile fields for OCP number, As-of-Right status, orientation completion, and intern/student supervision.

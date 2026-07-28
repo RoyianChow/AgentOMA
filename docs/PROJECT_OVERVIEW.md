@@ -1,11 +1,11 @@
 # AgentOMA project overview
 
-**Status snapshot:** 2026-07-26
+**Status snapshot:** 2026-07-27
 
 **Current stage:** authenticated pilot foundation; **not production-ready**
 
 **Verification at this snapshot:** the current tree is TypeScript-clean,
-ESLint-clean, passes all 70 database-free tests, and produces `/check` as a
+ESLint-clean, passes all 74 database-free tests, and produces `/check` as a
 static route in a successful production build. The last complete suite run on
 2026-07-25 passed 135/135 tests and rebuilt a fresh Docker Postgres database
 from zero through migration `0017`. Supabase is also live through `0017`; post-migration inspection
@@ -80,10 +80,12 @@ a new pharmacist review. The intake remains a routing aid, not a diagnosis.
 
 `/check` reuses the frozen narrowing tree, emergency signs, and red flags by
 import from `src/config/triage.ts`. It asks for no identity or demographics,
-keeps answers only in React memory, and creates the PDF in the browser without a
-server request or retained browser storage. The advisory document type cannot
-carry a suspected ailment; no branch contains a PIN, fee, maximum, or claim
-derivation.
+keeps answers only in React memory, and creates a branded PDF in the browser
+without sending report data or using retained browser storage. Its only asset
+request is for the public company logo. The advisory document type cannot carry
+a suspected ailment; no branch contains a PIN, fee, maximum, or claim
+derivation. Report limitations appear as bottom-of-page fine print, while
+emergency and next-step guidance remains prominent.
 
 The P0-A gate was satisfied on 2026-07-26, and the route is available in
 production. See [`SELF_CHECK.md`](SELF_CHECK.md) for its approved privacy and

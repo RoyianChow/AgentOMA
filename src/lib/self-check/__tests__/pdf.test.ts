@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createAdvisorySummary } from "../model";
-import { safelyDownloadSelfCheckPdf } from "../pdf";
+import { jsPDF } from "jspdf";
+import {
+  buildSelfCheckPdfContent,
+  createAdvisorySummary,
+  createPreVisitSummary,
+} from "../model";
+import { renderSelfCheckPdf, safelyDownloadSelfCheckPdf } from "../pdf";
 
 describe("self-check PDF failure handling", () => {
   afterEach(() => {
@@ -30,5 +35,32 @@ describe("self-check PDF failure handling", () => {
     expect(log).not.toHaveBeenCalled();
     expect(warn).not.toHaveBeenCalled();
     expect(error).not.toHaveBeenCalled();
+  });
+
+  it("renders a long report across pages without failing", () => {
+    const summary = createPreVisitSummary({
+      ailmentId: "rhinitis",
+      ailmentLabel: "Runny or blocked nose",
+      answers: Array.from({ length: 12 }, (_, index) => ({
+        question: `Question ${index + 1} with enough detail to exercise wrapped report rows`,
+        answer: "A longer response that remains readable in the structured report layout",
+      })),
+      redFlagQuestions: Array.from(
+        { length: 12 },
+        (_, index) => `Safety question ${index + 1} with a wrapped description`,
+      ),
+      now: new Date("2026-07-23T10:30:00.000Z"),
+    });
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+      compress: true,
+    });
+
+    renderSelfCheckPdf(doc, buildSelfCheckPdfContent(summary), null);
+
+    expect(doc.getNumberOfPages()).toBeGreaterThan(1);
+    expect(doc.output("arraybuffer").byteLength).toBeGreaterThan(1_000);
   });
 });

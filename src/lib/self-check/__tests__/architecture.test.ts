@@ -48,6 +48,17 @@ describe("public self-check architecture", () => {
     expect(flow).not.toMatch(/const\s+(NODES|RED_FLAGS|EMERGENCY_SIGNS)\s*=/);
   });
 
+  it("uses the company logo in the browser-generated report", () => {
+    const pdf = readFileSync(
+      join(process.cwd(), "src", "lib", "self-check", "pdf.ts"),
+      "utf8",
+    );
+
+    expect(pdf).toContain('fetch("/logo.png"');
+    expect(pdf).toContain("doc.addImage(");
+    expect(pdf).toContain("drawFinePrintFooter");
+  });
+
   it("releases the route only against the recorded P0-A-approved source", () => {
     const page = readFileSync(
       join(

@@ -9,7 +9,7 @@ import {
 const NOW = new Date("2026-07-23T10:30:00.000Z");
 
 describe("self-check document model", () => {
-  it("builds a pre-visit summary with self-reported answers and no billing fields", () => {
+  it("builds a modern pre-visit report without repetitive answer labels or billing fields", () => {
     const summary = createPreVisitSummary({
       ailmentId: "rhinitis",
       ailmentLabel: "Runny or blocked nose",
@@ -27,12 +27,21 @@ describe("self-check document model", () => {
     const serialized = JSON.stringify({ summary, content });
 
     expect(content.header).toBe(SELF_CHECK_PDF_HEADER);
-    expect(content.generatedAt).toBe(NOW.toISOString());
+    expect(content.generatedAt).toContain("July 23, 2026");
+    expect(content.reportLabel).toBe("PRE-VISIT REPORT");
+    expect(content.tone).toBe("green");
     expect(serialized).toContain("Runny or blocked nose");
-    expect(serialized).toContain("No (self-reported)");
+    expect(serialized).toContain('"value":"No"');
+    expect(serialized).not.toMatch(/self-reported/i);
     expect(serialized).not.toMatch(/\b\d{7}\b/);
     expect(serialized).not.toMatch(/candidate\s+pin/i);
     expect(serialized).not.toMatch(/claim\s+maximum/i);
+    expect(content.finePrint).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("not been verified"),
+        expect.stringContaining("Nothing has been billed or submitted"),
+      ]),
+    );
   });
 
   it("makes the advisory branch structurally incapable of carrying an ailment", () => {
@@ -55,6 +64,24 @@ describe("self-check document model", () => {
     expect(serialized).not.toContain("Runny or blocked nose");
     expect(serialized).toContain("Please be seen by a pharmacist in person");
     expect(serialized).toContain("Nothing has been billed or submitted");
+    expect(content.reportLabel).toBe("ADVISORY REPORT");
+    expect(content.tone).toBe("amber");
+    expect(serialized).not.toMatch(/self-reported/i);
+  });
+
+  it("keeps emergency guidance prominent instead of burying it in fine print", () => {
+    const summary = createAdvisorySummary({
+      reason: "emergency",
+      answers: [],
+      flaggedItems: ["An emergency warning sign"],
+      now: NOW,
+    });
+
+    const content = buildSelfCheckPdfContent(summary);
+
+    expect(content.tone).toBe("red");
+    expect(content.highlight.value).toContain("Call 911");
+    expect(content.finePrint.join(" ")).not.toContain("Call 911");
   });
 
   it("keeps identifying demographics out of both summary shapes", () => {

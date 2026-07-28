@@ -39,16 +39,21 @@ The pharmacist still performs and documents the actual assessment.
 ## Outcome branches
 
 - A funded path with no selected red flag produces a pre-visit PDF containing
-  the self-reported question/answer trail, suspected ailment group, generation
-  time, disclaimers, and a note that the pharmacist must perform their own
+  the question/answer trail, suspected ailment group, and generation time in a
+  branded report layout. Repetitive `self-reported` labels are omitted from the
+  report body; the fine print explains once that the answers have not been
+  clinically verified and that the pharmacist must perform their own
   assessment.
 - A red flag, emergency response, out-of-scope path, or unresolved path produces
   an advisory PDF. The advisory model has no ailment field and presents no
   billing framing. It reports what the person selected and directs them to be
   seen without inventing an urgency grade beyond the emergency screen.
 
-Both documents state that they are not a diagnosis or prescription and that
-nothing has been billed or submitted.
+Both documents use the AgentOMA logo and place the privacy, clinical, funding,
+and billing limitations in fine print at the bottom of every page. They state
+that the report is not a diagnosis or prescription and that nothing has been
+billed or submitted. Emergency and other next-step guidance remains prominent
+in the report body rather than being reduced to fine print.
 
 ## Implementation map
 

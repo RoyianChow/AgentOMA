@@ -1,7 +1,9 @@
 import type { AilmentId } from "@/config/triage";
 
 export const SELF_CHECK_PDF_HEADER =
-  "Patient Self-Assessment — Pre-Visit Summary. Not a diagnosis, prescription, or billing claim.";
+  "Patient Self-Assessment — Pre-Visit Summary";
+
+export const SELF_CHECK_ADVISORY_HEADER = "Self-Check Advisory";
 
 export interface SelfReportedAnswer {
   question: string;
@@ -42,13 +44,24 @@ export type SelfCheckSummary = PreVisitSummary | AdvisorySummary;
 
 export interface PdfSection {
   heading: string;
-  lines: string[];
+  items: Array<{
+    label?: string;
+    value: string;
+  }>;
 }
 
 export interface SelfCheckPdfContent {
+  reportLabel: string;
   header: string;
+  introduction: string;
   generatedAt: string;
+  tone: "green" | "amber" | "red";
+  highlight: {
+    label: string;
+    value: string;
+  };
   sections: PdfSection[];
+  finePrint: string[];
 }
 
 export function createPreVisitSummary(input: {
@@ -68,7 +81,7 @@ export function createPreVisitSummary(input: {
     },
     redFlagAnswers: input.redFlagQuestions.map((question) => ({
       question,
-      answer: "No (self-reported)",
+      answer: "No",
     })),
   };
 }
@@ -88,11 +101,36 @@ export function createAdvisorySummary(input: {
   };
 }
 
-function answerLines(answers: SelfReportedAnswer[]): string[] {
-  return answers.map(
-    ({ question, answer }) =>
-      `${question} — ${answer} (self-reported)`,
-  );
+function answerItems(answers: SelfReportedAnswer[]): PdfSection["items"] {
+  return answers.map(({ question, answer }) => ({
+    label: question,
+    value: answer,
+  }));
+}
+
+const COMMON_FINE_PRINT = [
+  "Prepared from answers entered in the public self-check. These responses have not been verified by a pharmacist or other clinician.",
+  "This report is not a diagnosis or prescription. A pharmacist must perform and document an independent assessment.",
+  "Nothing has been billed or submitted. This report does not confirm eligibility for a publicly funded service or guarantee a prescription or service.",
+  "This downloaded report contains health-related answers. Store it securely and share it only with a pharmacy or health professional you choose.",
+];
+
+function formatGeneratedAt(iso: string): string {
+  const date = new Date(iso);
+  const datePart = new Intl.DateTimeFormat("en-CA", {
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+    year: "numeric",
+  }).format(date);
+  const timePart = new Intl.DateTimeFormat("en-CA", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "UTC",
+    timeZoneName: "short",
+  }).format(date);
+
+  return `${datePart} at ${timePart}`;
 }
 
 /**
@@ -103,62 +141,58 @@ function answerLines(answers: SelfReportedAnswer[]): string[] {
 export function buildSelfCheckPdfContent(
   summary: SelfCheckSummary,
 ): SelfCheckPdfContent {
-  const sections: PdfSection[] = [
-    {
-      heading: "Important",
-      lines: [
-        "This document records answers provided by the person using the self-check.",
-        "It is not a diagnosis or prescription. Nothing has been billed or submitted.",
-      ],
-    },
-  ];
-
   if (summary.kind === "pre_visit") {
-    sections.push(
-      {
-        heading: "Self-reported suspected ailment group",
-        lines: [summary.suspectedAilment.label],
+    return {
+      reportLabel: "PRE-VISIT REPORT",
+      header: SELF_CHECK_PDF_HEADER,
+      introduction:
+        "A concise summary to bring to an Ontario pharmacy for an independent pharmacist assessment.",
+      generatedAt: formatGeneratedAt(summary.generatedAtIso),
+      tone: "green",
+      highlight: {
+        label: "SUGGESTED ASSESSMENT AREA",
+        value: summary.suspectedAilment.label,
       },
-      {
-        heading: "For the pharmacist",
-        lines: [
-          "Please perform and document your own assessment. This summary does not establish eligibility, authorize prescribing, or create a billing claim.",
-        ],
-      },
-      {
-        heading: "Self-reported answers",
-        lines: answerLines(summary.answers),
-      },
-      {
-        heading: "Safety questions",
-        lines: answerLines(summary.redFlagAnswers),
-      },
-    );
-  } else {
-    const guidance =
-      summary.reason === "emergency"
-        ? "Call 911 or go to an emergency department. Do not rely on this self-check."
-        : "This self-check cannot determine that a pharmacy assessment is appropriate. Please be seen by a pharmacist in person, a physician, or a nurse practitioner.";
-
-    sections.push(
-      {
-        heading: "Advisory",
-        lines: [guidance],
-      },
-      {
-        heading: "What was flagged",
-        lines: summary.flaggedItems.map((item) => `${item} (self-reported)`),
-      },
-      {
-        heading: "Self-reported answers",
-        lines: answerLines(summary.answers),
-      },
-    );
+      sections: [
+        {
+          heading: "Response summary",
+          items: answerItems(summary.answers),
+        },
+        {
+          heading: "Safety review",
+          items: answerItems(summary.redFlagAnswers),
+        },
+      ],
+      finePrint: COMMON_FINE_PRINT,
+    };
   }
 
+  const guidance =
+    summary.reason === "emergency"
+      ? "Call 911 or go to an emergency department. Do not rely on this self-check."
+      : "This self-check cannot determine that a pharmacy assessment is appropriate. Please be seen by a pharmacist in person, a physician, or a nurse practitioner.";
+
   return {
-    header: SELF_CHECK_PDF_HEADER,
-    generatedAt: summary.generatedAtIso,
-    sections,
+    reportLabel: "ADVISORY REPORT",
+    header: SELF_CHECK_ADVISORY_HEADER,
+    introduction:
+      "A summary of the answers that stopped or could not complete the public self-check.",
+    generatedAt: formatGeneratedAt(summary.generatedAtIso),
+    tone: summary.reason === "emergency" ? "red" : "amber",
+    highlight: {
+      label: "RECOMMENDED NEXT STEP",
+      value: guidance,
+    },
+    sections: [
+      {
+        heading: "Items requiring attention",
+        items: summary.flaggedItems.map((item) => ({ value: item })),
+      },
+      {
+        heading: "Response summary",
+        items: answerItems(summary.answers),
+      },
+    ],
+    finePrint: COMMON_FINE_PRINT,
   };
 }

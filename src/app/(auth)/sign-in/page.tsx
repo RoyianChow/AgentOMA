@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 
 import { authClient } from "@/lib/auth-client";
+import { enterPortalAfterAuthentication } from "@/lib/auth-navigation";
 import styles from "./SignIn.module.css";
 
 /**
@@ -31,7 +31,6 @@ const THROTTLE_MESSAGE =
   "Too many attempts in a short time. This pauses briefly for security — wait a minute, then try again.";
 
 export default function SignInPage() {
-  const router = useRouter();
   const [step, setStep] = useState<"credentials" | "totp">("credentials");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -50,23 +49,29 @@ export default function SignInPage() {
     if (busy) return; // belt on top of the disabled button — no double-submit
     setBusy(true);
     setError(null);
-    const res = await authClient.signIn.email({ email, password, rememberMe });
-    setBusy(false);
-    if (res.error) {
-      setError(
-        res.error.status === 429
-          ? { kind: "throttle", message: THROTTLE_MESSAGE }
-          : { kind: "credentials", message: GENERIC_CREDENTIALS_ERROR }
-      );
-      return;
+    try {
+      const res = await authClient.signIn.email({ email, password, rememberMe });
+      if (res.error) {
+        setError(
+          res.error.status === 429
+            ? { kind: "throttle", message: THROTTLE_MESSAGE }
+            : { kind: "credentials", message: GENERIC_CREDENTIALS_ERROR }
+        );
+        return;
+      }
+      if (res.data && "twoFactorRedirect" in res.data) {
+        setCode("");
+        setError(null);
+        setStep("totp");
+        return;
+      }
+      enterPortalAfterAuthentication();
+    } catch {
+      // Never render or log the underlying auth/network error.
+      setError({ kind: "credentials", message: GENERIC_CREDENTIALS_ERROR });
+    } finally {
+      setBusy(false);
     }
-    if (res.data && "twoFactorRedirect" in res.data) {
-      setCode("");
-      setError(null);
-      setStep("totp");
-      return;
-    }
-    router.push("/pharmacist");
   }
 
   async function submitTotp(e: React.FormEvent) {
@@ -74,17 +79,24 @@ export default function SignInPage() {
     if (busy) return;
     setBusy(true);
     setError(null);
-    const res = await authClient.twoFactor.verifyTotp({ code });
-    setBusy(false);
-    if (res.error) {
-      setError(
-        res.error.status === 429
-          ? { kind: "throttle", message: THROTTLE_MESSAGE }
-          : { kind: "totp", message: GENERIC_TOTP_ERROR }
-      );
-      return;
+    try {
+      const res = await authClient.twoFactor.verifyTotp({ code });
+      if (res.error) {
+        setError(
+          res.error.status === 429
+            ? { kind: "throttle", message: THROTTLE_MESSAGE }
+            : { kind: "totp", message: GENERIC_TOTP_ERROR }
+        );
+        return;
+      }
+      enterPortalAfterAuthentication();
+    } catch {
+      // A transport failure must restore the form with safe feedback instead
+      // of leaving the button indefinitely on "Verifying…".
+      setError({ kind: "totp", message: GENERIC_TOTP_ERROR });
+    } finally {
+      setBusy(false);
     }
-    router.push("/pharmacist");
   }
 
   const credentialsError = error?.kind === "credentials" ? error.message : null;
