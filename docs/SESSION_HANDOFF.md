@@ -4,8 +4,7 @@
 
 **Branch observed:** `feat/moh-compliance-migration`
 
-**Repository head at documentation audit:** `876927f`, aligned with
-`origin/main`
+**Repository head before the current PHI-lifecycle hardening:** `bf6b8e6`
 
 ## Current release state
 
@@ -48,10 +47,16 @@ Important migration landmarks:
 
 ## Latest verification evidence
 
-- `npm run test:pure`: **90/90 passing** on 2026-07-30.
+- `npm run test:pure`: **95/95 passing** on 2026-07-30. The added privacy
+  regressions cover the complete sensitive-state reset, success/exit lifecycle,
+  prohibited browser storage/telemetry/URL use, autocomplete, and pharmacist
+  route response headers.
 - `tsc --noEmit`, ESLint, and `next build`: clean on 2026-07-30; the build
   statically generates `/check` and lists the expected public, auth, and portal
   routes.
+- The compiled routes manifest applies `Cache-Control: private, no-store`,
+  no-referrer, and same-origin script/connect CSP headers to
+  `/pharmacist/:path*`.
 - Last full database-backed run: **135/135** on 2026-07-25, including a fresh
   Docker replay through `0017`.
 - Last live tenancy inspection after `0017`: one Demo Pharmacy, no
@@ -93,6 +98,10 @@ Do not imply the full Docker/database suite covers `0018` until it is rerun.
   only HNS adjudication determines payment.
 - `/api/fhir` remains disabled. Its ICD-10 map is still marked for pharmacist
   review and must not be expanded.
+- Necessary PHI may exist transiently only in the authenticated pharmacist
+  form. It is cleared after persistence, cancellation, intake switching,
+  session expiry, and sign-out, and never written to browser storage, URLs,
+  logs, analytics, caches, or unnecessary client props.
 - Docker Desktop must be running for constraint, concurrency, and migration
   tests. If PowerShell blocks `npm.ps1`, follow the execution-policy instruction
   in [`../AGENTS.md`](../AGENTS.md) rather than bypassing it.

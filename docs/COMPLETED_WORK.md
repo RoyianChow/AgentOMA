@@ -3,7 +3,7 @@
 **Verified through:** 2026-07-30
 
 **Quality snapshot:** the current tree is TypeScript- and ESLint-clean, passes
-90/90 database-free tests, and completes a production build with `/check`
+95/95 database-free tests, and completes a production build with `/check`
 statically generated. The last complete database-backed run on 2026-07-25
 passed 135/135 tests, including a fresh Docker Postgres migration replay through
 `0017`. Supabase is live through `0017`; repository migration `0018` is pending
@@ -180,7 +180,16 @@ This is the implementation record requested for the project. It describes capabi
 - Added separately queryable presenting complaint, onset/duration/course, associated symptoms, aggravating/relieving factors, treatments tried, health/medication/allergy history, findings, shared decision-making, care plan, and follow-up plan.
 - Added outcome-compatible coded no-Rx rationale; optional narrative cannot replace the required code.
 - Added complete Rx snapshots: patient address, date, drug/strength/quantity, dose/frequency/route, server-derived prescriber identity/practice contact, PCP notification timestamp/method, and choice-of-pharmacy information timestamp.
-- Added authenticated server-rendered review and PDF output. Clinical PHI remains in necessary local form state only, is cleared after persistence, and is never written to browser storage or passed into the audit modal's client props.
+- Added authenticated server-rendered review and PDF output. Clinical PHI remains in necessary local form state only and is never written to browser storage or passed into the audit modal's client props.
+- Centralized the assessment workspace's sensitive-state reset across identity,
+  clinical/consent, eligibility/prescription, viewer/history, virtual/LTC,
+  orientation, and validation branches. Persistence, cancellation, intake
+  switching, session expiry, and sign-out all invoke the purge; regression
+  tests enforce the lifecycle and prohibit browser storage, URL construction,
+  client logging, and analytics use.
+- Applied `private, no-store`, no-referrer, and same-origin script/connect
+  response policy to every pharmacist route, with form- and field-level
+  autocomplete controls for sensitive inputs.
 - Added pharmacy practice address/phone settings used server-side for prescription snapshots.
 - Added real-Postgres tests for complete persistence/readback, SDM consent, coded no-Rx records, server refusal, and direct database constraint refusal.
 
@@ -221,5 +230,5 @@ This is the implementation record requested for the project. It describes capabi
 - Tests cover claim derivation combinations, refusal paths, LTC behaviour, remote-virtual tiers, retention, one-per-day, concurrent mutex enforcement, claim persistence/supersession, follow-up completion/supersession/concurrency/export, invitations/auth data, audit grants/triggers, and red-flag zero-claim behaviour.
 - TypeScript, ESLint, and the production build are clean for the current tree.
   The last fully recorded database-backed suite has 135 passing tests through
-  `0017`; 90 database-free tests currently run independently through
+  `0017`; 95 database-free tests currently run independently through
   `npm run test:pure`.

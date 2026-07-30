@@ -131,5 +131,7 @@ the P0 items are resolved, deployed, and re-verified.
 - TypeScript, lint, pure tests, fresh-database tests, concurrency tests, and
   tenancy tests pass.
 - A pharmacist validates a realistic complete record and all exports.
-- Privacy/security review confirms no PHI reaches intake, unnecessary client
-  components, logs, or non-Canadian storage.
+- Privacy/security review confirms no PHI reaches intake, browser persistence,
+  URLs, logs, analytics, caches, unnecessary client props, or non-Canadian
+  storage. Necessary authenticated pharmacist-form state is cleared at every
+  persistence and session/navigation exit.

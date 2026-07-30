@@ -1,7 +1,6 @@
-import Link from "next/link";
-
 import type { PendingIntake } from "../actions";
 import { AILMENT_LABELS, type AilmentId } from "@/config/triage";
+import ClearSensitiveLink from "./ClearSensitiveLink";
 
 /**
  * The waiting-intake table on the assessment workspace. ZERO patient identity
@@ -88,9 +87,12 @@ export default function IntakeQueue({
               return (
                 <tr key={s.id} style={isLoaded ? { background: "var(--primary-light)" } : undefined}>
                   <td style={cellStyle}>
-                    <Link href={`/pharmacist/assessment?session=${s.id}`} style={{ fontWeight: 700 }}>
+                    <ClearSensitiveLink
+                      href={`/pharmacist/assessment?session=${s.id}`}
+                      style={{ fontWeight: 700 }}
+                    >
                       {s.code}
-                    </Link>
+                    </ClearSensitiveLink>
                     {isLoaded && (
                       <span className="badge badge-accent" style={{ marginLeft: "0.5rem" }}>
                         loaded

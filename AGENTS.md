@@ -66,8 +66,10 @@ differ. Notably: middleware is **`src/proxy.ts`**, not `middleware.ts`. Check
   a mocked money rule proves nothing.
 - Lint clean.
 - **No new `process.env` outside `src/env.ts`.** Env is typed and validated there.
-- **No PHI in client components or logs.** Not in props, not in `console.log`, not in an
-  error message.
+- **No PHI in browser persistence, URLs, logs, analytics, caches, or unnecessary
+  client props.** Necessary transient PHI is permitted only in an authenticated
+  pharmacist form and must be cleared after persistence, cancellation, intake
+  switching, session expiry, or sign-out. Public intake remains zero-PHI.
 
 ---
 

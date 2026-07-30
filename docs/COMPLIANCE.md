@@ -124,7 +124,7 @@ UTI sections. It does not authorize future clinical-content changes.
 | Improper payments are recoverable | p.12 | Claim, consent, clinical, prescription, PCP, and audit snapshots support post-payment review | ✅ |
 | No PHI in patient intake | PHIPA posture | Intake schema/actions/tests contain symptom/handoff state only | ✅ |
 | Public self-check has no custodian-dependent persistence | PHIPA posture | `/check` collects no identifiers, keeps answers in memory, generates PDFs client-side, and is available after hash-bound P0-A clinical approval | ✅ |
-| No PHI in unnecessary client components or logs | PHIPA posture | Audit records render on the server; exports are generated server-side; continued review required for new features | ✅ |
+| No PHI in browser persistence, URLs, logs, analytics, caches, or unnecessary client props | PHIPA posture | Necessary PHI is limited to transient authenticated assessment-form state and is explicitly cleared after persistence, cancellation, intake switching, session expiry, or sign-out. Pharmacist responses are private/no-store with same-origin script/connect CSP; audit and exports remain server-rendered | ✅ |
 | PHI remains in Canada | PHIPA posture | Postgres is documented for Supabase `ca-central-1`; future object storage is not yet implemented | 🔶 |
 | One pharmacy by construction | PHIPA tenancy posture | Live `PHARMACY_ID` pinning and singleton DB constraint remove tenant switching; post-migration inspection reports one Demo Pharmacy and no cross-pharmacy relationships | ✅ |
 
