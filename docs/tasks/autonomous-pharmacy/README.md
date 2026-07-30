@@ -1,85 +1,123 @@
-# Autonomous pharmacy developer tasks
+# Autonomous pharmacy task execution index
 
-**Program status:** research and staged implementation
+**Program status:** detailed implementation contracts are drafted; most capabilities remain research or synthetic-only work.
 
-**Source roadmap:** [`../../AUTONOMOUS_PHARMACY_ROADMAP.md`](../../AUTONOMOUS_PHARMACY_ROADMAP.md)
+**Production authorization:** none is granted by this folder.
 
-**Experiment boundary:** [`../../EXPERIMENTAL_SANDBOX.md`](../../EXPERIMENTAL_SANDBOX.md)
+This folder is the execution map for the autonomous-pharmacy program. Each
+`TASK-*.md` file is an authoritative, long-form contract for one workstream:
+scope, dependencies, stop conditions, evidence, and review gates. A task file
+describes work to do; it does **not** prove that the work is implemented.
 
-These files divide the roadmap into independently assignable developer streams.
-They are implementation briefs, not authorization to provide patient care or
-bypass regulation.
+## Start an assigned task
 
-## Mandatory reading
+1. Read [`../../../AGENTS.md`](../../../AGENTS.md). It is the only canonical
+   agent instruction file.
+2. Read [`../../PROJECT_OVERVIEW.md`](../../PROJECT_OVERVIEW.md) for the live
+   system. Do not infer current implementation status from a future task.
+3. Read this index, then read the assigned task **in full**. The briefs are
+   intentionally detailed and later sections can narrow earlier language.
+4. Read [`../../COMPLIANCE.md`](../../COMPLIANCE.md) only when the work touches
+   a regulated boundary, and consult `docs/regulatory/` only when the task
+   actually raises a source question.
+5. Check [`../../OPEN_QUESTIONS.md`](../../OPEN_QUESTIONS.md),
+   [`../../NEXT_STEPS.md`](../../NEXT_STEPS.md), and the assigned task's
+   dependencies before changing code.
+6. Write a bounded plan that names the files, database effects, tests, evidence,
+   reviewers, and stop conditions. Obtain every approval required by the task.
+7. Work in a separate branch and keep one task per pull request unless the lead
+   explicitly approves a dependency-spanning change.
 
-Before taking a task, read:
+Proposed paths inside a task, such as `docs/task-08/...`, are deliverables to
+create during that task. Their absence does not mean this index has a broken
+link. Do not create empty placeholders before the corresponding work begins.
 
-1. [`../../../AGENTS.md`](../../../AGENTS.md)
-2. [`../../PROJECT_OVERVIEW.md`](../../PROJECT_OVERVIEW.md)
-3. [`../../COMPLIANCE.md`](../../COMPLIANCE.md) when the task touches PHI,
-   clinical care, virtual care, records, or billing
-4. The roadmap and sandbox policy linked above
+## Current program gate
 
-Do not copy clinical rules, billing data, or repository invariants into a task.
-Follow their canonical sources.
+Task 01 establishes the isolated synthetic runtime. Task 11 establishes the
+quality, security, evidence, and promotion control plane. They are parallel
+foundations, not substitutes for one another:
 
-## Execution waves
+```text
+Task 01: runnable synthetic boundary ─┐
+                                     ├─> task-specific prototype and evidence
+Task 11: review/release controls ─────┘                │
+                                                       └─> explicit promotion review
+```
 
-| Wave | Tasks | May begin | Production condition |
+- Task 01 repository discovery may start, but implementation is approval-gated.
+- Task 11 documentation and control design may proceed before Task 01; runnable
+  synthetic checks use the Task 01 environment once it exists.
+- Task 02 may perform bounded inspection and export work now. Migration
+  execution and live writes remain separately approval-gated.
+- Tasks 03–10 may perform the discovery, design, contracts, and other work each
+  brief explicitly permits. Runnable synthetic prototypes require Task 01.
+- No task may connect an experiment to production merely because its tests pass.
+  Promotion requires its own task-specific approvals and Task 11 evidence.
+
+## Task matrix
+
+| Task | Owner and outcome | Work allowed now | Key dependencies and promotion gate |
 |---|---|---|---|
-| 0 — foundations | 01, 02, 11 | Now | Task 02 P0 evidence complete; Task 11 release controls active |
-| 1 — experience prototypes | 03, 04, 05 | In the synthetic sandbox | Privacy/identity design approved before PHI or production persistence |
-| 2 — connected operations | 06, 07, 08, 09 | Interface design and stubs only | Each external vendor/regulatory/privacy gate approved separately |
-| 3 — bounded intelligence | 10 | Synthetic evaluation only | PIA/TRA, model governance, shadow-mode evidence, pharmacist approval |
+| [`01 — Sandbox enforcement`](TASK-01-sandbox-enforcement.md) | Platform/security; create the isolated synthetic execution boundary | Repository discovery; implementation after required approval | Bootstrap task. Must establish a separate workspace/build with no production imports, data, secrets, accounts, or integrations. |
+| [`02 — P0 production readiness`](TASK-02-p0-production-readiness.md) | Senior backend/database; close assessment completion, evidence, export, and deployment gaps | Inspection and bounded export work; no unapproved migration execution or live writes | Reusable synthetic evidence should run under Task 01. Production promotion requires Task 11 review and all explicit P0 approvals. |
+| [`03 — Command centre`](TASK-03-command-centre-dashboard.md) | Frontend/product; prototype an accountable pharmacist work surface | Repository discovery and design | Runnable prototype needs Task 01. Production data needs Task 02. Task 11 reviews the test plan and evidence. |
+| [`04 — Booking and waitlist`](TASK-04-booking-and-waitlist.md) | Full-stack; synthetic scheduling, capacity, waitlist, and cancellation workflow | Design and synthetic implementation only within Task 01 | Production use depends on Task 02 readiness, Task 05 identity/delegation, Task 07 communications, and Task 11. |
+| [`05 — Patient portal`](TASK-05-patient-portal.md) | Identity/full-stack; synthetic patient identity, delegated access, and read-only records | Threat modelling, design, and Task-01-contained prototype | Production requires approved identity proofing, finalized Task 02 retrieval, Task 04 delegation boundaries, Task 07 communications, privacy/security review, and Task 11. |
+| [`06 — Virtual care`](TASK-06-virtual-care.md) | Virtual-care integration; synthetic pharmacist-led visit workflow | Standards assessment, contracts, threat model, and Task-01-contained prototype | Production requires Task 02 assessment integration, Task 05 identity, Task 07 communication boundary, vendor/PIA/TRA approvals, and Task 11. |
+| [`07 — Messaging and reminders`](TASK-07-messaging-and-reminders.md) | Backend/communications; consented communication contracts and synthetic delivery states | Synthetic contracts and provider stubs only | No real recipient, PHI, or live provider. Depends on Task 01 and producing workflows; production requires consent, vendor, privacy/security, incident, and Task 11 approval. |
+| [`08 — Fulfilment and delivery`](TASK-08-fulfilment-and-delivery.md) | Pharmacy operations; synthetic request, fulfilment, pickup, and delivery orchestration | Contracts, state machines, and synthetic tests only | No medication, payment, payer, courier, claim, or dispensing effect. Depends on Tasks 01, 03, 05, 07, 09, and 11 as specified in the brief. |
+| [`09 — Interoperability`](TASK-09-interoperability.md) | Integration/platform; fail-closed interfaces and synthetic conformance | Discovery, standards analysis, schemas, and synthetic conformance | Production routes, including `/api/fhir`, remain disabled. Live integration requires supplied specifications, authentication, privacy/security review, and Task 11. |
+| [`10 — Bounded AI`](TASK-10-bounded-ai.md) | Applied AI; synthetic evaluation of pharmacist-reviewed assistance | Research and synthetic evaluation only | No PHI, production inference, user-visible clinical recommendation, or autonomous effect. Requires Task 01 and Task 11; producing workflows remain authoritative. |
+| [`11 — Quality, security, release`](TASK-11-quality-security-release.md) | QA/security; continuous controls, evidence, and release review | Documentation/control design now; runnable controls under Task 01 | Reviews plans and promotion evidence for Tasks 02–10. It records approvals but cannot grant or self-approve them. |
 
-## Task index
+## Dependency rules
 
-| Task | Suggested owner | Scope |
-|---|---|---|
-| [`TASK-01-sandbox-enforcement.md`](TASK-01-sandbox-enforcement.md) | Platform/security developer | Enforce synthetic-only experiment isolation |
-| [`TASK-02-p0-production-readiness.md`](TASK-02-p0-production-readiness.md) | Senior backend/database developer | Close the current P0 deployment and retrieval gap |
-| [`TASK-03-command-centre-dashboard.md`](TASK-03-command-centre-dashboard.md) | Frontend/product developer | Pharmacist command-centre redesign |
-| [`TASK-04-booking-and-waitlist.md`](TASK-04-booking-and-waitlist.md) | Full-stack developer | Online booking, waitlist, and cancellation workflow |
-| [`TASK-05-patient-portal.md`](TASK-05-patient-portal.md) | Identity/full-stack developer | Patient identity, portal, delegated access, records |
-| [`TASK-06-virtual-care.md`](TASK-06-virtual-care.md) | Virtual-care integration developer | Secure pharmacist-led virtual visits |
-| [`TASK-07-messaging-and-reminders.md`](TASK-07-messaging-and-reminders.md) | Backend/communications developer | Consented secure messaging and reminders |
-| [`TASK-08-fulfilment-and-delivery.md`](TASK-08-fulfilment-and-delivery.md) | Pharmacy-operations developer | Prescription request, fulfilment, pickup, delivery |
-| [`TASK-09-interoperability.md`](TASK-09-interoperability.md) | Integration developer | Authenticated read-only FHIR and system handoff |
-| [`TASK-10-bounded-ai.md`](TASK-10-bounded-ai.md) | Applied-AI developer | Synthetic evaluation and pharmacist-reviewed assistance |
-| [`TASK-11-quality-security-release.md`](TASK-11-quality-security-release.md) | QA/security engineer | CI, privacy, accessibility, threat and release gates |
+- A downstream task may define an interface before its upstream dependency is
+  implemented, but it must use synthetic fixtures or a fail-closed stub.
+- Do not combine schemas across tasks by assumption. Shared schema ownership,
+  migration ordering, and the responsible task must be agreed before editing.
+- A task may depend on an approval, standard, vendor contract, specification, or
+  report that is not in the repository. Missing authority is a stop condition,
+  not permission to invent an answer.
+- Several briefs mention a deep-research report that is not currently checked
+  into the repository. Treat the task brief as the current work contract and
+  request the reviewed report if a decision materially depends on it.
+- The briefs use **AgentRx** while the live repository and maintained product
+  docs use **AgentOMA**. Until the product lead records a rename decision,
+  interpret AgentRx as the autonomous-program label only. Do not rename the
+  production app, routes, packages, or environment variables.
 
-## Shared engineering contract
+## Evidence and handoff
 
-- Work in logical commits and do not mix task scopes.
-- Use npm, strict TypeScript, Zod at every boundary, Drizzle, and file-based
-  migrations only. `db:push` is banned.
-- `src/proxy.ts` is navigation UX only. Every mutation re-authorizes on the
-  server.
-- No PHI in logs, URLs, browser storage, unnecessary client props, analytics,
-  test snapshots, or non-Canadian services.
-- External effects use idempotency, acknowledgement, audit, timeout, retry, and
-  reconciliation states. Never silently default.
-- Experimental work uses synthetic data and cannot connect to production.
-- Do not touch approved clinical content, reference billing data,
-  `deriveClaimDraft`, migrations, or audit integrity without explicit lead
-  sign-off.
+Each task defines its own deliverables and acceptance evidence. At minimum, a
+handoff should state:
 
-## Shared definition of done
+- what was inspected, changed, and deliberately left unchanged;
+- approvals received and unresolved decisions;
+- exact migration/runtime/external effects, including proof that blocked paths
+  remained blocked;
+- commands run and results, with skipped checks explained;
+- synthetic fixtures used and confirmation that no production data was used;
+- screenshots or accessibility evidence when the task requires UI review;
+- security/privacy/failure-path evidence required by the task;
+- next owner, next executable step, and any stop condition still active.
 
-- Acceptance criteria in the assigned task are demonstrated.
-- `tsc --noEmit`, ESLint, and relevant Vitest suites pass.
-- Database work passes fresh-Docker migration and real-Postgres tests.
-- Authorization, tenant pinning, failure atomicity, audit, retention, and
-  supersession are tested where applicable.
-- Mobile use is tested at 375px; keyboard, screen-reader, reduced-motion, and
-  visible-focus behaviour are recorded.
-- No production secrets or real patient/pharmacist records are used.
-- Documentation and the task's evidence section are updated in the same PR.
+Update maintained status docs only with verified facts. Put implemented
+capabilities in [`../../COMPLETED_WORK.md`](../../COMPLETED_WORK.md), current
+operators' actions in [`../../SESSION_HANDOFF.md`](../../SESSION_HANDOFF.md),
+ordered remaining work in [`../../NEXT_STEPS.md`](../../NEXT_STEPS.md), and
+human decisions in [`../../OPEN_QUESTIONS.md`](../../OPEN_QUESTIONS.md).
 
-## Global stop conditions
+## Change control
 
-Stop and escalate if the work needs a new clinical rule, billing value,
-professional-scope interpretation, production migration without sign-off,
-external system specification that has not been supplied, or any weakening of
-authentication, audit, retention, red-flag, zero-PHI, or single-pharmacy
-controls.
+- Edit a task brief when its scope, authority, dependency, or acceptance
+  contract changes; record the version/date inside that task.
+- Edit this index when task status, ordering, ownership, or cross-task
+  dependencies change.
+- Edit [`../../AUTONOMOUS_PHARMACY_ROADMAP.md`](../../AUTONOMOUS_PHARMACY_ROADMAP.md)
+  when the product sequence or autonomy boundary changes.
+- Edit [`../../EXPERIMENTAL_SANDBOX.md`](../../EXPERIMENTAL_SANDBOX.md) when the
+  shared experiment boundary changes.
+- Never turn a task completion checkbox into production authorization. Record
+  promotion as a separate, named, reviewed decision with Task 11 evidence.

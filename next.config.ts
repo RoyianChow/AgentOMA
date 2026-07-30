@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 // Validate environment variables at build/start time so a misconfigured deploy
 // fails fast instead of surfacing as a runtime error in front of a pharmacist.
 import "./src/env";
+import { PHARMACIST_ROUTE_HEADERS } from "./src/lib/phi-route-security";
 
 const nextConfig: NextConfig = {
   // Pin the Turbopack workspace root to THIS project. A stray lockfile in a
@@ -11,6 +12,14 @@ const nextConfig: NextConfig = {
   // the wrong root and 404 every route. See the multi-lockfile warning.
   turbopack: {
     root: fileURLToPath(new URL(".", import.meta.url)),
+  },
+  async headers() {
+    return [
+      {
+        source: "/pharmacist/:path*",
+        headers: [...PHARMACIST_ROUTE_HEADERS],
+      },
+    ];
   },
 };
 

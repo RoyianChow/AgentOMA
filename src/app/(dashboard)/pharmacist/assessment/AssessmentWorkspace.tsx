@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   upsertPatient,
   createAssessment,
@@ -23,6 +24,12 @@ import {
   validateDateOfBirth,
   validateOntarioHealthCard,
 } from "@/lib/patient-identity-validation";
+import { authClient } from "@/lib/auth-client";
+import {
+  CLEAR_SENSITIVE_STATE_EVENT,
+  requestSensitiveStateClear,
+} from "@/lib/client-phi-lifecycle";
+import { resetSensitiveAssessmentState } from "@/lib/assessment-sensitive-state";
 
 const PATIENT_IDENTITY_VALIDATION_ERROR =
   "Correct the highlighted patient identity fields before signing.";
@@ -84,6 +91,9 @@ export default function AssessmentWorkspace({
   /** Non-PHI pharmacy configuration resolved from seeded reference data. */
   remoteVirtualEligible: boolean;
 }) {
+  const router = useRouter();
+  const authSession = authClient.useSession();
+
   // Necessary PHI lives only in this authenticated page's in-memory state
   // until the server action persists the signed record. Never mirror it into
   // browser storage, URLs, analytics, or diagnostic logs.
@@ -156,6 +166,90 @@ export default function AssessmentWorkspace({
   // a reason and re-submits with it.
   const [orientationBlock, setOrientationBlock] = useState(false);
   const [overrideReason, setOverrideReason] = useState("");
+
+  /**
+   * Clear every patient/encounter-specific browser value. The read-only claim
+   * result may remain only after successful persistence because it is the
+   * necessary hand-entry output; cancellation, switching, expiry, and sign-out
+   * clear that result too.
+   */
+  const resetSensitiveState = useCallback(
+    (options?: { preservePersistedResult?: boolean }) => {
+      resetSensitiveAssessmentState({
+        setFirstName,
+        setLastName,
+        setDob,
+        setHealthNumber,
+        setIdentifierType,
+        setIdentifierIssuer,
+        setDocumentInspected,
+        setDobError,
+        setHealthNumberError,
+        setGender,
+        setViewerChecked,
+        setViewerSource,
+        setMaximumState,
+        setSystemCount,
+        setSystemMaximum,
+        setOutcome,
+        setModality,
+        setVirtualLocation,
+        setRemoteReason,
+        setLtcResident,
+        setLtcProviderRole,
+        setLtcIsEmergency,
+        resetClinical: () => setClinical(emptyClinicalForm()),
+        setIsOdbRecipient,
+        setSelfOrFamily,
+        setSameAilmentPrescription,
+        setVerificationConsultation,
+        setPatientSelfReportLocation,
+        setOrientationBlock,
+        setOverrideReason,
+        setError,
+      });
+
+      if (!options?.preservePersistedResult) {
+        setClaimResult(null);
+        setAssessmentId(null);
+        setIsDone(false);
+      }
+    },
+    [],
+  );
+
+  // Cancellation and intake-switch links dispatch this payload-free signal
+  // before navigation. Sign-out does the same before revoking the session.
+  useEffect(() => {
+    const clear = () => resetSensitiveState();
+    window.addEventListener(CLEAR_SENSITIVE_STATE_EVENT, clear);
+    return () => window.removeEventListener(CLEAR_SENSITIVE_STATE_EVENT, clear);
+  }, [resetSensitiveState]);
+
+  // better-auth exposes the current expiry without putting PHI in the session.
+  // Clear at that boundary even if an idle shared terminal is never navigated.
+  const sessionExpiresAt = authSession.data?.session.expiresAt;
+  useEffect(() => {
+    if (authSession.isPending) return;
+
+    const clearAndLeave = () => {
+      resetSensitiveState();
+      router.replace("/sign-in");
+    };
+
+    if (!authSession.data || !sessionExpiresAt) {
+      const missingSessionTimer = window.setTimeout(clearAndLeave, 0);
+      return () => window.clearTimeout(missingSessionTimer);
+    }
+
+    const expiresAtMs = new Date(sessionExpiresAt).getTime();
+    const delayMs = expiresAtMs - Date.now();
+    const expiryTimer = window.setTimeout(
+      clearAndLeave,
+      Math.max(0, Math.min(delayMs, 2_147_483_647)),
+    );
+    return () => window.clearTimeout(expiryTimer);
+  }, [authSession.data, authSession.isPending, resetSensitiveState, router, sessionExpiresAt]);
 
   const setClinicalField = (field: keyof ReturnType<typeof emptyClinicalForm>, value: string) => {
     setClinical((current) => ({ ...current, [field]: value }));
@@ -457,24 +551,13 @@ export default function AssessmentWorkspace({
       // A non-billable result is NOT an error — the assessment was recorded, and
       // the panel explains why no claim was drafted.
       setClaimResult(assessmentRes.claim ?? null);
-      if (assessmentRes.historyEvidence) {
-        setSystemCount(assessmentRes.historyEvidence.platformAssessmentCount);
-        setSystemMaximum(assessmentRes.historyEvidence.seededMaximum365);
-      }
       if ("assessmentId" in assessmentRes) {
         setAssessmentId(assessmentRes.assessmentId as string);
       }
       // PHI exists only in this necessary pharmacist form while it is being
       // completed. Clear it immediately after the server confirms persistence;
       // nothing is copied to browser storage or returned as client props.
-      setFirstName("");
-      setLastName("");
-      setDob("");
-      setHealthNumber("");
-      setIdentifierIssuer("");
-      setDocumentInspected(false);
-      setGender("");
-      setClinical(emptyClinicalForm());
+      resetSensitiveState({ preservePersistedResult: true });
       setIsDone(true);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred.");
@@ -541,10 +624,19 @@ export default function AssessmentWorkspace({
   }
 
   return (
-    <div className="animate-fade-in" style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}>
+    <form
+      className="animate-fade-in"
+      style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}
+      autoComplete="off"
+      onSubmit={handleSubmitAssessment}
+    >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
         <h1>Patient Assessment</h1>
-        <Link href="/pharmacist" className="btn btn-secondary">
+        <Link
+          href="/pharmacist"
+          className="btn btn-secondary"
+          onClick={requestSensitiveStateClear}
+        >
           Back to Dashboard
         </Link>
       </div>
@@ -555,7 +647,12 @@ export default function AssessmentWorkspace({
           <div className="detail-section-card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
               <h3>Patient Identity</h3>
-              <Link href="/pharmacist" className="btn btn-secondary" style={{ padding: "0.2rem 0.5rem", fontSize: "0.8rem" }}>
+              <Link
+                href="/pharmacist"
+                className="btn btn-secondary"
+                style={{ padding: "0.2rem 0.5rem", fontSize: "0.8rem" }}
+                onClick={requestSensitiveStateClear}
+              >
                 Cancel
               </Link>
             </div>
@@ -619,17 +716,32 @@ export default function AssessmentWorkspace({
                   className="form-input"
                   value={identifierIssuer}
                   onChange={(event) => setIdentifierIssuer(event.target.value)}
+                  autoComplete="off"
                   maxLength={100}
                   required
                 />
               </div>
               <div>
                 <label className="form-label">First name as displayed</label>
-                <input type="text" className="form-input" value={firstName} onChange={e => setFirstName(e.target.value)} required />
+                <input
+                  type="text"
+                  className="form-input"
+                  value={firstName}
+                  onChange={(event) => setFirstName(event.target.value)}
+                  autoComplete="off"
+                  required
+                />
               </div>
               <div>
                 <label className="form-label">Last name as displayed</label>
-                <input type="text" className="form-input" value={lastName} onChange={e => setLastName(e.target.value)} required />
+                <input
+                  type="text"
+                  className="form-input"
+                  value={lastName}
+                  onChange={(event) => setLastName(event.target.value)}
+                  autoComplete="off"
+                  required
+                />
               </div>
               <div>
                 <label className="form-label" htmlFor="patient-dob">DOB (YYYY-MM-DD)</label>
@@ -638,6 +750,7 @@ export default function AssessmentWorkspace({
                   type="date"
                   className="form-input"
                   value={dob}
+                  autoComplete="off"
                   onChange={(e) => {
                     setDob(e.target.value);
                     setDobError(null);
@@ -670,6 +783,7 @@ export default function AssessmentWorkspace({
                   type="text"
                   className="form-input"
                   value={healthNumber}
+                  autoComplete="off"
                   onChange={(e) => {
                     setHealthNumber(e.target.value);
                     setHealthNumberError(null);
@@ -791,11 +905,11 @@ export default function AssessmentWorkspace({
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "1rem" }}>
                 <div>
                   <label className="form-label">SDM name</label>
-                  <input className="form-input" value={clinical.sdmName} onChange={(e) => setClinicalField("sdmName", e.target.value)} />
+                  <input className="form-input" value={clinical.sdmName} onChange={(e) => setClinicalField("sdmName", e.target.value)} autoComplete="off" />
                 </div>
                 <div>
                   <label className="form-label">Relationship to patient</label>
-                  <input className="form-input" value={clinical.sdmRelationship} onChange={(e) => setClinicalField("sdmRelationship", e.target.value)} />
+                  <input className="form-input" value={clinical.sdmRelationship} onChange={(e) => setClinicalField("sdmRelationship", e.target.value)} autoComplete="off" />
                 </div>
               </div>
             )}
@@ -1066,6 +1180,7 @@ export default function AssessmentWorkspace({
                     id="patient-self-report-location"
                     className="form-input"
                     value={patientSelfReportLocation}
+                    autoComplete="off"
                     onChange={(event) =>
                       setPatientSelfReportLocation(event.target.value)
                     }
@@ -1191,12 +1306,12 @@ export default function AssessmentWorkspace({
                   </div>
 
                   <h4 style={{ margin: "1rem 0 0.65rem" }}>Patient address on prescription</h4>
-                  <input className="form-input" value={clinical.patientAddressLine1} onChange={(e) => setClinicalField("patientAddressLine1", e.target.value)} placeholder="Street address" />
-                  <input className="form-input" value={clinical.patientAddressLine2} onChange={(e) => setClinicalField("patientAddressLine2", e.target.value)} placeholder="Unit / suite (optional)" style={{ marginTop: "0.5rem" }} />
+                  <input className="form-input" value={clinical.patientAddressLine1} onChange={(e) => setClinicalField("patientAddressLine1", e.target.value)} placeholder="Street address" autoComplete="off" />
+                  <input className="form-input" value={clinical.patientAddressLine2} onChange={(e) => setClinicalField("patientAddressLine2", e.target.value)} placeholder="Unit / suite (optional)" autoComplete="off" style={{ marginTop: "0.5rem" }} />
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 0.6fr 0.8fr", gap: "0.75rem", marginTop: "0.5rem" }}>
-                    <input className="form-input" value={clinical.patientCity} onChange={(e) => setClinicalField("patientCity", e.target.value)} placeholder="City" />
-                    <input className="form-input" value={clinical.patientProvince} onChange={(e) => setClinicalField("patientProvince", e.target.value)} placeholder="Province" />
-                    <input className="form-input" value={clinical.patientPostalCode} onChange={(e) => setClinicalField("patientPostalCode", e.target.value)} placeholder="Postal code" />
+                    <input className="form-input" value={clinical.patientCity} onChange={(e) => setClinicalField("patientCity", e.target.value)} placeholder="City" autoComplete="off" />
+                    <input className="form-input" value={clinical.patientProvince} onChange={(e) => setClinicalField("patientProvince", e.target.value)} placeholder="Province" autoComplete="off" />
+                    <input className="form-input" value={clinical.patientPostalCode} onChange={(e) => setClinicalField("patientPostalCode", e.target.value)} placeholder="Postal code" autoComplete="off" />
                   </div>
 
                   <h4 style={{ margin: "1rem 0 0.65rem" }}>PCP notification &amp; choice of pharmacy</h4>
@@ -1254,6 +1369,7 @@ export default function AssessmentWorkspace({
                   <input
                     className="form-input"
                     value={virtualLocation}
+                    autoComplete="off"
                     onChange={(event) => setVirtualLocation(event.target.value)}
                     placeholder="Specific location where the assessment was conducted"
                   />
@@ -1268,6 +1384,7 @@ export default function AssessmentWorkspace({
                   <textarea
                     className="form-input"
                     value={remoteReason}
+                    autoComplete="off"
                     onChange={(event) => setRemoteReason(event.target.value)}
                     rows={3}
                   />
@@ -1372,9 +1489,8 @@ export default function AssessmentWorkspace({
               </div>
 
               <button
-                type="button"
+                type="submit"
                 className="btn btn-primary"
-                onClick={handleSubmitAssessment}
                 disabled={
                   isSubmitting ||
                   !firstName ||
@@ -1435,6 +1551,7 @@ export default function AssessmentWorkspace({
                     className="form-input"
                     rows={2}
                     value={overrideReason}
+                    autoComplete="off"
                     onChange={(e) => setOverrideReason(e.target.value)}
                     placeholder="e.g. Module completed 2026-07-20, OCP record pending upload"
                   />
@@ -1646,6 +1763,6 @@ export default function AssessmentWorkspace({
           </div>
         </div>
       </div>
-    </div>
+    </form>
   );
 }

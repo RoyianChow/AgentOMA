@@ -21,6 +21,7 @@ the database, derive billing codes, or submit anything to HNS.
 | [`docs/SELF_CHECK.md`](docs/SELF_CHECK.md) | Public `/check` boundaries, implementation map, and production gate |
 | [`docs/EXPERIMENTAL_SANDBOX.md`](docs/EXPERIMENTAL_SANDBOX.md) | Synthetic-only experimentation boundary; not a regulatory waiver |
 | [`docs/AUTONOMOUS_PHARMACY_ROADMAP.md`](docs/AUTONOMOUS_PHARMACY_ROADMAP.md) | Staged roadmap toward pharmacist-supervised online pharmacy automation |
+| [`docs/tasks/autonomous-pharmacy/README.md`](docs/tasks/autonomous-pharmacy/README.md) | Execution index, dependencies, and gates for the autonomous-pharmacy developer tasks |
 | [`docs/SESSION_HANDOFF.md`](docs/SESSION_HANDOFF.md) | Current live migration state and operator handoff |
 | [`docs/RESTORE_DRILL.md`](docs/RESTORE_DRILL.md) | Canadian-region backup/restore drill procedure |
 | [`AGENTS.md`](AGENTS.md) | Canonical safety and engineering instructions for AI agents |

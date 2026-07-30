@@ -5,7 +5,7 @@
 **Current stage:** authenticated pilot foundation; **not production-ready**
 
 **Verification at this snapshot:** the current tree is TypeScript-clean,
-ESLint-clean, passes all 90 database-free tests, and completes a production
+ESLint-clean, passes all 95 database-free tests, and completes a production
 build with `/check` statically generated. The last complete database-backed
 suite run on 2026-07-25
 passed 135/135 tests and rebuilt a fresh Docker Postgres database from zero
@@ -25,7 +25,7 @@ AgentOMA supports Ontario pharmacy minor-ailment services. The Ministry of Healt
 | Public self-check | `/check` | Clinically approved, pharmacy-agnostic symptom self-check and client-generated pre-visit/advisory PDF | Zero identifying data; nothing sent or persisted |
 | Patient intake | `/assessment` | Mobile kiosk triage and six-character handoff | Collects zero PHI by design |
 | Authentication | `/sign-in`, `/enroll-2fa`, `/accept-invitation` | Invitation-only portal access and mandatory TOTP | Authentication data only |
-| Pharmacist portal | `/pharmacist/*` | Intake retrieval, patient identity, assessment, claim draft, follow-up, audit, settings, team | Contains PHI; authenticated and pharmacy-scoped |
+| Pharmacist portal | `/pharmacist/*` | Intake retrieval, patient identity, assessment, claim draft, follow-up, audit, settings, team | Contains PHI; authenticated, pharmacy-scoped, private/no-store, and same-origin-script only |
 | Follow-up worklist | `/pharmacist/follow-ups` | Due/overdue plans, attempts, evaluation, disposition, and immutable correction | Server-rendered; pharmacist/admin role and pharmacy scope rechecked on every mutation |
 | Record governance | `/pharmacist/governance` | Admin-only retention, export, hold, correction, destruction-review, audit-failure, and restore-drill controls | Server-rendered; complete exports use an authenticated download route |
 | FHIR route | `/api/fhir` | Preserved export scaffold | Disabled with `403`; not available to clients |
@@ -126,12 +126,42 @@ destruction dry runs, and record restore-drill evidence. Actual destruction is
 never automatic: it requires an elapsed retention horizon, no active hold, and
 a second administrator.
 
+## Autonomous pharmacy program (planned)
+
+The repository contains detailed work contracts for a longer-term,
+pharmacist-supervised autonomous-pharmacy program. They cover sandbox isolation,
+P0 readiness, a command centre, booking, patient identity and portal access,
+virtual care, communications, fulfilment, interoperability, bounded AI, and
+release controls.
+
+These task files are plans, not live surfaces. Unless a capability also appears
+in this overview and [`COMPLETED_WORK.md`](COMPLETED_WORK.md), assume it is not
+implemented. Start at the
+[`task execution index`](tasks/autonomous-pharmacy/README.md), which records the
+current dependency order and the work each task permits. All runnable
+experimental capabilities require the Task 01 synthetic boundary; promotion
+requires Task 11 evidence and the task's named human approvals.
+
+The task briefs use **AgentRx** as their program/system label. The implemented
+repository remains **AgentOMA** until the product lead resolves the naming
+question in [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md). Do not infer a package,
+route, environment, or product rename from the briefs.
+
 ## Security and authorization
 
 - better-auth is the only identity layer. Public self-signup is unavailable.
 - Invitations are single-use, expiring, pharmacy-scoped, and role-scoped.
 - Supported roles are `pharmacy_admin`, `pharmacist`, `intern`, `student`, and `technician`.
 - TOTP is mandatory. Sessions use a 30-minute rolling policy and server-side revocation.
+- Necessary pharmacist-entered PHI exists only as transient authenticated form
+  state. The assessment workspace explicitly clears identity, clinical,
+  consent, eligibility, history/viewer, virtual/LTC, override, and validation
+  state after persistence, cancellation, intake switching, session expiry, or
+  sign-out. It never writes those values to browser storage, URLs, logs, or
+  analytics.
+- Every `/pharmacist/*` response is `Cache-Control: private, no-store`, uses a
+  no-referrer policy, and applies a same-origin-only script/connect CSP. The
+  assessment form disables autocomplete at both form and sensitive-field level.
 - Password and TOTP success use a full browser navigation after the httpOnly
   session cookie is set, avoiding a stale App Router state after sign-in.
 - `src/proxy.ts` is an optimistic navigation gate only. It performs no authorization.

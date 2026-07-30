@@ -4,8 +4,7 @@
 
 **Branch observed:** `feat/moh-compliance-migration`
 
-**Repository head at documentation audit:** `876927f`, aligned with
-`origin/main`
+**Repository head at the start of this documentation refresh:** `4cbf27d`
 
 ## Current release state
 
@@ -20,6 +19,15 @@ record-governance foundation are implemented. P0-C identity/eligibility,
 self/family, existing-prescription, and claim-history code is merged, but its
 database migration is not yet deployed. LTC billing and the orientation
 break-glass policy remain unresolved production blockers.
+
+The eleven autonomous-pharmacy task briefs were refreshed on 2026-07-30 into
+detailed execution contracts. That documentation does not add a production or
+experimental capability. The canonical starting point is
+[`tasks/autonomous-pharmacy/README.md`](tasks/autonomous-pharmacy/README.md),
+which records allowed work, dependencies, evidence, and handoff expectations.
+Task 01 and Task 11 are the parallel foundations; runnable work for Tasks 03–10
+must wait for the Task 01 synthetic boundary. Preserve the user-authored task
+briefs when changing surrounding documentation.
 
 ## Migration state
 
@@ -48,10 +56,16 @@ Important migration landmarks:
 
 ## Latest verification evidence
 
-- `npm run test:pure`: **90/90 passing** on 2026-07-30.
+- `npm run test:pure`: **95/95 passing** on 2026-07-30. The added privacy
+  regressions cover the complete sensitive-state reset, success/exit lifecycle,
+  prohibited browser storage/telemetry/URL use, autocomplete, and pharmacist
+  route response headers.
 - `tsc --noEmit`, ESLint, and `next build`: clean on 2026-07-30; the build
   statically generates `/check` and lists the expected public, auth, and portal
   routes.
+- The compiled routes manifest applies `Cache-Control: private, no-store`,
+  no-referrer, and same-origin script/connect CSP headers to
+  `/pharmacist/:path*`.
 - Last full database-backed run: **135/135** on 2026-07-25, including a fresh
   Docker replay through `0017`.
 - Last live tenancy inspection after `0017`: one Demo Pharmacy, no
@@ -78,6 +92,10 @@ Do not imply the full Docker/database suite covers `0018` until it is rerun.
    orientation admin override; see [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md).
 6. Run authenticated 375px portal usability tests and the first isolated
    Canadian-region restore drill.
+7. For autonomous-pharmacy work, start at the task execution index. Resolve the
+   AgentRx/AgentOMA name and supply the referenced reviewed deep-research report
+   if a task requires it; neither ambiguity authorizes implementation by
+   assumption.
 
 ## Operational boundaries and landmines
 
@@ -93,9 +111,18 @@ Do not imply the full Docker/database suite covers `0018` until it is rerun.
   only HNS adjudication determines payment.
 - `/api/fhir` remains disabled. Its ICD-10 map is still marked for pharmacist
   review and must not be expanded.
+- Necessary PHI may exist transiently only in the authenticated pharmacist
+  form. It is cleared after persistence, cancellation, intake switching,
+  session expiry, and sign-out, and never written to browser storage, URLs,
+  logs, analytics, caches, or unnecessary client props.
 - Docker Desktop must be running for constraint, concurrency, and migration
   tests. If PowerShell blocks `npm.ps1`, follow the execution-policy instruction
   in [`../AGENTS.md`](../AGENTS.md) rather than bypassing it.
+- Autonomous-pharmacy task files describe proposed work, not current product
+  surfaces. Proposed `docs/task-XX/` paths are task deliverables and should not
+  be pre-created as empty evidence. Task 01 requires a separate npm
+  workspace/build; a route or runtime flag in AgentOMA is not an adequate
+  sandbox.
 
 ## Standing fences
 

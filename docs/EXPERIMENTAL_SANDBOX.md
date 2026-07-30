@@ -73,9 +73,12 @@ An experimental build must satisfy all of the following:
 - Have a kill switch and an expiry date. Expired previews are removed rather
   than left online.
 
-A runtime flag alone is not adequate isolation. Experimental code must use a
-separate route/build boundary and must fail closed if its synthetic environment
-is missing.
+A runtime flag or route group inside the production app is not adequate
+isolation. Task 01 must place experimental code in a separate npm workspace
+with its own build entry point and artifact. The production application must
+not import, package, or expose that workspace. The experiment must fail closed
+when its synthetic environment is absent, and repository checks must prove the
+dependency direction rather than relying on reviewer memory.
 
 ## Simulated exceptions
 
