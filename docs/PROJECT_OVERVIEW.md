@@ -1,16 +1,18 @@
 # AgentOMA project overview
 
-**Status snapshot:** 2026-07-27
+**Status snapshot:** 2026-07-30
 
 **Current stage:** authenticated pilot foundation; **not production-ready**
 
 **Verification at this snapshot:** the current tree is TypeScript-clean,
-ESLint-clean, passes all 74 database-free tests, and produces `/check` as a
-static route in a successful production build. The last complete suite run on
-2026-07-25 passed 135/135 tests and rebuilt a fresh Docker Postgres database
-from zero through migration `0017`. Supabase is also live through `0017`; post-migration inspection
-reports one Demo Pharmacy, no cross-pharmacy relationships, three preserved
-users with TOTP, and matching patient-wide retention horizons.
+ESLint-clean, passes all 90 database-free tests, and completes a production
+build with `/check` statically generated. The last complete database-backed
+suite run on 2026-07-25
+passed 135/135 tests and rebuilt a fresh Docker Postgres database from zero
+through migration `0017`. Supabase is also live through `0017`; post-migration
+inspection reports one Demo Pharmacy, no cross-pharmacy relationships, three
+preserved users with TOTP, and matching patient-wide retention horizons.
+Migration `0018` and its P0-C application code are merged but are not yet live.
 
 AgentOMA supports Ontario pharmacy minor-ailment services. The Ministry of Health Executive Officer Notice effective July 1, 2026 is the source of truth for covered ailment groups, claim maximums, fees, PINs, and billing rules. See [`COMPLIANCE.md`](COMPLIANCE.md) for traceability and [`NEXT_STEPS.md`](NEXT_STEPS.md) for the remaining go-live work.
 
@@ -100,6 +102,14 @@ read/write to the server-configured `PHARMACY_ID`. It derives a read-only
 `claim_draft` from seeded reference data and shows it for hand-entry into
 dispensing software. AgentOMA does **not** submit claims to HNS.
 
+The merged P0-C completion boundary validates the inspected public-service
+identifier and card fields, self/family attestation, structured
+existing-prescription scenarios, patient claim-history self-report, the exact
+advisory platform lookback, and clinical-viewer attestation. It fails closed on
+missing or unresolved evidence. The immutable evidence sidecar requires
+migration `0018`, which is not yet live; production completion must not be
+treated as deployed until that migration and its database tests are verified.
+
 For every billable completion, the same transaction now requires and creates a
 structured follow-up plan with due date, intended method, and monitoring
 parameters. The server-rendered follow-up worklist shows open/overdue items and
@@ -122,6 +132,8 @@ a second administrator.
 - Invitations are single-use, expiring, pharmacy-scoped, and role-scoped.
 - Supported roles are `pharmacy_admin`, `pharmacist`, `intern`, `student`, and `technician`.
 - TOTP is mandatory. Sessions use a 30-minute rolling policy and server-side revocation.
+- Password and TOTP success use a full browser navigation after the httpOnly
+  session cookie is set, avoiding a stale App Router state after sign-in.
 - `src/proxy.ts` is an optimistic navigation gate only. It performs no authorization.
 - Every portal server action calls the server-side guard to verify session,
   active role, TOTP, and assignment to the configured `PHARMACY_ID`. A session
@@ -158,7 +170,8 @@ Operational and PHI data:
   self/family and existing-prescription gates, patient self-report, advisory
   platform assessment count with its exact exclusive trailing window, and
   pharmacist-attested clinical-viewer maximum state. It does not change the
-  P0-B assessment record-version-2 contract.
+  P0-B assessment record-version-2 contract. This table is checked in as
+  migration `0018` but is not yet present in live Supabase.
 - `claim_draft`: immutable billing snapshot with supersession for corrections.
 - `follow_up`: immutable plan and attempt records linked one-to-many to an
   assessment; reached attempts close the work item, while not-reached attempts
@@ -201,8 +214,9 @@ Authentication data:
 
 ## Migration state
 
-The live Supabase database, repository, and from-zero Docker test database are
-applied through `0017`:
+The live Supabase database and last verified from-zero Docker database are
+applied through `0017`. The repository migration chain continues through
+`0018`:
 
 | Range | Purpose |
 |---|---|
@@ -217,23 +231,22 @@ applied through `0017`:
 | `0015_tidy_luke_cage` | Deleted the two approved disposable TEST tenants, preserved Demo auth/TOTP rows, and enforced one pharmacy |
 | `0016_brown_lightspeed` | Patient-wide retention, export manifests, holds, correction overlays, deliberate destruction, restore evidence, governance audit/reporting |
 | `0017_tense_pandemic` | Follow-up plans/attempts, immutable supersession, one-active-plan constraint, retention propagation, and app-role grants |
+| `0018_clever_mister_fear` | Immutable P0-C billability-evidence sidecar and its application-role immutability grants; checked in but pending live migration and fresh-Docker verification |
 
 Use `db:generate`, review the SQL, then `db:migrate`. Never use `db:push`.
 `db:seed` is reference-only. `db:seed:demo` attaches synthetic records to
 `PHARMACY_ID`; it was run after the live single-tenant migration and remains
 idempotent.
 
-Migration `0018_clever_mister_fear` is generated in the P0-C working branch
-for the immutable `assessment_billability_evidence` sidecar and has not been
-applied by this work.
-
 ## What is complete and what is not
 
 Implemented work is recorded in [`COMPLETED_WORK.md`](COMPLETED_WORK.md). The
-highest-priority gaps are unresolved LTC billing guidance, server-enforced
-eligibility/existing-prescription/history gates, and
-removal or approval of the orientation override. A first isolated restore drill
-also remains outstanding. See
+highest-priority operational step is reviewing and applying migration `0018`,
+then proving the P0-C completion boundary against fresh Docker and live
+Supabase. Remaining policy blockers are unresolved LTC billing guidance and
+removal or approval of the orientation override. The P0-C evidence sidecar also
+needs inclusion in complete-patient export/retrieval after deployment, and a
+first isolated restore drill remains outstanding. See
 [`NEXT_STEPS.md`](NEXT_STEPS.md) for an ordered plan and
 [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) for decisions that must come from a
 pharmacist or ODB.

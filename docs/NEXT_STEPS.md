@@ -1,88 +1,135 @@
 # Next steps
 
-**Prioritized:** 2026-07-26
+**Prioritized:** 2026-07-30
 
-**Release posture:** do not treat the current build as production-ready until the P0 items are resolved and re-verified.
+**Release posture:** do not treat the current build as production-ready until
+the P0 items are resolved, deployed, and re-verified.
 
 ## P0 — clinical and compliance blockers
 
-1. **Resolve all LTC minor-ailment billing.** The current conservative rule records the assessment and LTC facts but refuses claim drafting for every LTC resident. Confirm the primary, secondary-emergency, and secondary-non-emergency submission/fee rules with the ODB Pharmacy Help Desk, including footnote 5 and `LT`. Do not add `$0`, capitation, or `LT` logic until a human decision is documented; see [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md).
-2. **Resolve the orientation break-glass policy.** The intended rule is a hard billing-eligibility gate, but the current code lets a pharmacy admin supply an audited override reason. Remove it or obtain explicit regulatory/product approval before production.
-3. **Enforce identity and eligibility at the server boundary.** Add Zod validation for health-number/eligibility-number format and required health-card fields, and hard-block billable completion when public-service eligibility is absent.
-4. **Implement server-enforced self/family and existing-prescription gates.** The derivation function can refuse these conditions, but the pharmacist workflow does not yet collect and pass all facts authoritatively.
-5. **Finish the claim-history evidence model.** Persist the patient's self-report, platform trailing-365-day count, clinical-viewer attestation and timestamp side by side. Pass the maximum state into the completion action while retaining honest language that only HNS adjudication determines payment.
+1. **Deploy and verify P0-C migration `0018`.** The identity, eligibility,
+   self/family, existing-prescription, claim-history, and clinical-viewer gates
+   are merged in the application, but the live Supabase database is still at
+   `0017`. Review the SQL, apply it with `db:migrate`, replay the full chain
+   against fresh Docker, run the complete database suite, and verify the live
+   table, immutability trigger, and `agentoma_app` grants. Never use `db:push`.
+2. **Smoke-test the complete P0-C workflow.** Use a realistic synthetic case to
+   prove missing eligibility fails closed, unresolved prescription evidence
+   blocks completion, the three history signals persist side by side, and the
+   UI never promises HNS payment. Confirm a red-flag exit still writes zero
+   assessment, evidence, and claim-draft rows.
+3. **Resolve all LTC minor-ailment billing.** The current conservative rule
+   records the assessment and LTC facts but refuses claim drafting for every LTC
+   resident. Confirm primary, secondary-emergency, and secondary-non-emergency
+   submission/fee rules with the ODB Pharmacy Help Desk, including footnote 5
+   and `LT`. Do not add `$0`, capitation, or `LT` logic until a human decision is
+   documented; see [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md).
+4. **Resolve the orientation break-glass policy.** The intended rule is a hard
+   billing-eligibility gate, but a pharmacy admin can currently provide an
+   audited override reason. Remove it or obtain explicit regulatory/product
+   approval before production.
 
-## Completed P0 slice
+## Completed P0 implementation
 
-- **P0-A — clinical triage approval:** the complete current
+- **P0-A — clinical triage approval:** the exact current
   `src/config/triage.ts` artifact, including tick-bite and UTI content, was
-  clinically approved on 2026-07-26. The hash-backed approval record is
-  [`CLINICAL_APPROVAL.md`](CLINICAL_APPROVAL.md), and `/check` is released from
-  its production 404.
-- **Follow-up tracking:** billable
-  completion requires a structured plan, the dashboard/worklist tracks
-  due/overdue and not-reached/reached attempts, corrections supersede, audit
-  events exist, and patient export includes the rows. Live `0017` and the
-  from-zero Docker suite both pass verification.
-- **P0-B — defensible clinical record and informed consent:** completed in migration `0012_clinical_record_and_consent`. New version-2 assessments require structured consent, presenting complaint, histories, findings, shared decision-making, care/follow-up, coded no-Rx rationale, and outcome-specific prescription/PCP evidence. Legacy version-1 records remain readable and are labelled as such.
-- **P0-D — virtual/LTC fact capture and fee-tier reference:** migrations
-  `0013`–`0014` are live. The workspace captures the required facts, remote
-  eligibility is data-driven, and all LTC claim drafting is parked. Migration
-  `0015` removed the approved disposable TEST tenants; live tenancy inspection
-  now reports one Demo Pharmacy and no cross-pharmacy relationships.
+  clinically approved on 2026-07-26. The hash-backed record is
+  [`CLINICAL_APPROVAL.md`](CLINICAL_APPROVAL.md), and `/check` is public.
+- **P0-B — defensible clinical record and informed consent:** migration `0012`
+  requires structured consent, complaint/history/findings, shared
+  decision-making, care/follow-up plans, coded no-Rx rationale, and
+  outcome-specific prescription/PCP evidence for version-2 assessments.
+- **P0-C — server-enforced identity, eligibility, and gates:** application code
+  and migration `0018` are merged. The server validates inspected public-service
+  identity evidence, self/family and structured existing-Rx facts, and persists
+  patient self-report, an exact advisory platform lookback, and clinical-viewer
+  attestation. This item is repository-complete but **not deployed** until the
+  first two P0 steps above are complete.
+- **P0-D — virtual/LTC facts and fee-tier reference:** migrations `0013`–`0014`
+  are live. Remote eligibility is reference-driven and all LTC drafting remains
+  parked. Migration `0015` removed disposable TEST tenants and enforces one
+  pharmacy.
+- **Follow-up tracking:** live migration `0017` requires a structured plan,
+  tracks due/overdue and reached/not-reached attempts, preserves corrections by
+  supersession, audits changes, and includes follow-ups in patient export.
 
 ## P1 — pilot readiness
 
-1. **Complete post-approval public self-check usability evidence.** Exercise
-   both PDF branches, force a PDF-generation failure and confirm no payload is
-   logged, and record one-handed/accessibility checks at 375px. Clinical release
-   is approved; these checks protect patient usability and privacy regressions.
-
-2. Exercise `/pharmacist/governance` with a realistic synthetic case: complete
+1. **Finish the public self-check usability evidence.** Both PDF branches were
+   exercised successfully at 375px with no answer POST/storage or console
+   error. Still force a PDF-generation failure and inspect logs. Fix the
+   emergency screen whose primary action begins below the 375×812 fold before a
+   wider pilot. Evidence: [`worklogs/p1-7-usability-a11y-375px.md`](worklogs/p1-7-usability-a11y-375px.md).
+2. **Complete authenticated portal usability testing.** The prior 375px pass
+   could not enter `/pharmacist/*`. Exercise sign-in/TOTP, assessment,
+   claim-draft, follow-up, audit, settings, and governance with real synthetic
+   credentials. Increase sign-in tap targets to the app's 56px standard when
+   that UI is next touched.
+3. **Improve intake failure recovery.** `/assessment` reached without its
+   pharmacy link has no actionable fallback. Add concise counter-help guidance
+   without collecting identity or changing the triage tree.
+4. **Include P0-C evidence in complete retrieval.** Once `0018` is live, add
+   `assessment_billability_evidence` to the assessment PDF and complete-patient
+   export/manifest so the defensible record contains the facts used at
+   completion.
+5. Exercise `/pharmacist/governance` with a realistic synthetic case: complete
    export, patient and record holds, request decision, correction supersession,
    destruction dry run, second-admin refusal/approval, and restore-drill record.
    Do not test actual destruction on retained real records.
-3. Perform the first isolated Canadian-region restore drill using
-   [`RESTORE_DRILL.md`](RESTORE_DRILL.md), record counts/hashes in `restore_drill`,
-   and close any failed check before pilot.
-4. Keep `/api/fhir` disabled until the ICD-10 mapping receives pharmacist review and the export has authenticated, pharmacy-scoped authorization. Do not expand the current mapping meanwhile.
-5. Add a production password-reset delivery channel and verify rate limits, token expiry, and revocation end to end.
-6. Add Supabase Storage for Rx/referral documents with Canadian-region configuration, least-privilege access, retention metadata, and audit events.
-7. Make assessment, invitation, settings, and external-response boundaries consistently Zod-validated; preserve safe, non-PHI error messages.
-8. Review the remaining best-effort audit boundaries. Governance mutations are
-   transactional, and record-access failures have a secondary failure table;
-   older assessment/settings/invitation paths still need an explicit atomicity
-   decision.
-9. Conduct usability and accessibility testing on a 375px device with sick/one-handed users and pharmacist counter workflows.
+6. Perform the first isolated Canadian-region restore drill using
+   [`RESTORE_DRILL.md`](RESTORE_DRILL.md), record counts/hashes in
+   `restore_drill`, and close any failed check before pilot.
+7. Keep `/api/fhir` disabled until the ICD-10 mapping receives pharmacist
+   review and the route has authenticated, pharmacy-scoped authorization. Do
+   not expand the current mapping meanwhile.
+8. Add a production password-reset delivery channel and verify rate limits,
+   token expiry, revocation, and safe errors end to end.
+9. Add Supabase Storage for Rx/referral documents with Canadian-region
+   configuration, least-privilege access, retention metadata, and audit events.
+10. Extend Zod validation to any future external integration/FHIR responses.
+    Assessment, invitation, settings, and external-session boundaries are now
+    covered; preserve safe, non-PHI errors as integrations are added.
+11. Review remaining best-effort audit boundaries. Governance mutations are
+    transactional and record-access failures have a secondary failure table;
+    older assessment/settings/invitation paths still need an explicit atomicity
+    decision.
 
 ## Completed P1 foundation
 
-- Applied migrations `0015`–`0016` to Supabase with `db:migrate` and reseeded
-  idempotent Demo fixtures with `db:seed:demo`.
-- Applied follow-up migration `0017` after fresh-Docker replay and explicit SQL
-  review; its immutable records, constraints, triggers, and app-role grants are
-  live.
-- Post-migration inspection reports one Demo Pharmacy, three preserved users
-  with TOTP, no duplicate cross-pharmacy health-number groups, no assessment
-  tenant mismatch, and clean aggregate counts.
-- Live verification confirms all required hardening triggers, non-owner
-  `agentoma_app` privileges, controlled-destruction function ACLs, governance
-  tables, and patient-wide retention horizons.
+- Migrations `0015`–`0017` are live and verified; `0018` is checked in only.
+- Post-migration inspection reports one Demo Pharmacy, three preserved TOTP
+  users, no duplicate cross-pharmacy health-number groups, and no assessment
+  tenant mismatch.
+- Live verification confirms the hardening triggers, non-owner
+  `agentoma_app` privileges, controlled-destruction ACLs, governance tables,
+  and patient-wide retention horizons through `0017`.
 
 ## P2 — engineering maturity
 
-1. Add CI that runs TypeScript, ESLint, pure tests, and a fresh-Postgres migration/integration suite on every pull request.
-2. Add the remaining deployment runbooks: Canadian-region verification,
-   role/password provisioning, migration rollback strategy, and privacy-incident
-   response. The backup/restore and reviewed-destruction foundations now exist.
-3. Reduce portal dependence on the large global stylesheet and document a component-level styling convention without changing intake behaviour.
-4. Review public marketing claims so they accurately describe deterministic triage and pharmacist verification rather than implying automated diagnosis.
+1. Add CI that runs TypeScript, ESLint, pure tests, and a fresh-Postgres
+   migration/integration suite on every pull request.
+2. Add Canadian-region verification, role/password provisioning, migration
+   recovery, and privacy-incident runbooks. Backup/restore and reviewed
+   destruction already have foundations.
+3. Reduce portal dependence on the large global stylesheet and document a
+   component-level styling convention without changing intake behaviour.
+4. Review public marketing claims so they describe deterministic triage and
+   pharmacist verification rather than implying automated diagnosis.
+5. Evaluate new online-pharmacy and dashboard capabilities through
+   [`AUTONOMOUS_PHARMACY_ROADMAP.md`](AUTONOMOUS_PHARMACY_ROADMAP.md). Early
+   prototypes must stay inside
+   [`EXPERIMENTAL_SANDBOX.md`](EXPERIMENTAL_SANDBOX.md); neither document
+   authorizes real patient care or a regulatory bypass.
 
 ## Acceptance for a production decision
 
-- Every P0 item is closed with evidence and owner sign-off.
-- [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) has no unresolved billing or clinical blocker.
-- The database is migrated through the reviewed chain using `db:migrate`, never `db:push`.
-- TypeScript, lint, unit tests, fresh-database tests, concurrency tests, and tenant-isolation tests pass.
-- A pharmacist has validated the complete record and exports against a realistic end-to-end case.
-- Privacy/security review confirms no PHI reaches intake, unnecessary client components, logs, or non-Canadian storage.
+- Every P0 item is closed with deployment evidence and owner sign-off.
+- [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) has no unresolved billing or clinical
+  blocker.
+- The reviewed migration chain is live through the repository head using
+  `db:migrate`, never `db:push`.
+- TypeScript, lint, pure tests, fresh-database tests, concurrency tests, and
+  tenancy tests pass.
+- A pharmacist validates a realistic complete record and all exports.
+- Privacy/security review confirms no PHI reaches intake, unnecessary client
+  components, logs, or non-Canadian storage.

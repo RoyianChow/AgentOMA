@@ -1,134 +1,105 @@
 # Session handoff
 
-**Updated:** 2026-07-25  
-**Branch:** `feat/moh-compliance-migration`  
-**Repository status:** the guided-demo feature is present as uncommitted work;
-the branch matched `origin/feat/moh-compliance-migration` at task start.
-**Stopping point:** follow-up tracking is implemented, Docker-verified, and
-live in Supabase through migration `0017`; the public synthetic `/demo` tour is
-implemented without persistence or portal access
+**Updated:** 2026-07-30
 
-## Database state
+**Branch observed:** `feat/moh-compliance-migration`
 
-- Supabase, the repository, and the fresh-Docker test path are applied through
-  `0017_tense_pandemic`, which adds:
-  - immutable follow-up plan and attempt rows linked to assessments;
-  - a deferrable one-active-plan exclusion constraint;
-  - link validation, retention inheritance/recomputation, and
-    supersede-not-edit triggers;
-  - app-role `UPDATE`/`DELETE` revocation with only
-    `superseded_by_id` update permission.
-- `0015_tidy_luke_cage`:
-  - deleted the two approved disposable TEST tenants and their dependent
-    clinical rows;
-  - preserved Demo Pharmacy's three auth users and TOTP enrollments;
-  - removed the known cross-TEST-pharmacy assessment/patient defect;
-  - added a checked unique singleton key, so a second pharmacy cannot exist.
-- `0016_brown_lightspeed`:
-  - patient-wide retention recomputation;
-  - export manifests and SHA-256 artifact hashes;
-  - database-enforced holds;
-  - access/correction requests and immutable correction supersession;
-  - dry-run-first, two-admin, hold-aware deliberate destruction;
-  - restore-drill and audit-write-failure evidence;
-  - source-record immutability and app-role revokes.
-- All 18 migration timestamps are recorded. `0015` and `0016` match their
-  checked-in hashes exactly. The stored `0012` hash matches the same checked-in
-  SQL rendered with CRLF line endings; the checkout is LF, so this is an
-  encoding representation difference, not SQL drift.
-- `db:push` remains banned. Use `db:generate` → SQL review → `db:migrate`.
+**Repository head at documentation audit:** `876927f`, aligned with
+`origin/main`
 
-## Live post-migration tenancy evidence
+## Current release state
 
-`npm run db:inspect-tenancy` returned `clean: true`:
+AgentOMA is an authenticated, single-pharmacy pilot foundation, not a
+production-ready clinical service. The zero-identifying-data `/check` and
+zero-PHI `/assessment` surfaces are public; `/pharmacist/*` is invitation-only
+and requires password plus TOTP. AgentOMA produces a read-only claim draft for
+hand-entry and never submits to HNS.
 
-| Pharmacy | Patients | Intakes | Assessments | Audits at inspection | Users |
-|---|---:|---:|---:|---:|---:|
-| Demo | 8 | 12 | 7 | 28 | 3 |
+P0-A, P0-B, P0-D, follow-up tracking, authentication, single-tenancy, and the
+record-governance foundation are implemented. P0-C identity/eligibility,
+self/family, existing-prescription, and claim-history code is merged, but its
+database migration is not yet deployed. LTC billing and the orientation
+break-glass policy remain unresolved production blockers.
 
-- Pharmacy rows: 1.
-- Cross-pharmacy duplicate health-number groups: 0.
-- Assessment/patient tenant mismatches: 0.
-- Users outside Demo or without a pharmacy: 0.
-- TOTP rows: 3; users marked TOTP-enabled: 3.
-- Audit counts are append-only and may grow after this snapshot.
+## Migration state
 
-## Live governance and retention evidence
+- **Live Supabase and last verified fresh Docker:** through
+  `0017_tense_pandemic`.
+- **Repository chain:** through `0018_clever_mister_fear`.
+- A read-only live query during the 2026-07-30 audit returned PostgreSQL `42P01`
+  for `assessment_billability_evidence`, consistent with live Supabase still
+  being at `0017`.
+- `db:push` is banned. Every schema change uses `db:generate` → SQL review →
+  `db:migrate`.
 
-- The previously verified money-rule, immutability, retention, hold, and
-  correction triggers remain installed; `0017` adds and live verification
-  confirms all three follow-up triggers.
-- The runtime database connection identifies as non-owner `agentoma_app`; it
-  owns no public tables.
-- `agentoma_app` cannot update/delete `audit_log` or delete patient,
-  assessment, intake, or claim-draft rows through ordinary table privileges.
-- The role can update only the approved hold-release/correction-supersession
-  columns and can execute the controlled-destruction function.
-- Controlled destruction is `SECURITY DEFINER`; `PUBLIC` has no execute grant.
-- All nine governance tables are live.
-- Seven patients with services have seven retention rows; no patient-wide or
-  assessment horizon mismatch exists. The synthetic child retains through
-  2047.
-- Reference verification reports 4 ODB tiers, 23 ailment groups, 92 PINs, and
-  2 claim rules.
-- Live `follow_up` verification reports zero pre-existing rows, all three
-  expected triggers, a deferrable active-plan exclusion constraint, runtime
-  role `agentoma_app`, no DELETE or ordinary field UPDATE permission, and only
-  the approved `superseded_by_id` UPDATE grant.
+Important migration landmarks:
 
-## Implemented application boundary
+| Migration | Purpose |
+|---|---|
+| `0004_hardening` | Same-day insect/tick mutex and initial audit immutability/revocation |
+| `0006` | Immutable claim-draft supersession and one-active-draft invariant |
+| `0011_audit_hardening` | Retention trigger, non-owner app role, effective audit/claim grants |
+| `0012_clinical_record_and_consent` | P0-B version-2 consent and defensible clinical/Rx record |
+| `0013`–`0014` | Effective ODB fee-tier reference plus virtual/LTC fact capture |
+| `0015_tidy_luke_cage` | Disposable tenant cleanup and one-pharmacy constraint |
+| `0016_brown_lightspeed` | Patient-wide retention, export manifests, holds, corrections, deliberate destruction, and restore evidence |
+| `0017_tense_pandemic` | Immutable follow-up plans/attempts, concurrency, retention, and grants |
+| `0018_clever_mister_fear` | Immutable P0-C billability-evidence sidecar; merged, not live |
 
-- `.env` has `PHARMACY_ID` set to Demo; `.env.example` documents it.
-- Portal guards require the session user to match the configured pharmacy.
-- Intake retains the legacy `?pharmacy=` query but ignores it for tenancy.
-- Invitations, audit writes, bootstrap, and demo seed use the configured ID.
-- `npm run db:inspect-tenancy` is read-only and emits aggregate tenancy evidence
-  only.
-- `/pharmacist/governance` is pharmacy-admin-only and fully server-rendered.
-- Billable assessment completion requires a structured follow-up due date,
-  phone/in-person method, and monitoring parameters before any clinical or
-  claim row is written.
-- `/pharmacist/follow-ups` is server-rendered and pharmacy-scoped. It records
-  reached and not-reached attempts, safety/efficacy evaluation, disposition,
-  notes, and immutable corrections. The dashboard shows open/overdue items.
-- Follow-up create/record/supersede actions are audited, and complete-patient
-  export schema v2 includes all follow-up rows.
-- `/demo` is a public five-stage guided tour using static synthetic content. It
-  accepts no inputs and imports no database, auth, triage, claim-derivation, or
-  browser-storage path; the actual portal remains protected.
+## Latest verification evidence
 
-## Verification
+- `npm run test:pure`: **90/90 passing** on 2026-07-30.
+- `tsc --noEmit`, ESLint, and `next build`: clean on 2026-07-30; the build
+  statically generates `/check` and lists the expected public, auth, and portal
+  routes.
+- Last full database-backed run: **135/135** on 2026-07-25, including a fresh
+  Docker replay through `0017`.
+- Last live tenancy inspection after `0017`: one Demo Pharmacy, no
+  cross-pharmacy relationships, three preserved TOTP users, and matching
+  patient-wide retention horizons.
+- Docker-backed tests require Docker Desktop and local Postgres on port 5433;
+  the harness refuses non-local database URLs.
 
-- Docker Postgres: `localhost:5433`, guarded against non-local URLs.
-- Fresh migration replay from zero through `0017`: green; the same migration
-  is live in Supabase.
-- `tsc --noEmit`: green.
-- ESLint: green.
-- Vitest: 14 files, 135 tests, all green.
-- Governance tests prove retention extension, hold-blocked destruction,
-  second-admin execution, immutable correction supersession, and hashed export
-  manifests.
-- Follow-up tests prove the completion requirement, not-reached handling,
-  reached closure, supersession/rollback, grant-level immutability, retention
-  extension, export/destruction inclusion, and one-winner concurrent closure.
+Do not imply the full Docker/database suite covers `0018` until it is rerun.
 
-## Next operator steps
+## Next operator actions
 
-1. Smoke-test sign-in/TOTP for all intended roles and
-   `/pharmacist/governance` against synthetic records.
-2. Exercise a synthetic billable completion and both reached/not-reached
-   follow-up paths, then confirm assessment PDF and patient export output.
-3. Exercise complete export, patient and record holds, request decision,
-   correction supersession, destruction dry run, and second-admin refusal.
-   Do not execute destruction against retained records.
-4. Perform and record the first isolated Canadian-region restore drill using
-   [`RESTORE_DRILL.md`](RESTORE_DRILL.md).
-5. Continue the P0 clinical, LTC, orientation, eligibility, prescription, and
-   claim-history blockers in [`NEXT_STEPS.md`](NEXT_STEPS.md).
+1. Review `0018_clever_mister_fear.sql`, replay from zero in Docker, and run the
+   full database suite.
+2. Apply `0018` to Supabase with `db:migrate`; verify the table, immutability
+   trigger, app-role grants, and aggregate tenancy report.
+3. Smoke-test a realistic P0-C completion: inspected eligibility, self/family,
+   structured existing-Rx states, patient self-report, advisory platform count,
+   clinical-viewer attestation, and safe refusal paths. Re-prove red-flag exit
+   writes zero claim rows.
+4. Add `assessment_billability_evidence` to the assessment PDF and complete
+   patient export/manifest.
+5. Resolve LTC billing with the ODB Pharmacy Help Desk and resolve the
+   orientation admin override; see [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md).
+6. Run authenticated 375px portal usability tests and the first isolated
+   Canadian-region restore drill.
 
-## Fences
+## Operational boundaries and landmines
 
-Do not change triage/red flags (including the unverified tick-bite 72-hour
-value), reference PINs, `deriveClaimDraft`, the five outcomes, or zero-PHI
-intake without lead sign-off. LTC claim drafting remains parked; see
-[`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md).
+- `src/config/triage.ts` is the exact hash-approved P0-A artifact. Any content
+  change invalidates approval and requires a new pharmacist review.
+- Never edit reference PINs or derive billing values from docs or memory.
+- `src/proxy.ts` is navigation UX only; every server action independently
+  rechecks session, role, TOTP, pharmacy, and the action-specific eligibility
+  boundary.
+- The app is single-pharmacy by construction. `PHARMACY_ID` is server-only;
+  client, QR, and session data never select a tenant.
+- The 365-day platform count is advisory and excludes exactly 365 days ago;
+  only HNS adjudication determines payment.
+- `/api/fhir` remains disabled. Its ICD-10 map is still marked for pharmacist
+  review and must not be expanded.
+- Docker Desktop must be running for constraint, concurrency, and migration
+  tests. If PowerShell blocks `npm.ps1`, follow the execution-policy instruction
+  in [`../AGENTS.md`](../AGENTS.md) rather than bypassing it.
+
+## Standing fences
+
+Do not change the approved triage/red-flag artifact, reference PIN data,
+migrations, `deriveClaimDraft`, audit integrity, five-outcome structure, or
+zero-PHI intake without lead sign-off. Do not resolve the LTC or orientation
+questions by inference.

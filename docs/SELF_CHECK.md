@@ -68,6 +68,25 @@ in the report body rather than being reduced to fine print.
 | Shared frozen clinical source | `src/config/triage.ts` |
 | Approval and change control | `docs/CLINICAL_APPROVAL.md` |
 
+## Latest usability evidence
+
+The 2026-07-28 375×812 pass successfully generated both PDF branches. Browser
+network evidence showed static asset requests and local `blob:` downloads only:
+no answer POST, server round trip, retained browser storage, or console error
+was observed.
+
+Open usability/testing items:
+
+- The emergency screen's continue action begins below the initial 375×812
+  viewport and should be made discoverable before wider pilot use.
+- A forced client-side PDF-generation failure has not yet been exercised, so
+  the no-payload error/logging path still needs explicit evidence.
+- Authenticated pharmacist routes were outside that pass because test TOTP
+  credentials were unavailable.
+
+See [`worklogs/p1-7-usability-a11y-375px.md`](worklogs/p1-7-usability-a11y-375px.md)
+for measurements and scope.
+
 ## Reversal control
 
 Showing billing data, persisting answers, or collecting a health number or
