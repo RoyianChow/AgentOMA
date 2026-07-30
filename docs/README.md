@@ -25,8 +25,16 @@ provenance only.
 | [`CLINICAL_APPROVAL.md`](CLINICAL_APPROVAL.md) | Hash-bound P0-A approval record and clinical change-control boundary. |
 | [`SELF_CHECK.md`](SELF_CHECK.md) | Approved zero-identifying-data boundary and production posture for public `/check`. |
 | [`PRODUCT_PRINCIPLES.md`](PRODUCT_PRINCIPLES.md) | Product rationale behind refusal-first billing, privacy, and record-integrity choices. |
+| [`EXPERIMENTAL_SANDBOX.md`](EXPERIMENTAL_SANDBOX.md) | Strictly isolated synthetic experimentation policy; it permits workflow simulation, not a legal or production bypass. |
+| [`AUTONOMOUS_PHARMACY_ROADMAP.md`](AUTONOMOUS_PHARMACY_ROADMAP.md) | Staged roadmap for online access, dashboard automation, virtual care, fulfilment, interoperability, and bounded AI with pharmacist gates. |
 | [`RESTORE_DRILL.md`](RESTORE_DRILL.md) | Canadian-region backup/restore evidence procedure; this is a runbook, not proof that the first drill has occurred. |
 | [`regulatory/`](regulatory/) | Binding Ministry source PDF. Read only when a compliance question requires it. |
+
+## Developer execution plans
+
+| Folder | Purpose |
+|---|---|
+| [`tasks/autonomous-pharmacy/`](tasks/autonomous-pharmacy/) | Role-based, dependency-ordered task briefs for the experimental sandbox, P0 readiness, command centre, digital access, virtual care, messaging, fulfilment, interoperability, AI, and release controls. |
 
 ## Agent instructions
 
@@ -44,6 +52,7 @@ tool-specific pointers and must not duplicate repository rules.
 | [`archive/initial-implementation-prompt.md`](archive/initial-implementation-prompt.md) | Superseded initial migration/feature brief; not current architecture or compliance guidance. |
 | [`archive/oma-pilot-plan.md`](archive/oma-pilot-plan.md) | Superseded pilot plan retained for decision provenance. |
 | [`worklogs/audit-clickable-task-4.md`](worklogs/audit-clickable-task-4.md) | Historical implementation evidence for the audit-record navigation slice. |
+| [`worklogs/p1-7-usability-a11y-375px.md`](worklogs/p1-7-usability-a11y-375px.md) | 2026-07-28 375px usability evidence for `/check`, `/assessment`, and `/sign-in`, including open findings and untested authenticated routes. |
 
 Never copy the PIN table or clinical rules into documentation. Billing values
 belong in `src/config/ailment-reference.ts` and the seeded reference tables;

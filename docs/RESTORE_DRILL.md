@@ -50,9 +50,11 @@ connection. Store only outputs that contain counts, object names, and hashes.
 1. Confirm `__drizzle_migrations` reaches the same migration as production.
 2. Confirm exactly one `pharmacy` row and run `npm run db:inspect-tenancy`.
 3. Compare row counts for:
-   `patient`, `intake_session`, `assessment`, `claim_draft`, `follow_up`,
-   `audit_log`, `patient_record_retention`, `record_hold`,
-   `export_manifest`, `access_correction_request`, and `record_correction`.
+   `patient`, `intake_session`, `assessment`,
+   `assessment_billability_evidence` (when production is at `0018` or later),
+   `claim_draft`, `follow_up`, `audit_log`, `patient_record_retention`,
+   `record_hold`, `export_manifest`, `access_correction_request`, and
+   `record_correction`.
 4. Compare deterministic aggregate hashes generated from stable identifiers
    and timestamps. Do not export clinical payloads into the evidence file.
 5. Confirm these triggers exist and are enabled:
@@ -61,11 +63,13 @@ connection. Store only outputs that contain counts, object names, and hashes.
    all `*_hold_delete_guard` triggers, and the patient/assessment/intake
    immutability triggers. Also confirm `follow_up_validate_links_trg`,
    `follow_up_no_mutate`, and `follow_up_retain_until_trg`, plus the
-   deferrable `follow_up_one_active_plan_per_assessment` constraint.
+   deferrable `follow_up_one_active_plan_per_assessment` constraint. At `0018`
+   or later, also confirm `assessment_billability_evidence_no_mutate`.
 6. `SET ROLE agentoma_app` and verify:
    - audit UPDATE/DELETE is denied;
    - claim field mutation/DELETE is denied;
    - patient/assessment/intake/follow-up DELETE is denied;
+   - billability-evidence UPDATE/DELETE is denied at `0018` or later;
    - ordinary follow-up field updates are denied while the final
      `superseded_by_id` correction link remains permitted;
    - authorized governance functions remain executable.

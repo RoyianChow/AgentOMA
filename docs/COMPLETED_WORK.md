@@ -1,12 +1,13 @@
 # Completed work
 
-**Verified through:** 2026-07-27
+**Verified through:** 2026-07-30
 
 **Quality snapshot:** the current tree is TypeScript- and ESLint-clean, passes
-74/74 database-free tests, and builds `/check` as a production static route.
-The last complete run on 2026-07-25 passed 135/135 tests, including a
-fresh Docker Postgres migration replay through `0017`. Supabase is live through
-the same migration.
+90/90 database-free tests, and completes a production build with `/check`
+statically generated. The last complete database-backed run on 2026-07-25
+passed 135/135 tests, including a fresh Docker Postgres migration replay through
+`0017`. Supabase is live through `0017`; repository migration `0018` is pending
+deployment and a new full database-suite run.
 
 This is the implementation record requested for the project. It describes capabilities present in the repository, not planned work. Remaining items are in [`NEXT_STEPS.md`](NEXT_STEPS.md).
 
@@ -193,11 +194,32 @@ This is the implementation record requested for the project. It describes capabi
   eligibility flip. Fresh-Docker replay is now green.
 - Split production reference seeding from local demo fixtures: `db:seed` writes reference rows only, while `db:seed:demo` is explicitly development-only.
 
+## Server-enforced eligibility and completion evidence (P0-C)
+
+- Added Zod-validated server boundaries for inspected public-service identity
+  evidence and required card fields; absent eligibility evidence fails closed.
+- Added authoritative self/family and structured existing-prescription facts to
+  the pharmacist workflow and completion action. Blocking and unresolved states
+  cannot reach claim derivation.
+- Added immutable `assessment_billability_evidence` snapshots containing the
+  patient's same-condition self-report, exact advisory platform trailing-window
+  count, and pharmacist-attested clinical-viewer source, timestamp, and maximum
+  state.
+- Extended typed boundary validation for assessment completion, invitations,
+  pharmacy settings, and external intake-session responses with non-PHI-safe
+  errors.
+- Added pure and real-Postgres coverage for the schemas, workflow gates,
+  evidence persistence, immutability, tenant isolation, and failure atomicity.
+- The application code and `0018_clever_mister_fear` migration are merged, but
+  this capability is not live until `0018` is reviewed, migrated, and verified.
+  The evidence sidecar also remains to be added to complete-patient export.
+
 ## Verification and regression coverage
 
 - Vitest runs pure unit tests and real-Postgres integration tests.
 - Docker Postgres uses port 5433, is guarded against non-local database URLs, and rebuilds the migration chain from zero.
 - Tests cover claim derivation combinations, refusal paths, LTC behaviour, remote-virtual tiers, retention, one-per-day, concurrent mutex enforcement, claim persistence/supersession, follow-up completion/supersession/concurrency/export, invitations/auth data, audit grants/triggers, and red-flag zero-claim behaviour.
-- TypeScript and ESLint are clean for the current tree. The full database-backed
-  suite has 135 passing tests; database-free logic can also run independently
-  through `npm run test:pure`.
+- TypeScript, ESLint, and the production build are clean for the current tree.
+  The last fully recorded database-backed suite has 135 passing tests through
+  `0017`; 90 database-free tests currently run independently through
+  `npm run test:pure`.

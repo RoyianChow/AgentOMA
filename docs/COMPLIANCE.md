@@ -1,10 +1,12 @@
 # Compliance map — Ontario minor-ailment services
 
-**Implementation review date:** 2026-07-26
+**Implementation review date:** 2026-07-30
 
 This document maps the current code to the Ontario Ministry of Health _Executive Officer Notice: Update to Funding for Minor Ailment Services in Ontario Pharmacies_, effective July 1, 2026. Page references point to [`regulatory/moh-executive-officer-notice-minor-ailments-en-2026-05-19.pdf`](regulatory/moh-executive-officer-notice-minor-ailments-en-2026-05-19.pdf), which is the binding source.
 
-Status: ✅ implemented and tested · 🔶 partial or awaiting human approval · ⬜ not implemented
+Status: ✅ live and verified · 🟦 implemented/tested in the repository but
+deployment verification pending · 🔶 partial or awaiting human approval ·
+⬜ not implemented
 
 > This is an implementation traceability document, not legal advice. It deliberately contains no duplicate PIN table. Billing values come only from `src/config/ailment-reference.ts` and the seeded reference tables. The current clinical artifact is approved and hash-bound in [`CLINICAL_APPROVAL.md`](CLINICAL_APPROVAL.md); future content changes require renewed pharmacist review.
 
@@ -15,7 +17,7 @@ Status: ✅ implemented and tested · 🔶 partial or awaiting human approval ·
 | Effective-dated funded groups, four PINs per group, fees, and claim maximums | pp.2–3; Table 1, pp.8–10 | Versioned seed source and `ailment_group`/`pin`; claim draft resolves the applicable row and refuses an unknown lookup | ✅ |
 | Merged rhinitis and dermatitis groups; 2026 additions | p.2; Table 1 | Seeded reference data | ✅ |
 | Acne no-Rx in-person PIN preserved exactly as published | Table 1, p.9 | Reference-source regression test | ✅ |
-| HNS looks back 365 days; `LO` maximum rejection has no override | p.7 | Platform count and honest UI language exist; HNS remains authoritative | 🔶 |
+| HNS looks back 365 days; `LO` maximum rejection has no override | p.7 | P0-C stores patient self-report, the exact advisory platform window/count, and clinical-viewer maximum state; HNS remains authoritative. Migration `0018` is pending live deployment | 🟦 |
 | Platform count is advisory because other pharmacies are not visible | p.7 | UI/export state this limitation | ✅ |
 | One claim per person/ailment/day | p.2; p.14 | Unique database index; concurrent duplicate is rejected | ✅ |
 
@@ -41,12 +43,12 @@ side; HNS adjudication remains authoritative.
 
 | Requirement | Notice | Current implementation | Status |
 |---|---|---|---|
-| Valid OHIP/ODB eligibility number; no number means no funded claim | p.6; p.14; footnote 4 | Portal captures a number, but format/eligibility is not fully Zod-validated and enforced server-side | 🔶 |
-| Name as on card, DOB, and F/M/U for non-ODB claims | pp.11, 13 | Patient record captures name, DOB, and gender; exact-card/recipient validation remains incomplete | 🔶 |
+| Valid OHIP/ODB eligibility number; no number means no funded claim | p.6; p.14; footnote 4 | Merged server boundary requires an inspected OHIP/MCCSS/HCCSS document and identifier; OHIP syntax is normalized/validated and absence fails closed. The app does not independently prove active eligibility, and migration `0018` is not live | 🔶 |
+| Name as on card, DOB, and F/M/U for non-ODB claims | pp.11, 13 | P0-C validates and snapshots inspected-card name/DOB with the patient recipient fields used for the claim; migration `0018` is pending live deployment | 🟦 |
 | LTC primary-provider handling | footnote 5, p.7; p.14 | Facts are captured, but claim drafting is deliberately refused pending ministry clarification; no `$0` claim is emitted | 🔶 |
 | LTC secondary-emergency handling and `LT` | pp.14–15 | Facts are captured, but claim drafting is deliberately refused pending ministry clarification; `LT` is not emitted | 🔶 |
 | LTC secondary non-emergency handling | p.14; footnote 5 | Facts are captured, but claim drafting is deliberately refused pending ministry clarification | 🔶 |
-| Pharmacist does not assess self/family | p.14 | Derivation refuses it, but the authoritative server workflow does not yet collect the attestation | 🔶 |
+| Pharmacist does not assess self/family | p.14 | Merged workflow requires the structured fact and re-enforces it at the server completion boundary; the immutable evidence row is pending migration `0018` | 🟦 |
 
 The unresolved LTC interpretation is recorded in [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md).
 
@@ -57,8 +59,8 @@ The unresolved LTC interpretation is recorded in [`OPEN_QUESTIONS.md`](OPEN_QUES
 | Use ailment-appropriate assessment/red-flag criteria | pp.7–8 | The deterministic triage and red-flag artifact received P0-A clinical approval on 2026-07-26; a hash-backed test prevents unreviewed changes from inheriting approval | ✅ |
 | A red flag exits to referral and creates no claim | pp.7–8; p.14 | Separate `triage_exit`, defensive derivation refusal, and database tests prove zero claim rows | ✅ |
 | Completed assessment ending in referral remains distinct from red-flag exit | pp.11, 13 | Outcome model distinguishes the paths; only completed referral derives SSC `4` | ✅ |
-| Existing fillable/adaptable/extendable prescription blocks the fee | p.15 | Intake self-report and derivation refusal exist; pharmacist/server gate is incomplete | 🔶 |
-| Reachable prescriber/verification-only scenario blocks the fee | p.15 | Not yet represented as a complete authoritative gate | ⬜ |
+| Existing fillable/adaptable/extendable prescription blocks the fee | p.15 | Merged structured evidence and server action block completion for these states; unresolved evidence also fails closed | 🟦 |
+| Reachable prescriber/verification-only scenario blocks the fee | p.15 | Merged structured evidence represents and blocks the reachable-prescriber/verification-only case at the server boundary | 🟦 |
 
 The approval covers the complete current artifact, including the tick-bite and
 UTI sections. It does not authorize future clinical-content changes.
@@ -102,7 +104,7 @@ UTI sections. It does not authorize future clinical-content changes.
 |---|---|---|---|
 | Pharmacy HNS subscription/account identity | p.6 | `pharmacy.hns_account_id` and authenticated pharmacy settings exist; operational verification is still required | 🔶 |
 | OCP orientation module completed before billable assessment | p.6 | Server gate and supervisor logic exist, but an audited admin override currently bypasses the hard gate | 🔶 |
-| Clinical viewer check | p.6 | UI attestation/link exists; durable evidence model is incomplete | 🔶 |
+| Clinical viewer check | p.6 | P0-C requires the source, attestation, timestamp, and maximum state and stores them in an immutable sidecar; migration `0018` is pending live deployment | 🟦 |
 | Portal protects PHI | PHIPA posture | better-auth, mandatory TOTP, invitation-only roles, rolling/revocable sessions, server-action authorization | ✅ |
 
 `src/proxy.ts` performs no authorization. It is an optimistic redirect only. Every server action independently verifies the better-auth session, active role, and pharmacy scope; billable completion additionally resolves prescriber eligibility server-side.
@@ -114,7 +116,7 @@ UTI sections. It does not authorize future clinical-content changes.
 | Defensible activity trail for post-payment review | p.12 | Pharmacy-scoped append-only audit events and server-generated exports | ✅ |
 | Audit records cannot be updated/deleted by the app | p.12 | Trigger plus `agentoma_app` privilege revocation; real-Postgres grant tests | ✅ |
 | Retain ten years from last service or ten years after age 18, whichever later | p.12 | Live `0016` patient-wide recomputation extends every prior record after a returning service; live horizon comparison is clean and the pediatric fixture retains through 2047 | ✅ |
-| Complete, readily retrievable patient record | PHIPA/OCP recordkeeping posture | Live server-only export schema v2 includes follow-up rows with patient, assessments, claim drafts, linked intakes/audits, retention/holds/corrections, manifest, and per-artifact hashes | ✅ |
+| Complete, readily retrievable patient record | PHIPA/OCP recordkeeping posture | Live server-only export schema v2 includes the pre-0018 record and follow-ups with hashes. The P0-C billability-evidence sidecar still needs inclusion after deployment | 🔶 |
 | Holds prevent destruction | PHIPA/OCP recordkeeping posture | Live patient/record holds block deletion in database triggers, including controlled destruction | ✅ |
 | Corrections preserve historical truth | PHIPA access/correction posture | Live immutable correction overlays use final supersession; source records are not rewritten | ✅ |
 | Destruction is deliberate, reviewed, and audited | PHIPA/OCP recordkeeping posture | Live dry-run evidence plus database execution requires elapsed retention, no hold, and a second admin; no automatic cron exists | ✅ |
@@ -129,10 +131,12 @@ UTI sections. It does not authorize future clinical-content changes.
 ## Current release conclusion
 
 The billing derivation, version-2 clinical/consent record, authentication
-foundation, audit immutability, and P0-D virtual/LTC fact capture are
-implemented. The live migration chain is through `0017` and independently
-replays from zero in Docker. All LTC claim drafting remains parked. The product is **not yet
-ready for full production** because the eligibility, existing-prescription,
-claim-history, LTC-billing, orientation-override, and first restore-drill items
-remain incomplete. The ordered remediation list is
+foundation, audit immutability, and P0-D virtual/LTC fact capture are live. The
+P0-C eligibility, existing-prescription, and claim-history boundary is merged
+and tested in application code, but migration `0018` is not yet live; the last
+fully verified live and fresh-Docker chain is `0017`. All LTC claim drafting
+remains parked. The product is **not yet ready for full production** until
+`0018` is deployed and verified, P0-C evidence is added to complete retrieval,
+and the LTC-billing, orientation-override, and first restore-drill items are
+closed. The ordered remediation list is
 [`NEXT_STEPS.md`](NEXT_STEPS.md).

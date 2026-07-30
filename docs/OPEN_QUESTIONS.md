@@ -1,6 +1,6 @@
 # Open questions
 
-**Reviewed:** 2026-07-26
+**Reviewed:** 2026-07-30
 
 These issues require a pharmacist, the ODB Pharmacy Help Desk, or the product lead. Code and documentation must not infer an answer. Until resolved, use the conservative path that cannot create an improper claim or unsafe outcome.
 
