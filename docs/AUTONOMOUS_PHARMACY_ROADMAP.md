@@ -10,6 +10,35 @@ Ontario pharmacists can spend more time on accountable patient care. Under the
 current product boundary, “autonomous” means bounded software execution around
 a pharmacist—not unsupervised diagnosis, prescribing, dispensing, or claiming.
 
+## How to execute this roadmap
+
+This file defines product direction and sequence. The detailed contracts in
+[`tasks/autonomous-pharmacy/`](tasks/autonomous-pharmacy/) define how individual
+workstreams are investigated, built, evidenced, and reviewed. Updating a task
+brief does not mean its capability exists; the live implementation is described
+only in [`PROJECT_OVERVIEW.md`](PROJECT_OVERVIEW.md) and
+[`COMPLETED_WORK.md`](COMPLETED_WORK.md).
+
+The current execution order is:
+
+1. **Task 01** creates a separately built, synthetic-only environment that
+   cannot import or connect to the production application.
+2. **Task 11** creates the quality, security, evidence, and promotion control
+   plane. Its design can proceed in parallel with Task 01, but it cannot approve
+   its own work or replace a named human approval.
+3. **Task 02** closes the existing P0 production-readiness gaps. Bounded
+   inspection/export work may proceed, while migrations and live writes remain
+   separately approval-gated.
+4. **Tasks 03–10** proceed only to the stage their own briefs permit. Runnable
+   prototypes require Task 01; production promotion requires Task 11 evidence
+   plus every task-specific privacy, security, clinical, vendor, and regulatory
+   approval.
+
+Use the [task execution index](tasks/autonomous-pharmacy/README.md) for the
+current dependency map, allowed work, and handoff requirements. The task briefs
+currently use **AgentRx** as a program label while this production repository is
+named **AgentOMA**; no product rename is authorized by this roadmap.
+
 ## Regulatory reality
 
 - An Ontario pharmacy internet site must be operated by an accredited Ontario

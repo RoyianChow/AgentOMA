@@ -4,7 +4,7 @@
 
 **Branch observed:** `feat/moh-compliance-migration`
 
-**Repository head before the current PHI-lifecycle hardening:** `bf6b8e6`
+**Repository head at the start of this documentation refresh:** `4cbf27d`
 
 ## Current release state
 
@@ -19,6 +19,15 @@ record-governance foundation are implemented. P0-C identity/eligibility,
 self/family, existing-prescription, and claim-history code is merged, but its
 database migration is not yet deployed. LTC billing and the orientation
 break-glass policy remain unresolved production blockers.
+
+The eleven autonomous-pharmacy task briefs were refreshed on 2026-07-30 into
+detailed execution contracts. That documentation does not add a production or
+experimental capability. The canonical starting point is
+[`tasks/autonomous-pharmacy/README.md`](tasks/autonomous-pharmacy/README.md),
+which records allowed work, dependencies, evidence, and handoff expectations.
+Task 01 and Task 11 are the parallel foundations; runnable work for Tasks 03–10
+must wait for the Task 01 synthetic boundary. Preserve the user-authored task
+briefs when changing surrounding documentation.
 
 ## Migration state
 
@@ -83,6 +92,10 @@ Do not imply the full Docker/database suite covers `0018` until it is rerun.
    orientation admin override; see [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md).
 6. Run authenticated 375px portal usability tests and the first isolated
    Canadian-region restore drill.
+7. For autonomous-pharmacy work, start at the task execution index. Resolve the
+   AgentRx/AgentOMA name and supply the referenced reviewed deep-research report
+   if a task requires it; neither ambiguity authorizes implementation by
+   assumption.
 
 ## Operational boundaries and landmines
 
@@ -105,6 +118,11 @@ Do not imply the full Docker/database suite covers `0018` until it is rerun.
 - Docker Desktop must be running for constraint, concurrency, and migration
   tests. If PowerShell blocks `npm.ps1`, follow the execution-policy instruction
   in [`../AGENTS.md`](../AGENTS.md) rather than bypassing it.
+- Autonomous-pharmacy task files describe proposed work, not current product
+  surfaces. Proposed `docs/task-XX/` paths are task deliverables and should not
+  be pre-created as empty evidence. Task 01 requires a separate npm
+  workspace/build; a route or runtime flag in AgentOMA is not an adequate
+  sandbox.
 
 ## Standing fences
 

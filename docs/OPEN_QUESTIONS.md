@@ -35,3 +35,41 @@ The Notice appears ambiguous:
 The intended eligibility rule is a hard block when the prescribing pharmacist or supervisor has no recorded orientation completion. The current implementation permits a pharmacy admin to enter an audited break-glass reason and continue.
 
 **Decision required:** remove the override, or document authoritative approval and tightly defined circumstances. Auditability alone does not establish billing eligibility.
+
+## 3. AgentOMA / AgentRx product naming
+
+**Status:** open — documentation and implementation-coordination blocker
+
+**Owner:** product lead
+
+The implemented repository, production-facing documentation, database role,
+and existing environment conventions use **AgentOMA**. The refreshed
+autonomous-pharmacy task briefs use **AgentRx** as their system name. No product
+rename decision or migration plan is recorded.
+
+**Current safe interpretation:** AgentRx is the autonomous-pharmacy program
+label only. Agents must not rename the production app, packages, routes,
+database roles, environment variables, deployed services, or user-facing copy.
+
+**Decision required:** either confirm that AgentRx is only a program codename,
+or approve a separately scoped rename plan that inventories every technical,
+operational, and user-facing identifier before any change.
+
+## 4. Referenced deep-research report
+
+**Status:** open — input artifact missing from the repository
+
+**Owner:** product lead and the relevant task reviewer
+
+Several autonomous-pharmacy briefs refer to an attached or sibling
+`deep-research-report.md`. No reviewed report with that name is currently
+checked into the repository.
+
+**Current safe interpretation:** the task brief is the execution contract. The
+missing report cannot be treated as authority, reconstructed from memory, or
+silently replaced with web research.
+
+**Decision required:** add the reviewed artifact with its provenance and scope
+when a task materially relies on it, or amend that task to remove the
+dependency. Until then, stop at any decision that requires facts available only
+from the missing report.

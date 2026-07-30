@@ -104,6 +104,31 @@ the P0 items are resolved, deployed, and re-verified.
   `agentoma_app` privileges, controlled-destruction ACLs, governance tables,
   and patient-wide retention horizons through `0017`.
 
+## Autonomous-pharmacy program — parallel planning track
+
+This program does not displace the P0 deployment and policy blockers above.
+Its updated task briefs are implementation contracts, not completed features.
+
+1. Start Task 01 repository discovery and Task 11 control/evidence design in
+   parallel. Obtain the approvals in Task 01 before creating its separate npm
+   workspace and runnable synthetic build.
+2. Allow Task 02's bounded inspection and export work while keeping migration
+   execution and live writes behind their explicit approval gate. Reconcile its
+   work with the outstanding `0018` operator steps above rather than creating a
+   second deployment path.
+3. Permit Tasks 03–10 to perform only the discovery, design, contracts, and
+   synthetic work authorized in each brief. No runnable prototype shares the
+   production app, database, authentication, credentials, or integrations.
+4. Route task plans and evidence through Task 11, but keep approval authority
+   with the named product, pharmacist, privacy, security, accessibility, and
+   regulatory reviewers. Task 11 records evidence; it does not self-approve.
+5. Resolve the AgentRx/AgentOMA naming question and add the referenced reviewed
+   deep-research artifact if future work materially depends on it; see
+   [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md).
+
+The current dependency map and per-task allowed-work status live in the
+[`task execution index`](tasks/autonomous-pharmacy/README.md).
+
 ## P2 — engineering maturity
 
 1. Add CI that runs TypeScript, ESLint, pure tests, and a fresh-Postgres
@@ -116,9 +141,10 @@ the P0 items are resolved, deployed, and re-verified.
 4. Review public marketing claims so they describe deterministic triage and
    pharmacist verification rather than implying automated diagnosis.
 5. Evaluate new online-pharmacy and dashboard capabilities through
-   [`AUTONOMOUS_PHARMACY_ROADMAP.md`](AUTONOMOUS_PHARMACY_ROADMAP.md). Early
+   [`AUTONOMOUS_PHARMACY_ROADMAP.md`](AUTONOMOUS_PHARMACY_ROADMAP.md) and its
+   [`task execution index`](tasks/autonomous-pharmacy/README.md). Early
    prototypes must stay inside
-   [`EXPERIMENTAL_SANDBOX.md`](EXPERIMENTAL_SANDBOX.md); neither document
+   [`EXPERIMENTAL_SANDBOX.md`](EXPERIMENTAL_SANDBOX.md); none of these documents
    authorizes real patient care or a regulatory bypass.
 
 ## Acceptance for a production decision

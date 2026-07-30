@@ -15,6 +15,7 @@ provenance only.
 | [`COMPLETED_WORK.md`](COMPLETED_WORK.md) | Capabilities implemented and verified in the current tree. |
 | [`NEXT_STEPS.md`](NEXT_STEPS.md) | Prioritized production blockers and remaining engineering work. |
 | [`SESSION_HANDOFF.md`](SESSION_HANDOFF.md) | Current operational checkpoint, live database evidence, and next operator actions. |
+| [`tasks/autonomous-pharmacy/README.md`](tasks/autonomous-pharmacy/README.md) | Execution index for the autonomous-pharmacy task contracts, including current gates and dependencies. |
 
 ## Compliance, decisions, and operations
 
@@ -34,7 +35,7 @@ provenance only.
 
 | Folder | Purpose |
 |---|---|
-| [`tasks/autonomous-pharmacy/`](tasks/autonomous-pharmacy/) | Role-based, dependency-ordered task briefs for the experimental sandbox, P0 readiness, command centre, digital access, virtual care, messaging, fulfilment, interoperability, AI, and release controls. |
+| [`tasks/autonomous-pharmacy/README.md`](tasks/autonomous-pharmacy/README.md) | Start here for the role-based task contracts, current allowed work, dependency order, evidence expectations, and promotion boundaries. The task files describe proposed work, not implemented status. |
 
 ## Agent instructions
 

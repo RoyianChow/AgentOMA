@@ -126,6 +126,27 @@ destruction dry runs, and record restore-drill evidence. Actual destruction is
 never automatic: it requires an elapsed retention horizon, no active hold, and
 a second administrator.
 
+## Autonomous pharmacy program (planned)
+
+The repository contains detailed work contracts for a longer-term,
+pharmacist-supervised autonomous-pharmacy program. They cover sandbox isolation,
+P0 readiness, a command centre, booking, patient identity and portal access,
+virtual care, communications, fulfilment, interoperability, bounded AI, and
+release controls.
+
+These task files are plans, not live surfaces. Unless a capability also appears
+in this overview and [`COMPLETED_WORK.md`](COMPLETED_WORK.md), assume it is not
+implemented. Start at the
+[`task execution index`](tasks/autonomous-pharmacy/README.md), which records the
+current dependency order and the work each task permits. All runnable
+experimental capabilities require the Task 01 synthetic boundary; promotion
+requires Task 11 evidence and the task's named human approvals.
+
+The task briefs use **AgentRx** as their program/system label. The implemented
+repository remains **AgentOMA** until the product lead resolves the naming
+question in [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md). Do not infer a package,
+route, environment, or product rename from the briefs.
+
 ## Security and authorization
 
 - better-auth is the only identity layer. Public self-signup is unavailable.
