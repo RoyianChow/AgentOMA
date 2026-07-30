@@ -1,9 +1,15 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { intakeSession, pharmacy, triageExit } from "@/lib/db/schema";
+import {
+  ailmentGroup,
+  intakeSession,
+  pharmacy,
+  triageExit,
+} from "@/lib/db/schema";
 import { getConfiguredPharmacyId } from "@/lib/pharmacy-config";
-import { eq } from "drizzle-orm";
+import { publicIntakeBoundarySchema } from "@/lib/p0-c-boundary-schema";
+import { and, eq, gte, isNull, lte, or } from "drizzle-orm";
 import crypto from "crypto";
 
 // Helper to generate a 6-character ambiguous-free code
@@ -46,6 +52,15 @@ export async function createIntakeSession(data: {
   existingRxSelfReport: string | null;
 }) {
   try {
+    const parsed = publicIntakeBoundarySchema.safeParse(data);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: "Check the intake answers and try again.",
+      };
+    }
+    const intake = parsed.data;
+
     // Re-resolve server configuration on every write; no client tenant exists.
     const ph = await resolvePharmacy();
     if (!ph) {
@@ -55,6 +70,20 @@ export async function createIntakeSession(data: {
       };
     }
     const pharmacyId = ph.id;
+    const today = new Date().toISOString().slice(0, 10);
+    const activeGroup = await db.query.ailmentGroup.findFirst({
+      where: and(
+        eq(ailmentGroup.code, intake.ailmentGroupCode),
+        lte(ailmentGroup.effectiveDate, today),
+        or(isNull(ailmentGroup.endDate), gte(ailmentGroup.endDate, today)),
+      ),
+    });
+    if (!activeGroup) {
+      return {
+        success: false,
+        error: "This intake selection is not currently available.",
+      };
+    }
 
     const code = generateCode();
     
@@ -67,10 +96,10 @@ export async function createIntakeSession(data: {
       .values({
         code,
         pharmacyId,
-        ailmentGroupCode: data.ailmentGroupCode,
-        trail: data.trail,
-        priorCountSelfReport: data.priorCountSelfReport,
-        existingRxSelfReport: data.existingRxSelfReport,
+        ailmentGroupCode: activeGroup.code,
+        trail: intake.trail,
+        priorCountSelfReport: intake.priorCountSelfReport,
+        existingRxSelfReport: intake.existingRxSelfReport,
         consentCapturedAt: new Date(),
         expiresAt,
       })
@@ -85,15 +114,15 @@ export async function createIntakeSession(data: {
         action: "intake.created",
         entityType: "intake_session",
         entityId: session.id,
-        metadata: { ailmentGroupCode: data.ailmentGroupCode },
+        metadata: { ailmentGroupCode: activeGroup.code },
       });
-    } catch (auditErr) {
-      console.error("AUDIT WRITE FAILED for intake_session", session.id, auditErr);
+    } catch {
+      console.error("AUDIT WRITE FAILED for intake_session.");
     }
 
     return { success: true, code: session.code };
-  } catch (err) {
-    console.error("Failed to create intake session:", err);
+  } catch {
+    console.error("Failed to create intake session.");
     return { success: false, error: "Failed to create intake session" };
   }
 }

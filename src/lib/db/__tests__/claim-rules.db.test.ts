@@ -186,14 +186,18 @@ describe("insect/tick same-day mutex", () => {
 });
 
 describe("365-day lookback counting", () => {
-  it("counts only assessments inside the trailing 365 days", async () => {
+  it("uses the assessment service date and an exclusive trailing-365-day window", async () => {
     const serviceDate = new Date("2026-07-16");
     // Inside the window.
     await insertAssessment(db, { ailment: "RHINITIS", date: "2026-07-01" });
     await insertAssessment(db, { ailment: "RHINITIS", date: "2026-01-01" });
     await insertAssessment(db, { ailment: "RHINITIS", date: "2025-07-20" });
+    // Excluded lower boundary: exactly 365 days before service.
+    await insertAssessment(db, { ailment: "RHINITIS", date: "2025-07-16" });
     // Outside: more than 365 days before the date of service.
     await insertAssessment(db, { ailment: "RHINITIS", date: "2025-07-10" });
+    // Future relative to the assessment's service date.
+    await insertAssessment(db, { ailment: "RHINITIS", date: "2026-07-17" });
     // A different ailment must not be counted toward this one's maximum.
     await insertAssessment(db, { ailment: "GERD", date: "2026-07-01" });
 
@@ -202,6 +206,7 @@ describe("365-day lookback counting", () => {
       where patient_id = ${patientId}::uuid
         and ailment_group_code = 'RHINITIS'
         and service_date > (${serviceDate.toISOString().slice(0, 10)}::date - interval '365 days')
+        and service_date < ${serviceDate.toISOString().slice(0, 10)}::date
     `);
     expect((rows as unknown as { n: number }[])[0].n).toBe(3);
   });

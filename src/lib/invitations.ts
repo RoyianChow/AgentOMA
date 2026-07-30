@@ -7,6 +7,10 @@ import { db } from "@/lib/db";
 import { account, invitation, user } from "@/lib/db/schema/auth";
 import type { PortalRole } from "@/lib/auth-guard";
 import { requireConfiguredPharmacyId } from "@/lib/pharmacy-config";
+import {
+  acceptInvitationSchema,
+  issueInvitationSchema,
+} from "@/lib/invitation-boundary-schema";
 
 /**
  * Invitation-only onboarding. Public signup is disabled entirely
@@ -34,6 +38,7 @@ export function hashInvitationToken(token: string): string {
 }
 
 export type IssueRefusal =
+  | { ok: false; reason: "INVALID_INPUT"; message: string }
   | { ok: false; reason: "SUPERVISOR_REQUIRED"; message: string }
   | { ok: false; reason: "SUPERVISOR_INVALID"; message: string }
   | { ok: false; reason: "EMAIL_IN_USE"; message: string };
@@ -48,8 +53,17 @@ export async function issueInvitation(params: {
   role: PortalRole;
   supervisingPharmacistId?: string | null;
 }): Promise<IssueResult> {
+  const parsed = issueInvitationSchema.safeParse(params);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      reason: "INVALID_INPUT",
+      message: "Check the invitation details and try again.",
+    };
+  }
+  params = parsed.data;
   const pharmacyId = requireConfiguredPharmacyId();
-  const email = params.email.trim().toLowerCase();
+  const email = params.email;
   const needsSupervisor = params.role === "intern" || params.role === "student";
   const supervisorId = params.supervisingPharmacistId ?? null;
 
@@ -144,6 +158,22 @@ export async function acceptInvitation(params: {
   name: string;
   password: string;
 }): Promise<AcceptResult> {
+  const parsed = acceptInvitationSchema.safeParse(params);
+  if (!parsed.success) {
+    if (typeof params?.password === "string" && params.password.length < MIN_PASSWORD_LENGTH) {
+      return {
+        ok: false,
+        reason: "PASSWORD_TOO_SHORT",
+        message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
+      };
+    }
+    return {
+      ok: false,
+      reason: "INVALID_TOKEN",
+      message: "Check the invitation details and try again.",
+    };
+  }
+  params = parsed.data;
   if (params.password.length < MIN_PASSWORD_LENGTH) {
     return {
       ok: false,
@@ -151,7 +181,7 @@ export async function acceptInvitation(params: {
       message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
     };
   }
-  const name = params.name.trim();
+  const name = params.name;
   if (!name) {
     return { ok: false, reason: "INVALID_TOKEN", message: "Name is required." };
   }

@@ -98,8 +98,14 @@ beforeEach(async () => {
   patientId = (rows as unknown as { id: string }[])[0].id;
 
   const intakeRows = await db.execute<{ id: string }>(sql`
-    insert into intake_session (code, pharmacy_id, ailment_group_code, expires_at)
-    values ('BASE01', ${PHARMACY_ID}::uuid, 'RHINITIS', now() + interval '2 hours')
+    insert into intake_session (
+      code, pharmacy_id, ailment_group_code, prior_count_self_report,
+      existing_rx_self_report, expires_at
+    )
+    values (
+      'BASE01', ${PHARMACY_ID}::uuid, 'RHINITIS', 1, 'none',
+      now() + interval '2 hours'
+    )
     returning id
   `);
   intakeSessionId = (intakeRows as unknown as { id: string }[])[0].id;
@@ -120,7 +126,11 @@ beforeEach(async () => {
 });
 
 async function countRows(
-  table: "assessment" | "claim_draft" | "follow_up",
+  table:
+    | "assessment"
+    | "assessment_billability_evidence"
+    | "claim_draft"
+    | "follow_up",
 ): Promise<number> {
   const rows = await db.execute<{ n: number }>(
     sql`select count(*)::int as n from ${sql.raw(table)}`,
@@ -184,7 +194,6 @@ function clinicalRecordFor(
 
 const baseInput = (
   overrides: Partial<{
-    ailmentGroupCode: string;
     outcome: "rx_issued" | "no_rx_referral" | "no_rx_otc_or_nonpharm";
   }> = {},
 ) => {
@@ -192,8 +201,7 @@ const baseInput = (
   return {
     patientId,
     intakeSessionId,
-    ailmentGroupCode: overrides.ailmentGroupCode ?? "RHINITIS",
-    modality: "in_person",
+    modality: "in_person" as const,
     outcome,
     serviceDate: new Date("2026-07-16"),
     clinicalRecord: clinicalRecordFor(outcome),
@@ -204,10 +212,109 @@ const baseInput = (
         "Synthetic safety, symptom response, and treatment-tolerance checks",
     },
     isOdbRecipient: true,
+    eligibilityDocument: {
+      identifierType: "ohip_health_number" as const,
+      identifierIssuer: "Ontario",
+      documentInspectedAttestation: true as const,
+    },
+    selfOrFamily: "not_self_or_family" as const,
+    sameAilmentPrescription: "none" as const,
+    verificationConsultation: "not_required" as const,
+    patientSelfReportLocation: "Synthetic pharmacy",
+    clinicalViewer: {
+      source: "ConnectingOntario" as const,
+      attestation: true as const,
+      maximumState: "not_confirmed_met" as const,
+    },
   };
 };
 
 describe("createAssessment → claim_draft", () => {
+  it("revalidates and normalizes patient identity at the protected server boundary", async () => {
+    const { upsertPatient } = await import("../actions");
+    const created = await upsertPatient({
+      firstName: "Synthetic",
+      lastName: "Identity",
+      dob: "2000-02-29",
+      identifierType: "ohip_health_number",
+      healthNumber: "4444-444-444 ab",
+      gender: "U",
+    });
+    expect(created.success).toBe(true);
+
+    const rows = (await db.execute<{ health_number: string }>(sql`
+      select health_number
+      from patient
+      where health_number = '4444444444AB'
+    `)) as unknown as { health_number: string }[];
+    expect(rows).toEqual([{ health_number: "4444444444AB" }]);
+
+    const invalidValue = "AB4444444444";
+    const refused = await upsertPatient({
+      firstName: "Synthetic",
+      lastName: "Identity",
+      dob: "2000-02-29",
+      identifierType: "ohip_health_number",
+      healthNumber: invalidValue,
+      gender: "U",
+    });
+    expect(refused.success).toBe(false);
+    if (!refused.success) {
+      expect(refused.error).not.toContain(invalidValue);
+    }
+  });
+
+  it.each([
+    ["odb_mccss", "MCCSS / Recipient 42-A"],
+    ["odb_hccss", "HCCSS / Recipient 42-B"],
+  ] as const)(
+    "persists a bounded %s identifier without claiming an official regex",
+    async (identifierType, displayedIdentifier) => {
+      const { createAssessment, upsertPatient } = await import("../actions");
+      const patientResult = await upsertPatient({
+        firstName: "Synthetic",
+        lastName: "Recipient",
+        dob: "1990-01-01",
+        identifierType,
+        healthNumber: displayedIdentifier,
+        gender: "U",
+      });
+      expect(patientResult.success).toBe(true);
+      if (!patientResult.success) return;
+
+      const res = await createAssessment({
+        ...baseInput(),
+        patientId: patientResult.patientId,
+        eligibilityDocument: {
+          identifierType,
+          identifierIssuer:
+            identifierType === "odb_mccss" ? "MCCSS" : "HCCSS",
+          documentInspectedAttestation: true,
+        },
+      });
+      expect(res.success).toBe(true);
+      if (!res.success) return;
+
+      const rows = (await db.execute<{
+        identifier_number: string;
+        health_card_version_code: string | null;
+      }>(sql`
+        select identifier_number, health_card_version_code
+        from assessment_billability_evidence
+        where assessment_id = ${res.assessmentId}::uuid
+      `)) as unknown as {
+        identifier_number: string;
+        health_card_version_code: string | null;
+      }[];
+      expect(rows).toEqual([
+        {
+          identifier_number: displayedIdentifier,
+          health_card_version_code: null,
+        },
+      ]);
+    },
+  );
+
   it("billable: persists exactly one active draft, with derived fields", async () => {
     const { createAssessment } = await import("../actions");
     const res = await createAssessment(await baseInput());
@@ -216,6 +323,7 @@ describe("createAssessment → claim_draft", () => {
     expect(res.claim?.billable).toBe(true);
     expect(await countClaimDrafts()).toBe(1);
     expect(await countRows("follow_up")).toBe(1);
+    expect(await countRows("assessment_billability_evidence")).toBe(1);
 
     const rows = await db.execute<{
       pin_code: string;
@@ -226,8 +334,23 @@ describe("createAssessment → claim_draft", () => {
       ssc: number | null;
     }>(sql`select pin_code, fee_cents, prescriber_id_reference, prescriber_id, quantity, ssc from claim_draft`);
     const d = (rows as unknown as Record<string, unknown>[])[0];
-    expect(d.pin_code).toBe("9858181"); // Rhinitis, in-person, Rx issued
-    expect(d.fee_cents).toBe(1900);
+    const [referencePin] = (await db.execute<{
+      pin_code: string;
+      fee_cents: number;
+    }>(sql`
+      select p.pin_code, p.fee_cents
+      from pin p
+      join ailment_group ag on ag.id = p.ailment_group_id
+      where ag.code = 'RHINITIS'
+        and ag.end_date is null
+        and p.end_date is null
+        and p.modality = 'in_person'
+        and p.rx_issued = true
+      order by ag.effective_date desc, p.effective_date desc
+      limit 1
+    `)) as unknown as { pin_code: string; fee_cents: number }[];
+    expect(d.pin_code).toBe(referencePin.pin_code);
+    expect(d.fee_cents).toBe(referencePin.fee_cents);
     expect(d.prescriber_id_reference).toBe("09");
     expect(d.prescriber_id).toBe("123456");
     expect(d.quantity).toBe(1);
@@ -267,6 +390,400 @@ describe("createAssessment → claim_draft", () => {
         )
     `)) as unknown as { count: number }[];
     expect(followUpAudit[0].count).toBe(1);
+    const consumed = (await db.execute<{
+      consumed_at: Date | null;
+      consumed_by_assessment_id: string | null;
+    }>(sql`
+      select consumed_at, consumed_by_assessment_id
+      from intake_session
+      where id = ${intakeSessionId}::uuid
+    `)) as unknown as {
+      consumed_at: Date | null;
+      consumed_by_assessment_id: string | null;
+    }[];
+    expect(consumed[0].consumed_at).not.toBeNull();
+    expect(consumed[0].consumed_by_assessment_id).toBe(
+      res.success ? res.assessmentId : null,
+    );
+  });
+
+  it("persists the complete P0-C evidence snapshot beside the P0-B record", async () => {
+    const { createAssessment } = await import("../actions");
+    const res = await createAssessment(baseInput());
+    expect(res.success).toBe(true);
+    if (!res.success) return;
+
+    const rows = (await db.execute<{
+      evidence_version: number;
+      patient_self_report_status: string;
+      patient_self_report_approximate_count: number;
+      patient_self_report_location: string;
+      platform_assessment_count: number;
+      trailing_window_start: string;
+      trailing_window_end: string;
+      viewer_source: string;
+      viewer_attestation: boolean;
+      maximum_state: string;
+      self_or_family: string;
+      same_ailment_prescription: string;
+      verification_consultation: string;
+      identifier_type: string;
+      identifier_number: string;
+      health_card_version_code: string;
+      document_inspected_attestation: boolean;
+    }>(sql`
+      select
+        evidence_version, patient_self_report_status,
+        patient_self_report_approximate_count, patient_self_report_location,
+        platform_assessment_count, trailing_window_start::text,
+        trailing_window_end::text, viewer_source, viewer_attestation,
+        maximum_state, self_or_family, same_ailment_prescription,
+        verification_consultation, identifier_type, identifier_number,
+        health_card_version_code, document_inspected_attestation
+      from assessment_billability_evidence
+      where assessment_id = ${res.assessmentId}::uuid
+    `)) as unknown as {
+      evidence_version: number;
+      patient_self_report_status: string;
+      patient_self_report_approximate_count: number;
+      patient_self_report_location: string;
+      platform_assessment_count: number;
+      trailing_window_start: string;
+      trailing_window_end: string;
+      viewer_source: string;
+      viewer_attestation: boolean;
+      maximum_state: string;
+      self_or_family: string;
+      same_ailment_prescription: string;
+      verification_consultation: string;
+      identifier_type: string;
+      identifier_number: string;
+      health_card_version_code: string;
+      document_inspected_attestation: boolean;
+    }[];
+
+    expect(rows[0]).toMatchObject({
+      evidence_version: 1,
+      patient_self_report_status: "yes",
+      patient_self_report_approximate_count: 1,
+      patient_self_report_location: "Synthetic pharmacy",
+      platform_assessment_count: 0,
+      trailing_window_start: "2025-07-16",
+      trailing_window_end: "2026-07-16",
+      viewer_source: "ConnectingOntario",
+      viewer_attestation: true,
+      maximum_state: "not_confirmed_met",
+      self_or_family: "not_self_or_family",
+      same_ailment_prescription: "none",
+      verification_consultation: "not_required",
+      identifier_type: "ohip_health_number",
+      identifier_number: "5555555555",
+      health_card_version_code: "AB",
+      document_inspected_attestation: true,
+    });
+  });
+
+  it("reports prior assessments using the requested service date and excludes future assessments", async () => {
+    const { createAssessment, getPatientHistoryCount } = await import("../actions");
+    const created = await createAssessment(baseInput());
+    expect(created.success).toBe(true);
+
+    const nextIntake = (await db.execute<{ id: string }>(sql`
+      insert into intake_session (
+        code, pharmacy_id, ailment_group_code, prior_count_self_report,
+        existing_rx_self_report, expires_at
+      ) values (
+        'NEXT01', ${PHARMACY_ID}::uuid, 'RHINITIS', 1, 'none',
+        now() + interval '2 hours'
+      )
+      returning id
+    `)) as unknown as { id: string }[];
+    await db.execute(sql`
+      insert into assessment (
+        pharmacy_id, patient_id, ailment_group_code, modality, outcome,
+        service_date, retain_until
+      ) values (
+        ${PHARMACY_ID}::uuid, ${patientId}::uuid, 'RHINITIS',
+        'in_person', 'no_rx_referral', '2026-07-15', '2036-07-15'
+      )
+    `);
+    await db.execute(sql`
+      insert into assessment (
+        pharmacy_id, patient_id, ailment_group_code, modality, outcome,
+        service_date, retain_until
+      ) values (
+        ${PHARMACY_ID}::uuid, ${patientId}::uuid, 'RHINITIS',
+        'in_person', 'rx_issued', '2026-07-18', '2036-07-18'
+      )
+    `);
+    const result = await getPatientHistoryCount(
+      patientId,
+      nextIntake[0].id,
+      new Date("2026-07-17T00:00:00.000Z"),
+    );
+    const [reference] = (await db.execute<{ maximum: number }>(sql`
+      select max_claims_per365_days as maximum
+      from ailment_group
+      where code = 'RHINITIS' and end_date is null
+      order by effective_date desc
+      limit 1
+    `)) as unknown as { maximum: number }[];
+
+    expect(result).toEqual({
+      success: true,
+      count: 2,
+      maximum: reference.maximum,
+      trailingWindowStart: "2025-07-17",
+      trailingWindowEnd: "2026-07-17",
+    });
+  });
+
+  it("hard-blocks completion without document inspection and writes nothing", async () => {
+    const { createAssessment } = await import("../actions");
+    const res = await createAssessment(
+      {
+        ...baseInput(),
+        eligibilityDocument: {
+          ...baseInput().eligibilityDocument,
+          documentInspectedAttestation: false,
+        },
+      } as unknown as Parameters<typeof createAssessment>[0],
+    );
+
+    expect(res.success).toBe(false);
+    if (!res.success) expect(res.error).toMatch(/eligibility/i);
+    expect(await countRows("assessment")).toBe(0);
+    expect(await countRows("claim_draft")).toBe(0);
+    const intakeRows = (await db.execute<{ consumed_at: Date | null }>(sql`
+      select consumed_at
+      from intake_session
+      where id = ${intakeSessionId}::uuid
+    `)) as unknown as { consumed_at: Date | null }[];
+    expect(intakeRows[0].consumed_at).toBeNull();
+  });
+
+  it("fails closed for a patient outside the authenticated pharmacy boundary", async () => {
+    const { createAssessment } = await import("../actions");
+    const res = await createAssessment({
+      ...baseInput(),
+      patientId: "10000000-0000-4000-8000-000000000099",
+    });
+
+    expect(res.success).toBe(false);
+    expect(await countRows("assessment")).toBe(0);
+    expect(await countRows("assessment_billability_evidence")).toBe(0);
+    expect(await countRows("claim_draft")).toBe(0);
+  });
+
+  it("passes the self/family fact authoritatively and persists no claim draft", async () => {
+    const { createAssessment } = await import("../actions");
+    const res = await createAssessment({
+      ...baseInput(),
+      selfOrFamily: "family",
+    });
+
+    expect(res.success).toBe(true);
+    expect(res.claim?.billable).toBe(false);
+    if (res.claim && !res.claim.billable) {
+      expect(res.claim.reason).toBe("SELF_OR_FAMILY");
+    }
+    expect(await countRows("assessment")).toBe(1);
+    expect(await countRows("claim_draft")).toBe(0);
+  });
+
+  it("passes the pharmacist's existing-prescription gate authoritatively", async () => {
+    const { createAssessment } = await import("../actions");
+    const res = await createAssessment({
+      ...baseInput(),
+      sameAilmentPrescription: "adaptable",
+    });
+
+    expect(res.success).toBe(true);
+    expect(res.claim?.billable).toBe(false);
+    if (res.claim && !res.claim.billable) {
+      expect(res.claim.reason).toBe("EXISTING_RX_BLOCKS_CLAIM");
+    }
+    expect(await countRows("assessment")).toBe(1);
+    expect(await countRows("claim_draft")).toBe(0);
+  });
+
+  it("keeps the persisted self-report and platform count advisory", async () => {
+    const { createAssessment } = await import("../actions");
+    const [reference] = (await db.execute<{ maximum: number }>(sql`
+      select max_claims_per365_days as maximum
+      from ailment_group
+      where code = 'RHINITIS' and end_date is null
+      order by effective_date desc
+      limit 1
+    `)) as unknown as { maximum: number }[];
+    const advisoryIntake = (await db.execute<{ id: string }>(sql`
+      insert into intake_session (
+        code, pharmacy_id, ailment_group_code, prior_count_self_report,
+        existing_rx_self_report, expires_at
+      ) values (
+        'ADV001', ${PHARMACY_ID}::uuid, 'RHINITIS', ${reference.maximum},
+        'none', now() + interval '2 hours'
+      )
+      returning id
+    `)) as unknown as { id: string }[];
+
+    const res = await createAssessment({
+      ...baseInput(),
+      intakeSessionId: advisoryIntake[0].id,
+    });
+    expect(res.success).toBe(true);
+    expect(res.claim?.billable).toBe(true);
+    expect(await countRows("claim_draft")).toBe(1);
+  });
+
+  it("only a confirmed-met maximum state blocks the claim draft", async () => {
+    const { createAssessment } = await import("../actions");
+    const res = await createAssessment({
+      ...baseInput(),
+      clinicalViewer: {
+        ...baseInput().clinicalViewer,
+        maximumState: "confirmed_met",
+      },
+    });
+    expect(res.success).toBe(true);
+    expect(res.claim?.billable).toBe(false);
+    if (res.claim && !res.claim.billable) {
+      expect(res.claim.reason).toBe("CLAIM_MAXIMUM_REACHED");
+    }
+    expect(await countRows("assessment_billability_evidence")).toBe(1);
+    expect(await countRows("claim_draft")).toBe(0);
+  });
+
+  it.each(["unknown", "at_or_near"] as const)(
+    "requires viewer verification for %s while allowing an advisory draft",
+    async (maximumState) => {
+      const { createAssessment } = await import("../actions");
+      const missingViewer = await createAssessment(
+        {
+          ...baseInput(),
+          clinicalViewer: {
+            ...baseInput().clinicalViewer,
+            maximumState,
+            attestation: false,
+          },
+        } as unknown as Parameters<typeof createAssessment>[0],
+      );
+      expect(missingViewer.success).toBe(false);
+      expect(await countRows("assessment")).toBe(0);
+
+      const completed = await createAssessment({
+        ...baseInput(),
+        clinicalViewer: {
+          ...baseInput().clinicalViewer,
+          maximumState,
+        },
+      });
+      expect(completed.success).toBe(true);
+      expect(completed.claim?.billable).toBe(true);
+    },
+  );
+
+  it("blocks unresolved prescription facts without calling them a confirmed exclusion", async () => {
+    const { createAssessment } = await import("../actions");
+    const res = await createAssessment({
+      ...baseInput(),
+      sameAilmentPrescription: "unresolved",
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.error).toMatch(/resolve/i);
+      expect(res.error).not.toMatch(/exclusion/i);
+    }
+    expect(await countRows("assessment")).toBe(0);
+    expect(await countRows("claim_draft")).toBe(0);
+  });
+
+  it("serializes concurrent completion at the seeded boundary with one evidence snapshot", async () => {
+    const { createAssessment } = await import("../actions");
+    const [reference] = (await db.execute<{
+      group_id: string;
+      maximum: number;
+      pin_code: string;
+      fee_cents: number;
+    }>(sql`
+      select
+        ag.id as group_id,
+        ag.max_claims_per365_days as maximum,
+        p.pin_code,
+        p.fee_cents
+      from ailment_group ag
+      join pin p on p.ailment_group_id = ag.id
+      where ag.code = 'RHINITIS'
+        and ag.end_date is null
+        and p.end_date is null
+        and p.modality = 'in_person'
+        and p.rx_issued = true
+      order by ag.effective_date desc, p.effective_date desc
+      limit 1
+    `)) as unknown as {
+      group_id: string;
+      maximum: number;
+      pin_code: string;
+      fee_cents: number;
+    }[];
+
+    for (let index = 1; index < reference.maximum; index += 1) {
+      const historicalDate = `2026-07-${String(16 - index).padStart(2, "0")}`;
+      const inserted = (await db.execute<{ id: string }>(sql`
+        insert into assessment (
+          pharmacy_id, patient_id, ailment_group_code, modality, outcome,
+          service_date, retain_until
+        ) values (
+          ${PHARMACY_ID}::uuid, ${patientId}::uuid, 'RHINITIS',
+          'in_person', 'rx_issued', ${historicalDate}::date, '2036-07-16'
+        )
+        returning id
+      `)) as unknown as { id: string }[];
+      await db.execute(sql`
+        insert into claim_draft (
+          assessment_id, ailment_group_code, modality, billing_modality,
+          rx_issued, pin_code, fee_cents, prescriber_id_reference,
+          prescriber_id, intervention_codes, quantity
+        ) values (
+          ${inserted[0].id}::uuid, 'RHINITIS', 'in_person', 'in_person',
+          true, ${reference.pin_code}, ${reference.fee_cents}, '09',
+          '123456', '["PS"]'::jsonb, 1
+        )
+      `);
+    }
+
+    const secondIntake = (await db.execute<{ id: string }>(sql`
+      insert into intake_session (
+        code, pharmacy_id, ailment_group_code, prior_count_self_report,
+        existing_rx_self_report, expires_at
+      ) values (
+        'RACE01', ${PHARMACY_ID}::uuid, 'RHINITIS', 0, 'none',
+        now() + interval '2 hours'
+      )
+      returning id
+    `)) as unknown as { id: string }[];
+    const results = await Promise.all([
+      createAssessment(baseInput()),
+      createAssessment({
+        ...baseInput(),
+        intakeSessionId: secondIntake[0].id,
+      }),
+    ]);
+    const billable = results.filter(
+      (result) => result.success && result.claim?.billable,
+    );
+    expect(billable).toHaveLength(1);
+    expect(await countClaimDrafts()).toBe(reference.maximum);
+    expect(await countRows("assessment_billability_evidence")).toBe(1);
+    const evidence = (await db.execute<{
+      platform_assessment_count: number;
+    }>(sql`
+      select platform_assessment_count
+      from assessment_billability_evidence
+    `)) as unknown as { platform_assessment_count: number }[];
+    expect(evidence).toEqual([
+      { platform_assessment_count: reference.maximum - 1 },
+    ]);
   });
 
   it("refuses a billable completion without a structured follow-up plan before any write", async () => {
@@ -288,7 +805,46 @@ describe("createAssessment → claim_draft", () => {
     expect(intake[0].consumed_at).toBeNull();
   });
 
-  it("persists a complete version-2 clinical, consent, prescription, and PCP record", async () => {
+  it("rolls back assessment, evidence, claim, follow-up, and intake consumption together", async () => {
+    const { createAssessment } = await import("../actions");
+    await db.execute(sql`
+      create or replace function p0_c_test_reject_evidence()
+      returns trigger
+      language plpgsql
+      as $$
+      begin
+        raise exception 'synthetic evidence failure';
+      end
+      $$
+    `);
+    await db.execute(sql`
+      create trigger p0_c_test_reject_evidence_trg
+      before insert on assessment_billability_evidence
+      for each row execute function p0_c_test_reject_evidence()
+    `);
+    try {
+      const res = await createAssessment(baseInput());
+      expect(res.success).toBe(false);
+      expect(await countRows("assessment")).toBe(0);
+      expect(await countRows("assessment_billability_evidence")).toBe(0);
+      expect(await countRows("claim_draft")).toBe(0);
+      expect(await countRows("follow_up")).toBe(0);
+      const intake = (await db.execute<{ consumed_at: string | null }>(sql`
+        select consumed_at
+        from intake_session
+        where id = ${intakeSessionId}::uuid
+      `)) as unknown as { consumed_at: string | null }[];
+      expect(intake[0].consumed_at).toBeNull();
+    } finally {
+      await db.execute(sql`
+        drop trigger p0_c_test_reject_evidence_trg
+        on assessment_billability_evidence
+      `);
+      await db.execute(sql`drop function p0_c_test_reject_evidence()`);
+    }
+  });
+
+  it("preserves the P0-B version-2 clinical, consent, prescription, and PCP record", async () => {
     const { createAssessment } = await import("../actions");
     const res = await createAssessment(baseInput());
     expect(res.success).toBe(true);
@@ -417,6 +973,242 @@ describe("createAssessment → claim_draft", () => {
     }
     expect(code).toBe("23514");
     expect(await countRows("assessment")).toBe(0);
+  });
+
+  it("database enforces one immutable evidence record per assessment", async () => {
+    const { createAssessment } = await import("../actions");
+    const created = await createAssessment(baseInput());
+    expect(created.success).toBe(true);
+    if (!created.success) return;
+
+    const [evidence] = (await db.execute<{ id: string }>(sql`
+      select id
+      from assessment_billability_evidence
+      where assessment_id = ${created.assessmentId}::uuid
+    `)) as unknown as { id: string }[];
+
+    let mutationCode: string | undefined;
+    try {
+      await db.execute(sql`
+        update assessment_billability_evidence
+        set maximum_state = 'unknown'
+        where id = ${evidence.id}::uuid
+      `);
+    } catch (err) {
+      mutationCode = (err as { cause?: { code?: string } }).cause?.code;
+    }
+    expect(mutationCode).toBe("0A000");
+
+    let duplicateCode: string | undefined;
+    try {
+      await db.execute(sql`
+        insert into assessment_billability_evidence
+        select gen_random_uuid(), assessment_id, pharmacy_id, evidence_version,
+          patient_self_report_status, patient_self_report_approximate_count,
+          patient_self_report_location, platform_assessment_count,
+          trailing_window_start, trailing_window_end, viewer_source,
+          viewer_attestation, viewer_attested_at, viewer_pharmacist_id,
+          maximum_state, self_or_family, same_ailment_prescription,
+          verification_consultation, identifier_type, identifier_issuer,
+          identifier_number, health_card_version_code,
+          name_exactly_as_displayed, date_of_birth,
+          document_inspected_attestation, verifying_pharmacist_id, verified_at,
+          is_odb_recipient, gender, now()
+        from assessment_billability_evidence
+        where id = ${evidence.id}::uuid
+      `);
+    } catch (err) {
+      duplicateCode = (err as { cause?: { code?: string } }).cause?.code;
+    }
+    expect(duplicateCode).toBe("23505");
+    expect(await countRows("assessment_billability_evidence")).toBe(1);
+  });
+
+  it("allows only authorized governed destruction to delete billability evidence", async () => {
+    const [governedPatient] = (await db.execute<{ id: string }>(sql`
+      insert into patient (
+        pharmacy_id, first_name, last_name, dob, health_number, gender
+      ) values (
+        ${PHARMACY_ID}::uuid, 'Synthetic', 'Destruction', '1970-01-01',
+        '7777777777', 'U'
+      )
+      returning id
+    `)) as unknown as { id: string }[];
+    const [governedAssessment] = (await db.execute<{ id: string }>(sql`
+      insert into assessment (
+        pharmacy_id, pharmacist_user_id, patient_id, ailment_group_code,
+        modality, outcome, service_date, retain_until
+      ) values (
+        ${PHARMACY_ID}::uuid, ${testAuth.actor.userId}::uuid,
+        ${governedPatient.id}::uuid, 'RHINITIS', 'in_person', 'rx_issued',
+        '2000-01-02', '2010-01-02'
+      )
+      returning id
+    `)) as unknown as { id: string }[];
+    const [evidence] = (await db.execute<{ id: string }>(sql`
+      insert into assessment_billability_evidence (
+        assessment_id, pharmacy_id,
+        patient_self_report_status, patient_self_report_approximate_count,
+        platform_assessment_count, trailing_window_start, trailing_window_end,
+        viewer_source, viewer_attestation, viewer_attested_at,
+        viewer_pharmacist_id, maximum_state, self_or_family,
+        same_ailment_prescription, verification_consultation,
+        identifier_type, identifier_issuer, identifier_number,
+        name_exactly_as_displayed, date_of_birth,
+        document_inspected_attestation, verifying_pharmacist_id, verified_at,
+        is_odb_recipient
+      ) values (
+        ${governedAssessment.id}::uuid, ${PHARMACY_ID}::uuid,
+        'no', 0, 0, '1999-01-02', '2000-01-02',
+        'ConnectingOntario', true, now(), ${testAuth.actor.userId}::uuid,
+        'not_confirmed_met', 'not_self_or_family', 'none', 'not_required',
+        'ohip_health_number', 'Ontario', '7777777777',
+        'Synthetic Destruction', '1970-01-01', true,
+        ${testAuth.actor.userId}::uuid, now(), true
+      )
+      returning id
+    `)) as unknown as { id: string }[];
+
+    let updateCode: string | undefined;
+    try {
+      await db.execute(sql`
+        update assessment_billability_evidence
+        set maximum_state = 'unknown'
+        where id = ${evidence.id}::uuid
+      `);
+    } catch (err) {
+      updateCode = (err as { cause?: { code?: string } }).cause?.code;
+    }
+    expect(updateCode).toBe("0A000");
+
+    let deleteCode: string | undefined;
+    try {
+      await db.execute(sql`
+        delete from assessment_billability_evidence
+        where id = ${evidence.id}::uuid
+      `);
+    } catch (err) {
+      deleteCode = (err as { cause?: { code?: string } }).cause?.code;
+    }
+    expect(deleteCode).toBe("0A000");
+
+    const admins = (await db.execute<{ id: string; email: string }>(sql`
+      insert into "user" (name, email, role, pharmacy_id)
+      values
+        (
+          'Preparing Admin', 'preparing-destruction@test.local',
+          'pharmacy_admin'::user_role, ${PHARMACY_ID}::uuid
+        ),
+        (
+          'Executing Admin', 'executing-destruction@test.local',
+          'pharmacy_admin'::user_role, ${PHARMACY_ID}::uuid
+        )
+      returning id, email
+    `)) as unknown as { id: string; email: string }[];
+    const preparingAdmin = admins.find(
+      (row) => row.email === "preparing-destruction@test.local",
+    );
+    const executingAdmin = admins.find(
+      (row) => row.email === "executing-destruction@test.local",
+    );
+    expect(preparingAdmin).toBeDefined();
+    expect(executingAdmin).toBeDefined();
+    if (!preparingAdmin || !executingAdmin) return;
+
+    const [run] = (await db.execute<{ id: string }>(sql`
+      insert into destruction_run (
+        pharmacy_id, patient_id, status, eligible_on, artifacts,
+        prepared_by_user_id
+      ) values (
+        ${PHARMACY_ID}::uuid, ${governedPatient.id}::uuid, 'dry_run',
+        '2010-01-02', '[]'::jsonb, ${preparingAdmin.id}::uuid
+      )
+      returning id
+    `)) as unknown as { id: string }[];
+
+    await db.execute(
+      sql`select governance_execute_destruction(
+        ${run.id}::uuid,
+        ${executingAdmin.id}::uuid
+      )`,
+    );
+
+    const [result] = (await db.execute<{
+      patients: number;
+      assessments: number;
+      evidence: number;
+      status: string;
+    }>(sql`
+      select
+        (
+          select count(*)::int from patient
+          where id = ${governedPatient.id}::uuid
+        ) as patients,
+        (
+          select count(*)::int from assessment
+          where id = ${governedAssessment.id}::uuid
+        ) as assessments,
+        (
+          select count(*)::int from assessment_billability_evidence
+          where id = ${evidence.id}::uuid
+        ) as evidence,
+        (
+          select status from destruction_run where id = ${run.id}::uuid
+        ) as status
+    `)) as unknown as {
+      patients: number;
+      assessments: number;
+      evidence: number;
+      status: string;
+    }[];
+    expect(result).toEqual({
+      patients: 0,
+      assessments: 0,
+      evidence: 0,
+      status: "executed",
+    });
+  });
+
+  it("database rejects evidence whose pharmacy does not match its assessment", async () => {
+    const { createAssessment } = await import("../actions");
+    const created = await createAssessment(baseInput());
+    expect(created.success).toBe(true);
+    if (!created.success) return;
+
+    const [otherAssessment] = (await db.execute<{ id: string }>(sql`
+      insert into assessment (
+        pharmacy_id, patient_id, ailment_group_code, modality, outcome,
+        service_date, retain_until
+      ) values (
+        ${PHARMACY_ID}::uuid, ${patientId}::uuid, 'RHINITIS',
+        'in_person', 'rx_issued', '2026-07-15', '2036-07-15'
+      )
+      returning id
+    `)) as unknown as { id: string }[];
+
+    let code: string | undefined;
+    try {
+      await db.execute(sql`
+        insert into assessment_billability_evidence
+        select gen_random_uuid(), ${otherAssessment.id}::uuid,
+          '10000000-0000-4000-8000-000000000099'::uuid, evidence_version,
+          patient_self_report_status, patient_self_report_approximate_count,
+          patient_self_report_location, platform_assessment_count,
+          trailing_window_start, trailing_window_end, viewer_source,
+          viewer_attestation, viewer_attested_at, viewer_pharmacist_id,
+          maximum_state, self_or_family, same_ailment_prescription,
+          verification_consultation, identifier_type, identifier_issuer,
+          identifier_number, health_card_version_code,
+          name_exactly_as_displayed, date_of_birth,
+          document_inspected_attestation, verifying_pharmacist_id, verified_at,
+          is_odb_recipient, gender, now()
+        from assessment_billability_evidence
+        where assessment_id = ${created.assessmentId}::uuid
+      `);
+    } catch (err) {
+      code = (err as { cause?: { code?: string } }).cause?.code;
+    }
+    expect(code).toBe("23503");
   });
 
   it("database rejects LTC provider facts on a non-LTC assessment", async () => {
@@ -558,9 +1350,22 @@ describe("createAssessment → claim_draft", () => {
 
   it("NON-billable: an unknown ailment group drafts nothing (never a default PIN)", async () => {
     const { createAssessment } = await import("../actions");
-    const res = await createAssessment(baseInput({ ailmentGroupCode: "NOT_A_REAL_AILMENT" }));
-    expect(res.claim?.billable).toBe(false);
-    if (res.claim && !res.claim.billable) expect(res.claim.reason).toBe("UNKNOWN_PIN_LOOKUP");
+    const unknownIntake = (await db.execute<{ id: string }>(sql`
+      insert into intake_session (
+        code, pharmacy_id, ailment_group_code, prior_count_self_report,
+        existing_rx_self_report, expires_at
+      ) values (
+        'UNK001', ${PHARMACY_ID}::uuid, 'NOT_A_REAL_AILMENT', 0, 'none',
+        now() + interval '2 hours'
+      )
+      returning id
+    `)) as unknown as { id: string }[];
+    const res = await createAssessment({
+      ...baseInput(),
+      intakeSessionId: unknownIntake[0].id,
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) expect(res.error).toMatch(/reference/i);
     expect(await countClaimDrafts()).toBe(0);
   });
 
@@ -589,6 +1394,24 @@ describe("createAssessment → claim_draft", () => {
     expect(res.success).toBe(true);
     expect(res.claim?.billable).toBe(true);
     expect(await countRows("assessment")).toBe(1);
+  });
+
+  it("preserves the as-of-right PHR888 prescriber path through completion", async () => {
+    const { createAssessment } = await import("../actions");
+    await db.execute(sql`
+      update "user"
+      set ocp_number = null, is_as_of_right = true
+      where id = ${testAuth.actor.userId}::uuid
+    `);
+
+    const res = await createAssessment(baseInput());
+    expect(res.success).toBe(true);
+    expect(res.claim?.billable).toBe(true);
+    const drafts = (await db.execute<{ prescriber_id: string }>(sql`
+      select prescriber_id
+      from claim_draft
+    `)) as unknown as { prescriber_id: string }[];
+    expect(drafts).toEqual([{ prescriber_id: "PHR888" }]);
   });
 
   it("ADMIN OVERRIDE: an admin with no orientation completes WITH a reason, and it is audited", async () => {
@@ -732,7 +1555,7 @@ describe("createAssessment → claim_draft", () => {
   });
 
   it("the database rejects a second pharmacy and expired intakes cannot be loaded", async () => {
-    const { getIntakeSessionById } = await import("../actions");
+    const { createAssessment, getIntakeSessionById } = await import("../actions");
     const OTHER = "00000000-0000-0000-0000-0000000000dd";
     await expect(
       db.execute(sql`
@@ -748,6 +1571,13 @@ describe("createAssessment → claim_draft", () => {
     `);
     const expiredId = (rows as unknown as { id: string }[])[0].id;
     expect((await getIntakeSessionById(expiredId)).success).toBe(false);
+    const completion = await createAssessment({
+      ...baseInput(),
+      intakeSessionId: expiredId,
+    });
+    expect(completion.success).toBe(false);
+    expect(await countRows("assessment")).toBe(0);
+    expect(await countRows("claim_draft")).toBe(0);
   });
 
   it("a red-flag exit writes ZERO claim rows (the invariant)", async () => {

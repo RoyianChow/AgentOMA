@@ -61,18 +61,32 @@ describe("createIntakeSession (patient-phone handoff)", () => {
     expect(rows[0].code).toBe(res.code);
   });
 
-  it("a forged pharmacy field is ignored and cannot redirect the write", async () => {
+  it("rejects a forged pharmacy field and writes no tenant-selected row", async () => {
     const { createIntakeSession } = await import("../actions");
     const forged = {
       ...baseInput(),
       pharmacyId: "11111111-2222-3333-4444-555555555555",
     };
     const res = await createIntakeSession(forged);
-    expect(res.success).toBe(true);
+    expect(res.success).toBe(false);
     const rows = (await db.execute<{ pharmacy_id: string }>(
       sql`select pharmacy_id from intake_session`,
     )) as unknown as { pharmacy_id: string }[];
-    expect(rows).toEqual([{ pharmacy_id: PHARMACY_ID }]);
+    expect(rows).toEqual([]);
+  });
+
+  it("rejects malformed claim-history evidence at the public boundary", async () => {
+    const { createIntakeSession } = await import("../actions");
+    const res = await createIntakeSession({
+      ...baseInput(),
+      priorCountSelfReport: -1,
+    });
+
+    expect(res.success).toBe(false);
+    const rows = (await db.execute<{ n: number }>(
+      sql`select count(*)::int as n from intake_session`,
+    )) as unknown as { n: number }[];
+    expect(rows[0].n).toBe(0);
   });
 
   it("foreign, malformed, and absent QR values all resolve the configured pharmacy", async () => {

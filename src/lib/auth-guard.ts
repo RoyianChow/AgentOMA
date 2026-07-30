@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { auth } from "./auth";
+import { externalSessionResponseSchema } from "./auth-session-schema";
 import { userRole } from "./db/schema/auth";
 import { getConfiguredPharmacyId } from "./pharmacy-config";
 
@@ -47,9 +48,10 @@ export type PortalUser = {
  * requirePortalUser instead.
  */
 export async function requireSession() {
-  const s = await auth.api.getSession({ headers: await headers() });
-  if (!s) throw new AuthorizationError("UNAUTHENTICATED");
-  return s;
+  const response = await auth.api.getSession({ headers: await headers() });
+  const parsed = externalSessionResponseSchema.safeParse(response);
+  if (!parsed.success) throw new AuthorizationError("UNAUTHENTICATED");
+  return parsed.data;
 }
 
 /**
@@ -69,12 +71,7 @@ export async function requirePortalUser(
   allowedRoles?: readonly PortalRole[]
 ): Promise<PortalUser> {
   const s = await requireSession();
-  const user = s.user as typeof s.user & {
-    role?: string | null;
-    pharmacyId?: string | null;
-    twoFactorEnabled?: boolean | null;
-    supervisingPharmacistId?: string | null;
-  };
+  const user = s.user;
 
   if (!user.twoFactorEnabled) {
     throw new AuthorizationError("TOTP_ENROLLMENT_REQUIRED");
