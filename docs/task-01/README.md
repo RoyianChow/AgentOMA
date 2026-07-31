@@ -35,9 +35,9 @@ latest implementation commit is
 `0fc7c17deeac16cf99b7ae2780c6a833bd5e9cc7`; it adds server-owned queued-action
 tickets bound to a persisted lifecycle epoch. SBX-17 is evidence integrity and
 SBX-18 owns lifecycle races, including stale queued-action cancellation. Both
-now have standalone red/green evidence, but the remaining controls still lack
-the complete red-run set, and the root database-backed suite, final reviewer
-sign-offs, and branch-protection evidence are incomplete. See
+now have standalone red/green evidence. Final reviewer sign-offs and branch
+protection are now recorded, but the remaining controls still lack the
+complete red-run set and the repository-bound root database test evidence. See
 [`evidence/final-report.md`](evidence/final-report.md).
 This task does not authorize production deployment, production data, production
 credentials, live integrations, hosted access, or any G3 import.

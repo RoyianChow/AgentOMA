@@ -8,6 +8,8 @@
 
 **Latest implementation commit:** `0fc7c17deeac16cf99b7ae2780c6a833bd5e9cc7`
 
+**Reviewed evidence commit:** `abb72ec5dced5327b6351009270e72b1199046c8`
+
 **Branch:** `feat/moh-compliance-migration`
 
 The candidate worktree was clean at evidence capture. Run metadata is stored in
@@ -60,14 +62,16 @@ VERIFIED, and final implementation sign-offs are not recorded.
 
 - G1 product-lead and security/privacy approval is recorded verbatim in
   [`G1-design-approval.md`](../decisions/G1-design-approval.md).
-- Final implementation sign-off from the product lead: **NOT OBTAINED**.
-- Final implementation sign-off from the security/privacy reviewer: **NOT OBTAINED**.
+- Final implementation sign-off from the product lead: **APPROVED** in
+  [`final-review-signoffs-2026-07-31.md`](../decisions/final-review-signoffs-2026-07-31.md).
+- Final implementation sign-off from the security/privacy reviewer: **APPROVED**
+  in the same record.
 - G2 hosted-preview approval: **NOT GRANTED**.
 - G3 production-import allowlist: **empty**.
-- Branch protection: **NOT VERIFIED**. GitHub returned `Branch not protected`
-  for `main`; see `branch-protection.json`.
+- Branch protection: **PASS**. GitHub returned HTTP 200 for `main`; one
+  approving review is required and force pushes/deletions are disabled. See
+  [`branch-protection.json`](runs/abb72ec5/branch-protection.json).
 
-Task 01 must not be merged or promoted until the blocked evidence is completed,
-the full root database-backed suite can run, branch protection is configured or
-explicitly waived by the authorized owner, and both final reviewer decisions
-are recorded.
+Task 01 must not be merged or promoted until the missing standalone SBX-01–SBX-16
+red-run records and repository-bound root test evidence are completed. The
+reviewer approvals and branch-protection prerequisite are now recorded.

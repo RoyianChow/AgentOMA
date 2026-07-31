@@ -14,27 +14,28 @@
     "capturedAt": "2026-07-31T04:08:30.7262383Z",
     "evidenceRoot": "docs/task-01/evidence/SBX-18/"
   },
+  "reviewedCommit": "abb72ec5dced5327b6351009270e72b1199046c8",
   "approval": {
     "g1DecisionId": "G1-2026-07-31-task-01",
     "g1Record": "docs/task-01/decisions/G1-design-approval.md",
-    "finalProductLead": "NOT_OBTAINED",
-    "finalSecurityPrivacy": "NOT_OBTAINED",
+    "finalProductLead": "APPROVED",
+    "finalSecurityPrivacy": "APPROVED",
+    "finalSignoffRecord": "docs/task-01/decisions/final-review-signoffs-2026-07-31.md",
     "g2": "NOT_GRANTED",
     "g3": [],
     "branchProtection": {
-      "status": "NOT_VERIFIED",
+      "status": "PASS",
       "command": "gh api repos/RoyianChow/AgentOMA/branches/main/protection",
-      "exitCode": 1,
-      "reason": "GitHub returned Branch not protected (HTTP 404).",
-      "evidence": "docs/task-01/evidence/runs/db880c92/branch-protection.json"
+      "exitCode": 0,
+      "reason": "GitHub returned HTTP 200; one approving review is required and force pushes/deletions are disabled.",
+      "evidence": "docs/task-01/evidence/runs/abb72ec5/branch-protection.json"
     }
   },
   "blockingReasons": [
     "The required full SBX-01–SBX-18 controlled red-run evidence was not generated.",
     "SBX-01–SBX-17 still lack the complete set of standalone controlled red-run records; SBX-17 is evidence integrity and remains blocked without its own controlled red run.",
-    "The root all-tests command is blocked because Docker is unavailable and localhost:5433 refuses connections.",
-    "Final product-lead and security/privacy implementation sign-off has not been provided.",
-    "Branch protection is not verified on the default branch."
+    "The repository does not contain the complete standalone red-run records for SBX-01–SBX-16; the supplied red-run directory contains only ad-hoc SBX-04 text output.",
+    "A 17-file/181-test result was reported, but its exact command, timestamp, artifact hash, and committed evidence record are not present in this repository; the local rerun previously remained blocked by missing Docker/localhost:5433."
   ],
   "checks": {
     "candidateWorktree": "docs/task-01/evidence/runs/db880c92/candidate-worktree.json",
@@ -52,7 +53,9 @@
     "sandboxBuild": "docs/task-01/evidence/runs/db880c92/sandbox-build.json",
     "sandboxArtifact": "docs/task-01/evidence/runs/db880c92/sandbox-artifact.json",
     "manifestSchema": "docs/task-01/evidence/runs/db880c92/sandbox-manifest-schema-final.json",
-    "finalScans": "docs/task-01/evidence/final-scans.json"
+    "finalScans": "docs/task-01/evidence/final-scans.json",
+    "branchProtectionLatest": "docs/task-01/evidence/runs/abb72ec5/branch-protection.json",
+    "finalSignoffs": "docs/task-01/decisions/final-review-signoffs-2026-07-31.md"
   },
   "controls": [
     {
