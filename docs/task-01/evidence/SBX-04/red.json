@@ -1,0 +1,14 @@
+{
+  "control": "SBX-04",
+  "run": "red",
+  "testedSha": "939440c236f9a78a91669947966978a88b7bc07c",
+  "command": "npm run sandbox:build",
+  "startedAt": "2026-07-31T09:35:58.3883499Z",
+  "finishedAt": "2026-07-31T09:36:00.5241453Z",
+  "exitCode": 1,
+  "environment": "Synthetic configuration with AZURE_EXTENSION_DIR set to a non-local HTTPS value; prohibited host variables removed; no credentials or PHI.",
+  "artifactPath": "docs/task-01/evidence/runs/939440c2/SBX-04-red-summary.json",
+  "artifactSha256": "81c154208fcf5fa7476d6d7e167bbed293251063687c6849392610874d496205",
+  "safeSummary": "Sandbox build denied SANDBOX_CONFIG_DENIED:INVALID_LOCAL_PATH:AZURE_EXTENSION_DIR; the rejected value was not logged or retained.",
+  "evidencePath": "docs/task-01/evidence/SBX-04/red.json"
+}

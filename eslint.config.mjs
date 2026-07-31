@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The experiment has its own strict ESLint configuration and gate. Keep
+    // the production lint file set stable while the separate workspace grows.
+    "apps/experiment-sandbox/**",
   ]),
 ]);
 

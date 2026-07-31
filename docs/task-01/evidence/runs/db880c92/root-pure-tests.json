@@ -1,0 +1,12 @@
+{
+    "candidateCommit":  "db880c926f169b14ab73892a7c2a02627c22c067",
+    "name":  "root-pure-tests",
+    "command":  "npm run test:pure",
+    "startedAt":  "2026-07-31T02:49:43.5442363Z",
+    "finishedAt":  "2026-07-31T02:49:49.9615396Z",
+    "exitCode":  0,
+    "outputBytes":  381,
+    "outputSha256":  "971c75e616ab6f78f9bc34c8f1b92d2f77a7dd73ee3278b58fa035b5dbaf8f02",
+    "safeSummary":  "Root pure suite passed: 10 files, 95 tests.",
+    "evidencePath":  "docs/task-01/evidence/runs/db880c92/root-pure-tests.json"
+}

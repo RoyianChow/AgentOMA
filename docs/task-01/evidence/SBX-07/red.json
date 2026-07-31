@@ -1,0 +1,13 @@
+{
+  "control": "SBX-07",
+  "run": "red",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run build --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:13:02.8268132Z",
+  "finishedAt": "2026-07-31T06:13:06.5729544Z",
+  "exitCode": 1,
+  "environment": "Detached temporary worktree; SANDBOX_EXPIRES_AT intentionally malformed; prohibited host variables removed; no credentials or PHI.",
+  "artifactSha256": "8d267bf19aadcbfa61041456fa9f88cdf79f6d567795e5812fceaa929e0ec439",
+  "safeSummary": "Sandbox build denied malformed expiry configuration with SANDBOX_CONFIG_DENIED:MISSING_OR_MALFORMED_VARIABLE.",
+  "evidencePath": "docs/task-01/evidence/SBX-07/red.json"
+}

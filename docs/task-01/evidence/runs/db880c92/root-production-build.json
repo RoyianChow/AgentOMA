@@ -1,0 +1,12 @@
+{
+    "candidateCommit":  "db880c926f169b14ab73892a7c2a02627c22c067",
+    "name":  "root-production-build",
+    "command":  "npm run build",
+    "startedAt":  "2026-07-31T02:49:53.6708292Z",
+    "finishedAt":  "2026-07-31T02:50:23.8600998Z",
+    "exitCode":  0,
+    "outputBytes":  1371,
+    "outputSha256":  "22682a0083fc4317d377cb378cd16fbd7f95cd81692f87ad10bfd47698c6ec79",
+    "safeSummary":  "Root production build passed.",
+    "evidencePath":  "docs/task-01/evidence/runs/db880c92/root-production-build.json"
+}

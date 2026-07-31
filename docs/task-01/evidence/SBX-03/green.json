@@ -1,0 +1,13 @@
+{
+  "control": "SBX-03",
+  "run": "green",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run verify-boundary --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:07:33.1271598Z",
+  "finishedAt": "2026-07-31T06:07:35.3454318Z",
+  "exitCode": 0,
+  "environment": "Primary final worktree; no credentials, PHI, or network resources.",
+  "artifactSha256": "af9467d596deddb0c2122262f6e96661fde73f606e644e9467c1e27ccaffff35",
+  "safeSummary": "Sandbox-to-production import boundary passed against final source.",
+  "evidencePath": "docs/task-01/evidence/SBX-03/green.json"
+}

@@ -1,0 +1,13 @@
+{
+  "control": "SBX-10",
+  "run": "red",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "node -e \"const fs=require('node:fs'); const source=fs.readFileSync('apps/experiment-sandbox/src/fixtures/synthetic.ts','utf8'); if(/OHIP|health.?number|date.?of.?birth|1234567890/i.test(source)){console.error('SBX_LEAKAGE_DENIED:PLAUSIBLE_IDENTIFIER_OR_PHI');process.exit(1)}\"",
+  "startedAt": "2026-07-31T06:19:25.7762144Z",
+  "finishedAt": "2026-07-31T06:19:26.2026122Z",
+  "exitCode": 1,
+  "environment": "Isolated temporary worktree; synthetic-only identifier-leakage fixture; no real credentials, PHI, production identifiers, or live resources.",
+  "artifactSha256": "c8be24634be1301717f8e9839f36d8e922b2668f356fe388c6b1d3dbd70594e8",
+  "safeSummary": "Expected non-zero exit: the leakage boundary rejected a synthetic plausible health-number marker. The mutation was removed without commit or upload.",
+  "evidencePath": "docs/task-01/evidence/SBX-10/red.json"
+}

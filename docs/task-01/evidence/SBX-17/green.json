@@ -1,0 +1,14 @@
+{
+  "control": "SBX-17",
+  "run": "green",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run verify-evidence --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:30:08.8121677Z",
+  "finishedAt": "2026-07-31T06:30:10.8600236Z",
+  "exitCode": 0,
+  "outputBytes": 184,
+  "artifactSha256": "3e909b868f46b9121bbc2ee18ff91650a5f8624ef14d0dd56c9ae18159da6c1c",
+  "safeSummary": "Final code accepted the 18-control manifest and every referenced evidence path; raw output was not retained.",
+  "testSelection": "Unfiltered evidence-validator command; no control filter or skip selector.",
+  "evidencePath": "docs/task-01/evidence/SBX-17/green.json"
+}

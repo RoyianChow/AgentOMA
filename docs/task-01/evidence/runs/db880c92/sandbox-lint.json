@@ -1,0 +1,12 @@
+{
+    "candidateCommit":  "db880c926f169b14ab73892a7c2a02627c22c067",
+    "name":  "sandbox-lint",
+    "command":  "npm run lint --workspace @agentoma/experiment-sandbox",
+    "startedAt":  "2026-07-31T02:50:30.0172662Z",
+    "finishedAt":  "2026-07-31T02:50:39.4399464Z",
+    "exitCode":  0,
+    "outputBytes":  59,
+    "outputSha256":  "9998b08d4f32f50c63ad8c6ee33802cd34633f3ad7f61570442ea4d6b57e3270",
+    "safeSummary":  "Sandbox lint passed.",
+    "evidencePath":  "docs/task-01/evidence/runs/db880c92/sandbox-lint.json"
+}

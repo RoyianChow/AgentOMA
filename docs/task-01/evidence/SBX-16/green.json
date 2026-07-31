@@ -1,0 +1,13 @@
+{
+  "control": "SBX-16",
+  "run": "green",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run test --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:24:02.3210241Z",
+  "finishedAt": "2026-07-31T06:24:11.2745894Z",
+  "exitCode": 0,
+  "environment": "Final implementation worktree; synthetic Docker test database only; no credentials, PHI, production URLs, or live resources.",
+  "artifactSha256": "1622af02cf69de0970a1c95ca5583324c86a43e71d4c9139d55d036e6d3a6bc4",
+  "safeSummary": "Browser-storage and external-URL architecture tests passed against the final implementation.",
+  "evidencePath": "docs/task-01/evidence/SBX-16/green.json"
+}

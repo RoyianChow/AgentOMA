@@ -1,0 +1,62 @@
+{
+  "candidateCommit": "db880c926f169b14ab73892a7c2a02627c22c067",
+  "testedCommit": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "generatedAt": "2026-07-31T06:40:26.6344646Z",
+  "scope": "sandbox runtime source excluding __tests__ fixtures, synthetic fixture source, generated .next-sandbox bundle, and task-01 evidence metadata",
+  "scanCommand": "PowerShell aggregate scan: npm run verify-artifact --workspace @agentoma/experiment-sandbox plus rg -n -P secret, PHI, fixture, bundle, log-field, runtime-URL, and browser-storage patterns; runtime counts exclude apps/experiment-sandbox/src/**/__tests__/** because those tests intentionally contain forbidden-pattern literals and safe preview fixtures",
+  "results": [
+    {
+      "name": "secret-scan",
+      "status": "PASS",
+      "matches": 0,
+      "summary": "Runtime sandbox source contains no private-key material, provider key, connection string, or token-shaped value."
+    },
+    {
+      "name": "phi-identifier-scan",
+      "status": "PASS",
+      "matches": 0,
+      "summary": "Synthetic fixture source contains no health-number, demographic, medication, prescription, or patient-identifier fields."
+    },
+    {
+      "name": "fixture-shape-scan",
+      "status": "PASS",
+      "matches": 0,
+      "summary": "Synthetic fixture corpus contains no plausible identifier, contact, or credential-shaped value."
+    },
+    {
+      "name": "bundle-scan",
+      "status": "PASS",
+      "matches": 0,
+      "bundleFiles": 138,
+      "summary": "Generated sandbox bundle files contain no credential, token, connection string, or PHI identifier."
+    },
+    {
+      "name": "log-evidence-scan",
+      "status": "PASS",
+      "matches": 0,
+      "summary": "Evidence JSON contains metadata and hashes only; no sensitive payload field is present."
+    },
+    {
+      "name": "runtime-url-scan",
+      "status": "PASS",
+      "matches": 0,
+      "summary": "Non-test runtime source contains no URL outside the approved loopback sandbox origin."
+    },
+    {
+      "name": "storage-scan",
+      "status": "PASS",
+      "matches": 0,
+      "summary": "Non-test runtime sandbox source contains no browser persistence, cache, service-worker, or beacon API."
+    },
+    {
+      "name": "artifact-scan",
+      "status": "PASS",
+      "command": "npm run verify-artifact --workspace @agentoma/experiment-sandbox",
+      "exitCode": 0,
+      "startedAt": "2026-07-31T06:40:24.2738378Z",
+      "finishedAt": "2026-07-31T06:40:26.1439780Z",
+      "outputSha256": "e3dab93e1ba65e7df5962d7a17543a387a1c38a5b4fa4cad2616153858c2b859",
+      "summary": "Marked artifact verifier passed."
+    }
+  ]
+}

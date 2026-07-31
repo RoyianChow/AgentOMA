@@ -1,0 +1,61 @@
+name: Sandbox boundary
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  production-invariance:
+    name: Production invariance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Run unchanged production gates
+        env:
+          # CI has no production secrets. This flag is only for a build gate;
+          # deployed production processes must pass src/env.ts validation.
+          SKIP_ENV_VALIDATION: "1"
+        run: |
+          ./node_modules/.bin/tsc --noEmit
+          npm run lint
+          npm run test:pure
+          npm run build
+      - run: npm run verify-production --workspace @agentoma/experiment-sandbox
+
+  sandbox:
+    name: Synthetic sandbox gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Set synthetic-only environment
+        shell: bash
+        run: |
+          built_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          expires_at="$(date -u -d '+7 days' +%Y-%m-%dT%H:%M:%SZ)"
+          {
+            echo "SANDBOX_MODE=synthetic"
+            echo "SANDBOX_BUILT_AT=$built_at"
+            echo "SANDBOX_EXPIRES_AT=$expires_at"
+            echo "SANDBOX_INSTANCE_ID=SYNTH-CI-${GITHUB_RUN_ID}"
+            echo "SANDBOX_ORIGIN=http://127.0.0.1:3101"
+            echo "SANDBOX_G1_DECISION_ID=G1-2026-07-31-task-01"
+            echo "SANDBOX_DISABLED=false"
+          } >> "$GITHUB_ENV"
+      - run: npm run sandbox:verify
+      - run: npm run sandbox:build
+      - run: npm run verify-artifact --workspace @agentoma/experiment-sandbox
+      - run: npm run verify-evidence --workspace @agentoma/experiment-sandbox

@@ -36,6 +36,7 @@ provenance only.
 | Folder | Purpose |
 |---|---|
 | [`tasks/autonomous-pharmacy/README.md`](tasks/autonomous-pharmacy/README.md) | Start here for the role-based task contracts, current allowed work, dependency order, evidence expectations, and promotion boundaries. The task files describe proposed work, not implemented status. |
+| [`task-01/README.md`](task-01/README.md) | Task 01 G1 approval, local synthetic sandbox implementation, controls, runbook, and pending evidence manifest. |
 
 ## Agent instructions
 

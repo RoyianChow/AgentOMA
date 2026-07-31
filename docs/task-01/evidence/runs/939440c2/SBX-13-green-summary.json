@@ -1,0 +1,9 @@
+{
+  "control": "SBX-13",
+  "run": "green",
+  "testedSha": "939440c236f9a78a91669947966978a88b7bc07c",
+  "command": "npm run sandbox:verify-production",
+  "exitCode": 0,
+  "safeReason": null,
+  "summary": "Production invariance passed with the explicit comparator and refreshed deterministic baseline."
+}

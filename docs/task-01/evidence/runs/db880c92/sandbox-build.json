@@ -1,0 +1,12 @@
+{
+    "candidateCommit":  "db880c926f169b14ab73892a7c2a02627c22c067",
+    "name":  "sandbox-build",
+    "command":  "npm run sandbox:build",
+    "startedAt":  "2026-07-31T02:50:51.9023836Z",
+    "finishedAt":  "2026-07-31T02:51:25.6316340Z",
+    "exitCode":  0,
+    "outputBytes":  941,
+    "outputSha256":  "ee0fe373906c34222a8a6c151f94a49f877bd7ef042d4e7b5af615003f193d5f",
+    "safeSummary":  "Sandbox production build passed.",
+    "evidencePath":  "docs/task-01/evidence/runs/db880c92/sandbox-build.json"
+}

@@ -50,7 +50,7 @@ describe("public guided demo", () => {
     const importedNames = triageImport?.[1]
       .split(",")
       .map((name) => name.trim())
-      .sort();
+      .sort((left, right) => left.localeCompare(right, "en-US", { sensitivity: "variant", numeric: false }));
 
     expect(importedNames).toEqual(["AILMENT_LABELS", "ALL_AILMENT_IDS"]);
     expect(source).not.toMatch(

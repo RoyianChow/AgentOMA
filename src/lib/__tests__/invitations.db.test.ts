@@ -198,7 +198,7 @@ describe("acceptInvitation", () => {
       acceptInvitation({ token, name: "Second", password: "long-enough-password" }),
     ]);
 
-    const outcomes = [a.ok, b.ok].sort();
+    const outcomes = [a.ok, b.ok].sort((left, right) => Number(left) - Number(right));
     expect(outcomes).toEqual([false, true]);
     const loser = a.ok ? b : a;
     expect(loser).toMatchObject({ ok: false, reason: "ALREADY_USED" });

@@ -1,0 +1,12 @@
+{
+    "candidateCommit":  "db880c926f169b14ab73892a7c2a02627c22c067",
+    "name":  "sandbox-tests-unfiltered",
+    "command":  "npm run test --workspace @agentoma/experiment-sandbox",
+    "startedAt":  "2026-07-31T02:50:39.4399464Z",
+    "finishedAt":  "2026-07-31T02:50:44.7483568Z",
+    "exitCode":  0,
+    "outputBytes":  413,
+    "outputSha256":  "cdc91ac4b342b2f2c37f661f96edf583246af7530ac5978c761a422a2665a91d",
+    "safeSummary":  "Unfiltered sandbox suite passed: 6 files, 17 tests.",
+    "evidencePath":  "docs/task-01/evidence/runs/db880c92/sandbox-tests-unfiltered.json"
+}

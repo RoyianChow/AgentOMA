@@ -1,0 +1,12 @@
+{
+  "testedCommit": "abb72ec5dced5327b6351009270e72b1199046c8",
+  "name": "branch-protection",
+  "command": "gh api repos/RoyianChow/AgentOMA/branches/main/protection",
+  "startedAt": "2026-07-31T05:45:30.2672321Z",
+  "finishedAt": "2026-07-31T05:45:31.1057116Z",
+  "exitCode": 0,
+  "outputBytes": 920,
+  "outputSha256": "a8bf9b981e272bf6915ebb8dc29fb883cea900173011df5e802c467998122ea3",
+  "safeSummary": "PASS: main branch protection returned HTTP 200; required pull request reviews are enabled with one approval; force pushes and deletions are disabled.",
+  "evidencePath": "docs/task-01/evidence/runs/abb72ec5/branch-protection.json"
+}

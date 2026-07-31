@@ -1,0 +1,13 @@
+{
+  "control": "SBX-02",
+  "run": "red",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run verify-production --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:05:44.6593519Z",
+  "finishedAt": "2026-07-31T06:05:46.8813908Z",
+  "exitCode": 1,
+  "environment": "Detached temporary worktree; copied synthetic local production build output; no credentials, PHI, or network resources.",
+  "artifactSha256": "f9775989cbfc0dc3940772f1c839e7281648c4f59feaf5517123e83926951f9c",
+  "safeSummary": "A temporary production app-path manifest contained /sandbox-red-route; production invariance denied routeShape.",
+  "evidencePath": "docs/task-01/evidence/SBX-02/red.json"
+}

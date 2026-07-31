@@ -1,0 +1,12 @@
+{
+    "candidateCommit":  "db880c926f169b14ab73892a7c2a02627c22c067",
+    "name":  "root-lint",
+    "command":  "npm run lint",
+    "startedAt":  "2026-07-31T02:49:29.2021795Z",
+    "finishedAt":  "2026-07-31T02:49:43.5402015Z",
+    "exitCode":  0,
+    "outputBytes":  36,
+    "outputSha256":  "57a97697d09144a6e8809a44d593cb0259e461ccf9fb25c3800cad511bb0d588",
+    "safeSummary":  "Root lint passed.",
+    "evidencePath":  "docs/task-01/evidence/runs/db880c92/root-lint.json"
+}

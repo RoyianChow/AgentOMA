@@ -1,0 +1,12 @@
+{
+    "candidateCommit":  "db880c926f169b14ab73892a7c2a02627c22c067",
+    "name":  "production-invariance",
+    "command":  "npm run sandbox:verify-production",
+    "startedAt":  "2026-07-31T02:50:23.8621055Z",
+    "finishedAt":  "2026-07-31T02:50:25.5952671Z",
+    "exitCode":  0,
+    "outputBytes":  909,
+    "outputSha256":  "1738106b7007fc6e3f5abec3f7f4f4bf5c1eeea1f5b42635982399a49948ab75",
+    "safeSummary":  "Production route/build/runtime/dependency invariance matched baseline.",
+    "evidencePath":  "docs/task-01/evidence/runs/db880c92/production-invariance.json"
+}
