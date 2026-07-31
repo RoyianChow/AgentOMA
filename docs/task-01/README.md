@@ -30,9 +30,14 @@ identity, denied adapters and network transport, marked sample artifacts,
 private/no-store headers, architecture scans, production invariance checks, and
 isolated tests.
 
-The checked-in evidence manifest is now `BLOCKED` after candidate verification:
-technical green checks are recorded, but standalone red-run records, the root
-database-backed suite, final reviewer sign-offs, and branch-protection evidence
-are not complete. See [`evidence/final-report.md`](evidence/final-report.md).
+The checked-in evidence manifest is `BLOCKED` after candidate verification. The
+latest implementation commit is
+`0fc7c17deeac16cf99b7ae2780c6a833bd5e9cc7`; it adds server-owned queued-action
+tickets bound to a persisted lifecycle epoch. SBX-17 is evidence integrity and
+SBX-18 owns lifecycle races, including stale queued-action cancellation. Both
+now have standalone red/green evidence, but the remaining controls still lack
+the complete red-run set, and the root database-backed suite, final reviewer
+sign-offs, and branch-protection evidence are incomplete. See
+[`evidence/final-report.md`](evidence/final-report.md).
 This task does not authorize production deployment, production data, production
 credentials, live integrations, hosted access, or any G3 import.

@@ -6,6 +6,8 @@
 
 **Candidate tag:** `task-01-candidate-db880c92`
 
+**Latest implementation commit:** `0fc7c17deeac16cf99b7ae2780c6a833bd5e9cc7`
+
 **Branch:** `feat/moh-compliance-migration`
 
 The candidate worktree was clean at evidence capture. Run metadata is stored in
@@ -25,11 +27,11 @@ safe summary. Raw command output is not retained.
 | Production invariance | PASS | `production-invariance.json` |
 | Sandbox TypeScript | PASS | `sandbox-typecheck.json` |
 | Sandbox lint | PASS | `sandbox-lint.json` |
-| Sandbox tests | PASS — 6 files, 17 tests, unfiltered | `sandbox-tests-unfiltered.json`, `sandbox-tests-verbose.json` |
+| Sandbox tests | PASS — 7 files, 24 tests, unfiltered | `sandbox-tests-unfiltered.json`, `sandbox-tests-verbose.json`, `SBX-18/green.json` |
 | Sandbox boundary | PASS | `sandbox-boundary.json` |
 | Sandbox build | PASS | `sandbox-build.json` |
 | Artifact check | PASS | `sandbox-artifact.json` |
-| Manifest schema check | PASS — schema is valid; overall manifest remains BLOCKED | `sandbox-manifest-schema-final.json` |
+| Manifest schema check | PASS — schema is valid; overall manifest remains BLOCKED | `sandbox-manifest-schema-final.json`, `SBX-17/green.json` |
 
 No test command used a test-name filter, file filter, skip flag, or focused-test
 selector. The verbose sandbox run is retained as the no-filter evidence.
@@ -39,11 +41,20 @@ summary is [`final-scans.json`](final-scans.json).
 
 ## SBX-01–SBX-18 mapping
 
-All 18 controls are present in [`evidence-manifest.json`](evidence-manifest.json).
-Green evidence exists for the implemented checks, but the required standalone
-controlled red-run records were not captured. Therefore every control remains
-BLOCKED rather than being represented as a false PASS. SBX-17 is additionally
-blocked because the candidate has no stale-action handler or dedicated test.
+All 18 controls are present in [`evidence-manifest.json`](evidence-manifest.json)
+using the v3 mapping. In particular, SBX-17 is **evidence integrity** and SBX-18
+is **lifecycle races, including stale queued-action cancellation**. SBX-17 has a
+standalone manifest-corruption red/green pair in
+[`SBX-17/`](SBX-17/). SBX-18 has a standalone final-lifecycle-recheck red/green
+pair in [`SBX-18/`](SBX-18/); the red run proves the callback-execution failure
+when the recheck is removed, and the green run proves the final code denies
+stale work and executes active work once.
+
+The remaining controls do not yet have the complete required standalone
+controlled red-run set, so the overall manifest remains BLOCKED rather than
+being represented as a false PASS. The root database-backed suite is also
+blocked by unavailable Docker/localhost:5433, branch protection is NOT
+VERIFIED, and final implementation sign-offs are not recorded.
 
 ## Approval and release boundaries
 

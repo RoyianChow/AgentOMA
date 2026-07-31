@@ -83,9 +83,11 @@ npm run reset --workspace @agentoma/experiment-sandbox
 npm run teardown --workspace @agentoma/experiment-sandbox
 ```
 
-Disable creates only the exact instance sentinel. Reset removes that sentinel.
-Teardown removes only the exact contained `SYNTH-*` directory and is
-idempotent. No command accepts a wildcard or arbitrary path.
+Disable creates only the exact instance sentinel and advances the lifecycle
+epoch. Reset removes that sentinel and advances the epoch again, invalidating
+every queued ticket from the previous lifecycle. Teardown removes only the
+exact contained `SYNTH-*` directory and is idempotent; missing or malformed
+state denies queued work. No command accepts a wildcard or arbitrary path.
 
 ## Production-invariance proof
 

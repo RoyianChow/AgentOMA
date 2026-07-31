@@ -1,0 +1,14 @@
+{
+  "control": "SBX-18",
+  "run": "green",
+  "testedSha": "0fc7c17deeac16cf99b7ae2780c6a833bd5e9cc7",
+  "command": "npm run test --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T04:08:27.2622516Z",
+  "finishedAt": "2026-07-31T04:08:30.7262383Z",
+  "exitCode": 0,
+  "outputBytes": 1109,
+  "artifactSha256": "d875bb9021feea19926e9d118aedfb499a7605e91a07ddf800d5503a1a6aec81",
+  "safeSummary": "Final code passed the unfiltered sandbox suite: lifecycle epoch invalidation denied disabled, expired, superseded, cancelled, and unknown queued actions; an active action executed once. No credentials or PHI were used; raw output was not retained.",
+  "testSelection": "Unfiltered workspace test command; no file/name filter, skip, or focused selector.",
+  "evidencePath": "docs/task-01/evidence/SBX-18/green.json"
+}
