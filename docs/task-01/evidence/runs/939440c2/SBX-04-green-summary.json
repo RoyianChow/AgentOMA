@@ -1,0 +1,9 @@
+{
+  "control": "SBX-04",
+  "run": "green",
+  "testedSha": "939440c236f9a78a91669947966978a88b7bc07c",
+  "command": "npm run sandbox:build",
+  "exitCode": 0,
+  "safeReason": null,
+  "summary": "Synthetic configuration with a local CI extension directory passed the sandbox build."
+}

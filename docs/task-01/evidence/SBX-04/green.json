@@ -1,13 +1,14 @@
 {
   "control": "SBX-04",
   "run": "green",
-  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
-  "command": "npm run build --workspace @agentoma/experiment-sandbox",
-  "startedAt": "2026-07-31T06:08:49.0892048Z",
-  "finishedAt": "2026-07-31T06:09:25.0038639Z",
+  "testedSha": "939440c236f9a78a91669947966978a88b7bc07c",
+  "command": "npm run sandbox:build",
+  "startedAt": "2026-07-31T09:36:22.5525031Z",
+  "finishedAt": "2026-07-31T09:36:40.9136495Z",
   "exitCode": 0,
-  "environment": "Synthetic loopback configuration with all seven required variables; prohibited host variables removed; no credentials or PHI.",
-  "artifactSha256": "c949341cfd10b9bdd53785735980c11c69fbd328b48b9b0ee3d0a02f6b1909ff",
-  "safeSummary": "Sandbox production build passed with valid synthetic configuration.",
+  "environment": "Synthetic configuration with AZURE_EXTENSION_DIR set to C:\\ci\\extensions; prohibited host variables removed; no credentials or PHI.",
+  "artifactPath": "docs/task-01/evidence/runs/939440c2/SBX-04-green-summary.json",
+  "artifactSha256": "9bf73c6a535e1babf4f8b8392daf498e86c9c9377a7e404e4293bc827704e690",
+  "safeSummary": "Sandbox production build passed with the accepted local CI runner path.",
   "evidencePath": "docs/task-01/evidence/SBX-04/green.json"
 }

@@ -1,0 +1,9 @@
+{
+  "control": "SBX-13",
+  "run": "red",
+  "testedSha": "939440c236f9a78a91669947966978a88b7bc07c",
+  "command": "npm run sandbox:verify-production",
+  "exitCode": 1,
+  "safeReason": "SBX_INVARIANCE_DENIED:productionDependenciesHash",
+  "summary": "An isolated synthetic production dependency mutation was denied; the mutation was never committed or uploaded."
+}

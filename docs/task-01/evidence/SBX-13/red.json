@@ -1,13 +1,14 @@
 {
   "control": "SBX-13",
   "run": "red",
-  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
-  "command": "npm run verify-production --workspace @agentoma/experiment-sandbox",
-  "startedAt": "2026-07-31T06:22:05.2392449Z",
-  "finishedAt": "2026-07-31T06:22:07.6621263Z",
+  "testedSha": "939440c236f9a78a91669947966978a88b7bc07c",
+  "command": "npm run sandbox:verify-production",
+  "startedAt": "2026-07-31T09:37:30.6426496Z",
+  "finishedAt": "2026-07-31T09:37:32.0221743Z",
   "exitCode": 1,
-  "environment": "Isolated temporary worktree with copied synthetic build output; package.json temporarily included a synthetic production dependency marker; no install, credentials, PHI, production URLs, or live resources.",
-  "artifactSha256": "764ed4bceed3a013357183c74604e6c456ce8b1e833e49988d247ebbc1be3241",
-  "safeSummary": "Expected non-zero exit: production-invariance verification rejected the production-dependency mutation. The mutation was removed without commit or upload.",
+  "environment": "Detached temporary worktree based on the tested SHA with copied synthetic build output; package.json temporarily included a synthetic production dependency marker; no install, credentials, PHI, production URLs, or live resources.",
+  "artifactPath": "docs/task-01/evidence/runs/939440c2/SBX-13-red-summary.json",
+  "artifactSha256": "3090996b86ad008279774546c876974c70287f70aabe0caa158a19a805e25e58",
+  "safeSummary": "Expected non-zero exit: production-invariance verification rejected SBX_INVARIANCE_DENIED:productionDependenciesHash. The mutation was removed without commit or upload.",
   "evidencePath": "docs/task-01/evidence/SBX-13/red.json"
 }
