@@ -14,7 +14,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body>
         <main className="shell">
-          <div className="banner" role="status">{SYNTHETIC_BANNER}</div>
+          <output className="banner" aria-live="polite">{SYNTHETIC_BANNER}</output>
           {children}
         </main>
       </body>

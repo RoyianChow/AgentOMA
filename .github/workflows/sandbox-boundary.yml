@@ -25,7 +25,7 @@ jobs:
           # deployed production processes must pass src/env.ts validation.
           SKIP_ENV_VALIDATION: "1"
         run: |
-          npm exec -- tsc --noEmit
+          ./node_modules/.bin/tsc --noEmit
           npm run lint
           npm run test:pure
           npm run build
@@ -41,8 +41,6 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci --ignore-scripts
-      - name: Install sandbox-local framework dependencies
-        run: npm install --prefix apps/experiment-sandbox --no-workspaces --ignore-scripts
       - name: Set synthetic-only environment
         shell: bash
         run: |

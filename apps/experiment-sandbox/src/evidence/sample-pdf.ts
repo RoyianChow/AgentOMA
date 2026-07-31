@@ -1,10 +1,15 @@
 const WATERMARK = "EXPERIMENT - SYNTHETIC DATA - NOT FOR PATIENT CARE";
+const PDF_BACKSLASH = String.raw({ raw: ["\\"] });
 
 function pdfText(value: string): string {
-  return value.replaceAll("\\", "\\\\").replaceAll("(", "\\(").replaceAll(")", "\\)");
+  return value
+    .replaceAll(PDF_BACKSLASH, `${PDF_BACKSLASH}${PDF_BACKSLASH}`)
+    .replaceAll("(", `${PDF_BACKSLASH}(`)
+    .replaceAll(")", `${PDF_BACKSLASH})`);
 }
 
 function streamFor(page: number): string {
+  const pageLabel = pdfText(`Synthetic sample page ${page} of 2`);
   return [
     "BT",
     "/F1 22 Tf",
@@ -12,7 +17,7 @@ function streamFor(page: number): string {
     `(${pdfText(WATERMARK)}) Tj`,
     "0 -52 Td",
     "/F1 16 Tf",
-    `(${pdfText(`Synthetic sample page ${page} of 2`)}) Tj`,
+    `(${pageLabel}) Tj`,
     "0 -32 Td",
     "/F1 12 Tf",
     "(No operational record, prescription, claim, or patient data.) Tj",

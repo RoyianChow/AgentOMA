@@ -18,7 +18,31 @@ const compareTupleKeys = ([left], [right]) => compareStrings(left, right);
 // differ by runner OS/CPU (for example sharp-win32-x64 vs sharp-linux-x64).
 // Keep the full trace for diagnostics, but compare only the portable portion
 // so a Windows-captured baseline is enforceable on the Linux CI runner too.
-const PLATFORM_SPECIFIC_TRACE = /(^|\/)(?:[^/]*(?:win32|linux|darwin|freebsd|android|openharmony|wasi|aix|sunos|haiku|msvc|musl|gnu|arm64|x64|ia32)[^/]*)\/|\.node$/i;
+const PLATFORM_TRACE_MARKERS = [
+  "win32",
+  "linux",
+  "darwin",
+  "freebsd",
+  "android",
+  "openharmony",
+  "wasi",
+  "aix",
+  "sunos",
+  "haiku",
+  "msvc",
+  "musl",
+  "gnu",
+  "arm64",
+  "x64",
+  "ia32",
+];
+
+function isPlatformSpecificTrace(entry) {
+  const normalized = entry.toLowerCase();
+  return normalized.endsWith(".node") || normalized.split("/").some((segment) =>
+    PLATFORM_TRACE_MARKERS.some((marker) => segment.includes(marker)),
+  );
+}
 
 function readJson(relativePath) {
   const path = join(nextRoot, relativePath);
@@ -32,7 +56,7 @@ const routes = Object.values(appPathRoutes).sort(compareStrings);
 const routesManifest = readJson("routes-manifest.json");
 const requiredServerFiles = readJson("required-server-files.json").files.sort(compareStrings);
 const nftFiles = readJson("next-server.js.nft.json").files.map((entry) => entry.replaceAll("\\", "/")).sort(compareStrings);
-const portableNftFiles = nftFiles.filter((entry) => !PLATFORM_SPECIFIC_TRACE.test(entry));
+const portableNftFiles = nftFiles.filter((entry) => !isPlatformSpecificTrace(entry));
 const rootPackage = JSON.parse(readFileSync(join(repositoryRoot, "package.json"), "utf8"));
 const productionScripts = Object.entries(rootPackage.scripts)
   .filter(([key]) => !key.startsWith("sandbox:"))
@@ -53,8 +77,8 @@ const current = {
   productionScriptsHash: hash(productionScripts),
 };
 
-const currentRouteNames = [...Object.values(appPathRoutes)].sort(compareStrings);
-const baselineRouteNames = [...baseline.routes].sort(compareStrings);
+const currentRouteNames = Object.values(appPathRoutes).sort(compareStrings);
+const baselineRouteNames = baseline.routes.toSorted(compareStrings);
 if (JSON.stringify(currentRouteNames) !== JSON.stringify(baselineRouteNames)) {
   throw new Error("SBX_INVARIANCE_DENIED:routeShape");
 }

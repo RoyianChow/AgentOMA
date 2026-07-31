@@ -16,7 +16,45 @@ const requiredSchema = z.object({
   SANDBOX_DISABLED: z.enum(["true", "false"]),
 });
 
-const PROHIBITED_ENVIRONMENT = /(?:DATABASE_URL|DIRECT_URL|BETTER_AUTH|SUPABASE|FIREBASE|GOOGLE_APPLICATION|SERVICE_ROLE|PRIVATE_KEY|AWS_|GCP_|SMTP|SENDGRID|TWILIO|STRIPE|PAYMENT|COURIER|CALENDAR|VIDEO|FHIR|HNS|ODB|CLINICAL_VIEWER|MODEL|OPENAI|ANTHROPIC|SENTRY|POSTHOG|SEGMENT|MIXPANEL|ANALYTICS|TELEMETRY|HTTP_PROXY|HTTPS_PROXY|ALL_PROXY|NO_PROXY|PROXY|ENDPOINT)/i;
+const PROHIBITED_ENVIRONMENT_MARKERS = [
+  "DATABASE_URL",
+  "DIRECT_URL",
+  "BETTER_AUTH",
+  "SUPABASE",
+  "FIREBASE",
+  "GOOGLE_APPLICATION",
+  "SERVICE_ROLE",
+  "PRIVATE_KEY",
+  "AWS_",
+  "GCP_",
+  "SMTP",
+  "SENDGRID",
+  "TWILIO",
+  "STRIPE",
+  "PAYMENT",
+  "COURIER",
+  "CALENDAR",
+  "VIDEO",
+  "FHIR",
+  "HNS",
+  "ODB",
+  "CLINICAL_VIEWER",
+  "MODEL",
+  "OPENAI",
+  "ANTHROPIC",
+  "SENTRY",
+  "POSTHOG",
+  "SEGMENT",
+  "MIXPANEL",
+  "ANALYTICS",
+  "TELEMETRY",
+  "HTTP_PROXY",
+  "HTTPS_PROXY",
+  "ALL_PROXY",
+  "NO_PROXY",
+  "PROXY",
+  "ENDPOINT",
+] as const;
 const PROHIBITED_AZURE_VARIABLES = new Set([
   "AZURE_API_KEY",
   "AZURE_CLIENT_ID",
@@ -28,6 +66,14 @@ const PROHIBITED_AZURE_VARIABLES = new Set([
   "AZURE_SUBSCRIPTION_ID",
   "AZURE_TENANT_ID",
 ]);
+
+function isProhibitedEnvironmentKey(key: string): boolean {
+  const normalizedKey = key.toUpperCase();
+  return (
+    PROHIBITED_ENVIRONMENT_MARKERS.some((marker) => normalizedKey.includes(marker)) ||
+    PROHIBITED_AZURE_VARIABLES.has(normalizedKey)
+  );
+}
 
 export type SandboxPhase = "build" | "startup" | "test";
 
@@ -51,27 +97,12 @@ function isLocalPath(value: string): boolean {
   return value.startsWith("/") || /^[A-Za-z]:[\\/]/.test(value);
 }
 
-function assertDateWindow(builtAt: Date, expiresAt: Date, now: Date): void {
-  if (!Number.isFinite(builtAt.getTime()) || !Number.isFinite(expiresAt.getTime())) {
-    throw createSandboxConfigDeniedError("INVALID_TIMESTAMP");
-  }
-  if (expiresAt <= builtAt) throw createSandboxConfigDeniedError("EXPIRY_NOT_AFTER_BUILD");
-  if (expiresAt.getTime() - builtAt.getTime() > MAX_LIFETIME_MS) {
-    throw createSandboxConfigDeniedError("EXPIRY_OVER_30_DAYS");
-  }
-  if (expiresAt <= now) throw createSandboxConfigDeniedError("EXPIRED");
-}
-
-export function parseSandboxEnv(
-  input: Record<string, string | undefined>,
-  now = new Date(),
-  options: { allowExpired?: boolean } = {},
-): SandboxEnv {
+function assertEnvironmentIsAllowed(input: Record<string, string | undefined>): void {
   for (const [key, value] of Object.entries(input)) {
     // npm adds npm_config_* launcher metadata to script children. It is not
     // forwarded by sandboxChildEnvironment and never configures the app.
     if (/^npm_config_/i.test(key)) continue;
-    if (key === "AZURE_EXTENSION_DIR") {
+    if (key.toUpperCase() === "AZURE_EXTENSION_DIR") {
       if (value !== undefined && !isLocalPath(value)) {
         throw createSandboxConfigDeniedError("INVALID_LOCAL_PATH:AZURE_EXTENSION_DIR");
       }
@@ -79,28 +110,42 @@ export function parseSandboxEnv(
     }
     if (
       value !== undefined &&
-      (PROHIBITED_ENVIRONMENT.test(key) || PROHIBITED_AZURE_VARIABLES.has(key))
+      isProhibitedEnvironmentKey(key)
     ) {
       throw createSandboxConfigDeniedError(`PROHIBITED_VARIABLE:${key}`);
     }
   }
+}
+
+function assertDateWindow(
+  builtAt: Date,
+  expiresAt: Date,
+  now: Date,
+  allowExpired: boolean,
+): void {
+  if (!Number.isFinite(builtAt.getTime()) || !Number.isFinite(expiresAt.getTime())) {
+    throw createSandboxConfigDeniedError("INVALID_TIMESTAMP");
+  }
+  if (expiresAt <= builtAt) throw createSandboxConfigDeniedError("EXPIRY_NOT_AFTER_BUILD");
+  if (expiresAt.getTime() - builtAt.getTime() > MAX_LIFETIME_MS) {
+    throw createSandboxConfigDeniedError("EXPIRY_OVER_30_DAYS");
+  }
+  if (!allowExpired && expiresAt <= now) throw createSandboxConfigDeniedError("EXPIRED");
+}
+
+export function parseSandboxEnv(
+  input: Record<string, string | undefined>,
+  now = new Date(),
+  options: { allowExpired?: boolean } = {},
+): SandboxEnv {
+  assertEnvironmentIsAllowed(input);
 
   const parsed = requiredSchema.safeParse(input);
   if (!parsed.success) throw createSandboxConfigDeniedError("MISSING_OR_MALFORMED_VARIABLE");
 
   const builtAt = new Date(parsed.data.SANDBOX_BUILT_AT);
   const expiresAt = new Date(parsed.data.SANDBOX_EXPIRES_AT);
-  if (options.allowExpired) {
-    if (!Number.isFinite(builtAt.getTime()) || !Number.isFinite(expiresAt.getTime())) {
-      throw createSandboxConfigDeniedError("INVALID_TIMESTAMP");
-    }
-    if (expiresAt <= builtAt) throw createSandboxConfigDeniedError("EXPIRY_NOT_AFTER_BUILD");
-    if (expiresAt.getTime() - builtAt.getTime() > MAX_LIFETIME_MS) {
-      throw createSandboxConfigDeniedError("EXPIRY_OVER_30_DAYS");
-    }
-  } else {
-    assertDateWindow(builtAt, expiresAt, now);
-  }
+  assertDateWindow(builtAt, expiresAt, now, options.allowExpired === true);
 
   return {
     mode: "synthetic",

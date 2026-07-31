@@ -18,20 +18,20 @@ const isLoopbackHost = (value) => {
   return host === "localhost" || host === "::1" || host.startsWith("127.") || host.startsWith("::ffff:127.");
 };
 
+const hostFromStringArgs = (first, args) => {
+  if (first.startsWith("\\\\.\\pipe\\")) return "localhost";
+  if (/^[a-z][a-z\d+.-]*:\/\//i.test(first)) return new URL(first).hostname;
+  if (typeof args[1] === "string") return args[1];
+  return isLoopbackHost(first) ? first : undefined;
+};
+
+const hostFromObjectArg = (first) => first.socketPath ? "localhost" : first.hostname ?? first.host;
+
 const hostFromArgs = (args) => {
   const first = args[0];
-  if (typeof first === "string") {
-    if (first.startsWith("\\\\.\\pipe\\")) return "localhost";
-    if (/^[a-z][a-z\d+.-]*:\/\//i.test(first)) return new URL(first).hostname;
-    if (typeof args[1] === "string") return args[1];
-    if (isLoopbackHost(first)) return first;
-    return undefined;
-  }
+  if (typeof first === "string") return hostFromStringArgs(first, args);
   if (typeof first === "number") return typeof args[1] === "string" ? args[1] : "127.0.0.1";
-  if (first && typeof first === "object") {
-    if (first.socketPath) return "localhost";
-    return first.hostname ?? first.host;
-  }
+  if (first && typeof first === "object") return hostFromObjectArg(first);
   return undefined;
 };
 

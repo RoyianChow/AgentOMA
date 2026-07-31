@@ -23,7 +23,7 @@ const nextBin = (() => {
   }
 })();
 const denialPreload = fileURLToPath(new URL("./deny-egress.cjs", import.meta.url));
-const nextArguments = [...process.argv.slice(2)];
+const nextArguments = process.argv.slice(2);
 if (command === "build") nextArguments.push("--webpack");
 const result = spawnSync(
   process.execPath,
