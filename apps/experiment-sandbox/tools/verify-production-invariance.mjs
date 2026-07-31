@@ -11,6 +11,9 @@ function hash(value) {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
 
+const compareStrings = (left, right) => left.localeCompare(right, "en-US", { sensitivity: "variant", numeric: false });
+const compareTupleKeys = ([left], [right]) => compareStrings(left, right);
+
 // Next's standalone file trace includes optional native packages whose names
 // differ by runner OS/CPU (for example sharp-win32-x64 vs sharp-linux-x64).
 // Keep the full trace for diagnostics, but compare only the portable portion
@@ -24,17 +27,17 @@ function readJson(relativePath) {
 }
 
 const appPathRoutes = readJson("app-path-routes-manifest.json");
-const appPaths = Object.keys(appPathRoutes).sort();
-const routes = Object.values(appPathRoutes).sort();
+const appPaths = Object.keys(appPathRoutes).sort(compareStrings);
+const routes = Object.values(appPathRoutes).sort(compareStrings);
 const routesManifest = readJson("routes-manifest.json");
-const requiredServerFiles = readJson("required-server-files.json").files.sort();
-const nftFiles = readJson("next-server.js.nft.json").files.map((entry) => entry.replaceAll("\\", "/")).sort();
+const requiredServerFiles = readJson("required-server-files.json").files.sort(compareStrings);
+const nftFiles = readJson("next-server.js.nft.json").files.map((entry) => entry.replaceAll("\\", "/")).sort(compareStrings);
 const portableNftFiles = nftFiles.filter((entry) => !PLATFORM_SPECIFIC_TRACE.test(entry));
 const rootPackage = JSON.parse(readFileSync(join(repositoryRoot, "package.json"), "utf8"));
 const productionScripts = Object.entries(rootPackage.scripts)
   .filter(([key]) => !key.startsWith("sandbox:"))
-  .sort(([a], [b]) => a.localeCompare(b));
-const productionDependencies = Object.entries(rootPackage.dependencies).sort(([a], [b]) => a.localeCompare(b));
+  .sort(compareTupleKeys);
+const productionDependencies = Object.entries(rootPackage.dependencies).sort(compareTupleKeys);
 
 const current = {
   appPathCount: appPaths.length,
@@ -50,8 +53,8 @@ const current = {
   productionScriptsHash: hash(productionScripts),
 };
 
-const currentRouteNames = [...Object.values(appPathRoutes)].sort();
-const baselineRouteNames = [...baseline.routes].sort();
+const currentRouteNames = [...Object.values(appPathRoutes)].sort(compareStrings);
+const baselineRouteNames = [...baseline.routes].sort(compareStrings);
 if (JSON.stringify(currentRouteNames) !== JSON.stringify(baselineRouteNames)) {
   throw new Error("SBX_INVARIANCE_DENIED:routeShape");
 }

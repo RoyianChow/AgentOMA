@@ -118,7 +118,7 @@ async function main() {
   if (acne) {
     const acnePins = pins
       .filter((p) => p.ailmentGroupId === acne.id)
-      .sort((a, b) => a.pinCode.localeCompare(b.pinCode))
+      .sort((a, b) => a.pinCode.localeCompare(b.pinCode, "en-US", { sensitivity: "variant", numeric: false }))
       .map((p) => `${p.modality}/${p.rxIssued ? "rx" : "norx"}=${p.pinCode}($${p.feeCents / 100})`);
     console.log(`  ACNE (max ${acne.maxClaimsPer365Days}/yr): ${acnePins.join(", ")}`);
   }

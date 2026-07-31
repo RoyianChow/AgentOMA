@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   SANDBOX_G1_DECISION_ID,
@@ -62,5 +62,67 @@ describe("sandbox environment contract", () => {
         `SANDBOX_CONFIG_DENIED:PROHIBITED_VARIABLE:${key}`,
       );
     }
+  });
+
+  it("accepts AZURE_EXTENSION_DIR as a local, non-secret CI runner path", () => {
+    const extensionDir = process.platform === "win32"
+      ? "C:\\hostedtoolcache\\extensions"
+      : "/opt/hostedtoolcache/extensions";
+    const env = parseSandboxEnv(
+      { ...validEnv(), AZURE_EXTENSION_DIR: extensionDir },
+      new Date("2026-08-01T00:00:00.000Z"),
+    );
+
+    expect(env.mode).toBe("synthetic");
+  });
+
+  it("rejects invalid AZURE_EXTENSION_DIR values without exposing the value", () => {
+    const invalidValue = "https://runner.example.test/extension-dir";
+    expect(() => parseSandboxEnv(
+      { ...validEnv(), AZURE_EXTENSION_DIR: invalidValue },
+      new Date("2026-08-01T00:00:00.000Z"),
+    )).toThrow("SANDBOX_CONFIG_DENIED:INVALID_LOCAL_PATH:AZURE_EXTENSION_DIR");
+  });
+
+  it.each([
+    "AZURE_CLIENT_SECRET",
+    "AZURE_TENANT_ID",
+    "AZURE_SUBSCRIPTION_ID",
+    "AZURE_STORAGE_CONNECTION_STRING",
+    "AZURE_OPENAI_API_KEY",
+  ])("rejects production Azure credential variable %s", (key) => {
+    expect(() => parseSandboxEnv(
+      { ...validEnv(), [key]: "synthetic-credential-sentinel" },
+      new Date("2026-08-01T00:00:00.000Z"),
+    )).toThrow(`SANDBOX_CONFIG_DENIED:PROHIBITED_VARIABLE:${key}`);
+  });
+
+  it("does not print rejected values or include them in the safe denial", () => {
+    const secret = "synthetic-secret-must-never-appear";
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    let thrown: unknown;
+    try {
+      parseSandboxEnv(
+        { ...validEnv(), AZURE_CLIENT_SECRET: secret },
+        new Date("2026-08-01T00:00:00.000Z"),
+      );
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(Error);
+    expect((thrown as Error).message).toBe(
+      "SANDBOX_CONFIG_DENIED:PROHIBITED_VARIABLE:AZURE_CLIENT_SECRET",
+    );
+    expect((thrown as Error).message).not.toContain(secret);
+    expect(consoleLog).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
+    expect(consoleWarn).not.toHaveBeenCalled();
+    consoleLog.mockRestore();
+    consoleError.mockRestore();
+    consoleWarn.mockRestore();
   });
 });

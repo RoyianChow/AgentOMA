@@ -37,7 +37,7 @@ function canonicalJson(value: unknown): string {
   }
   const object = value as Record<string, unknown>;
   return `{${Object.keys(object)
-    .sort()
+    .sort((left, right) => left.localeCompare(right, "en-US", { sensitivity: "variant", numeric: false }))
     .map((key) => `${JSON.stringify(key)}:${canonicalJson(object[key])}`)
     .join(",")}}`;
 }
