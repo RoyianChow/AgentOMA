@@ -50,6 +50,8 @@
     "routeShapeHash": "13ebe378ec425e86184d9754a1ca7871db804822d38e2c0a7749c4164db3b656",
     "runtimeTraceFileCount": 625,
     "runtimeTraceFilesHash": "68060eb9bcecbf8224da0751ec287ea623693d76c36b3a44548fb0d4314b2766",
+    "portableRuntimeTraceFileCount": 622,
+    "portableRuntimeTraceFilesHash": "ce0ccb53bd60fe839eabcad4a1e67015057485b4c1df70ededa52d54f9716a06",
     "requiredServerFileCount": 17,
     "requiredServerFilesHash": "d7dedc3f77d68dd716aee4b8c97e870db7f84477ff8d53144b677a20f6ca4476",
     "productionDependenciesHash": "91bb6d914541815b48bb79d180774543d44f6cf914f676bbae008214c3a646a1",

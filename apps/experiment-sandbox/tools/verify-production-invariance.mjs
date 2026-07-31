@@ -11,6 +11,12 @@ function hash(value) {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
 
+// Next's standalone file trace includes optional native packages whose names
+// differ by runner OS/CPU (for example sharp-win32-x64 vs sharp-linux-x64).
+// Keep the full trace for diagnostics, but compare only the portable portion
+// so a Windows-captured baseline is enforceable on the Linux CI runner too.
+const PLATFORM_SPECIFIC_TRACE = /(^|\/)(?:[^/]*(?:win32|linux|darwin|freebsd|android|openharmony|wasi|aix|sunos|haiku|msvc|musl|gnu|arm64|x64|ia32)[^/]*)\/|\.node$/i;
+
 function readJson(relativePath) {
   const path = join(nextRoot, relativePath);
   if (!existsSync(path)) throw new Error(`SBX_INVARIANCE_DENIED:MISSING_BUILD_FILE:${relativePath}`);
@@ -23,6 +29,7 @@ const routes = Object.values(appPathRoutes).sort();
 const routesManifest = readJson("routes-manifest.json");
 const requiredServerFiles = readJson("required-server-files.json").files.sort();
 const nftFiles = readJson("next-server.js.nft.json").files.map((entry) => entry.replaceAll("\\", "/")).sort();
+const portableNftFiles = nftFiles.filter((entry) => !PLATFORM_SPECIFIC_TRACE.test(entry));
 const rootPackage = JSON.parse(readFileSync(join(repositoryRoot, "package.json"), "utf8"));
 const productionScripts = Object.entries(rootPackage.scripts)
   .filter(([key]) => !key.startsWith("sandbox:"))
@@ -35,6 +42,8 @@ const current = {
   routeShapeHash: hash(routes),
   runtimeTraceFileCount: nftFiles.length,
   runtimeTraceFilesHash: hash(nftFiles),
+  portableRuntimeTraceFileCount: portableNftFiles.length,
+  portableRuntimeTraceFilesHash: hash(portableNftFiles),
   requiredServerFileCount: requiredServerFiles.length,
   requiredServerFilesHash: hash(requiredServerFiles),
   productionDependenciesHash: hash(productionDependencies),
@@ -50,7 +59,7 @@ if (JSON.stringify(currentRouteNames) !== JSON.stringify(baselineRouteNames)) {
 // The captured baseline's legacy routeShapeHash used a private normalization
 // helper that is not available in the repository. The route-name comparison
 // above is the auditable invariant; appPathsHash separately covers route keys.
-const comparable = ["appPathCount", "appPathsHash", "runtimeTraceFileCount", "runtimeTraceFilesHash", "requiredServerFileCount", "requiredServerFilesHash", "productionDependenciesHash", "productionScriptsHash"];
+const comparable = ["appPathCount", "appPathsHash", "portableRuntimeTraceFileCount", "portableRuntimeTraceFilesHash", "requiredServerFileCount", "requiredServerFilesHash", "productionDependenciesHash", "productionScriptsHash"];
 for (const key of comparable) {
   if (current[key] !== baseline.normalizedProduction[key]) {
     throw new Error(`SBX_INVARIANCE_DENIED:${key}`);
