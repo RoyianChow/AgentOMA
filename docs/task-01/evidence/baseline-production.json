@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "capturedDate": "2026-07-31",
+  "baselineCommit": "7737ef26f09fec858d23337885ca7d31e9ccbc64",
+  "dirtyWorktree": false,
+  "environment": "local",
+  "runtime": {
+    "node": "v24.18.0",
+    "npm": "11.16.0",
+    "next": "16.2.10",
+    "lockfileVersion": 3,
+    "npmWorkspaceConfigured": false
+  },
+  "checks": {
+    "typescript": {
+      "command": "npm exec -- tsc --noEmit",
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    "lint": {
+      "command": "npm run lint",
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    "pureTests": {
+      "command": "npm run test:pure",
+      "exitCode": 0,
+      "files": 10,
+      "tests": 95,
+      "result": "PASS"
+    },
+    "productionBuild": {
+      "command": "npm run build",
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    "databaseTests": {
+      "command": "npm run test",
+      "result": "NOT_RUN",
+      "reasonCode": "DOCKER_CLI_UNAVAILABLE"
+    },
+    "branchProtection": {
+      "result": "NOT_VERIFIED",
+      "reasonCode": "NO_REPOSITORY_LOCAL_EVIDENCE"
+    }
+  },
+  "normalizedProduction": {
+    "appPathCount": 25,
+    "appPathsHash": "1468b42d588c5872f0435fc6ef5f87f4975fa051ad748c20b3bcc405add51332",
+    "routeShapeHash": "13ebe378ec425e86184d9754a1ca7871db804822d38e2c0a7749c4164db3b656",
+    "runtimeTraceFileCount": 625,
+    "runtimeTraceFilesHash": "68060eb9bcecbf8224da0751ec287ea623693d76c36b3a44548fb0d4314b2766",
+    "requiredServerFileCount": 17,
+    "requiredServerFilesHash": "d7dedc3f77d68dd716aee4b8c97e870db7f84477ff8d53144b677a20f6ca4476",
+    "productionDependenciesHash": "91bb6d914541815b48bb79d180774543d44f6cf914f676bbae008214c3a646a1",
+    "productionScriptsHash": "eb0976e856d63aaacaaf8d9eb00fd289dd8ecb060d917662816c1651e4cefb3b",
+    "sandboxMarkersFound": false
+  },
+  "routes": [
+    "/",
+    "/_global-error",
+    "/_not-found",
+    "/accept-invitation",
+    "/api/auth/[...all]",
+    "/api/fhir",
+    "/assessment",
+    "/check",
+    "/demo",
+    "/enroll-2fa",
+    "/icon.png",
+    "/pharmacist",
+    "/pharmacist/assessment",
+    "/pharmacist/assessment/[id]/export",
+    "/pharmacist/audit",
+    "/pharmacist/audit/(.)[id]",
+    "/pharmacist/audit/[id]",
+    "/pharmacist/audit/[id]/pdf",
+    "/pharmacist/audit/export",
+    "/pharmacist/follow-ups",
+    "/pharmacist/governance",
+    "/pharmacist/governance/patient/[patientId]/export",
+    "/pharmacist/settings",
+    "/pharmacist/team",
+    "/sign-in"
+  ],
+  "containsSecretValues": false,
+  "containsPhi": false
+}

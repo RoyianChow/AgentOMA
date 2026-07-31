@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "status": "PENDING",
+  "approval": {
+    "decisionId": "G1-2026-07-31-task-01",
+    "g2": "NOT_GRANTED",
+    "g3": []
+  },
+  "controls": [
+    { "id": "SBX-01", "name": "Production build exclusion", "redExpectedExitCode": "nonzero", "greenExpectedExitCode": 0 },
+    { "id": "SBX-02", "name": "Production route and bundle invariance", "redExpectedExitCode": "nonzero", "greenExpectedExitCode": 0 },
+    { "id": "SBX-03", "name": "Import graph separation", "redExpectedExitCode": "nonzero", "greenExpectedExitCode": 0 },
+    { "id": "SBX-04", "name": "Typed environment contract", "redExpectedExitCode": "nonzero", "greenExpectedExitCode": 0 },
+    { "id": "SBX-05", "name": "External adapter denial", "redExpectedExitCode": "nonzero", "greenExpectedExitCode": 0 },
+    { "id": "SBX-06", "name": "Synthetic fixture and identity boundary", "redExpectedExitCode": "nonzero", "greenExpectedExitCode": 0 },
+    { "id": "SBX-07", "name": "Expiry and lifecycle denial", "redExpectedExitCode": "nonzero", "greenExpectedExitCode": 0 },
+    { "id": "SBX-08", "name": "Persistent synthetic warning", "redExpectedExitCode": "nonzero", "greenExpectedExitCode": 0 },
+    { "id": "SBX-09", "name": "Marked sample artifact", "redExpectedExitCode": "nonzero", "greenExpectedExitCode": 0 },
+    { "id": "SBX-10", "name": "Server-owned authority", "redExpectedExitCode": "nonzero", "greenExpectedExitCode": 0 },
+    { "id": "SBX-11", "name": "Node transport denial", "redExpectedExitCode": "nonzero", "greenExpectedExitCode": 0 },
+    { "id": "SBX-12", "name": "Contained lifecycle mutation", "redExpectedExitCode": "nonzero", "greenExpectedExitCode": 0 },
+    { "id": "SBX-13", "name": "Sandbox-only dependency boundary", "redExpectedExitCode": "nonzero", "greenExpectedExitCode": 0 },
+    { "id": "SBX-14", "name": "Artifact corruption refusal", "redExpectedExitCode": "nonzero", "greenExpectedExitCode": 0 },
+    { "id": "SBX-15", "name": "Safe error and response headers", "redExpectedExitCode": "nonzero", "greenExpectedExitCode": 0 },
+    { "id": "SBX-16", "name": "Browser storage and external request denial", "redExpectedExitCode": "nonzero", "greenExpectedExitCode": 0 },
+    { "id": "SBX-17", "name": "Stale action cancellation", "redExpectedExitCode": "nonzero", "greenExpectedExitCode": 0 },
+    { "id": "SBX-18", "name": "Idempotent reset and teardown", "redExpectedExitCode": "nonzero", "greenExpectedExitCode": 0 }
+  ]
+}
