@@ -1,0 +1,12 @@
+{
+    "candidateCommit":  "db880c926f169b14ab73892a7c2a02627c22c067",
+    "name":  "sandbox-tests-verbose",
+    "command":  "npm run test --workspace @agentoma/experiment-sandbox -- --reporter verbose",
+    "startedAt":  "2026-07-31T02:50:44.7510740Z",
+    "finishedAt":  "2026-07-31T02:50:49.4473793Z",
+    "exitCode":  0,
+    "outputBytes":  2711,
+    "outputSha256":  "c21fc1f4fd8fd713df481fba5ac6944a879a2339aefea49b873cf295cdf3eecf",
+    "safeSummary":  "Verbose unfiltered sandbox suite passed; no filters or skip flags were used.",
+    "evidencePath":  "docs/task-01/evidence/runs/db880c92/sandbox-tests-verbose.json"
+}

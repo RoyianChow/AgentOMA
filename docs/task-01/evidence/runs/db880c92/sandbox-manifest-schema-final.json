@@ -1,0 +1,12 @@
+{
+    "candidateCommit":  "db880c926f169b14ab73892a7c2a02627c22c067",
+    "name":  "sandbox-manifest-schema-final",
+    "command":  "npm run sandbox:verify-evidence",
+    "startedAt":  "2026-07-31T03:06:34.8496883Z",
+    "finishedAt":  "2026-07-31T03:06:38.1556461Z",
+    "exitCode":  0,
+    "outputBytes":  297,
+    "outputSha256":  "9014676bd4ecd10a7aaf5acc5dc7e3e5cb681dfdc3cbd1e698487a5955145cc1",
+    "safeSummary":  "Updated schema validation passed with manifest status BLOCKED and 18 mapped controls.",
+    "evidencePath":  "docs/task-01/evidence/runs/db880c92/sandbox-manifest-schema-final.json"
+}

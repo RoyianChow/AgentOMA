@@ -30,7 +30,9 @@ identity, denied adapters and network transport, marked sample artifacts,
 private/no-store headers, architecture scans, production invariance checks, and
 isolated tests.
 
-The checked-in evidence manifest remains `PENDING`; CI must generate the
-commit-bound red/green evidence artifact before promotion review. This task
-does not authorize production deployment, production data, production
+The checked-in evidence manifest is now `BLOCKED` after candidate verification:
+technical green checks are recorded, but standalone red-run records, the root
+database-backed suite, final reviewer sign-offs, and branch-protection evidence
+are not complete. See [`evidence/final-report.md`](evidence/final-report.md).
+This task does not authorize production deployment, production data, production
 credentials, live integrations, hosted access, or any G3 import.

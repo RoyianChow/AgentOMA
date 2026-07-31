@@ -1,0 +1,12 @@
+{
+    "candidateCommit":  "db880c926f169b14ab73892a7c2a02627c22c067",
+    "name":  "sandbox-artifact",
+    "command":  "npm run sandbox:verify-artifact",
+    "startedAt":  "2026-07-31T02:51:25.6316340Z",
+    "finishedAt":  "2026-07-31T02:51:28.0862192Z",
+    "exitCode":  0,
+    "outputBytes":  301,
+    "outputSha256":  "52b590aea1e64d224fe947ec5cd1e963d25249d755ea545e292b50a93ab94946",
+    "safeSummary":  "Marked artifact source check passed.",
+    "evidencePath":  "docs/task-01/evidence/runs/db880c92/sandbox-artifact.json"
+}

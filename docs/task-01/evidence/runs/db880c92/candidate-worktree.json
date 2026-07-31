@@ -1,0 +1,12 @@
+{
+    "candidateCommit":  "db880c926f169b14ab73892a7c2a02627c22c067",
+    "name":  "candidate-worktree",
+    "command":  "git diff --quiet; git diff --cached --quiet; git status --porcelain=v1",
+    "startedAt":  "2026-07-31T02:49:14.2793183Z",
+    "finishedAt":  "2026-07-31T02:49:15.1457286Z",
+    "exitCode":  0,
+    "outputBytes":  0,
+    "outputSha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "safeSummary":  "Candidate worktree was clean before evidence artifacts were created.",
+    "evidencePath":  "docs/task-01/evidence/runs/db880c92/candidate-worktree.json"
+}

@@ -1,0 +1,12 @@
+{
+    "candidateCommit":  "db880c926f169b14ab73892a7c2a02627c22c067",
+    "name":  "sandbox-typecheck",
+    "command":  "npm run typecheck --workspace @agentoma/experiment-sandbox",
+    "startedAt":  "2026-07-31T02:50:25.6221343Z",
+    "finishedAt":  "2026-07-31T02:50:30.0134594Z",
+    "exitCode":  0,
+    "outputBytes":  68,
+    "outputSha256":  "52bd8e2685e1c916ff5b9cbdcd248a2bff3193f77824e1e26d052ba7cc40b081",
+    "safeSummary":  "Sandbox TypeScript check passed.",
+    "evidencePath":  "docs/task-01/evidence/runs/db880c92/sandbox-typecheck.json"
+}

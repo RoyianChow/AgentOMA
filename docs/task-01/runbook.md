@@ -55,9 +55,10 @@ npm run sandbox:verify-evidence --workspace @agentoma/experiment-sandbox
 ```
 
 `sandbox:verify` runs strict TypeScript, sandbox lint, Vitest, and the import /
-storage / production-source boundary scan. The checked-in evidence manifest is
-intentionally `PENDING`; final CI evidence must bind red/green results to the
-tested commit.
+storage / production-source boundary scan. The current candidate report is
+[`evidence/final-report.md`](evidence/final-report.md); its manifest is
+`BLOCKED` until standalone red/green evidence, the root database-backed suite,
+reviewer sign-off, and branch-protection evidence are complete.
 
 Build and run locally:
 

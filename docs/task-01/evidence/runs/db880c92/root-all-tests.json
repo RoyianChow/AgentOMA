@@ -1,0 +1,12 @@
+{
+    "candidateCommit":  "db880c926f169b14ab73892a7c2a02627c22c067",
+    "name":  "root-all-tests",
+    "command":  "npm run test",
+    "startedAt":  "2026-07-31T02:49:49.9670379Z",
+    "finishedAt":  "2026-07-31T02:49:53.6666418Z",
+    "exitCode":  1,
+    "outputBytes":  2193,
+    "outputSha256":  "dfe10de3009eb1fe50d787f448723cff31ab264b88c6fe5005100247331f59a1",
+    "safeSummary":  "BLOCKED: Docker unavailable and test database 127.0.0.1:5433 refused; default Vitest include also reported no test files.",
+    "evidencePath":  "docs/task-01/evidence/runs/db880c92/root-all-tests.json"
+}

@@ -1,0 +1,12 @@
+{
+    "candidateCommit":  "db880c926f169b14ab73892a7c2a02627c22c067",
+    "name":  "sandbox-manifest-schema",
+    "command":  "npm run sandbox:verify-evidence",
+    "startedAt":  "2026-07-31T02:51:28.0877599Z",
+    "finishedAt":  "2026-07-31T02:51:30.1494485Z",
+    "exitCode":  0,
+    "outputBytes":  297,
+    "outputSha256":  "0dfa912fa7eda729ec97192b1af20d15896dd5990db21722749adc5f78971814",
+    "safeSummary":  "Existing manifest schema passed: 18 controls, status PENDING.",
+    "evidencePath":  "docs/task-01/evidence/runs/db880c92/sandbox-manifest-schema.json"
+}

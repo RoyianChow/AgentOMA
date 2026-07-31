@@ -1,0 +1,79 @@
+{
+    "candidateCommit":  "db880c926f169b14ab73892a7c2a02627c22c067",
+    "generatedAt":  "2026-07-31T03:15:55.6223436Z",
+    "scope":  "sandbox runtime source, synthetic fixtures, sandbox text bundle files, evidence metadata, and final marked artifact",
+    "results":  [
+                    {
+                        "name":  "secret-scan",
+                        "status":  "PASS",
+                        "matches":  0,
+                        "files":  [
+
+                                  ],
+                        "summary":  "Runtime sandbox source contains no private-key material, provider key, connection string, or token-shaped value."
+                    },
+                    {
+                        "name":  "phi-identifier-scan",
+                        "status":  "PASS",
+                        "matches":  0,
+                        "files":  [
+
+                                  ],
+                        "summary":  "Synthetic fixture source contains no health-number, demographic, medication, prescription, or patient-identifier fields."
+                    },
+                    {
+                        "name":  "fixture-shape-scan",
+                        "status":  "PASS",
+                        "matches":  0,
+                        "files":  [
+
+                                  ],
+                        "summary":  "Synthetic fixture corpus contains only deterministic generic workflow data."
+                    },
+                    {
+                        "name":  "bundle-scan",
+                        "status":  "PASS",
+                        "matches":  0,
+                        "files":  [
+
+                                  ],
+                        "summary":  "Sandbox text bundle files contain no actual credential, token, connection string, or PHI identifier; policy-name literals are not treated as leakage."
+                    },
+                    {
+                        "name":  "log-evidence-scan",
+                        "status":  "PASS",
+                        "matches":  0,
+                        "files":  [
+
+                                  ],
+                        "summary":  "Evidence records retain metadata and hashes only; no payload, token, or sensitive field is present."
+                    },
+                    {
+                        "name":  "runtime-url-scan",
+                        "status":  "PASS",
+                        "matches":  0,
+                        "files":  [
+
+                                  ],
+                        "summary":  "Runtime source contains only the loopback sandbox origin; test-only reserved violation URLs are outside runtime source."
+                    },
+                    {
+                        "name":  "storage-scan",
+                        "status":  "PASS",
+                        "matches":  0,
+                        "files":  [
+
+                                  ],
+                        "summary":  "Runtime sandbox source contains no browser persistence or cache API."
+                    },
+                    {
+                        "name":  "artifact-scan",
+                        "status":  "PASS",
+                        "matches":  0,
+                        "files":  [
+
+                                  ],
+                        "summary":  "Artifact verifier exit 0; output SHA-256 52b590aea1e64d224fe947ec5cd1e963d25249d755ea545e292b50a93ab94946; started 2026-07-31T03:15:50.0230933Z; finished 2026-07-31T03:15:55.5853195Z."
+                    }
+                ]
+}
