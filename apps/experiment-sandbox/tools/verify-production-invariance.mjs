@@ -1,18 +1,18 @@
 import { existsSync, readFileSync } from "node:fs";
-import { createHash } from "node:crypto";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import {
+  assertNoSandboxFiles,
+  canonicalizeRepositoryPaths,
+  compareStrings,
+  compareTupleKeys,
+  hash,
+} from "./production-invariance.mjs";
 
 const repositoryRoot = resolve(fileURLToPath(new URL("../../../", import.meta.url)));
 const nextRoot = join(repositoryRoot, ".next");
 const baseline = JSON.parse(readFileSync(join(repositoryRoot, "docs/task-01/evidence/baseline-production.json"), "utf8"));
-
-function hash(value) {
-  return createHash("sha256").update(JSON.stringify(value)).digest("hex");
-}
-
-const compareStrings = (left, right) => left.localeCompare(right, "en-US", { sensitivity: "variant", numeric: false });
-const compareTupleKeys = ([left], [right]) => compareStrings(left, right);
 
 // Next's standalone file trace includes optional native packages whose names
 // differ by runner OS/CPU (for example sharp-win32-x64 vs sharp-linux-x64).
@@ -54,7 +54,11 @@ const appPathRoutes = readJson("app-path-routes-manifest.json");
 const appPaths = Object.keys(appPathRoutes).sort(compareStrings);
 const routes = Object.values(appPathRoutes).sort(compareStrings);
 const routesManifest = readJson("routes-manifest.json");
-const requiredServerFiles = readJson("required-server-files.json").files.sort(compareStrings);
+const requiredServerFiles = canonicalizeRepositoryPaths(
+  readJson("required-server-files.json").files,
+  repositoryRoot,
+);
+assertNoSandboxFiles(requiredServerFiles);
 const nftFiles = readJson("next-server.js.nft.json").files.map((entry) => entry.replaceAll("\\", "/")).sort(compareStrings);
 const portableNftFiles = nftFiles.filter((entry) => !isPlatformSpecificTrace(entry));
 const rootPackage = JSON.parse(readFileSync(join(repositoryRoot, "package.json"), "utf8"));
@@ -89,6 +93,16 @@ if (JSON.stringify(currentRouteNames) !== JSON.stringify(baselineRouteNames)) {
 const comparable = ["appPathCount", "appPathsHash", "portableRuntimeTraceFileCount", "portableRuntimeTraceFilesHash", "requiredServerFileCount", "requiredServerFilesHash", "productionDependenciesHash", "productionScriptsHash"];
 for (const key of comparable) {
   if (current[key] !== baseline.normalizedProduction[key]) {
+    if (key === "requiredServerFilesHash") {
+      console.error(JSON.stringify({
+        baselineHash: baseline.normalizedProduction.requiredServerFilesHash,
+        currentHash: current.requiredServerFilesHash,
+        baselineFileCount: baseline.normalizedProduction.requiredServerFileCount,
+        currentFileCount: current.requiredServerFileCount,
+        platform: process.platform,
+        nodeVersion: process.version,
+      }));
+    }
     throw new Error(`SBX_INVARIANCE_DENIED:${key}`);
   }
 }
