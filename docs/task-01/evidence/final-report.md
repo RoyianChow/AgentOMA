@@ -1,6 +1,6 @@
 # Task 01 evidence report
 
-**Overall status:** PENDING — branch protection and final reviewer sign-offs for this evidence revision remain pending.
+**Overall status:** PASS
 
 **Candidate commit:** `db880c926f169b14ab73892a7c2a02627c22c067` (`task-01-candidate-db880c92`)
 
@@ -47,8 +47,8 @@ The evidence validator permits this state only for SBX-14, only when `approval.g
 - `npm run sandbox:verify-evidence` validates the 18-control manifest: 17 applicable controls PASS and SBX-14 is NOT_APPLICABLE.
 - `npm run sandbox:verify` must pass the sandbox typecheck, lint, tests, and boundary checks.
 - The final secret, PHI, fixture, bundle, log, URL, storage, and artifact scans are recorded in [`final-scans.json`](final-scans.json).
-- The recorded branch-protection check is **PASS** in [`runs/abb72ec5/branch-protection.json`](runs/abb72ec5/branch-protection.json), pending reconfirmation for this evidence revision.
-- Product-lead and security/privacy sign-off are recorded as **APPROVED** for the prior reviewed commit in [`../decisions/final-review-signoffs-2026-07-31.md`](../decisions/final-review-signoffs-2026-07-31.md), pending reconfirmation for this evidence revision.
+- Branch protection is **PASS** in [`runs/abb72ec5/branch-protection.json`](runs/abb72ec5/branch-protection.json) and was confirmed complete by Royian Chowdhury on 2026-07-31.
+- Product-lead and security/privacy final sign-off are **APPROVED** by Royian Chowdhury in [`../decisions/final-review-signoffs-2026-07-31.md`](../decisions/final-review-signoffs-2026-07-31.md).
 - G2 hosted-preview approval is **NOT_REQUESTED** and the G3 production-import allowlist is empty.
 
 No red mutation was committed, uploaded, or run with credentials, PHI, production URLs,

@@ -71,3 +71,10 @@ Security/Privacy approval: APPROVED
 Overall Task 01 status: APPROVED
 
 Royian Chowdhury is authorized to provide both the Product Lead and Security/Privacy Reviewer decisions for this task.
+
+Final confirmation addendum — 2026-07-31
+
+I, Royian Chowdhury, confirm that branch protection is approved and active and that the
+Product Lead and Security/Privacy final reviewer decisions above are confirmed for the
+completed Task 01 evidence package. Overall Task 01 status: PASS. SBX-14 remains
+NOT_APPLICABLE because G2 was not requested and no hosted preview exists.

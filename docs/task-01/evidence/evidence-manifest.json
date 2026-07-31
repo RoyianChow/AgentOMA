@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "status": "PENDING",
+  "status": "PASS",
   "candidate": {
     "commit": "db880c926f169b14ab73892a7c2a02627c22c067",
     "tag": "task-01-candidate-db880c92",
@@ -21,6 +21,7 @@
     "g1Record": "docs/task-01/decisions/G1-design-approval.md",
     "finalProductLead": "APPROVED",
     "finalSecurityPrivacy": "APPROVED",
+    "finalReviewer": "Royian Chowdhury",
     "finalSignoffRecord": "docs/task-01/decisions/final-review-signoffs-2026-07-31.md",
     "g2": "NOT_REQUESTED",
     "g3": [],
@@ -32,9 +33,7 @@
       "evidence": "docs/task-01/evidence/runs/abb72ec5/branch-protection.json"
     }
   },
-  "blockingReasons": [
-    "Overall Task 01 remains PENDING until branch protection and final reviewer sign-offs are confirmed for this evidence revision."
-  ],
+  "blockingReasons": [],
   "checks": {
     "candidateWorktree": "docs/task-01/evidence/runs/db880c92/candidate-worktree.json",
     "rootTypecheck": "docs/task-01/evidence/runs/db880c92/root-tsc.json",
@@ -55,7 +54,8 @@
     "branchProtectionLatest": "docs/task-01/evidence/runs/abb72ec5/branch-protection.json",
     "finalSignoffs": "docs/task-01/decisions/final-review-signoffs-2026-07-31.md",
     "rootNpmTest": "docs/task-01/evidence/runs/225be71f/root-npm-test.json",
-    "sbx14Decision": "docs/task-01/decisions/SBX-14-not-applicable-g2-not-requested-2026-07-31.md"
+    "sbx14Decision": "docs/task-01/decisions/SBX-14-not-applicable-g2-not-requested-2026-07-31.md",
+    "finalReviewerConfirmation": "Royian Chowdhury confirmed branch protection and final reviewer approval on 2026-07-31."
   },
   "controls": [
     { "id": "SBX-01", "name": "Production route, middleware, action, manifest, and deployment-output exclusion", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-01/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-01/green.json" } },
