@@ -4,27 +4,40 @@ import { fileURLToPath } from "node:url";
 
 const repositoryRoot = resolve(fileURLToPath(new URL("../../../", import.meta.url)));
 const manifestPath = join(repositoryRoot, "docs/task-01/evidence/evidence-manifest.json");
-if (!existsSync(manifestPath)) throw new Error("SBX_EVIDENCE_DENIED:MANIFEST_MISSING");
 
-const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-if (![1, 2].includes(manifest.schemaVersion)) {
-  throw new Error("SBX_EVIDENCE_DENIED:UNSUPPORTED_MANIFEST_SCHEMA");
-}
-if (manifest.schemaVersion === 1 && manifest.status !== "PENDING") {
-  throw new Error("SBX_EVIDENCE_DENIED:LEGACY_MANIFEST_MUST_BE_PENDING");
-}
-if (manifest.schemaVersion === 2 && !["PENDING", "BLOCKED", "PASS"].includes(manifest.status)) {
-  throw new Error("SBX_EVIDENCE_DENIED:INVALID_FINAL_STATUS");
-}
-if (manifest.controls.length !== 18 || new Set(manifest.controls.map((control) => control.id)).size !== 18) {
-  throw new Error("SBX_EVIDENCE_DENIED:CONTROL_CATALOG_INCOMPLETE");
-}
-for (const control of manifest.controls) {
-  if (!/^SBX-(0[1-9]|1[0-8])$/.test(control.id)) throw new Error("SBX_EVIDENCE_DENIED:CONTROL_SCHEMA");
-  if (manifest.schemaVersion === 1 && (control.redExpectedExitCode !== "nonzero" || control.greenExpectedExitCode !== 0)) {
-    throw new Error("SBX_EVIDENCE_DENIED:CONTROL_SCHEMA");
+export function validateEvidenceManifest(manifest, options = {}) {
+  const root = options.repositoryRoot ?? repositoryRoot;
+  if (![1, 2].includes(manifest.schemaVersion)) {
+    throw new Error("SBX_EVIDENCE_DENIED:UNSUPPORTED_MANIFEST_SCHEMA");
   }
-  if (manifest.schemaVersion === 2) {
+  if (manifest.schemaVersion === 1 && manifest.status !== "PENDING") {
+    throw new Error("SBX_EVIDENCE_DENIED:LEGACY_MANIFEST_MUST_BE_PENDING");
+  }
+  if (manifest.schemaVersion === 2 && !["PENDING", "BLOCKED", "PASS"].includes(manifest.status)) {
+    throw new Error("SBX_EVIDENCE_DENIED:INVALID_FINAL_STATUS");
+  }
+  if (!Array.isArray(manifest.controls) || manifest.controls.length !== 18 || new Set(manifest.controls.map((control) => control.id)).size !== 18) {
+    throw new Error("SBX_EVIDENCE_DENIED:CONTROL_CATALOG_INCOMPLETE");
+  }
+  for (const control of manifest.controls) {
+    if (!/^SBX-(0[1-9]|1[0-8])$/.test(control.id)) throw new Error("SBX_EVIDENCE_DENIED:CONTROL_SCHEMA");
+    if (manifest.schemaVersion === 1 && (control.redExpectedExitCode !== "nonzero" || control.greenExpectedExitCode !== 0)) {
+      throw new Error("SBX_EVIDENCE_DENIED:CONTROL_SCHEMA");
+    }
+    if (manifest.schemaVersion !== 2) continue;
+
+    if (control.status === "NOT_APPLICABLE") {
+      if (control.id !== "SBX-14") throw new Error("SBX_EVIDENCE_DENIED:NOT_APPLICABLE_CONTROL");
+      if (manifest.approval?.g2 !== "NOT_REQUESTED") throw new Error("SBX_EVIDENCE_DENIED:G2_REQUIRED_FOR_NOT_APPLICABLE");
+      if (manifest.hostedOrigin !== null) throw new Error("SBX_EVIDENCE_DENIED:HOSTED_ORIGIN_FOR_NOT_APPLICABLE");
+      for (const run of [control.redRun, control.greenRun]) {
+        if (!run || run.status !== "NOT_RUN" || run.reason !== "G2_NOT_REQUESTED") {
+          throw new Error("SBX_EVIDENCE_DENIED:NOT_APPLICABLE_EVIDENCE");
+        }
+      }
+      continue;
+    }
+
     if (!["PASS", "BLOCKED"].includes(control.status) || !control.redRun || !control.greenRun) {
       throw new Error("SBX_EVIDENCE_DENIED:FINAL_CONTROL_SCHEMA");
     }
@@ -32,10 +45,16 @@ for (const control of manifest.controls) {
       if (!["PASS", "NOT_RUN"].includes(run.status)) {
         throw new Error("SBX_EVIDENCE_DENIED:FINAL_RUN_SCHEMA");
       }
-      if (run.status === "PASS" && (!run.evidence || !existsSync(join(repositoryRoot, run.evidence)))) {
+      if (run.status === "PASS" && (!run.evidence || !existsSync(join(root, run.evidence)))) {
         throw new Error("SBX_EVIDENCE_DENIED:EVIDENCE_PATH_MISSING");
       }
     }
   }
+  return { control: "SBX-21/SBX-22/SBX-25/SBX-30", result: "PASS", status: manifest.status, controls: manifest.controls.length };
 }
-console.log(JSON.stringify({ control: "SBX-21/SBX-22/SBX-25/SBX-30", result: "PASS", status: manifest.status, controls: manifest.controls.length }));
+
+if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) {
+  if (!existsSync(manifestPath)) throw new Error("SBX_EVIDENCE_DENIED:MANIFEST_MISSING");
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  console.log(JSON.stringify(validateEvidenceManifest(manifest)));
+}

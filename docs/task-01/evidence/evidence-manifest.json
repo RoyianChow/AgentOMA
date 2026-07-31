@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "status": "BLOCKED",
+  "status": "PENDING",
   "candidate": {
     "commit": "db880c926f169b14ab73892a7c2a02627c22c067",
     "tag": "task-01-candidate-db880c92",
@@ -14,6 +14,7 @@
     "capturedAt": "2026-07-31T06:24:11.2745894Z",
     "evidenceRoot": "docs/task-01/evidence/runs/225be71f/"
   },
+  "hostedOrigin": null,
   "reviewedCommit": "abb72ec5dced5327b6351009270e72b1199046c8",
   "approval": {
     "g1DecisionId": "G1-2026-07-31-task-01",
@@ -21,7 +22,7 @@
     "finalProductLead": "APPROVED",
     "finalSecurityPrivacy": "APPROVED",
     "finalSignoffRecord": "docs/task-01/decisions/final-review-signoffs-2026-07-31.md",
-    "g2": "NOT_GRANTED",
+    "g2": "NOT_REQUESTED",
     "g3": [],
     "branchProtection": {
       "status": "PASS",
@@ -32,7 +33,7 @@
     }
   },
   "blockingReasons": [
-    "SBX-14 is NOT_REQUESTED because G2 hosted-preview approval was not granted. Schema v2 has no NOT_APPLICABLE control status, so the manifest remains BLOCKED rather than falsely marking the full package PASS."
+    "Overall Task 01 remains PENDING until branch protection and final reviewer sign-offs are confirmed for this evidence revision."
   ],
   "checks": {
     "candidateWorktree": "docs/task-01/evidence/runs/db880c92/candidate-worktree.json",
@@ -53,7 +54,8 @@
     "finalScans": "docs/task-01/evidence/final-scans.json",
     "branchProtectionLatest": "docs/task-01/evidence/runs/abb72ec5/branch-protection.json",
     "finalSignoffs": "docs/task-01/decisions/final-review-signoffs-2026-07-31.md",
-    "rootNpmTest": "docs/task-01/evidence/runs/225be71f/root-npm-test.json"
+    "rootNpmTest": "docs/task-01/evidence/runs/225be71f/root-npm-test.json",
+    "sbx14Decision": "docs/task-01/decisions/SBX-14-not-applicable-g2-not-requested-2026-07-31.md"
   },
   "controls": [
     { "id": "SBX-01", "name": "Production route, middleware, action, manifest, and deployment-output exclusion", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-01/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-01/green.json" } },
@@ -69,7 +71,7 @@
     { "id": "SBX-11", "name": "No PHI, tokens, payloads, clinical text, or identifiers in browser or telemetry surfaces", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-11/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-11/green.json" } },
     { "id": "SBX-12", "name": "Idempotent, targeted kill switch and teardown", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-12/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-12/green.json" } },
     { "id": "SBX-13", "name": "Production build invariance", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-13/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-13/green.json" } },
-    { "id": "SBX-14", "name": "Hosted access denial", "applicability": "NOT_REQUESTED", "status": "BLOCKED", "redRun": { "status": "NOT_RUN", "reason": "G2 hosted-preview approval was not granted; no hosted access path exists to mutate or test." }, "greenRun": { "status": "NOT_RUN", "reason": "G2 hosted-preview approval was not granted; no hosted access path exists to test." } },
+    { "id": "SBX-14", "name": "Hosted access denial", "applicability": "NOT_APPLICABLE", "status": "NOT_APPLICABLE", "redRun": { "status": "NOT_RUN", "reason": "G2_NOT_REQUESTED" }, "greenRun": { "status": "NOT_RUN", "reason": "G2_NOT_REQUESTED" } },
     { "id": "SBX-15", "name": "No-store, no-referrer, indexing, CSP, Permissions Policy, and shared-cache denial", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-15/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-15/green.json" } },
     { "id": "SBX-16", "name": "Unknown lifecycle, adapter, operation, fixture, actor, and authorization fail-closed handling", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-16/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-16/green.json" } },
     { "id": "SBX-17", "name": "Evidence integrity", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-17/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-17/green.json" } },
