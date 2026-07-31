@@ -1,14 +1,14 @@
 {
   "control": "SBX-17",
   "run": "red",
-  "testedSha": "0fc7c17deeac16cf99b7ae2780c6a833bd5e9cc7",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
   "command": "npm run verify-evidence --workspace @agentoma/experiment-sandbox",
-  "startedAt": "2026-07-31T04:11:22.5164008Z",
-  "finishedAt": "2026-07-31T04:11:23.1384801Z",
+  "startedAt": "2026-07-31T06:29:52.4398351Z",
+  "finishedAt": "2026-07-31T06:29:54.5286669Z",
   "exitCode": 1,
-  "outputBytes": 1620,
-  "artifactSha256": "9d57b23acd29a1b0937868fb58bdd3868613959aed31369d8fed4bcb9da82d97",
-  "safeSummary": "Isolated detached worktree temporarily changed the evidence manifest to an unsupported schema version; the validator rejected it with SBX_EVIDENCE_DENIED and a nonzero exit. No credentials or PHI were used; raw output was not retained.",
+  "outputBytes": 1488,
+  "artifactSha256": "4aab64bd177acc7d5c8ce6f7bee060fb7bf6df6e50fe7f7ae1f789f8b3e227e8",
+  "safeSummary": "Isolated detached worktree temporarily changed the evidence manifest to an unsupported schema version; the validator rejected it with a nonzero exit. No credentials or PHI were used; raw output was not retained.",
   "isolatedMutation": "Uncommitted synthetic manifest mutation only; discarded with the temporary worktree.",
   "evidencePath": "docs/task-01/evidence/SBX-17/red.json"
 }

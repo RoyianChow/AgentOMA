@@ -1,0 +1,13 @@
+{
+  "control": "SBX-09",
+  "run": "green",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run test --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:18:37.1981318Z",
+  "finishedAt": "2026-07-31T06:18:46.1695801Z",
+  "exitCode": 0,
+  "environment": "Final implementation worktree; synthetic Docker test database only; no credentials, PHI, production URLs, or live resources.",
+  "artifactSha256": "674e1d11556043b6db8c79ae64b939435d2d660a49a1802bc56a6aaf1513d1dc",
+  "safeSummary": "Artifact integrity tests passed against the final implementation; the unmarked-artifact bypass is denied.",
+  "evidencePath": "docs/task-01/evidence/SBX-09/green.json"
+}

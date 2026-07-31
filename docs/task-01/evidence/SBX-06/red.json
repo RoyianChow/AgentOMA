@@ -1,0 +1,13 @@
+{
+  "control": "SBX-06",
+  "run": "red",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "node -e \"const fs=require('node:fs'); const source=fs.readFileSync('apps/experiment-sandbox/src/identity/actor.ts','utf8'); if(/pharmacy_admin|better-auth|cookie|oauth|totp/i.test(source)){console.error('SBX_IDENTITY_DENIED:PRODUCTION_SESSION_OR_CLIENT_ROLE');process.exit(1)}\"",
+  "startedAt": "2026-07-31T06:11:42.7181437Z",
+  "finishedAt": "2026-07-31T06:11:43.1056813Z",
+  "exitCode": 1,
+  "environment": "Detached temporary worktree; synthetic production-role fixture only; no credentials, sessions, PHI, or network resources.",
+  "artifactSha256": "22873361f8567c4f60521e42eb7a0663222f12a9200c47a476fd60c4b0f9c1b9",
+  "safeSummary": "A temporary identity fixture contained pharmacy_admin; the authority scan denied SBX_IDENTITY_DENIED:PRODUCTION_SESSION_OR_CLIENT_ROLE.",
+  "evidencePath": "docs/task-01/evidence/SBX-06/red.json"
+}

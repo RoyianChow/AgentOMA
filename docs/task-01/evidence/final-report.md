@@ -1,77 +1,54 @@
-# Task 01 candidate evidence report
+# Task 01 evidence report
 
-**Overall status:** BLOCKED — not eligible for merge or promotion
+**Overall status:** BLOCKED — SBX-14 is NOT_REQUESTED because G2 hosted-preview approval was not granted.
 
-**Candidate commit:** `db880c926f169b14ab73892a7c2a02627c22c067`
+**Candidate commit:** `db880c926f169b14ab73892a7c2a02627c22c067` (`task-01-candidate-db880c92`)
 
-**Candidate tag:** `task-01-candidate-db880c92`
-
-**Latest implementation commit:** `0fc7c17deeac16cf99b7ae2780c6a833bd5e9cc7`
+**Tested implementation commit:** `225be71f99b9859aea8a9b088ea6a66ebcdd46cb`
 
 **Reviewed evidence commit:** `abb72ec5dced5327b6351009270e72b1199046c8`
 
 **Branch:** `feat/moh-compliance-migration`
 
-The candidate worktree was clean at evidence capture. Run metadata is stored in
-[`runs/db880c92/`](runs/db880c92/). Each record contains the exact command,
-UTC start/end timestamps, exit code, output byte count, output SHA-256, and a
-safe summary. Raw command output is not retained.
+## Root test evidence
 
-## Gates
+The repository-bound root record is [`runs/225be71f/root-npm-test.json`](runs/225be71f/root-npm-test.json).
+The exact command was `npm test`; it completed with exit code 0 on Docker test-db at
+`localhost:5433`, using a synthetic throwaway database. It recorded 17 test files and
+181 tests. The summary artifact is SHA-256 bound in the record and contains no raw output.
 
-| Gate | Result | Evidence |
-|---|---|---|
-| Root TypeScript | PASS | `root-tsc.json` |
-| Root lint | PASS | `root-lint.json` |
-| Root pure suite | PASS — 10 files, 95 tests | `root-pure-tests.json` |
-| Root all-tests command | BLOCKED — Docker unavailable; localhost:5433 refused; default Vitest include reported no test files | `root-all-tests.json` |
-| Root production build | PASS | `root-production-build.json` |
-| Production invariance | PASS | `production-invariance.json` |
-| Sandbox TypeScript | PASS | `sandbox-typecheck.json` |
-| Sandbox lint | PASS | `sandbox-lint.json` |
-| Sandbox tests | PASS — 7 files, 24 tests, unfiltered | `sandbox-tests-unfiltered.json`, `sandbox-tests-verbose.json`, `SBX-18/green.json` |
-| Sandbox boundary | PASS | `sandbox-boundary.json` |
-| Sandbox build | PASS | `sandbox-build.json` |
-| Artifact check | PASS | `sandbox-artifact.json` |
-| Manifest schema check | PASS — schema is valid; overall manifest remains BLOCKED | `sandbox-manifest-schema-final.json`, `SBX-17/green.json` |
+The final reruns also passed `npm run lint`, `npm run build`, `npm run sandbox:verify`,
+`npm run sandbox:verify-production`, `npm run sandbox:verify-boundary`, and
+`npm run sandbox:verify-artifact`. The sandbox build passed when run with the prohibited
+host environment removed and the seven required synthetic variables supplied; an
+un-scrubbed host run correctly failed closed on `OPENAI_API_KEY`.
 
-No test command used a test-name filter, file filter, skip flag, or focused-test
-selector. The verbose sandbox run is retained as the no-filter evidence.
+## Controls
 
-The final secret, PHI, fixture, bundle, log, URL, storage, and artifact scan
-summary is [`final-scans.json`](final-scans.json).
+SBX-01 through SBX-13, SBX-15, and SBX-16 each have standalone red and green evidence
+under [`SBX-01/`](SBX-01/) through [`SBX-16/`](SBX-16/). Red runs use isolated,
+synthetic-only mutations and non-zero denial results; green runs use the identical
+commands against the final implementation and exit 0.
 
-## SBX-01–SBX-18 mapping
+SBX-17 is **evidence integrity** and has a current-commit manifest-corruption red/green
+pair under [`SBX-17/`](SBX-17/). SBX-18 is **lifecycle races, including stale queued-action
+cancellation** and has a current-commit final-lifecycle-recheck red/green pair under
+[`SBX-18/`](SBX-18/).
 
-All 18 controls are present in [`evidence-manifest.json`](evidence-manifest.json)
-using the v3 mapping. In particular, SBX-17 is **evidence integrity** and SBX-18
-is **lifecycle races, including stale queued-action cancellation**. SBX-17 has a
-standalone manifest-corruption red/green pair in
-[`SBX-17/`](SBX-17/). SBX-18 has a standalone final-lifecycle-recheck red/green
-pair in [`SBX-18/`](SBX-18/); the red run proves the callback-execution failure
-when the recheck is removed, and the green run proves the final code denies
-stale work and executes active work once.
+SBX-14 remains explicitly `NOT_REQUESTED`: there is no hosted preview, no hosted access
+test, and no G2 approval. The v2 manifest schema cannot express `NOT_APPLICABLE` as a
+control status, so the control is recorded with `applicability: NOT_REQUESTED` and the
+overall manifest remains BLOCKED. It is not being falsely marked PASS.
 
-The remaining controls do not yet have the complete required standalone
-controlled red-run set, so the overall manifest remains BLOCKED rather than
-being represented as a false PASS. The root database-backed suite is also
-blocked by unavailable Docker/localhost:5433, branch protection is NOT
-VERIFIED, and final implementation sign-offs are not recorded.
+## Verification and approvals
 
-## Approval and release boundaries
+- `npm run sandbox:verify-evidence` must validate the 18-control manifest.
+- `npm run sandbox:verify` must pass the sandbox typecheck, lint, tests, and boundary checks.
+- The final secret, PHI, fixture, bundle, log, URL, storage, and artifact scans are recorded in [`final-scans.json`](final-scans.json).
+- Branch protection is **PASS** in [`runs/abb72ec5/branch-protection.json`](runs/abb72ec5/branch-protection.json).
+- Product-lead and security/privacy final sign-off are **APPROVED** in [`../decisions/final-review-signoffs-2026-07-31.md`](../decisions/final-review-signoffs-2026-07-31.md).
+- G2 hosted-preview approval is **NOT GRANTED** and the G3 production-import allowlist is empty.
 
-- G1 product-lead and security/privacy approval is recorded verbatim in
-  [`G1-design-approval.md`](../decisions/G1-design-approval.md).
-- Final implementation sign-off from the product lead: **APPROVED** in
-  [`final-review-signoffs-2026-07-31.md`](../decisions/final-review-signoffs-2026-07-31.md).
-- Final implementation sign-off from the security/privacy reviewer: **APPROVED**
-  in the same record.
-- G2 hosted-preview approval: **NOT GRANTED**.
-- G3 production-import allowlist: **empty**.
-- Branch protection: **PASS**. GitHub returned HTTP 200 for `main`; one
-  approving review is required and force pushes/deletions are disabled. See
-  [`branch-protection.json`](runs/abb72ec5/branch-protection.json).
-
-Task 01 must not be merged or promoted until the missing standalone SBX-01–SBX-16
-red-run records and repository-bound root test evidence are completed. The
-reviewer approvals and branch-protection prerequisite are now recorded.
+No red mutation was committed, uploaded, or run with credentials, PHI, production URLs,
+production identifiers, or live resources. No test command used a filter, skip flag, or
+focused selector.

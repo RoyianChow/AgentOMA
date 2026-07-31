@@ -1,0 +1,13 @@
+{
+  "control": "SBX-13",
+  "run": "green",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run verify-production --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:22:19.8200088Z",
+  "finishedAt": "2026-07-31T06:22:21.7819902Z",
+  "exitCode": 0,
+  "environment": "Final implementation worktree with the final synthetic build output; no credentials, PHI, production URLs, or live resources.",
+  "artifactSha256": "d19dc3d54f80ef2209f3ddbd12b34830bd75659dce55f85d25961c472d4eb44c",
+  "safeSummary": "Production dependency and sandbox-import invariance verification passed against the final implementation.",
+  "evidencePath": "docs/task-01/evidence/SBX-13/green.json"
+}

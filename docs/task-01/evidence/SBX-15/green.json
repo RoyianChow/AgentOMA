@@ -1,0 +1,13 @@
+{
+  "control": "SBX-15",
+  "run": "green",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run test --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:23:10.5358280Z",
+  "finishedAt": "2026-07-31T06:23:19.7841179Z",
+  "exitCode": 0,
+  "environment": "Final implementation worktree; synthetic Docker test database only; no credentials, PHI, production URLs, or live resources.",
+  "artifactSha256": "410529de606aaeb4e6e620930918b3b93d901b593ee887d31a66368e4fd37ed2",
+  "safeSummary": "Response-header security tests passed with private, no-store behavior against the final implementation.",
+  "evidencePath": "docs/task-01/evidence/SBX-15/green.json"
+}

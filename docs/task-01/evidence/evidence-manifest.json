@@ -10,9 +10,9 @@
     "evidenceRoot": "docs/task-01/evidence/runs/db880c92/"
   },
   "latestImplementation": {
-    "commit": "0fc7c17deeac16cf99b7ae2780c6a833bd5e9cc7",
-    "capturedAt": "2026-07-31T04:08:30.7262383Z",
-    "evidenceRoot": "docs/task-01/evidence/SBX-18/"
+    "commit": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+    "capturedAt": "2026-07-31T06:24:11.2745894Z",
+    "evidenceRoot": "docs/task-01/evidence/runs/225be71f/"
   },
   "reviewedCommit": "abb72ec5dced5327b6351009270e72b1199046c8",
   "approval": {
@@ -32,10 +32,7 @@
     }
   },
   "blockingReasons": [
-    "The required full SBX-01–SBX-18 controlled red-run evidence was not generated.",
-    "SBX-01–SBX-17 still lack the complete set of standalone controlled red-run records; SBX-17 is evidence integrity and remains blocked without its own controlled red run.",
-    "The repository does not contain the complete standalone red-run records for SBX-01–SBX-16; the supplied red-run directory contains only ad-hoc SBX-04 text output.",
-    "A 17-file/181-test result was reported, but its exact command, timestamp, artifact hash, and committed evidence record are not present in this repository; the local rerun previously remained blocked by missing Docker/localhost:5433."
+    "SBX-14 is NOT_REQUESTED because G2 hosted-preview approval was not granted. Schema v2 has no NOT_APPLICABLE control status, so the manifest remains BLOCKED rather than falsely marking the full package PASS."
   ],
   "checks": {
     "candidateWorktree": "docs/task-01/evidence/runs/db880c92/candidate-worktree.json",
@@ -55,134 +52,27 @@
     "manifestSchema": "docs/task-01/evidence/runs/db880c92/sandbox-manifest-schema-final.json",
     "finalScans": "docs/task-01/evidence/final-scans.json",
     "branchProtectionLatest": "docs/task-01/evidence/runs/abb72ec5/branch-protection.json",
-    "finalSignoffs": "docs/task-01/decisions/final-review-signoffs-2026-07-31.md"
+    "finalSignoffs": "docs/task-01/decisions/final-review-signoffs-2026-07-31.md",
+    "rootNpmTest": "docs/task-01/evidence/runs/225be71f/root-npm-test.json"
   },
   "controls": [
-    {
-      "id": "SBX-01",
-      "name": "Production route, middleware, action, manifest, and deployment-output exclusion",
-      "status": "BLOCKED",
-      "redRun": { "status": "NOT_RUN", "reason": "No controlled production-build violation fixture was captured." },
-      "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/runs/db880c92/production-invariance.json" }
-    },
-    {
-      "id": "SBX-02",
-      "name": "Production code cannot import sandbox",
-      "status": "BLOCKED",
-      "redRun": { "status": "NOT_RUN", "reason": "No controlled route/bundle mutation fixture was captured." },
-      "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/runs/db880c92/production-invariance.json" }
-    },
-    {
-      "id": "SBX-03",
-      "name": "Sandbox cannot import production modules",
-      "status": "BLOCKED",
-      "redRun": { "status": "NOT_RUN", "reason": "No temporary prohibited-import fixture was captured." },
-      "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/runs/db880c92/sandbox-boundary.json" }
-    },
-    {
-      "id": "SBX-04",
-      "name": "Fail-closed sandbox configuration",
-      "status": "BLOCKED",
-      "redRun": { "status": "NOT_RUN", "reason": "Unit assertions cover denial, but no standalone nonzero red-run record was captured." },
-      "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/runs/db880c92/sandbox-tests-verbose.json" }
-    },
-    {
-      "id": "SBX-05",
-      "name": "External integration and network denial",
-      "status": "BLOCKED",
-      "redRun": { "status": "NOT_RUN", "reason": "Unit assertions cover denial, but no standalone nonzero red-run record was captured." },
-      "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/runs/db880c92/sandbox-tests-verbose.json" }
-    },
-    {
-      "id": "SBX-06",
-      "name": "Production identity and session authorization isolation",
-      "status": "BLOCKED",
-      "redRun": { "status": "NOT_RUN", "reason": "No controlled production-shaped fixture or identity mutation fixture was captured." },
-      "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/runs/db880c92/sandbox-tests-verbose.json" }
-    },
-    {
-      "id": "SBX-07",
-      "name": "Expiry validation and expiry-during-use denial",
-      "status": "BLOCKED",
-      "redRun": { "status": "NOT_RUN", "reason": "Unit assertions cover expiry denial, but no standalone nonzero red-run record was captured." },
-      "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/runs/db880c92/sandbox-tests-verbose.json" }
-    },
-    {
-      "id": "SBX-08",
-      "name": "Persistent synthetic banner",
-      "status": "BLOCKED",
-      "redRun": { "status": "NOT_RUN", "reason": "No temporary missing-watermark source fixture was captured." },
-      "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/runs/db880c92/sandbox-artifact.json" }
-    },
-    {
-      "id": "SBX-09",
-      "name": "Marked and watermarked artifact",
-      "status": "BLOCKED",
-      "redRun": { "status": "NOT_RUN", "reason": "Unit assertions cover corruption refusal, but no standalone nonzero red-run record was captured." },
-      "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/runs/db880c92/sandbox-artifact.json" }
-    },
-    {
-      "id": "SBX-10",
-      "name": "No plausible identifiers, seed overlap, PHI, or secrets",
-      "status": "BLOCKED",
-      "redRun": { "status": "NOT_RUN", "reason": "No standalone client-authority tampering red-run record was captured." },
-      "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/runs/db880c92/sandbox-tests-verbose.json" }
-    },
-    {
-      "id": "SBX-11",
-      "name": "No PHI, tokens, payloads, clinical text, or identifiers in browser or telemetry surfaces",
-      "status": "BLOCKED",
-      "redRun": { "status": "NOT_RUN", "reason": "Unit assertion covers external DNS denial, but no standalone nonzero red-run record was captured." },
-      "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/runs/db880c92/sandbox-tests-verbose.json" }
-    },
-    {
-      "id": "SBX-12",
-      "name": "Idempotent, targeted kill switch and teardown",
-      "status": "BLOCKED",
-      "redRun": { "status": "NOT_RUN", "reason": "Unit assertions cover invalid targets, but no standalone nonzero red-run record was captured." },
-      "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/runs/db880c92/sandbox-tests-verbose.json" }
-    },
-    {
-      "id": "SBX-13",
-      "name": "Production build invariance",
-      "status": "BLOCKED",
-      "redRun": { "status": "NOT_RUN", "reason": "No temporary production-dependency mutation fixture was captured." },
-      "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/runs/db880c92/sandbox-boundary.json" }
-    },
-    {
-      "id": "SBX-14",
-      "name": "Hosted access denial",
-      "status": "BLOCKED",
-      "redRun": { "status": "NOT_RUN", "reason": "G2 hosted-preview approval was not granted; no hosted access path exists to mutate or test." },
-      "greenRun": { "status": "NOT_RUN", "reason": "G2 hosted-preview approval was not granted; no hosted access path exists to test." }
-    },
-    {
-      "id": "SBX-15",
-      "name": "No-store, no-referrer, indexing, CSP, Permissions Policy, and shared-cache denial",
-      "status": "BLOCKED",
-      "redRun": { "status": "NOT_RUN", "reason": "No standalone unsafe-response red-run record was captured." },
-      "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/runs/db880c92/sandbox-tests-verbose.json" }
-    },
-    {
-      "id": "SBX-16",
-      "name": "Unknown lifecycle, adapter, operation, fixture, actor, and authorization fail-closed handling",
-      "status": "BLOCKED",
-      "redRun": { "status": "NOT_RUN", "reason": "No temporary browser-storage or external-URL mutation fixture was captured." },
-      "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/runs/db880c92/sandbox-boundary.json" }
-    },
-    {
-      "id": "SBX-17",
-      "name": "Evidence integrity",
-      "status": "BLOCKED",
-      "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-17/red.json" },
-      "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-17/green.json" }
-    },
-    {
-      "id": "SBX-18",
-      "name": "Lifecycle races: reset, expiry, disablement, teardown, duplicates, and stale queued actions",
-      "status": "PASS",
-      "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-18/red.json" },
-      "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-18/green.json" }
-    }
+    { "id": "SBX-01", "name": "Production route, middleware, action, manifest, and deployment-output exclusion", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-01/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-01/green.json" } },
+    { "id": "SBX-02", "name": "Production code cannot import sandbox", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-02/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-02/green.json" } },
+    { "id": "SBX-03", "name": "Sandbox cannot import production modules", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-03/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-03/green.json" } },
+    { "id": "SBX-04", "name": "Fail-closed sandbox configuration", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-04/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-04/green.json" } },
+    { "id": "SBX-05", "name": "External integration and network denial", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-05/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-05/green.json" } },
+    { "id": "SBX-06", "name": "Production identity and session authorization isolation", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-06/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-06/green.json" } },
+    { "id": "SBX-07", "name": "Expiry validation and expiry-during-use denial", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-07/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-07/green.json" } },
+    { "id": "SBX-08", "name": "Persistent synthetic banner", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-08/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-08/green.json" } },
+    { "id": "SBX-09", "name": "Marked and watermarked artifact", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-09/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-09/green.json" } },
+    { "id": "SBX-10", "name": "No plausible identifiers, seed overlap, PHI, or secrets", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-10/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-10/green.json" } },
+    { "id": "SBX-11", "name": "No PHI, tokens, payloads, clinical text, or identifiers in browser or telemetry surfaces", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-11/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-11/green.json" } },
+    { "id": "SBX-12", "name": "Idempotent, targeted kill switch and teardown", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-12/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-12/green.json" } },
+    { "id": "SBX-13", "name": "Production build invariance", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-13/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-13/green.json" } },
+    { "id": "SBX-14", "name": "Hosted access denial", "applicability": "NOT_REQUESTED", "status": "BLOCKED", "redRun": { "status": "NOT_RUN", "reason": "G2 hosted-preview approval was not granted; no hosted access path exists to mutate or test." }, "greenRun": { "status": "NOT_RUN", "reason": "G2 hosted-preview approval was not granted; no hosted access path exists to test." } },
+    { "id": "SBX-15", "name": "No-store, no-referrer, indexing, CSP, Permissions Policy, and shared-cache denial", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-15/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-15/green.json" } },
+    { "id": "SBX-16", "name": "Unknown lifecycle, adapter, operation, fixture, actor, and authorization fail-closed handling", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-16/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-16/green.json" } },
+    { "id": "SBX-17", "name": "Evidence integrity", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-17/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-17/green.json" } },
+    { "id": "SBX-18", "name": "Lifecycle races: reset, expiry, disablement, teardown, duplicates, and stale queued actions", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-18/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-18/green.json" } }
   ]
 }

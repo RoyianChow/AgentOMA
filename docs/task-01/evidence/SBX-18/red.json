@@ -1,13 +1,13 @@
 {
   "control": "SBX-18",
   "run": "red",
-  "testedSha": "0fc7c17deeac16cf99b7ae2780c6a833bd5e9cc7",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
   "command": "npm run test --workspace @agentoma/experiment-sandbox",
-  "startedAt": "2026-07-31T04:07:39.5071898Z",
-  "finishedAt": "2026-07-31T04:07:42.2012918Z",
+  "startedAt": "2026-07-31T06:31:00.0271498Z",
+  "finishedAt": "2026-07-31T06:31:01.6875894Z",
   "exitCode": 1,
-  "outputBytes": 5971,
-  "artifactSha256": "1ab918f9fdbabaf44763b8395582a70026744dcdb1620864ea8946bfc6fa52fa",
+  "outputBytes": 1069,
+  "artifactSha256": "c9905393ef833faeda6ae6ea795df12bdebdcb946b9f381ecace083db21eec20",
   "safeSummary": "Isolated detached worktree temporarily removed the final lifecycle recheck; the callback-execution assertion failed as expected. No credentials or PHI were used; raw output was not retained.",
   "isolatedMutation": "Uncommitted synthetic mutation only; discarded with the temporary worktree.",
   "evidencePath": "docs/task-01/evidence/SBX-18/red.json"

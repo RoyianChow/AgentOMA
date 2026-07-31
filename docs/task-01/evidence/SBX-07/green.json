@@ -1,0 +1,13 @@
+{
+  "control": "SBX-07",
+  "run": "green",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run build --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:13:24.3508413Z",
+  "finishedAt": "2026-07-31T06:14:27.1136291Z",
+  "exitCode": 0,
+  "environment": "Synthetic loopback configuration with valid bounded expiry; prohibited host variables removed; no credentials or PHI.",
+  "artifactSha256": "8a1b54a03ae2d92381222b29dfce64f17e1bdefffc4529b6aadc6636af20afef",
+  "safeSummary": "Sandbox build passed with valid lifecycle expiry configuration.",
+  "evidencePath": "docs/task-01/evidence/SBX-07/green.json"
+}

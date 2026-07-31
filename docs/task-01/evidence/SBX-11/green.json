@@ -1,0 +1,13 @@
+{
+  "control": "SBX-11",
+  "run": "green",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run test --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:20:22.1605512Z",
+  "finishedAt": "2026-07-31T06:20:30.9661458Z",
+  "exitCode": 0,
+  "environment": "Final implementation worktree; synthetic Docker test database only; no credentials, PHI, production URLs, or live resources.",
+  "artifactSha256": "8aeb2443f63637b8d6cc803e2f97e0335640e60337b720fee4bc73fa7ea5aacb",
+  "safeSummary": "URL, log, storage, and payload leakage architecture tests passed against the final implementation.",
+  "evidencePath": "docs/task-01/evidence/SBX-11/green.json"
+}

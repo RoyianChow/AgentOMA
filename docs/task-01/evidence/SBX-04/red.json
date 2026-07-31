@@ -1,0 +1,13 @@
+{
+  "control": "SBX-04",
+  "run": "red",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run build --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:08:29.5925644Z",
+  "finishedAt": "2026-07-31T06:08:32.1348995Z",
+  "exitCode": 1,
+  "environment": "Synthetic environment with SANDBOX_G1_DECISION_ID intentionally omitted; prohibited host variables removed; no credentials or PHI.",
+  "artifactSha256": "a4fc34da092eba44f6a266690855589dcc8875f5c96547a51aac82fd9fc35c78",
+  "safeSummary": "Sandbox build denied missing or malformed synthetic configuration with SANDBOX_CONFIG_DENIED:MISSING_OR_MALFORMED_VARIABLE.",
+  "evidencePath": "docs/task-01/evidence/SBX-04/red.json"
+}
