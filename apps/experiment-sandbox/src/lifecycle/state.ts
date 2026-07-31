@@ -18,6 +18,7 @@ export type LifecycleSnapshot = {
 };
 
 export const STATE_ROOT = resolve(process.cwd(), ".sandbox-state");
+const EPOCH_FILE = "epoch";
 
 export function assertSyntheticInstanceId(instanceId: string): void {
   if (!/^SYNTH-[A-Z0-9-]{3,64}$/.test(instanceId)) {
@@ -40,6 +41,48 @@ function disabledSentinel(env: SandboxEnv, stateRoot = STATE_ROOT): string {
   return join(exactStateDirectory(env.instanceId, stateRoot), "disabled");
 }
 
+function lifecycleEpochFile(env: SandboxEnv, stateRoot = STATE_ROOT): string {
+  return join(exactStateDirectory(env.instanceId, stateRoot), EPOCH_FILE);
+}
+
+function parseEpoch(value: string): number | null {
+  if (!/^\d+$/.test(value.trim())) return null;
+  const epoch = Number(value.trim());
+  return Number.isSafeInteger(epoch) && epoch >= 0 ? epoch : null;
+}
+
+/**
+ * Returns null for missing or malformed lifecycle state. Callers that hold a
+ * queued action must treat null as unknown and deny the action.
+ */
+export function readLifecycleEpoch(env: SandboxEnv, stateRoot = STATE_ROOT): number | null {
+  const directory = exactStateDirectory(env.instanceId, stateRoot);
+  const epochFile = lifecycleEpochFile(env, stateRoot);
+  if (!existsSync(directory) || !existsSync(epochFile)) return null;
+  return parseEpoch(readFileSync(epochFile, "utf8"));
+}
+
+export function ensureLifecycleEpoch(env: SandboxEnv, stateRoot = STATE_ROOT): number {
+  const directory = exactStateDirectory(env.instanceId, stateRoot);
+  mkdirSync(directory, { recursive: true });
+  const current = readLifecycleEpoch(env, stateRoot);
+  if (current !== null) return current;
+  const epochFile = lifecycleEpochFile(env, stateRoot);
+  if (existsSync(epochFile)) throw new Error("SANDBOX_LIFECYCLE_DENIED:INVALID_REVISION");
+  writeFileSync(epochFile, "0\n", { encoding: "utf8", flag: "wx" });
+  return 0;
+}
+
+function bumpLifecycleEpoch(env: SandboxEnv, stateRoot = STATE_ROOT): number {
+  const current = ensureLifecycleEpoch(env, stateRoot);
+  if (current === Number.MAX_SAFE_INTEGER) {
+    throw new Error("SANDBOX_LIFECYCLE_DENIED:REVISION_EXHAUSTED");
+  }
+  const next = current + 1;
+  writeFileSync(lifecycleEpochFile(env, stateRoot), `${next}\n`, { encoding: "utf8", flag: "w" });
+  return next;
+}
+
 export function lifecycleState(
   env: SandboxEnv,
   now = new Date(),
@@ -49,6 +92,10 @@ export function lifecycleState(
   if (now >= env.expiresAt) return { state: "EXPIRED", reason: "EXPIRED" };
   if (existsSync(disabledSentinel(env, stateRoot))) {
     return { state: "DISABLED", reason: "DISABLE_SENTINEL" };
+  }
+  const directory = exactStateDirectory(env.instanceId, stateRoot);
+  if (existsSync(directory) && readLifecycleEpoch(env, stateRoot) === null) {
+    return { state: "UNKNOWN", reason: "INVALID_OR_MISSING_REVISION" };
   }
   return { state: "LOCAL_ACTIVE", reason: "G1_LOCAL_LOOPBACK" };
 }
@@ -63,6 +110,7 @@ export function requireLocalActive(env: SandboxEnv, now = new Date(), stateRoot 
 export function disableSyntheticInstance(env: SandboxEnv, stateRoot = STATE_ROOT): void {
   const directory = exactStateDirectory(env.instanceId, stateRoot);
   mkdirSync(directory, { recursive: true });
+  if (!existsSync(disabledSentinel(env, stateRoot))) bumpLifecycleEpoch(env, stateRoot);
   writeFileSync(disabledSentinel(env, stateRoot), "disabled\n", { encoding: "utf8", flag: "w" });
 }
 
@@ -70,6 +118,7 @@ export function resetSyntheticInstance(env: SandboxEnv, stateRoot = STATE_ROOT):
   const directory = exactStateDirectory(env.instanceId, stateRoot);
   if (!existsSync(directory)) return;
   const sentinel = disabledSentinel(env, stateRoot);
+  if (existsSync(sentinel)) bumpLifecycleEpoch(env, stateRoot);
   rmSync(sentinel, { force: true });
 }
 
