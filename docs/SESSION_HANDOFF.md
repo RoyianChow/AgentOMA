@@ -55,6 +55,22 @@ exact container, network, and volume were removed. Preserve
 The remediation is database-free: bounded read-only loopback readiness, a
 five-second connection limit, granular safe diagnostic codes, and pure
 regression tests. It does not change any migration or protected runtime surface.
+
+**Current update (supersedes the next-candidate instruction immediately
+below):** the remediated candidate was frozen as
+`5b576b7ba8be6917c133590aee5e1fa0d33368d4` and received a fresh local G1-D
+from Royian Chowdhury. Its single run (2026-08-02T08:53:53.559Z to
+2026-08-02T08:55:25.014Z) failed closed with `DATABASE_CONNECTIVITY_DENIED`
+before any database migration or synthetic fixture write. The Docker runtime
+shape checks passed, but the bounded host-to-loopback database probe did not;
+PostgreSQL version, migration history, catalog, and restart checks were not
+reached. Finally-block teardown passed and the exact resources were absent.
+Preserve
+`docs/p0/task-02/evidence/runs/5b576b7ba8be6917c133590aee5e1fa0d33368d4/predecessor-upgrade-run.json`
+(`7f866b65138cdb9d0c231d120c739e9e5c7a10defaf838b77978f32519fb8649`).
+Do not rerun `5b576b7b…`, manually operate its Compose service, or touch live
+systems. A new database-free diagnosis/remediation decision, clean candidate,
+and exact G1-D are required before the next runtime proof.
 Do not rerun `dd503a14…`; its evidence path is non-overwriting. Freeze the next
 clean candidate, then require a fresh exact G1-D.
 
@@ -63,14 +79,20 @@ The exact execution approval schema and command are in
 does not apply. Freeze the final clean HEAD, obtain a new expiring G1-D JSON for
 that SHA, then run from the clean candidate worktree:
 
+The preceding command is not currently authorized for either failed candidate;
+it becomes relevant only after the new diagnosis/remediation/candidate/G1-D
+sequence above.
+
 ```powershell
 npm run test:db:upgrade -- --approval-file <absolute-path-to-approval.json>
 ```
 
 ## Remaining blockers
 
-1. **T02-07/T02-08 FAIL:** finish and verify the database-free remediation, then
-   obtain a new G1-D for the next clean candidate and execute the single runner.
+1. **T02-07/T02-08 FAIL:** preserve both failed evidence records; diagnose the
+   host-to-loopback connectivity failure under separate database-free authority,
+   then obtain a new G1-D for the next clean candidate and execute the single
+   runner.
 2. **S27 BLOCKED:** canonical repeat-export and reconstruction/tamper semantics
    still need an approved contract.
 3. **Task 11 BLOCKED:** no independent review of the resulting candidate and

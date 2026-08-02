@@ -5,6 +5,14 @@
 **Release posture:** do not treat the current build as production-ready until
 the P0 items are resolved, deployed, and re-verified.
 
+**Latest Task 02 runtime update:** the remediated exact candidate
+`5b576b7ba8be6917c133590aee5e1fa0d33368d4` received an expiring local G1-D
+from Royian Chowdhury and ran once on 2026-08-02. It failed closed with
+`DATABASE_CONNECTIVITY_DENIED` before any database migration or synthetic
+fixture write; exact-resource teardown passed. Preserve
+`docs/p0/task-02/evidence/runs/5b576b7ba8be6917c133590aee5e1fa0d33368d4/predecessor-upgrade-run.json`.
+Do not rerun that candidate or manually operate its Compose service.
+
 ## P0 — clinical and compliance blockers
 
 1. **Remediate then rerun the gated predecessor/restart proof.** Exact candidate

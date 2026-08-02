@@ -1,5 +1,11 @@
 # Task 02 production handoff
 
+**Latest predecessor-harness result:** the second exact G1-D candidate,
+`5b576b7ba8be6917c133590aee5e1fa0d33368d4`, failed closed with
+`DATABASE_CONNECTIVITY_DENIED` before migration or fixture writes. Teardown
+passed. This requires a separately authorized database-free diagnosis, a new
+candidate, and a new exact G1-D; it does not authorize live work.
+
 **Tested implementation candidate:** `dcaab91f9adba7457a85214d51d1614c8560f404`
 **Failed predecessor-harness candidate:** `dd503a14da24ea80a0f0e046e179f6b4b4e77b3c`
 **Handoff status:** **BLOCKED — DO NOT PROMOTE**

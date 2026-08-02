@@ -5,6 +5,15 @@
 **Tested code candidate:** `dcaab91f9adba7457a85214d51d1614c8560f404`
 **Failed predecessor-harness candidate:** `dd503a14da24ea80a0f0e046e179f6b4b4e77b3c`
 **Branch:** `feat/moh-compliance-migration`
+
+**Latest predecessor-harness update (2026-08-02):** after the first failed
+candidate, `5b576b7ba8be6917c133590aee5e1fa0d33368d4` received a fresh exact
+local G1-D from Royian Chowdhury. Its single run failed closed with
+`DATABASE_CONNECTIVITY_DENIED` before migration or synthetic fixture writes;
+teardown passed. The record is
+`evidence/runs/5b576b7ba8be6917c133590aee5e1fa0d33368d4/predecessor-upgrade-run.json`.
+This current update supersedes any later wording that says the remediated
+candidate still needs its first G1-D execution.
 **Assessment:** **BLOCKED — DO NOT PROMOTE**
 
 The two authorized P0 defects are remediated and now proven by real PostgreSQL.

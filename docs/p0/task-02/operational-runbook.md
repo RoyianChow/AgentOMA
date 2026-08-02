@@ -1,5 +1,12 @@
 # Task 02 migration, verification, and recovery runbook
 
+> **Current predecessor-harness status:** candidate `5b576b7b…` already used its
+> exact local G1-D and failed closed with `DATABASE_CONNECTIVITY_DENIED` before
+> migration or fixture writes; teardown passed. Do not run the named-volume
+> command for either failed candidate. It is available only after a separately
+> authorized database-free diagnosis, a new clean candidate, and a fresh exact
+> G1-D.
+
 This is an operator runbook, not approval. **Do not execute a mutating command
 unless the gate record names the exact candidate commit, migration hash and
 environment.** `db:push`, manual SQL editors, migration-history edits, live

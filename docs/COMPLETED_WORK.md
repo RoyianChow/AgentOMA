@@ -261,6 +261,11 @@ This is the implementation record requested for the project. It describes capabi
    database identity probe before migration or fixture writes, and teardown
    passed. The evidence is preserved; a remediated clean candidate requires a
    fresh exact-candidate G1-D.
+- Under a fresh exact local G1-D from Royian Chowdhury, the remediated candidate
+  `5b576b7b…` ran once and failed closed with `DATABASE_CONNECTIVITY_DENIED`
+  before database migration or synthetic fixture writes. Its evidence is
+  preserved, its exact Docker resources were removed, and it cannot be rerun.
+  No live, PHI, external, billing, or protected-surface action occurred.
 
 ## Verification and regression coverage
 

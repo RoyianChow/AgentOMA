@@ -3,6 +3,14 @@
 **Recorded:** 2026-08-02
 **Candidate:** `dcaab91f9adba7457a85214d51d1614c8560f404`
 **Failed predecessor-harness candidate:** `dd503a14da24ea80a0f0e046e179f6b4b4e77b3c`
+
+**Latest predecessor-harness update:** `5b576b7ba8be6917c133590aee5e1fa0d33368d4`
+ran once under a fresh exact G1-D from Royian Chowdhury and failed closed with
+`DATABASE_CONNECTIVITY_DENIED` before migration or fixture writes. Teardown
+passed. Its immutable evidence record is
+`evidence/runs/5b576b7ba8be6917c133590aee5e1fa0d33368d4/predecessor-upgrade-run.json`
+with SHA-256 `7f866b65138cdb9d0c231d120c739e9e5c7a10defaf838b77978f32519fb8649`.
+It is a second failed candidate, not a replacement for earlier evidence.
 **Overall:** **BLOCKED — DO NOT PROMOTE**
 **Docker:** **PASS for prior from-zero suite; predecessor/restart run FAIL (fail closed)**
 **Live:** **NOT RUN**

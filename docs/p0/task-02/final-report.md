@@ -1,5 +1,12 @@
 # Task 02 final report
 
+**Latest runtime update:** a second exact G1-D run on
+`5b576b7ba8be6917c133590aee5e1fa0d33368d4` failed closed with
+`DATABASE_CONNECTIVITY_DENIED` before migration or fixture writes, and teardown
+passed. Preserve its record at
+`evidence/runs/5b576b7ba8be6917c133590aee5e1fa0d33368d4/predecessor-upgrade-run.json`.
+Neither failed predecessor candidate may be rerun.
+
 Task 02 overall status: **BLOCKED — DO NOT PROMOTE**
 Task 02 Docker from-zero verification: **PASS**
 Task 02 predecessor upgrade: **FAIL — fail closed before migration**
