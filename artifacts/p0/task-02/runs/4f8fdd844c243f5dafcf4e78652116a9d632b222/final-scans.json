@@ -1,0 +1,36 @@
+{
+  "schema_version": "1",
+  "task": "02",
+  "source_commit_sha": "4f8fdd844c243f5dafcf4e78652116a9d632b222",
+  "environment": "repository Task 02 documentation and evidence only",
+  "started_at_utc": "2026-08-02T02:46:45.4311611Z",
+  "ended_at_utc": "2026-08-02T02:46:45.5233164Z",
+  "scans": [
+    {
+      "name": "secret and connection-value patterns",
+      "command_id": "task02-final-secret-scan",
+      "raw_rg_exit_code": 1,
+      "matches": 0,
+      "result": "PASS"
+    },
+    {
+      "name": "ten-digit identifier and email-address patterns",
+      "command_id": "task02-final-identifier-scan",
+      "raw_rg_exit_code": 1,
+      "matches": 0,
+      "result": "PASS"
+    },
+    {
+      "name": "unsafe patient or raw-payload assignment patterns",
+      "command_id": "task02-final-payload-scan",
+      "raw_rg_exit_code": 1,
+      "matches": 0,
+      "result": "PASS"
+    }
+  ],
+  "wrapper_exit_code": 0,
+  "result": "PASS",
+  "scope_note": "The draft evidence manifest was excluded because it had not yet been generated. The final manifest contains only control metadata, repository-relative paths, hashes, gate states, and safe summaries.",
+  "contains_phi": false,
+  "contains_secrets": false
+}

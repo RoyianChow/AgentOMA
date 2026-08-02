@@ -1,132 +1,81 @@
 # Session handoff
 
-**Updated:** 2026-07-30
+**Updated:** 2026-08-02
 
-**Branch observed:** `feat/moh-compliance-migration`
+**Branch:** `feat/moh-compliance-migration`
 
-**Repository head at the start of this documentation refresh:** `4cbf27d`
+**Task 02 candidate:** `4f8fdd844c243f5dafcf4e78652116a9d632b222`
 
-## Current release state
+**Task 02 status:** **FAIL; DO NOT PROMOTE**
 
-AgentOMA is an authenticated, single-pharmacy pilot foundation, not a
-production-ready clinical service. The zero-identifying-data `/check` and
-zero-PHI `/assessment` surfaces are public; `/pharmacist/*` is invitation-only
-and requires password plus TOTP. AgentOMA produces a read-only claim draft for
-hand-entry and never submits to HNS.
+## Current product state
 
-P0-A, P0-B, P0-D, follow-up tracking, authentication, single-tenancy, and the
-record-governance foundation are implemented. P0-C identity/eligibility,
-self/family, existing-prescription, and claim-history code is merged, but its
-database migration is not yet deployed. LTC billing and the orientation
-break-glass policy remain unresolved production blockers.
+AgentOMA remains an authenticated, single-pharmacy Ontario minor-ailments pilot.
+The public `/check` and `/assessment` flows collect no identifying data;
+`/pharmacist/*` is invitation-only with password and TOTP. The application
+creates a claim draft for hand-entry and does not submit to HNS.
 
-The eleven autonomous-pharmacy task briefs were refreshed on 2026-07-30 into
-detailed execution contracts. That documentation does not add a production or
-experimental capability. The canonical starting point is
-[`tasks/autonomous-pharmacy/README.md`](tasks/autonomous-pharmacy/README.md),
-which records allowed work, dependencies, evidence, and handoff expectations.
-Task 01 and Task 11 are the parallel foundations; runnable work for Tasks 03–10
-must wait for the Task 01 synthetic boundary. Preserve the user-authored task
-briefs when changing surrounding documentation.
+The repository migration chain ends at `0018_clever_mister_fear`; the last
+documented live/fresh-Docker state is still `0017_tense_pandemic`. `db:push` is
+banned. No Task 02 migration or live database command was run.
 
-## Migration state
+## Task 02 work completed
 
-- **Live Supabase and last verified fresh Docker:** through
-  `0017_tense_pandemic`.
-- **Repository chain:** through `0018_clever_mister_fear`.
-- A read-only live query during the 2026-07-30 audit returned PostgreSQL `42P01`
-  for `assessment_billability_evidence`, consistent with live Supabase still
-  being at `0017`.
-- `db:push` is banned. Every schema change uses `db:generate` → SQL review →
-  `db:migrate`.
+- Baseline, static SQL review, threat model, operational runbook, LTC and
+  orientation decision notes, release checklist, evidence index, manifest, and
+  final handoff/report are under `docs/p0/task-02/` and
+  `artifacts/p0/task-02/`.
+- Existing immutable billability evidence is now serialized without defaults or
+  derivation and included in the authorized record page, assessment PDF, and
+  complete-patient export. Export schema version is 3.
+- Evidence is missing rather than inferred when the historical sidecar is absent.
+- Patient names were removed from exported filenames; server responses remain
+  private/no-store; touched audit-failure logging is payload-free.
+- The destructive DB harness accepts only exact local test URLs, and Docker
+  Postgres is bound to loopback.
+- Candidate checks: TypeScript PASS, lint PASS, 110/110 pure tests PASS, build PASS.
 
-Important migration landmarks:
+## Why Task 02 fails
 
-| Migration | Purpose |
-|---|---|
-| `0004_hardening` | Same-day insect/tick mutex and initial audit immutability/revocation |
-| `0006` | Immutable claim-draft supersession and one-active-draft invariant |
-| `0011_audit_hardening` | Retention trigger, non-owner app role, effective audit/claim grants |
-| `0012_clinical_record_and_consent` | P0-B version-2 consent and defensible clinical/Rx record |
-| `0013`–`0014` | Effective ODB fee-tier reference plus virtual/LTC fact capture |
-| `0015_tidy_luke_cage` | Disposable tenant cleanup and one-pharmacy constraint |
-| `0016_brown_lightspeed` | Patient-wide retention, export manifests, holds, corrections, deliberate destruction, and restore evidence |
-| `0017_tense_pandemic` | Immutable follow-up plans/attempts, concurrency, retention, and grants |
-| `0018_clever_mister_fear` | Immutable P0-C billability-evidence sidecar; merged, not live |
+Two mandatory invariants are proven false on surfaces protected by `AGENTS.md`:
 
-## Latest verification evidence
+1. The completion transaction commits assessment/evidence/claim before its
+   mandatory `assessment_created` audit write. The audit write is best-effort,
+   so T02-13 failure atomicity is false.
+2. Current code/tests permit an admin orientation override to complete a
+   billable assessment while G3 remains unresolved, so T02-18 is false.
 
-- `npm run test:pure`: **95/95 passing** on 2026-07-30. The added privacy
-  regressions cover the complete sensitive-state reset, success/exit lifecycle,
-  prohibited browser storage/telemetry/URL use, autocomplete, and pharmacist
-  route response headers.
-- `tsc --noEmit`, ESLint, and `next build`: clean on 2026-07-30; the build
-  statically generates `/check` and lists the expected public, auth, and portal
-  routes.
-- The compiled routes manifest applies `Cache-Control: private, no-store`,
-  no-referrer, and same-origin script/connect CSP headers to
-  `/pharmacist/:path*`.
-- Last full database-backed run: **135/135** on 2026-07-25, including a fresh
-  Docker replay through `0017`.
-- Last live tenancy inspection after `0017`: one Demo Pharmacy, no
-  cross-pharmacy relationships, three preserved TOTP users, and matching
-  patient-wide retention horizons.
-- Docker-backed tests require Docker Desktop and local Postgres on port 5433;
-  the harness refuses non-local database URLs.
+No protected fix was attempted. A general request to complete Task 02 is not the
+explicit lead sign-off required to edit completion/audit semantics.
 
-Do not imply the full Docker/database suite covers `0018` until it is rerun.
+## Verification not performed
 
-## Next operator actions
+- G1-D was not granted and Docker Desktop was not running. Full-chain replay,
+  predecessor upgrade, constraints/grants, concurrency, red-flag, referral,
+  and DB-backed export tests were not run.
+- G1-L/G4 were not granted. No live connection, backup/restore check, migration,
+  catalog query, aggregate query, or production promotion occurred.
+- Existing export hashes include changing generation/history state; S27 blocks
+  silently inventing a replacement canonical-hash contract.
+- Task 11 has parallel uncommitted work in
+  `docs/tasks/autonomous-pharmacy/TASK-11-quality-security-release.md` and
+  `docs/task-11/`. It was preserved but not treated as reviewed evidence.
 
-1. Review `0018_clever_mister_fear.sql`, replay from zero in Docker, and run the
-   full database suite.
-2. Apply `0018` to Supabase with `db:migrate`; verify the table, immutability
-   trigger, app-role grants, and aggregate tenancy report.
-3. Smoke-test a realistic P0-C completion: inspected eligibility, self/family,
-   structured existing-Rx states, patient self-report, advisory platform count,
-   clinical-viewer attestation, and safe refusal paths. Re-prove red-flag exit
-   writes zero claim rows.
-4. Add `assessment_billability_evidence` to the assessment PDF and complete
-   patient export/manifest.
-5. Resolve LTC billing with the ODB Pharmacy Help Desk and resolve the
-   orientation admin override; see [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md).
-6. Run authenticated 375px portal usability tests and the first isolated
-   Canadian-region restore drill.
-7. For autonomous-pharmacy work, start at the task execution index. Resolve the
-   AgentRx/AgentOMA name and supply the referenced reviewed deep-research report
-   if a task requires it; neither ambiguity authorizes implementation by
-   assumption.
+## Safe next sequence
 
-## Operational boundaries and landmines
-
-- `src/config/triage.ts` is the exact hash-approved P0-A artifact. Any content
-  change invalidates approval and requires a new pharmacist review.
-- Never edit reference PINs or derive billing values from docs or memory.
-- `src/proxy.ts` is navigation UX only; every server action independently
-  rechecks session, role, TOTP, pharmacy, and the action-specific eligibility
-  boundary.
-- The app is single-pharmacy by construction. `PHARMACY_ID` is server-only;
-  client, QR, and session data never select a tenant.
-- The 365-day platform count is advisory and excludes exactly 365 days ago;
-  only HNS adjudication determines payment.
-- `/api/fhir` remains disabled. Its ICD-10 map is still marked for pharmacist
-  review and must not be expanded.
-- Necessary PHI may exist transiently only in the authenticated pharmacist
-  form. It is cleared after persistence, cancellation, intake switching,
-  session expiry, and sign-out, and never written to browser storage, URLs,
-  logs, analytics, caches, or unnecessary client props.
-- Docker Desktop must be running for constraint, concurrency, and migration
-  tests. If PowerShell blocks `npm.ps1`, follow the execution-policy instruction
-  in [`../AGENTS.md`](../AGENTS.md) rather than bypassing it.
-- Autonomous-pharmacy task files describe proposed work, not current product
-  surfaces. Proposed `docs/task-XX/` paths are task deliverables and should not
-  be pre-created as empty evidence. Task 01 requires a separate npm
-  workspace/build; a route or runtime flag in AgentOMA is not an adequate
-  sandbox.
+1. Read `docs/p0/task-02/production-handoff.md` and `final-report.md`.
+2. Obtain explicit lead approval for the protected atomic-audit remediation and
+   resolve the orientation G3 policy.
+3. Commit those changes and re-freeze all hashes.
+4. Obtain exact, expiring G1-D approval for the new clean candidate and local
+   synthetic database; start Docker Desktop and execute the complete DB suite.
+5. Resolve the canonical export-hash/reconstruction contract and obtain Task 11
+   review.
+6. Only after those pass, establish recovery proof and request exact G1-L/G4.
 
 ## Standing fences
 
-Do not change the approved triage/red-flag artifact, reference PIN data,
-migrations, `deriveClaimDraft`, audit integrity, five-outcome structure, or
-zero-PHI intake without lead sign-off. Do not resolve the LTC or orientation
-questions by inference.
+Do not edit approved triage/red-flag content, reference PIN data, existing
+migrations, `deriveClaimDraft`, audit integrity, the five-outcome structure, or
+zero-PHI intake without explicit lead sign-off. LTC remains parked. The 365-day
+count stays advisory, and only HNS adjudication determines payment.
