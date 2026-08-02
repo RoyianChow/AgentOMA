@@ -25,7 +25,8 @@ export async function GET(
     return new Response(JSON.stringify(exported, null, 2), {
       headers: {
         "Content-Type": "application/json; charset=utf-8",
-        "Content-Disposition": `attachment; filename="patient-record-${parsed.data}.json"`,
+        "Content-Disposition":
+          'attachment; filename="agentoma-patient-record.json"',
         "Cache-Control": "no-store, private",
       },
     });

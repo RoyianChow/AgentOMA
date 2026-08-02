@@ -37,6 +37,7 @@ provenance only.
 |---|---|
 | [`tasks/autonomous-pharmacy/README.md`](tasks/autonomous-pharmacy/README.md) | Start here for the role-based task contracts, current allowed work, dependency order, evidence expectations, and promotion boundaries. The task files describe proposed work, not implemented status. |
 | [`task-01/README.md`](task-01/README.md) | Task 01 G1 approval, local synthetic sandbox implementation, controls, runbook, and pending evidence manifest. |
+| [`p0/task-02/current-state-and-gap-analysis.md`](p0/task-02/current-state-and-gap-analysis.md) | Task 02's bounded P0 assessment-readiness review, proven protected defects, gated migration status, and safe next actions. |
 
 ## Agent instructions
 
