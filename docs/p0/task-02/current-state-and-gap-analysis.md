@@ -14,6 +14,14 @@ teardown passed. The record is
 `evidence/runs/5b576b7ba8be6917c133590aee5e1fa0d33368d4/predecessor-upgrade-run.json`.
 This current update supersedes any later wording that says the remediated
 candidate still needs its first G1-D execution.
+
+**Current database-free remediation:** the harness now separates exact
+loopback TCP unreachability from a failed PostgreSQL readiness query using only
+safe reason codes. This is permitted test/evidence-harness work and has passed
+its pure regressions, TypeScript, lint, and build. It is not a database proof:
+the updated source requires a new clean candidate and fresh exact G1-D before
+the Docker predecessor/restart run may occur. See
+`predecessor-upgrade-connectivity-diagnostic-2026-08-02.md`.
 **Assessment:** **BLOCKED — DO NOT PROMOTE**
 
 The two authorized P0 defects are remediated and now proven by real PostgreSQL.

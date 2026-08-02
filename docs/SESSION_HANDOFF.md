@@ -74,6 +74,14 @@ and exact G1-D are required before the next runtime proof.
 Do not rerun `dd503a14…`; its evidence path is non-overwriting. Freeze the next
 clean candidate, then require a fresh exact G1-D.
 
+An allowed test/evidence-harness diagnostic now separates an unreachable exact
+loopback TCP endpoint (`LOOPBACK_TCP_DENIED`) from PostgreSQL protocol readiness
+after TCP succeeds (`DATABASE_PROTOCOL_DENIED`). It makes no migration,
+production, billing, clinical, audit, authentication, or Docker execution
+change. Its pure contract tests, TypeScript, lint, and build pass. See
+`docs/p0/task-02/predecessor-upgrade-connectivity-diagnostic-2026-08-02.md`.
+The source candidate has changed, so every prior G1-D is invalid for it.
+
 The exact execution approval schema and command are in
 `docs/p0/task-02/g1-d-predecessor-upgrade-approval-contract.md`. The old G1-D
 does not apply. Freeze the final clean HEAD, obtain a new expiring G1-D JSON for

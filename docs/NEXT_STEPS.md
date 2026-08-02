@@ -13,6 +13,12 @@ fixture write; exact-resource teardown passed. Preserve
 `docs/p0/task-02/evidence/runs/5b576b7ba8be6917c133590aee5e1fa0d33368d4/predecessor-upgrade-run.json`.
 Do not rerun that candidate or manually operate its Compose service.
 
+The permitted database-free diagnostic is now implemented: it distinguishes an
+unreachable loopback TCP endpoint from PostgreSQL protocol readiness without
+logging raw errors. It has not been run against Docker because its source bytes
+need a fresh exact G1-D. See
+`docs/p0/task-02/predecessor-upgrade-connectivity-diagnostic-2026-08-02.md`.
+
 ## P0 — clinical and compliance blockers
 
 1. **Remediate then rerun the gated predecessor/restart proof.** Exact candidate

@@ -266,6 +266,11 @@ This is the implementation record requested for the project. It describes capabi
   before database migration or synthetic fixture writes. Its evidence is
   preserved, its exact Docker resources were removed, and it cannot be rerun.
   No live, PHI, external, billing, or protected-surface action occurred.
+- Added a test-only, bounded readiness diagnostic for the next candidate. It
+  distinguishes loopback TCP denial from PostgreSQL protocol denial without
+  sending SQL before the TCP probe or retaining raw errors. The pure suite,
+  TypeScript, lint, and production build pass; its Docker execution remains
+  **NOT RUN** until a fresh exact G1-D exists.
 
 ## Verification and regression coverage
 

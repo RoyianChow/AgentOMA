@@ -1,5 +1,11 @@
 # Task 02 migration, verification, and recovery runbook
 
+> The permitted database-free diagnosis is now implemented and pure-tested. It
+> reports `LOOPBACK_TCP_DENIED` before a PostgreSQL client exists, or
+> `DATABASE_PROTOCOL_DENIED` only after the exact loopback TCP probe succeeds.
+> It does not authorize execution; the resulting candidate still needs a fresh
+> exact G1-D.
+
 > **Current predecessor-harness status:** candidate `5b576b7b…` already used its
 > exact local G1-D and failed closed with `DATABASE_CONNECTIVITY_DENIED` before
 > migration or fixture writes; teardown passed. Do not run the named-volume

@@ -28,6 +28,7 @@ import {
   assertTask02DatabasePrincipal,
   assertTask02EmptyPublicDatabase,
   assertTask02MigrationHistory,
+  waitForTask02LoopbackTcpReadiness,
 } from "../../../tools/task-02/predecessor-upgrade-db";
 
 const HASH_A = "a".repeat(64);
@@ -276,10 +277,44 @@ describe("Task 02 database identity diagnostics", () => {
     );
   });
 
-  it("keeps connectivity retries read-only and ahead of any migration write", () => {
+  it("retries a synthetic TCP failure and never exposes its raw error", async () => {
+    let now = 0;
+    let attempts = 0;
+    await expect(
+      waitForTask02LoopbackTcpReadiness({
+        probe: async () => {
+          attempts += 1;
+          if (attempts === 1) throw new Error("SYNTHETIC-T02-private-error");
+        },
+        now: () => now,
+        sleep: async () => {
+          now += 500;
+        },
+      }),
+    ).resolves.toBeUndefined();
+    expect(attempts).toBe(2);
+
+    now = 0;
+    await expect(
+      waitForTask02LoopbackTcpReadiness({
+        probe: async () => {
+          throw new Error("SYNTHETIC-T02-private-error");
+        },
+        now: () => now,
+        sleep: async () => {
+          now += 500;
+        },
+      }),
+    ).rejects.toThrow("TASK02_UPGRADE_DENIED:LOOPBACK_TCP_DENIED");
+  });
+
+  it("keeps TCP and PostgreSQL readiness read-only and ahead of any migration write", () => {
     const databaseRunner = readFileSync(
       resolve(process.cwd(), "tools/task-02/predecessor-upgrade-db.ts"),
       "utf8",
+    );
+    const tcpProbe = databaseRunner.indexOf(
+      "await waitForTask02LoopbackTcpReadiness();",
     );
     const readinessProbe = databaseRunner.indexOf(
       "await waitForDatabaseIdentity(client, []);",
@@ -287,9 +322,15 @@ describe("Task 02 database identity diagnostics", () => {
     const predecessorMigration = databaseRunner.indexOf(
       "migrateSafely(client, generatedView.folder)",
     );
-    expect(readinessProbe).toBeGreaterThanOrEqual(0);
+    expect(tcpProbe).toBeGreaterThanOrEqual(0);
+    expect(readinessProbe).toBeGreaterThan(tcpProbe);
     expect(readinessProbe).toBeLessThan(predecessorMigration);
-    expect(databaseRunner).toContain("DATABASE_CONNECTIVITY_DENIED");
+    expect(databaseRunner).toContain("LOOPBACK_TCP_DENIED");
+    expect(databaseRunner).toContain("DATABASE_PROTOCOL_DENIED");
+    expect(databaseRunner).toContain("family: 4");
+    expect(databaseRunner).toContain(
+      "host: TASK02_UPGRADE_CONTRACT.hostIp",
+    );
     expect(databaseRunner).toContain("connect_timeout: DATABASE_CONNECT_TIMEOUT_SECONDS");
     expect(databaseRunner).not.toMatch(/console\.(?:log|error|warn)/u);
   });

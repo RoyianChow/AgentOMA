@@ -16,8 +16,8 @@ authorized or applied live. The separate predecessor-upgrade/restart harness
 has now had two exact-candidate G1-D runs. Both failed closed before migration
 or fixture writes (`DATABASE_IDENTITY_DENIED` on `dd503a14…`, then
 `DATABASE_CONNECTIVITY_DENIED` on `5b576b7b…`); both teardown checks passed.
-Task 02 remains blocked on a separately authorized harness diagnosis and a new
-candidate proof, S27 export reconstruction, independent Task 11 review,
+Task 02 remains blocked on execution of the completed safe diagnostic under a
+new exact-candidate proof, S27 export reconstruction, independent Task 11 review,
 recovery, G1-L, live parity, and G4.
 
 AgentOMA supports Ontario pharmacy minor-ailment services. The Ministry of Health Executive Officer Notice effective July 1, 2026 is the source of truth for covered ailment groups, claim maximums, fees, PINs, and billing rules. See [`COMPLIANCE.md`](COMPLIANCE.md) for traceability and [`NEXT_STEPS.md`](NEXT_STEPS.md) for the remaining go-live work.

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { createConnection } from "node:net";
 import { resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 
@@ -27,6 +28,7 @@ const compareStrings = (left: string, right: string): number =>
 const DATABASE_CONNECT_TIMEOUT_SECONDS = 5;
 const DATABASE_READINESS_WINDOW_MS = 20_000;
 const DATABASE_READINESS_RETRY_MS = 500;
+const LOOPBACK_TCP_TIMEOUT_MS = 2_000;
 
 const fixtureCountsSchema = z
   .object({
@@ -67,6 +69,12 @@ export type Task02UpgradeDatabaseResult = {
 };
 
 type DatabaseClient = postgres.Sql;
+
+type Task02LoopbackReadinessDependencies = {
+  probe?: () => Promise<void>;
+  now?: () => number;
+  sleep?: (milliseconds: number) => Promise<void>;
+};
 
 const identityRowSchema = z
   .object({
@@ -168,6 +176,7 @@ async function unsafeQuery(
     | "DATABASE_CONNECTIVITY_DENIED"
     | "DATABASE_IDENTITY_DENIED"
     | "DATABASE_NONEMPTY_DENIED"
+    | "DATABASE_PROTOCOL_DENIED"
     | "GRANT_DENIED"
     | "MIGRATION_HISTORY_DENIED"
     | "PRESERVATION_DENIED",
@@ -189,7 +198,7 @@ async function readDatabaseIdentity(
        current_user::text as database_user,
        current_setting('server_version_num')::text as version_num,
        version()::text as version_text`,
-    "DATABASE_CONNECTIVITY_DENIED",
+    "DATABASE_PROTOCOL_DENIED",
   );
   return assertTask02DatabaseIdentityShape(result);
 }
@@ -250,16 +259,16 @@ async function assertDatabaseIdentity(
 
 /**
  * Docker health confirms PostgreSQL inside the container. This bounded,
- * read-only probe additionally waits for the loopback port to accept a host
- * connection before the harness begins any migration or fixture write. It
- * retries connectivity only; a wrong identity or history fails immediately.
+ * read-only probe verifies the PostgreSQL protocol after the loopback TCP probe
+ * has succeeded. It retries protocol readiness only; a wrong identity or
+ * history fails immediately.
  */
 async function waitForDatabaseIdentity(
   client: DatabaseClient,
   expectedEntries: MigrationChainEntry[],
 ): Promise<string> {
   const deadline = Date.now() + DATABASE_READINESS_WINDOW_MS;
-  let lastConnectivityFailure: Task02UpgradeHarnessError | null = null;
+  let lastProtocolFailure: Task02UpgradeHarnessError | null = null;
 
   while (Date.now() < deadline) {
     try {
@@ -267,19 +276,72 @@ async function waitForDatabaseIdentity(
     } catch (error: unknown) {
       if (
         !(error instanceof Task02UpgradeHarnessError) ||
-        error.reason !== "DATABASE_CONNECTIVITY_DENIED"
+        error.reason !== "DATABASE_PROTOCOL_DENIED"
       ) {
         throw error;
       }
-      lastConnectivityFailure = error;
+      lastProtocolFailure = error;
       await delay(DATABASE_READINESS_RETRY_MS);
     }
   }
 
   throw (
-    lastConnectivityFailure ??
-    new Task02UpgradeHarnessError("DATABASE_CONNECTIVITY_DENIED")
+    lastProtocolFailure ??
+    new Task02UpgradeHarnessError("DATABASE_PROTOCOL_DENIED")
   );
+}
+
+function probeTask02LoopbackTcp(): Promise<void> {
+  return new Promise((resolveProbe, rejectProbe) => {
+    const socket = createConnection({
+      host: TASK02_UPGRADE_CONTRACT.hostIp,
+      port: Number(TASK02_UPGRADE_CONTRACT.hostPort),
+      family: 4,
+    });
+    let settled = false;
+
+    const settle = (complete: () => void): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      socket.removeAllListeners();
+      socket.destroy();
+      complete();
+    };
+    const deny = (): void =>
+      settle(() =>
+        rejectProbe(new Task02UpgradeHarnessError("LOOPBACK_TCP_DENIED")),
+      );
+    const timeout = setTimeout(deny, LOOPBACK_TCP_TIMEOUT_MS);
+
+    socket.once("connect", () => settle(resolveProbe));
+    socket.once("error", deny);
+  });
+}
+
+/**
+ * Confirms only that the exact IPv4 loopback port accepts a TCP connection.
+ * It sends no credentials or SQL, records no raw socket error, and must finish
+ * before a PostgreSQL client is created or a migration/fixture operation starts.
+ */
+export async function waitForTask02LoopbackTcpReadiness(
+  dependencies: Task02LoopbackReadinessDependencies = {},
+): Promise<void> {
+  const probe = dependencies.probe ?? probeTask02LoopbackTcp;
+  const now = dependencies.now ?? Date.now;
+  const sleep = dependencies.sleep ?? delay;
+  const deadline = now() + DATABASE_READINESS_WINDOW_MS;
+
+  while (now() < deadline) {
+    try {
+      await probe();
+      return;
+    } catch {
+      await sleep(DATABASE_READINESS_RETRY_MS);
+    }
+  }
+
+  denyTask02Upgrade("LOOPBACK_TCP_DENIED");
 }
 
 function createTask02DatabaseClient(): DatabaseClient {
@@ -592,6 +654,7 @@ export async function runTask02PredecessorUpgrade(
   migrationIdentity: MigrationChainIdentity,
 ): Promise<Task02UpgradeDatabaseResult> {
   assertTask02UpgradeDatabaseUrl(TASK02_UPGRADE_CONTRACT.databaseUrl);
+  await waitForTask02LoopbackTcpReadiness();
   const generatedView = createPredecessorMigrationView(repositoryRoot);
   const client = createTask02DatabaseClient();
 
@@ -662,6 +725,7 @@ export async function verifyTask02UpgradeAfterRestart(
   expected: Task02DatabaseSnapshot,
 ): Promise<Task02DatabaseSnapshot> {
   assertTask02UpgradeDatabaseUrl(TASK02_UPGRADE_CONTRACT.databaseUrl);
+  await waitForTask02LoopbackTcpReadiness();
   const client = createTask02DatabaseClient();
   try {
     await waitForDatabaseIdentity(client, migrationIdentity.entries);
