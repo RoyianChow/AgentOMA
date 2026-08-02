@@ -326,6 +326,7 @@ const approvalSchema = z
         network: z.literal(TASK02_UPGRADE_CONTRACT.networkName),
         volume: z.literal(TASK02_UPGRADE_CONTRACT.volumeName),
         image: z.literal(TASK02_UPGRADE_CONTRACT.image),
+        image_id: z.string().regex(/^sha256:[a-f0-9]{64}$/u),
         host_ip: z.literal(TASK02_UPGRADE_CONTRACT.hostIp),
         host_port: z.literal(5434),
         database: z.literal(TASK02_UPGRADE_CONTRACT.databaseName),
@@ -507,6 +508,7 @@ export function assertTask02UpgradeComposeConfig(input: unknown): void {
 export type Task02UpgradePreStartSnapshot = {
   serverVersion: string;
   dockerEndpoint: string;
+  localImageId: string;
   existingContainerIds: string[];
   existingNetworkIds: string[];
   existingVolumeNames: string[];
@@ -518,6 +520,9 @@ export function assertTask02UpgradePreStartSnapshot(
   if (!snapshot.serverVersion.trim()) denyTask02Upgrade("STATE_DENIED");
   if (!/^(?:npipe|unix):\/\//u.test(snapshot.dockerEndpoint)) {
     denyTask02Upgrade("DOCKER_ENDPOINT_DENIED");
+  }
+  if (!/^sha256:[a-f0-9]{64}$/u.test(snapshot.localImageId)) {
+    denyTask02Upgrade("IMAGE_DENIED");
   }
   if (
     snapshot.existingContainerIds.length !== 0 ||

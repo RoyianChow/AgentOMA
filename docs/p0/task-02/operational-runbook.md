@@ -103,6 +103,8 @@ Execution requires the exact JSON G1-D record documented in
 [`g1-d-predecessor-upgrade-approval-contract.md`](g1-d-predecessor-upgrade-approval-contract.md).
 The old `dcaab91…` G1-D is expired and does not authorize this new harness.
 Without a matching record, the command denies before its first Docker command.
+The record also binds the exact locally installed image ID; startup uses
+`--pull never`, so the proof cannot contact an image registry.
 
 After freezing the new clean candidate and obtaining G1-D, run only:
 

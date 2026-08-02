@@ -29,6 +29,7 @@ const fixtureCountsSchema = z
     patient_count: z.coerce.number().int().nonnegative(),
     assessment_count: z.coerce.number().int().nonnegative(),
     evidence_count: z.coerce.number().int().nonnegative(),
+    evidence_table_exists: z.boolean(),
   })
   .strict();
 
@@ -262,7 +263,9 @@ async function readFixtureCounts(
        (select count(*)::int from pharmacy) as pharmacy_count,
        (select count(*)::int from patient) as patient_count,
        (select count(*)::int from assessment) as assessment_count,
-       ${evidenceExpression}::int as evidence_count`,
+       ${evidenceExpression}::int as evidence_count,
+       (to_regclass('public.assessment_billability_evidence') is not null)
+         as evidence_table_exists`,
     "PRESERVATION_DENIED",
   );
   const parsed = z.array(fixtureCountsSchema).safeParse(result);
@@ -270,6 +273,9 @@ async function readFixtureCounts(
     denyTask02Upgrade("PRESERVATION_DENIED");
   }
   const row = parsed.data[0];
+  if (row.evidence_table_exists !== evidenceTableExpected) {
+    denyTask02Upgrade("PRESERVATION_DENIED");
+  }
   return {
     pharmacy: row.pharmacy_count,
     patient: row.patient_count,

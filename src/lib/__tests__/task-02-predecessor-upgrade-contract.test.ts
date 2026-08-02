@@ -147,6 +147,7 @@ function validApproval() {
       network: TASK02_UPGRADE_CONTRACT.networkName,
       volume: TASK02_UPGRADE_CONTRACT.volumeName,
       image: TASK02_UPGRADE_CONTRACT.image,
+      image_id: `sha256:${HASH_A}`,
       host_ip: TASK02_UPGRADE_CONTRACT.hostIp,
       host_port: 5434,
       database: TASK02_UPGRADE_CONTRACT.databaseName,
@@ -303,6 +304,7 @@ describe("Task 02 persistent Docker isolation contract", () => {
       assertTask02UpgradePreStartSnapshot({
         serverVersion: "29.0.0",
         dockerEndpoint: "unix:///var/run/docker.sock",
+        localImageId: `sha256:${HASH_A}`,
         existingContainerIds: [],
         existingNetworkIds: [],
         existingVolumeNames: [],
@@ -312,6 +314,7 @@ describe("Task 02 persistent Docker isolation contract", () => {
       assertTask02UpgradePreStartSnapshot({
         serverVersion: "29.0.0",
         dockerEndpoint: "tcp://remote.invalid:2375",
+        localImageId: `sha256:${HASH_A}`,
         existingContainerIds: [],
         existingNetworkIds: [],
         existingVolumeNames: [],
@@ -321,6 +324,7 @@ describe("Task 02 persistent Docker isolation contract", () => {
       assertTask02UpgradePreStartSnapshot({
         serverVersion: "29.0.0",
         dockerEndpoint: "npipe:////./pipe/dockerDesktopLinuxEngine",
+        localImageId: `sha256:${HASH_A}`,
         existingContainerIds: [],
         existingNetworkIds: [],
         existingVolumeNames: [TASK02_UPGRADE_CONTRACT.volumeName],
@@ -437,10 +441,12 @@ describe("Task 02 persistent Docker isolation contract", () => {
     expect(
       runner.indexOf("assertTask02UpgradeApproval(approvalInput"),
     ).toBeLessThan(
-      runner.indexOf("state.dockerServerVersion = assertPreStart(cwd)"),
+      runner.indexOf("const preStart = assertPreStart(cwd"),
     );
     expect(runner).toContain("finally {");
     expect(runner).toContain("teardownExactResources(cwd);");
+    expect(runner).toContain('"--pull",');
+    expect(runner).toContain('"never",');
     expect(runner).not.toContain("process.env");
     expect(runner).not.toMatch(/@supabase|db:push|DATABASE_URL|DIRECT_URL/iu);
   });

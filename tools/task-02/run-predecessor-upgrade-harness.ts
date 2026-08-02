@@ -197,7 +197,10 @@ function listExactResources(cwd: string): ResourceSnapshot {
   return { containerIds, networkIds, volumeNames };
 }
 
-function assertPreStart(cwd: string): string {
+function assertPreStart(
+  cwd: string,
+  approvedImageId: string,
+): { serverVersion: string; imageId: string } {
   const serverVersion = requireDockerOutput(
     ["version", "--format", "{{.Server.Version}}"],
     cwd,
@@ -213,6 +216,12 @@ function assertPreStart(cwd: string): string {
     cwd,
     "DOCKER_ENDPOINT_DENIED",
   );
+  const localImageId = requireDockerOutput(
+    ["image", "inspect", "--format", "{{.Id}}", TASK02_UPGRADE_CONTRACT.image],
+    cwd,
+    "IMAGE_DENIED",
+  );
+  if (localImageId !== approvedImageId) denyTask02Upgrade("IMAGE_DENIED");
   const composeConfig = parseJson(
     requireDockerOutput(
       composeArgs("config", "--format", "json"),
@@ -226,11 +235,12 @@ function assertPreStart(cwd: string): string {
   assertTask02UpgradePreStartSnapshot({
     serverVersion,
     dockerEndpoint,
+    localImageId,
     existingContainerIds: existing.containerIds,
     existingNetworkIds: existing.networkIds,
     existingVolumeNames: existing.volumeNames,
   });
-  return serverVersion;
+  return { serverVersion, imageId: localImageId };
 }
 
 function inspectRuntime(cwd: string): Task02UpgradeRuntimeSnapshot {
@@ -570,7 +580,7 @@ async function main(): Promise<void> {
   } catch {
     denyTask02Upgrade("APPROVAL_FILE_DENIED");
   }
-  assertTask02UpgradeApproval(approvalInput, {
+  const approval = assertTask02UpgradeApproval(approvalInput, {
     candidateSha,
     migrationIdentity,
     now: new Date(),
@@ -590,7 +600,8 @@ async function main(): Promise<void> {
   let failureReason: Task02UpgradeReason | null = null;
 
   try {
-    state.dockerServerVersion = assertPreStart(cwd);
+    const preStart = assertPreStart(cwd, approval.environment.image_id);
+    state.dockerServerVersion = preStart.serverVersion;
     startupAttempted = true;
     requireDockerSuccess(
       composeArgs(
@@ -599,6 +610,8 @@ async function main(): Promise<void> {
         "--wait",
         "--wait-timeout",
         "60",
+        "--pull",
+        "never",
         "--force-recreate",
         TASK02_UPGRADE_CONTRACT.composeService,
       ),
@@ -606,6 +619,9 @@ async function main(): Promise<void> {
       "COMMAND_DENIED",
     );
     const runtimeBefore = await waitForHealthyRuntime(cwd);
+    if (runtimeBefore.imageId !== preStart.imageId) {
+      denyTask02Upgrade("IMAGE_DENIED");
+    }
     state.imageId = runtimeBefore.imageId;
     state.configHash = runtimeBefore.actualConfigHash;
     state.restartCountBefore = runtimeBefore.restartCount;

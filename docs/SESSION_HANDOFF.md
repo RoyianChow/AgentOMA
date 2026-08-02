@@ -34,12 +34,15 @@ Royian Chowdhury granted implementation-only authority in
 - `docker-compose.task-02-upgrade.yml`: separate PostgreSQL 16 service on
   `127.0.0.1:5434`, internal network, named disposable volume;
 - strict pure contracts for approval, migration identity, local Docker,
-  resource ownership and teardown;
+  exact preinstalled image identity, resource ownership and teardown;
 - an OS-temp, byte-identical migration view ending at `0017`;
 - a Drizzle runner that seeds unmistakably synthetic predecessor rows, applies
   unmodified `0018`, verifies preservation/catalog/grants, restarts, rechecks
   persistence and tears down exact resources in `finally`;
 - one non-overwriting, payload-free evidence record per candidate.
+
+Compose startup uses `--pull never`; a future G1-D must bind the exact locally
+installed `postgres:16-alpine` image ID.
 
 Fourteen database-free contract tests pass, and the no-approval command was
 proved to return `TASK02_UPGRADE_DENIED:APPROVAL_FILE_DENIED` before Docker.

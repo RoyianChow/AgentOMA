@@ -44,6 +44,7 @@ does **not** satisfy this gate.
     "network": "agentoma-task02-upgrade-network",
     "volume": "agentoma-task02-upgrade-data",
     "image": "postgres:16-alpine",
+    "image_id": "sha256:<64-character locally installed image ID>",
     "host_ip": "127.0.0.1",
     "host_port": 5434,
     "database": "agentoma_task02_upgrade",
@@ -57,6 +58,10 @@ windows, a dirty or different candidate, changed migration bytes, changed
 migration ordering, missing actions, or different Docker resources. Approval
 values are never printed. The approval artifact's SHA-256 is recorded in the
 run evidence.
+
+The image must already exist locally, and `image_id` must come from that exact
+installed image. The harness verifies it before creation and runs Compose with
+`--pull never`; it cannot contact a registry during the approved proof.
 
 The approval may be committed in a later approval-record commit. In that case,
 check out the approved source candidate in a clean worktree and pass the
