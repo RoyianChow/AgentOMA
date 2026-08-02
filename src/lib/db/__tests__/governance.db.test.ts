@@ -112,6 +112,39 @@ async function seedPatient(
   return { patientId: patientRow.id, assessmentId: assessmentRow.id };
 }
 
+async function seedBillabilityEvidence(
+  assessmentId: string,
+  serviceDate: string,
+): Promise<string> {
+  const [row] = (await db.execute<{ id: string }>(sql`
+    insert into assessment_billability_evidence (
+      assessment_id, pharmacy_id,
+      patient_self_report_status, platform_assessment_count,
+      trailing_window_start, trailing_window_end,
+      viewer_source, viewer_attestation, viewer_attested_at,
+      viewer_pharmacist_id, maximum_state, self_or_family,
+      same_ailment_prescription, verification_consultation,
+      identifier_type, identifier_issuer, identifier_number,
+      name_exactly_as_displayed, date_of_birth,
+      document_inspected_attestation, verifying_pharmacist_id, verified_at,
+      is_odb_recipient
+    ) values (
+      ${assessmentId}::uuid, ${PHARMACY_ID}::uuid,
+      'no', 0,
+      (${serviceDate}::date - 365), ${serviceDate}::date,
+      'ConnectingOntario', true, ${`${serviceDate}T12:00:00.000Z`}::timestamptz,
+      ${firstAdmin}::uuid, 'not_confirmed_met', 'not_self_or_family',
+      'none', 'not_required',
+      'odb_mccss', 'Synthetic eligibility fixture',
+      'SYNTHETIC-ELIGIBILITY-001', 'Synthetic Patient', '1980-01-01',
+      true, ${firstAdmin}::uuid, ${`${serviceDate}T12:01:00.000Z`}::timestamptz,
+      true
+    )
+    returning id
+  `)) as unknown as { id: string }[];
+  return row.id;
+}
+
 describe("patient-wide retention", () => {
   it("a returning patient extends every prior assessment to the newest horizon", async () => {
     const { patientId } = await seedPatient("2020-01-01");
@@ -378,6 +411,10 @@ describe("correction overlays", () => {
 describe("patient export", () => {
   it("stores a manifest with hashes and a patient-linked access audit event", async () => {
     const { patientId, assessmentId } = await seedPatient("2026-01-01");
+    const evidenceId = await seedBillabilityEvidence(
+      assessmentId,
+      "2026-01-01",
+    );
     await db.execute(sql`
       insert into follow_up (
         assessment_id, due_date, method, monitoring_parameters,
@@ -399,11 +436,28 @@ describe("patient export", () => {
     );
 
     expect(exported.manifest.artifacts.length).toBeGreaterThan(1);
-    expect(exported.bundle.schemaVersion).toBe(2);
+    expect(exported.bundle.schemaVersion).toBe(3);
     expect(exported.bundle.record.followUps).toHaveLength(1);
+    expect(exported.bundle.record.billabilityEvidence).toHaveLength(1);
+    expect(exported.bundle.record.billabilityEvidence[0]).toMatchObject({
+      id: evidenceId,
+      assessmentId,
+      pharmacyId: PHARMACY_ID,
+      patientSelfReportStatus: "no",
+      platformAssessmentCount: 0,
+      maximumState: "not_confirmed_met",
+      identifierNumber: "SYNTHETIC-ELIGIBILITY-001",
+    });
     expect(
       exported.manifest.artifacts.some(
         (artifact) => artifact.recordType === "follow_up",
+      ),
+    ).toBe(true);
+    expect(
+      exported.manifest.artifacts.some(
+        (artifact) =>
+          artifact.recordType === "assessment_billability_evidence" &&
+          artifact.recordId === evidenceId,
       ),
     ).toBe(true);
     expect(exported.manifest.bundleSha256).toMatch(/^[a-f0-9]{64}$/);
@@ -431,5 +485,44 @@ describe("patient export", () => {
         ) as export_events
     `)) as unknown as { manifests: number; export_events: number }[];
     expect(counts).toEqual({ manifests: 1, export_events: 1 });
+  });
+
+  it("represents missing evidence as an empty collection and never fabricates an artifact", async () => {
+    const { patientId } = await seedPatient("2026-02-01");
+    const { assemblePatientExport } = await import("@/lib/governance");
+
+    const exported = await assemblePatientExport(
+      actor(firstAdmin),
+      patientId,
+      "secure_download",
+    );
+
+    expect(exported.bundle.record.billabilityEvidence).toEqual([]);
+    expect(
+      exported.manifest.artifacts.some(
+        (artifact) => artifact.recordType === "assessment_billability_evidence",
+      ),
+    ).toBe(false);
+  });
+
+  it("refuses a foreign pharmacy actor before collecting or exporting a patient", async () => {
+    const { patientId } = await seedPatient("2026-03-01");
+    const { assemblePatientExport } = await import("@/lib/governance");
+
+    await expect(
+      assemblePatientExport(
+        {
+          ...actor(firstAdmin),
+          pharmacyId: "00000000-0000-4000-8000-000000000099",
+        },
+        patientId,
+        "secure_download",
+      ),
+    ).rejects.toThrow("Foreign pharmacy context refused.");
+
+    const [counts] = (await db.execute<{ manifests: number }>(sql`
+      select count(*)::int as manifests from export_manifest
+    `)) as unknown as { manifests: number }[];
+    expect(counts).toEqual({ manifests: 0 });
   });
 });

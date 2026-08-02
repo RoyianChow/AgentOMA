@@ -1,0 +1,24 @@
+{
+  "schema_version": "1",
+  "task": "02",
+  "source_commit_sha": "4f8fdd844c243f5dafcf4e78652116a9d632b222",
+  "control_scope": "Workstream F billability-evidence serialization and display projection",
+  "red": {
+    "command": "npm run test:pure -- src/lib/__tests__/billability-evidence-export.test.ts",
+    "started_at_utc": "2026-08-02T02:12:40.3941922Z",
+    "ended_at_utc": "2026-08-02T02:12:43.2080801Z",
+    "exit_code": 1,
+    "result": "EXPECTED FAILURE",
+    "safe_summary": "The focused test failed because the billability-evidence export module did not exist. No database or patient data was used."
+  },
+  "green": {
+    "command": "npm run test:pure -- src/lib/__tests__/billability-evidence-export.test.ts",
+    "started_at_utc": "2026-08-02T02:13:54.6322664Z",
+    "ended_at_utc": "2026-08-02T02:13:56.8903090Z",
+    "exit_code": 0,
+    "result": "PASS",
+    "safe_summary": "The initial focused serialization and null-preservation tests passed after the module was added. The final candidate adds display-projection coverage and is included in the 110-test pure suite."
+  },
+  "contains_phi": false,
+  "contains_secrets": false
+}

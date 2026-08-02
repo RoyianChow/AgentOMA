@@ -25,9 +25,9 @@ services:
       POSTGRES_INITDB_ARGS: "--no-sync"
     command: >
       postgres -c fsync=off -c synchronous_commit=off -c full_page_writes=off
-    # 5433, not 5432, so it cannot collide with a local Postgres.
+    # Loopback-only; 5433 avoids colliding with a local Postgres.
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     tmpfs:
       - /var/lib/postgresql/data
     healthcheck:

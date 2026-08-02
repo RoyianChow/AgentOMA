@@ -18,6 +18,7 @@ import {
   type FollowUpMethod,
   type FollowUpNextStep,
 } from "@/lib/follow-up-schema";
+import { billabilityEvidenceDisplaySections } from "@/lib/billability-evidence-export";
 
 /**
  * SERVER component — this is where the PHI is rendered. It is passed as
@@ -105,6 +106,32 @@ export default function RecordDetail({ record }: { record: AuditRecordDetail }) 
           )}
         </div>
       </div>
+
+      {record.billabilityEvidence ? (
+        <>
+          {billabilityEvidenceDisplaySections(record.billabilityEvidence).map(
+            (section) => (
+              <div className={styles.section} key={section.title}>
+                <div className={styles.sectionTitle}>{section.title}</div>
+                <div className={styles.grid}>
+                  {section.rows.map(([label, value]) => (
+                    <Field key={label} label={label} value={value} />
+                  ))}
+                </div>
+              </div>
+            ),
+          )}
+          <p className={styles.footnote}>
+            Platform history is advisory. Only HNS adjudication determines
+            whether a claim is paid.
+          </p>
+        </>
+      ) : (
+        <div className={styles.legacyRecord}>
+          No immutable billability-evidence sidecar is recorded for this
+          assessment. No missing evidence has been inferred.
+        </div>
+      )}
 
       {record.clinical ? (
         <>

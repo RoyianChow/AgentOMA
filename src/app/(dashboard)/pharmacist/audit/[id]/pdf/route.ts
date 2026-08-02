@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { requirePortalUser, AuthorizationError } from "@/lib/auth-guard";
-import { writeAudit } from "@/lib/audit";
+import { recordAuditWriteFailure, writeAudit } from "@/lib/audit";
+import { billabilityEvidenceDisplaySections } from "@/lib/billability-evidence-export";
 import {
   MODALITY_LABELS,
   OUTCOME_LABELS,
@@ -99,6 +100,27 @@ async function pdfOf(rec: AuditRecordDetail): Promise<ArrayBuffer> {
     ["Recorded", new Date(rec.createdAt).toLocaleString("en-CA")],
     ...(rec.virtualLocation ? ([["Pharmacist location", rec.virtualLocation]] as [string, string][]) : []),
   ]);
+
+  if (rec.billabilityEvidence) {
+    for (const section of billabilityEvidenceDisplaySections(
+      rec.billabilityEvidence,
+    )) {
+      table(section.title, section.rows);
+    }
+    table("Claim-history limitation", [
+      [
+        "Authority",
+        "Platform history is advisory. Only HNS adjudication determines whether a claim is paid.",
+      ],
+    ]);
+  } else {
+    table("Billability evidence", [
+      [
+        "Status",
+        "No immutable billability-evidence sidecar is recorded. No missing evidence has been inferred.",
+      ],
+    ]);
+  }
 
   if (rec.clinical) {
     table("Informed consent", [
@@ -275,14 +297,22 @@ export async function GET(
       metadata: { format: "pdf", hasClaim: record.claim !== null },
     });
   } catch (auditErr) {
-    console.error("AUDIT WRITE FAILED for audit.record_exported", record.id, auditErr);
+    await recordAuditWriteFailure(
+      {
+        action: "audit.record_exported",
+        entityType: "assessment",
+        entityId: record.id,
+        source: "audit_record_pdf",
+      },
+      auditErr,
+    );
   }
 
   return new NextResponse(await pdfOf(record), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="agentoma-record-${record.serviceDate}.pdf"`,
-      "Cache-Control": "no-store",
+      "Content-Disposition": 'attachment; filename="agentoma-assessment-record.pdf"',
+      "Cache-Control": "private, no-store",
     },
   });
 }

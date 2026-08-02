@@ -1,6 +1,6 @@
 # Compliance map — Ontario minor-ailment services
 
-**Implementation review date:** 2026-07-30
+**Implementation review date:** 2026-08-02
 
 This document maps the current code to the Ontario Ministry of Health _Executive Officer Notice: Update to Funding for Minor Ailment Services in Ontario Pharmacies_, effective July 1, 2026. Page references point to [`regulatory/moh-executive-officer-notice-minor-ailments-en-2026-05-19.pdf`](regulatory/moh-executive-officer-notice-minor-ailments-en-2026-05-19.pdf), which is the binding source.
 
@@ -113,10 +113,10 @@ UTI sections. It does not authorize future clinical-content changes.
 
 | Requirement | Notice | Current implementation | Status |
 |---|---|---|---|
-| Defensible activity trail for post-payment review | p.12 | Pharmacy-scoped append-only audit events and server-generated exports | ✅ |
+| Defensible activity trail for post-payment review | p.12 | Pharmacy-scoped append-only audit storage exists, but Task 02 proved the required assessment-created event is written post-commit on a best-effort path and can be absent after a successful completion | 🔶 |
 | Audit records cannot be updated/deleted by the app | p.12 | Trigger plus `agentoma_app` privilege revocation; real-Postgres grant tests | ✅ |
 | Retain ten years from last service or ten years after age 18, whichever later | p.12 | Live `0016` patient-wide recomputation extends every prior record after a returning service; live horizon comparison is clean and the pediatric fixture retains through 2047 | ✅ |
-| Complete, readily retrievable patient record | PHIPA/OCP recordkeeping posture | Live server-only export schema v2 includes the pre-0018 record and follow-ups with hashes. The P0-C billability-evidence sidecar still needs inclusion after deployment | 🔶 |
+| Complete, readily retrievable patient record | PHIPA/OCP recordkeeping posture | Server-only export schema v3, record view, PDF, and manifest projection now include persisted P0-C evidence without recomputation. Database-backed verification and live availability remain blocked on 0018 and Task 02 gates | 🟦 |
 | Holds prevent destruction | PHIPA/OCP recordkeeping posture | Live patient/record holds block deletion in database triggers, including controlled destruction | ✅ |
 | Corrections preserve historical truth | PHIPA access/correction posture | Live immutable correction overlays use final supersession; source records are not rewritten | ✅ |
 | Destruction is deliberate, reviewed, and audited | PHIPA/OCP recordkeeping posture | Live dry-run evidence plus database execution requires elapsed retention, no hold, and a second admin; no automatic cron exists | ✅ |
@@ -136,7 +136,10 @@ P0-C eligibility, existing-prescription, and claim-history boundary is merged
 and tested in application code, but migration `0018` is not yet live; the last
 fully verified live and fresh-Docker chain is `0017`. All LTC claim drafting
 remains parked. The product is **not yet ready for full production** until
-`0018` is deployed and verified, P0-C evidence is added to complete retrieval,
-and the LTC-billing, orientation-override, and first restore-drill items are
-closed. The ordered remediation list is
+`0018` is deployed and verified and the P0-C retrieval projection is verified
+against that live schema,
+the assessment-created audit is made failure-atomic, the undecided orientation
+override is removed or authoritatively resolved, export-integrity S27 is
+closed, and the LTC-billing and first restore-drill items are closed. The
+ordered remediation list is
 [`NEXT_STEPS.md`](NEXT_STEPS.md).

@@ -1,9 +1,19 @@
 import { and, asc, eq, gte, lte, or, ilike, sql, desc, count, isNull, type SQL } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { assessment, patient, claimDraft, followUp } from "@/lib/db/schema";
+import {
+  assessment,
+  assessmentBillabilityEvidence,
+  patient,
+  claimDraft,
+  followUp,
+} from "@/lib/db/schema";
 import type { PortalUser } from "@/lib/auth-guard";
 import { recordAuditWriteFailure, writeAudit } from "@/lib/audit";
+import {
+  serializeBillabilityEvidence,
+  type BillabilityEvidenceRecord,
+} from "@/lib/billability-evidence-export";
 
 /**
  * Server-only audit queries. NOT a "use server" file on purpose: these return
@@ -208,6 +218,7 @@ export type AuditRecordDetail = {
     pcpNotificationMethod: string;
     patientChoiceInformedAt: string;
   } | null;
+  billabilityEvidence: BillabilityEvidenceRecord | null;
   // Present only for a billable assessment; non-billable ones drafted no claim.
   claim: {
     pinCode: string;
@@ -331,11 +342,23 @@ export async function queryAuditRecordById(
   // Audit detail includes superseded rows on purpose: the current worklist
   // hides replaced versions, while the clinical history must show the original
   // entry, its replacement, and the immutable link between them.
-  const followUps = await db
-    .select()
-    .from(followUp)
-    .where(eq(followUp.assessmentId, row.id))
-    .orderBy(asc(followUp.createdAt));
+  const [evidenceRows, followUps] = await Promise.all([
+    db
+      .select()
+      .from(assessmentBillabilityEvidence)
+      .where(
+        and(
+          eq(assessmentBillabilityEvidence.assessmentId, row.id),
+          eq(assessmentBillabilityEvidence.pharmacyId, actor.pharmacyId),
+        ),
+      )
+      .limit(1),
+    db
+      .select()
+      .from(followUp)
+      .where(eq(followUp.assessmentId, row.id))
+      .orderBy(asc(followUp.createdAt)),
+  ]);
 
   // Access to an individual clinical record is itself part of the record.
   // Best-effort here so a transient secondary audit failure does not expose
@@ -471,6 +494,9 @@ export async function queryAuditRecordById(
             patientChoiceInformedAt: row.patientChoiceInformedAt.toISOString(),
           }
         : null,
+    billabilityEvidence: evidenceRows[0]
+      ? serializeBillabilityEvidence(evidenceRows[0])
+      : null,
     claim: row.pinCode
       ? {
           pinCode: row.pinCode,

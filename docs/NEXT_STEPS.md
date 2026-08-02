@@ -1,30 +1,44 @@
 # Next steps
 
-**Prioritized:** 2026-07-30
+**Prioritized:** 2026-08-02
 
 **Release posture:** do not treat the current build as production-ready until
 the P0 items are resolved, deployed, and re-verified.
 
 ## P0 — clinical and compliance blockers
 
-1. **Deploy and verify P0-C migration `0018`.** The identity, eligibility,
+1. **Remediate the two Task 02 protected defects under explicit lead review.**
+   Move the required assessment-created audit into the completion transaction
+   with deterministic fault-injection coverage. Remove the admin orientation
+   override, or implement only a separately approved G3 policy. Task 02 itself
+   did not edit either protected path.
+2. **Obtain G1-D and verify P0-C migration `0018` in fresh Docker.** The identity, eligibility,
    self/family, existing-prescription, claim-history, and clinical-viewer gates
    are merged in the application, but the live Supabase database is still at
-   `0017`. Review the SQL, apply it with `db:migrate`, replay the full chain
-   against fresh Docker, run the complete database suite, and verify the live
-   table, immutability trigger, and `agentoma_app` grants. Never use `db:push`.
-2. **Smoke-test the complete P0-C workflow.** Use a realistic synthetic case to
+   `0017`. Replay the full chain and the independent 0017→0018 upgrade, run the
+   complete database suite, and prove triggers/grants/atomicity/concurrency.
+   Never use `db:push`.
+3. **Obtain G1-L, recovery evidence, and verify the one-time live migration.**
+   Apply only through `npm run db:migrate` in the named change window after all
+   Docker blockers are green. Verify catalog/grants and safe aggregate deltas.
+4. **Smoke-test the complete P0-C workflow.** Use a realistic synthetic case to
    prove missing eligibility fails closed, unresolved prescription evidence
    blocks completion, the three history signals persist side by side, and the
    UI never promises HNS payment. Confirm a red-flag exit still writes zero
    assessment, evidence, and claim-draft rows.
-3. **Resolve all LTC minor-ailment billing.** The current conservative rule
+5. **Resolve all LTC minor-ailment billing.** The current conservative rule
    records the assessment and LTC facts but refuses claim drafting for every LTC
    resident. Confirm primary, secondary-emergency, and secondary-non-emergency
    submission/fee rules with the ODB Pharmacy Help Desk, including footnote 5
    and `LT`. Do not add `$0`, capitation, or `LT` logic until a human decision is
    documented; see [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md).
-4. **Resolve the orientation break-glass policy.** The intended rule is a hard
+6. **Resolve export-integrity stop S27.** Approve the canonical repeat-export,
+   retained-manifest, and reconstruction-verification contract before changing
+   hashes. The current bundle intentionally changes as export/audit history
+   grows; Task 02 did not invent a competing hash contract.
+7. **Obtain Task 11 test-plan/evidence review and G4.** Task 02 cannot approve
+   its own production promotion.
+8. **Resolve the orientation break-glass policy.** The intended rule is a hard
    billing-eligibility gate, but a pharmacy admin can currently provide an
    audited override reason. Remove it or obtain explicit regulatory/product
    approval before production.
@@ -43,8 +57,8 @@ the P0 items are resolved, deployed, and re-verified.
   and migration `0018` are merged. The server validates inspected public-service
   identity evidence, self/family and structured existing-Rx facts, and persists
   patient self-report, an exact advisory platform lookback, and clinical-viewer
-  attestation. This item is repository-complete but **not deployed** until the
-  first two P0 steps above are complete.
+  attestation. The feature code is merged but **not production-ready** until
+  the protected defects and the Docker/live steps above are complete.
 - **P0-D — virtual/LTC facts and fee-tier reference:** migrations `0013`–`0014`
   are live. Remote eligibility is reference-driven and all LTC drafting remains
   parked. Migration `0015` removed disposable TEST tenants and enforces one
@@ -68,10 +82,10 @@ the P0 items are resolved, deployed, and re-verified.
 3. **Improve intake failure recovery.** `/assessment` reached without its
    pharmacy link has no actionable fallback. Add concise counter-help guidance
    without collecting identity or changing the triage tree.
-4. **Include P0-C evidence in complete retrieval.** Once `0018` is live, add
-   `assessment_billability_evidence` to the assessment PDF and complete-patient
-   export/manifest so the defensible record contains the facts used at
-   completion.
+4. **Verify P0-C evidence in complete retrieval.** The schema-v3 export,
+   manifest projection, record view, and PDF implementation are present. Run
+   their real-PostgreSQL linkage, missing-evidence, tenant, authorization, and
+   hash assertions after G1-D; do not claim them live before 0018.
 5. Exercise `/pharmacist/governance` with a realistic synthetic case: complete
    export, patient and record holds, request decision, correction supersession,
    destruction dry run, second-admin refusal/approval, and restore-drill record.

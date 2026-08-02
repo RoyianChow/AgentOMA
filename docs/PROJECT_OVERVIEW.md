@@ -1,11 +1,11 @@
 # AgentOMA project overview
 
-**Status snapshot:** 2026-07-30
+**Status snapshot:** 2026-08-02
 
 **Current stage:** authenticated pilot foundation; **not production-ready**
 
 **Verification at this snapshot:** the current tree is TypeScript-clean,
-ESLint-clean, passes all 95 database-free tests, and completes a production
+ESLint-clean, passes all 110 database-free tests, and completes a production
 build with `/check` statically generated. The last complete database-backed
 suite run on 2026-07-25
 passed 135/135 tests and rebuilt a fresh Docker Postgres database from zero
@@ -13,6 +13,9 @@ through migration `0017`. Supabase is also live through `0017`; post-migration
 inspection reports one Demo Pharmacy, no cross-pharmacy relationships, three
 preserved users with TOTP, and matching patient-wide retention horizons.
 Migration `0018` and its P0-C application code are merged but are not yet live.
+Task 02's bounded static review found two release-blocking protected defects:
+the required assessment-created audit is post-commit/best-effort, and an
+undecided admin orientation override can bypass the hard gate.
 
 AgentOMA supports Ontario pharmacy minor-ailment services. The Ministry of Health Executive Officer Notice effective July 1, 2026 is the source of truth for covered ailment groups, claim maximums, fees, PINs, and billing rules. See [`COMPLIANCE.md`](COMPLIANCE.md) for traceability and [`NEXT_STEPS.md`](NEXT_STEPS.md) for the remaining go-live work.
 
@@ -125,6 +128,12 @@ hashes, place database-enforced holds, layer immutable corrections, prepare
 destruction dry runs, and record restore-drill evidence. Actual destruction is
 never automatic: it requires an elapsed retention horizon, no active hold, and
 a second administrator.
+
+The bounded Task 02 Workstream F implementation upgrades the server-only
+complete export to schema version 3 and adds the immutable P0-C evidence row to
+the JSON bundle, manifest artifact hashes, record view, and assessment PDF. It
+serializes persisted evidence only and never recomputes billing or clinical
+state. Its database-backed verification remains gated with migration `0018`.
 
 ## Autonomous pharmacy program (planned)
 
@@ -272,11 +281,13 @@ idempotent.
 
 Implemented work is recorded in [`COMPLETED_WORK.md`](COMPLETED_WORK.md). The
 highest-priority operational step is reviewing and applying migration `0018`,
-then proving the P0-C completion boundary against fresh Docker and live
-Supabase. Remaining policy blockers are unresolved LTC billing guidance and
-removal or approval of the orientation override. The P0-C evidence sidecar also
-needs inclusion in complete-patient export/retrieval after deployment, and a
-first isolated restore drill remains outstanding. See
+but it must not be applied for promotion until the protected assessment-audit
+atomicity defect and unauthorized orientation override are remediated under
+separate approval. Then prove the P0-C completion boundary against fresh Docker
+and live Supabase. The P0-C evidence export projection is implemented but not
+real-PostgreSQL verified. Remaining blockers include LTC billing guidance,
+export-hash/reconstruction contract S27, Task 11 review, and the first isolated
+restore drill. See
 [`NEXT_STEPS.md`](NEXT_STEPS.md) for an ordered plan and
 [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) for decisions that must come from a
 pharmacist or ODB.

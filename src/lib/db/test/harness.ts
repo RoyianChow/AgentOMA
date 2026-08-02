@@ -14,18 +14,30 @@ export const TEST_DATABASE_URL =
  * destroy real patient records. Refuse anything that isn't a local throwaway.
  */
 export function assertLocalTestDb(url: string = TEST_DATABASE_URL): void {
-  const host = (() => {
-    try {
-      return new URL(url).hostname;
-    } catch {
-      return "";
-    }
-  })();
-  const isLocal = host === "localhost" || host === "127.0.0.1" || host === "test-db";
-  if (!isLocal) {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error("REFUSING: TEST_DATABASE_URL is not a valid URL.");
+  }
+
+  const expectedPort = parsed.hostname === "test-db" ? "5432" : "5433";
+  const isAllowedEndpoint =
+    (parsed.hostname === "localhost" ||
+      parsed.hostname === "127.0.0.1" ||
+      parsed.hostname === "test-db") &&
+    parsed.port === expectedPort &&
+    parsed.pathname === "/agentoma_test" &&
+    parsed.username === "postgres" &&
+    parsed.password === "" &&
+    parsed.search === "" &&
+    parsed.hash === "" &&
+    (parsed.protocol === "postgres:" || parsed.protocol === "postgresql:");
+
+  if (!isAllowedEndpoint) {
     throw new Error(
-      `REFUSING to run destructive tests against non-local host "${host}". ` +
-        `TEST_DATABASE_URL must point at the throwaway docker Postgres (npm run test:db:up).`,
+      "REFUSING to run destructive tests outside the exact throwaway " +
+        "agentoma_test Docker endpoint (npm run test:db:up).",
     );
   }
   if (/supabase|pooler\./i.test(url)) {
