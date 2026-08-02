@@ -23,6 +23,12 @@ import {
   removeGeneratedMigrationView,
   type Task02UpgradeRuntimeSnapshot,
 } from "../../../tools/task-02/predecessor-upgrade-contract";
+import {
+  assertTask02DatabaseIdentityShape,
+  assertTask02DatabasePrincipal,
+  assertTask02EmptyPublicDatabase,
+  assertTask02MigrationHistory,
+} from "../../../tools/task-02/predecessor-upgrade-db";
 
 const HASH_A = "a".repeat(64);
 const HASH_B = "b".repeat(64);
@@ -30,6 +36,14 @@ const TASK_LABELS = {
   "com.agentoma.environment": "synthetic",
   "com.agentoma.task": "task-02",
   "com.agentoma.capability": "predecessor-upgrade",
+};
+
+const expectedMigrationEntry = {
+  idx: 0,
+  when: 1,
+  tag: "0000_synthetic_task02",
+  repositoryPath: "src/lib/db/migrations/0000_synthetic_task02.sql",
+  sha256: HASH_A,
 };
 
 function validComposeConfig(): unknown {
@@ -220,6 +234,64 @@ describe("Task 02 predecessor-upgrade migration contract", () => {
     expect(() => removeGeneratedMigrationView(process.cwd())).toThrow(
       "TASK02_UPGRADE_DENIED:MIGRATION_VIEW_DENIED",
     );
+  });
+});
+
+describe("Task 02 database identity diagnostics", () => {
+  it("uses granular safe reasons without emitting database values", () => {
+    expect(() => assertTask02DatabaseIdentityShape([])).toThrow(
+      "TASK02_UPGRADE_DENIED:DATABASE_IDENTITY_SHAPE_DENIED",
+    );
+
+    const identity = assertTask02DatabaseIdentityShape([
+      {
+        database_name: TASK02_UPGRADE_CONTRACT.databaseName,
+        database_user: TASK02_UPGRADE_CONTRACT.databaseUser,
+        version_num: "160010",
+        version_text: "SYNTHETIC-VERSION-TEXT",
+      },
+    ]);
+    expect(() => assertTask02DatabasePrincipal(identity)).not.toThrow();
+    expect(() =>
+      assertTask02DatabasePrincipal({
+        ...identity,
+        database_user: "unexpected-role",
+      }),
+    ).toThrow("TASK02_UPGRADE_DENIED:DATABASE_PRINCIPAL_DENIED");
+    expect(() =>
+      assertTask02DatabasePrincipal({ ...identity, version_num: "150099" }),
+    ).toThrow("TASK02_UPGRADE_DENIED:POSTGRES_VERSION_DENIED");
+
+    expect(() =>
+      assertTask02MigrationHistory(
+        [{ hash: HASH_A, created_at: 1 }],
+        [expectedMigrationEntry],
+      ),
+    ).not.toThrow();
+    expect(() => assertTask02MigrationHistory([], [expectedMigrationEntry])).toThrow(
+      "TASK02_UPGRADE_DENIED:MIGRATION_HISTORY_DENIED",
+    );
+    expect(() => assertTask02EmptyPublicDatabase([{ table_count: 1 }])).toThrow(
+      "TASK02_UPGRADE_DENIED:DATABASE_NONEMPTY_DENIED",
+    );
+  });
+
+  it("keeps connectivity retries read-only and ahead of any migration write", () => {
+    const databaseRunner = readFileSync(
+      resolve(process.cwd(), "tools/task-02/predecessor-upgrade-db.ts"),
+      "utf8",
+    );
+    const readinessProbe = databaseRunner.indexOf(
+      "await waitForDatabaseIdentity(client, []);",
+    );
+    const predecessorMigration = databaseRunner.indexOf(
+      "migrateSafely(client, generatedView.folder)",
+    );
+    expect(readinessProbe).toBeGreaterThanOrEqual(0);
+    expect(readinessProbe).toBeLessThan(predecessorMigration);
+    expect(databaseRunner).toContain("DATABASE_CONNECTIVITY_DENIED");
+    expect(databaseRunner).toContain("connect_timeout: DATABASE_CONNECT_TIMEOUT_SECONDS");
+    expect(databaseRunner).not.toMatch(/console\.(?:log|error|warn)/u);
   });
 });
 

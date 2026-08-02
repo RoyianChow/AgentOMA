@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { resolve } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
@@ -22,6 +23,10 @@ const compareStrings = (left: string, right: string): number =>
     sensitivity: "variant",
     numeric: false,
   });
+
+const DATABASE_CONNECT_TIMEOUT_SECONDS = 5;
+const DATABASE_READINESS_WINDOW_MS = 20_000;
+const DATABASE_READINESS_RETRY_MS = 500;
 
 const fixtureCountsSchema = z
   .object({
@@ -87,6 +92,68 @@ const catalogRowSchema = z
   })
   .strict();
 
+export type Task02DatabaseIdentity = z.infer<typeof identityRowSchema>;
+
+/**
+ * Validates only non-secret database metadata. Callers must never serialize
+ * this value into evidence; the database name, role, and major version are
+ * checked in-process and failures reduce to a safe reason code.
+ */
+export function assertTask02DatabaseIdentityShape(
+  input: unknown,
+): Task02DatabaseIdentity {
+  const parsed = z.array(identityRowSchema).safeParse(input);
+  if (!parsed.success || parsed.data.length !== 1) {
+    denyTask02Upgrade("DATABASE_IDENTITY_SHAPE_DENIED");
+  }
+  return parsed.data[0];
+}
+
+export function assertTask02DatabasePrincipal(
+  identity: Task02DatabaseIdentity,
+): void {
+  if (
+    identity.database_name !== TASK02_UPGRADE_CONTRACT.databaseName ||
+    identity.database_user !== TASK02_UPGRADE_CONTRACT.databaseUser
+  ) {
+    denyTask02Upgrade("DATABASE_PRINCIPAL_DENIED");
+  }
+  if (!identity.version_num.startsWith("16")) {
+    denyTask02Upgrade("POSTGRES_VERSION_DENIED");
+  }
+}
+
+export function assertTask02MigrationHistory(
+  input: unknown,
+  expectedEntries: MigrationChainEntry[],
+): void {
+  const parsed = z.array(historyRowSchema).safeParse(input);
+  if (
+    !parsed.success ||
+    parsed.data.length !== expectedEntries.length ||
+    parsed.data.some(
+      (row, index) =>
+        row.hash !== expectedEntries[index]?.sha256 ||
+        row.created_at !== expectedEntries[index]?.when,
+    )
+  ) {
+    denyTask02Upgrade("MIGRATION_HISTORY_DENIED");
+  }
+}
+
+export function assertTask02EmptyPublicDatabase(input: unknown): void {
+  const parsed = z
+    .array(z.object({ table_count: z.coerce.number().int() }).strict())
+    .safeParse(input);
+  if (
+    !parsed.success ||
+    parsed.data.length !== 1 ||
+    parsed.data[0].table_count !== 0
+  ) {
+    denyTask02Upgrade("DATABASE_NONEMPTY_DENIED");
+  }
+}
+
 function hashCanonical(value: unknown): string {
   return createHash("sha256")
     .update(JSON.stringify(value))
@@ -98,8 +165,11 @@ async function unsafeQuery(
   query: string,
   reason:
     | "CATALOG_DENIED"
+    | "DATABASE_CONNECTIVITY_DENIED"
     | "DATABASE_IDENTITY_DENIED"
+    | "DATABASE_NONEMPTY_DENIED"
     | "GRANT_DENIED"
+    | "MIGRATION_HISTORY_DENIED"
     | "PRESERVATION_DENIED",
 ): Promise<unknown> {
   try {
@@ -119,13 +189,9 @@ async function readDatabaseIdentity(
        current_user::text as database_user,
        current_setting('server_version_num')::text as version_num,
        version()::text as version_text`,
-    "DATABASE_IDENTITY_DENIED",
+    "DATABASE_CONNECTIVITY_DENIED",
   );
-  const parsed = z.array(identityRowSchema).safeParse(result);
-  if (!parsed.success || parsed.data.length !== 1) {
-    denyTask02Upgrade("DATABASE_IDENTITY_DENIED");
-  }
-  return parsed.data[0];
+  return assertTask02DatabaseIdentityShape(result);
 }
 
 async function readMigrationHistory(
@@ -134,13 +200,13 @@ async function readMigrationHistory(
   const existence = await unsafeQuery(
     client,
     `select to_regclass('drizzle.__drizzle_migrations')::text as relation_name`,
-    "DATABASE_IDENTITY_DENIED",
+    "MIGRATION_HISTORY_DENIED",
   );
   const parsedExistence = z
     .array(z.object({ relation_name: z.string().nullable() }).strict())
     .safeParse(existence);
   if (!parsedExistence.success || parsedExistence.data.length !== 1) {
-    denyTask02Upgrade("DATABASE_IDENTITY_DENIED");
+    denyTask02Upgrade("MIGRATION_HISTORY_DENIED");
   }
   if (parsedExistence.data[0].relation_name === null) return [];
 
@@ -149,10 +215,10 @@ async function readMigrationHistory(
     `select hash::text, created_at::text
        from drizzle.__drizzle_migrations
       order by created_at asc`,
-    "DATABASE_IDENTITY_DENIED",
+    "MIGRATION_HISTORY_DENIED",
   );
   const parsed = z.array(historyRowSchema).safeParse(result);
-  if (!parsed.success) denyTask02Upgrade("DATABASE_IDENTITY_DENIED");
+  if (!parsed.success) denyTask02Upgrade("MIGRATION_HISTORY_DENIED");
   return parsed.data;
 }
 
@@ -161,25 +227,10 @@ async function assertDatabaseIdentity(
   expectedEntries: MigrationChainEntry[],
 ): Promise<string> {
   const identity = await readDatabaseIdentity(client);
-  if (
-    identity.database_name !== TASK02_UPGRADE_CONTRACT.databaseName ||
-    identity.database_user !== TASK02_UPGRADE_CONTRACT.databaseUser ||
-    !identity.version_num.startsWith("16")
-  ) {
-    denyTask02Upgrade("DATABASE_IDENTITY_DENIED");
-  }
+  assertTask02DatabasePrincipal(identity);
 
   const history = await readMigrationHistory(client);
-  if (
-    history.length !== expectedEntries.length ||
-    history.some(
-      (row, index) =>
-        row.hash !== expectedEntries[index]?.sha256 ||
-        row.created_at !== expectedEntries[index]?.when,
-    )
-  ) {
-    denyTask02Upgrade("DATABASE_IDENTITY_DENIED");
-  }
+  assertTask02MigrationHistory(history, expectedEntries);
 
   if (expectedEntries.length === 0) {
     const tables = await unsafeQuery(
@@ -189,21 +240,53 @@ async function assertDatabaseIdentity(
          join pg_namespace n on n.oid = c.relnamespace
         where n.nspname = 'public'
           and c.relkind in ('r', 'p')`,
-      "DATABASE_IDENTITY_DENIED",
+      "DATABASE_NONEMPTY_DENIED",
     );
-    const parsedTables = z
-      .array(z.object({ table_count: z.coerce.number().int() }).strict())
-      .safeParse(tables);
-    if (
-      !parsedTables.success ||
-      parsedTables.data.length !== 1 ||
-      parsedTables.data[0].table_count !== 0
-    ) {
-      denyTask02Upgrade("DATABASE_IDENTITY_DENIED");
-    }
+    assertTask02EmptyPublicDatabase(tables);
   }
 
   return identity.version_text;
+}
+
+/**
+ * Docker health confirms PostgreSQL inside the container. This bounded,
+ * read-only probe additionally waits for the loopback port to accept a host
+ * connection before the harness begins any migration or fixture write. It
+ * retries connectivity only; a wrong identity or history fails immediately.
+ */
+async function waitForDatabaseIdentity(
+  client: DatabaseClient,
+  expectedEntries: MigrationChainEntry[],
+): Promise<string> {
+  const deadline = Date.now() + DATABASE_READINESS_WINDOW_MS;
+  let lastConnectivityFailure: Task02UpgradeHarnessError | null = null;
+
+  while (Date.now() < deadline) {
+    try {
+      return await assertDatabaseIdentity(client, expectedEntries);
+    } catch (error: unknown) {
+      if (
+        !(error instanceof Task02UpgradeHarnessError) ||
+        error.reason !== "DATABASE_CONNECTIVITY_DENIED"
+      ) {
+        throw error;
+      }
+      lastConnectivityFailure = error;
+      await delay(DATABASE_READINESS_RETRY_MS);
+    }
+  }
+
+  throw (
+    lastConnectivityFailure ??
+    new Task02UpgradeHarnessError("DATABASE_CONNECTIVITY_DENIED")
+  );
+}
+
+function createTask02DatabaseClient(): DatabaseClient {
+  return postgres(TASK02_UPGRADE_CONTRACT.databaseUrl, {
+    max: 1,
+    connect_timeout: DATABASE_CONNECT_TIMEOUT_SECONDS,
+  });
 }
 
 async function seedSyntheticPredecessorRows(client: DatabaseClient): Promise<void> {
@@ -510,10 +593,10 @@ export async function runTask02PredecessorUpgrade(
 ): Promise<Task02UpgradeDatabaseResult> {
   assertTask02UpgradeDatabaseUrl(TASK02_UPGRADE_CONTRACT.databaseUrl);
   const generatedView = createPredecessorMigrationView(repositoryRoot);
-  const client = postgres(TASK02_UPGRADE_CONTRACT.databaseUrl, { max: 1 });
+  const client = createTask02DatabaseClient();
 
   try {
-    const postgresVersion = await assertDatabaseIdentity(client, []);
+    const postgresVersion = await waitForDatabaseIdentity(client, []);
     await migrateSafely(client, generatedView.folder);
     await assertDatabaseIdentity(client, migrationIdentity.entries.slice(0, 18));
 
@@ -579,8 +662,9 @@ export async function verifyTask02UpgradeAfterRestart(
   expected: Task02DatabaseSnapshot,
 ): Promise<Task02DatabaseSnapshot> {
   assertTask02UpgradeDatabaseUrl(TASK02_UPGRADE_CONTRACT.databaseUrl);
-  const client = postgres(TASK02_UPGRADE_CONTRACT.databaseUrl, { max: 1 });
+  const client = createTask02DatabaseClient();
   try {
+    await waitForDatabaseIdentity(client, migrationIdentity.entries);
     const afterRestart = await readDatabaseSnapshot(
       client,
       migrationIdentity.entries,
