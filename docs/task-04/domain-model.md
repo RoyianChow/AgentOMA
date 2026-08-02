@@ -1,10 +1,31 @@
 # Task 04 — Booking and Waitlist Domain Model
 
-**Status:** Draft for review
+**Status:** Draft documented; review/correction in progress; runtime not implemented
 **Branch:** `task-04-booking-waitlist`
 **Environment:** Task 01 local synthetic sandbox
 **Production authorization:** None
-**Database implementation:** Blocked pending revised Task 01 approval
+**Synthetic implementation:** Approved on 2026-08-02 through 2026-08-05
+**Task 11 Checkpoint 1:** `APPROVED_TO_IMPLEMENT_SYNTHETIC`
+**Risk/autonomy:** `R3`; `A3_BOUNDED_AUTOMATION`
+**Expiry/review due:** 2026-08-05
+**Governance roles:** Accountable owner, backup owner, and Operations/SRE
+reviewer: Royian Chowdhury (consolidated, non-independent)
+
+The synthetic approval excludes production, G2, G3, live data, cloud databases,
+external effects, and production imports. Royian Chowdhury is the accountable
+owner, backup owner, and Operations/SRE reviewer; these are consolidated,
+non-independent roles. The sandbox loader validates
+`TASK04_SANDBOX_PHARMACY_ID` and exposes it to Task 04 as server-only
+`PHARMACY_ID`. No pharmacy selector, tenant selector, or multi-pharmacy runtime
+is introduced; cross-pharmacy rows are negative-test fixtures only.
+
+## Canonical planning references
+
+Shared boundary names and field contracts are canonical in
+[`api-and-zod-contracts.md`](api-and-zod-contracts.md); transitions are
+canonical in [`state-machines.md`](state-machines.md); evidence mapping is
+canonical in section 11.1 of
+[`pre-implementation-test-plan.md`](pre-implementation-test-plan.md).
 
 ## 1. Purpose
 
@@ -23,7 +44,9 @@ The system supports administrative appointment scheduling only. It does not:
 ## 2. Core design principles
 
 1. Actor identity and appointment subject identity remain separate.
-2. Pharmacy and tenant scope are derived from trusted server context.
+2. Pharmacy scope is server-only `PHARMACY_ID`, derived exclusively from
+   sandbox-owned `TASK04_SANDBOX_PHARMACY_ID`; it is never selected by a
+   client, token, fixture, or session input.
 3. Displayed availability is not proof that capacity still exists.
 4. Capacity must eventually be enforced transactionally by PostgreSQL.
 5. Retried commands must not duplicate bookings, waitlist entries, events, or
@@ -130,8 +153,8 @@ Capacity must never become negative.
 
 ### 3.5 Temporary capacity hold
 
-Temporarily reserves one capacity unit during an approved transaction, such as
-an expiring waitlist offer.
+Temporarily reserves one capacity unit for an expiring waitlist offer or a
+`pending_confirmation` booking.
 
 Minimum properties:
 
@@ -142,16 +165,22 @@ Minimum properties:
 - Expiry time.
 - Current status.
 - Waitlist-offer reference, where applicable.
+- Pending-booking reference, where applicable.
 - Consumed or released time.
 
-Suggested statuses:
+Canonical hold statuses:
 
 - `active`
 - `consumed`
 - `released`
 - `expired`
 
-An expired, released, or consumed hold cannot reserve capacity again.
+A hold is created atomically with its offer or pending booking and counts
+against capacity while `active`. Confirmation or offer acceptance atomically
+changes it to `consumed`; clock expiry changes it to `expired`; early
+cancellation, decline, or withdrawal changes it to `released`. Each terminal
+transition occurs exactly once using trusted server/database time, and no
+terminal hold can reserve capacity again.
 
 ### 3.6 Booking
 
@@ -168,6 +197,8 @@ Minimum properties:
 - Subject reference.
 - Delegation-grant reference, when applicable.
 - Current booking state.
+- Capacity-hold reference and confirmation deadline when
+  `pending_confirmation`.
 - Created time.
 - Last transition time.
 - Predecessor booking reference, when rescheduled.
@@ -249,7 +280,8 @@ under Task 04.
 
 ### 3.10 Waitlist entry
 
-Represents a request to be considered when an eligible slot becomes available.
+Represents a request to be considered when it satisfies the administrative,
+non-clinical `promotion_candidate` predicate for an available slot.
 
 Minimum properties:
 
@@ -278,6 +310,25 @@ A cancelled or expired entry cannot receive a promotion offer.
 
 The prototype must not expose exact waitlist position publicly.
 
+The exact `promotion_candidate` predicate is:
+
+1. the entry is `active`;
+2. trusted database time is earlier than the entry expiry;
+3. the entry and slot use the server-derived `PHARMACY_ID`;
+4. the service category matches and the service currently permits waitlisting;
+5. the modality preference exactly matches the slot modality;
+6. the slot is active and has an available capacity unit;
+7. the entry has no live offer or active hold; and
+8. selection follows
+   `PROPOSED_SYNTHETIC_ORDERING_PENDING_PRODUCT_CONFIRMATION`: ascending
+   `created_at`, then the opaque internal entry identifier, with no clinical
+   or identity-derived priority.
+
+Duplicate prevention permits at most one entry in `active` or `offered` for
+`(PHARMACY_ID, subject_reference, service_category_reference,
+modality_preference)`. Cross-pharmacy duplicate rows may be constructed only
+as database negative-test fixtures.
+
 ### 3.11 Waitlist offer
 
 Represents a temporary opportunity for one waitlist entry to accept a released
@@ -295,7 +346,7 @@ Minimum properties:
 - Accepted time, where applicable.
 - Safe reason code.
 
-Suggested statuses:
+Canonical offer statuses:
 
 - `pending`
 - `accepted`
@@ -316,35 +367,44 @@ Accepting an offer must atomically:
 7. Record the audit reference.
 8. Store the idempotent command result.
 
-### 3.12 Management-access token
+### 3.12 Management-access credential
 
 Provides a bounded way to manage one synthetic booking or waitlist workflow.
 
 The stored record contains:
 
-- Opaque token-record identifier.
-- Hash or digest of the presented token.
+- Opaque credential-record identifier.
+- Usage mode: `one_time` or `reusable`.
+- Hash or digest of the presented token for `one_time`; a reusable
+  server-session capability stores no bearer secret.
+- Opaque capability reference.
 - Authorized resource reference.
-- Authorized action scope.
+- Non-empty allowlisted authorized-action scope.
 - Actor or subject binding.
+- Synthetic server-session binding for `reusable`.
 - Issue time.
 - Expiry time.
 - Consumption time.
 - Revocation time.
 - Current status.
 
-Suggested statuses:
+Canonical credential statuses:
 
 - `active`
 - `consumed`
 - `expired`
 - `revoked`
 
-The raw token must not be stored in the database, logs, analytics, evidence, or
+The raw credential must not be stored in the database, logs, analytics, evidence, or
 domain events.
 
-Possession of a token is not sufficient authority by itself. Server-side scope
-and authorization must still be checked.
+The initial booking or waitlist transaction creates a reusable capability
+bound to the current synthetic server session. A one-time credential may be
+issued later for exactly one protected action and returned exactly once
+through its HTTPS POST response. It is consumed only when that mutation
+commits. Possession of either a reference or credential is not sufficient
+authority by itself. Server-side session, actor/subject/delegation, resource,
+action, expiry, revocation, and pharmacy scope must still be checked.
 
 ### 3.13 Idempotency record
 
@@ -363,7 +423,7 @@ Minimum properties:
 - Completion time.
 - Expiry or retention category, to be decided by approved policy.
 
-Suggested command statuses:
+Canonical idempotency statuses:
 
 - `in_progress`
 - `completed`
@@ -377,7 +437,48 @@ Required behavior:
 - Concurrent use of the same key cannot duplicate side effects.
 - Unknown client-side outcomes can be checked without repeating the operation.
 
-### 3.14 Domain event and transactional outbox record
+### 3.14 Administrative preference snapshot
+
+Persists only the non-clinical administrative fields that the staff queue and
+successor workflows require:
+
+- Opaque snapshot identifier.
+- Exactly one owner: booking or waitlist entry.
+- Structured language preference.
+- Bounded structured accessibility preferences.
+- Synthetic contact reference, never raw contact data.
+- Trusted creation time.
+- Optional source snapshot reference for an immutable transfer.
+
+`booking:create` and `waitlist:join` each create their own snapshot.
+Rescheduling creates a successor-booking snapshot copied from the predecessor
+request plus the new validated request fields; it never mutates the predecessor
+snapshot. Offer acceptance creates a booking-owned snapshot copied from the
+waitlist entry. A snapshot is never shared as mutable state, and it cannot
+change aggregate ownership. Cancellation, expiry, or revocation does not copy
+it elsewhere.
+
+### 3.15 Administrative acknowledgement record
+
+Persists evidence for the exact acknowledgement version used by a successful
+administrative command:
+
+- Opaque acknowledgement-record identifier.
+- Owning booking or waitlist-entry reference.
+- Canonical acknowledgement-version identifier.
+- The five literal-true acknowledgement flags.
+- Trusted acceptance time.
+- Safe actor type and delegation-grant reference where applicable.
+- Command receipt reference.
+
+No free text, signature image, contact value, clinical fact, or raw request is
+stored. Booking creation, waitlist joining, rescheduling, and offer acceptance
+write a record from their validated request in the same transaction.
+
+Joining a waitlist is an explicit `waitlist:join` command. Booking creation
+does not collect or persist a `waitlistOptIn` flag.
+
+### 3.16 Domain event and transactional outbox record
 
 Represents an internal fact created by a successful domain transition.
 
@@ -386,15 +487,23 @@ Minimum properties:
 - Opaque event identifier.
 - Event type.
 - Aggregate type.
-- Opaque aggregate reference.
-- Event version.
+- Opaque aggregate identifier (`aggregateId` at the API boundary;
+  `aggregate_id` in persistence).
+- Event schema version.
+- Aggregate version.
 - Occurred time.
+- Protected server-only pharmacy scope derived from `PHARMACY_ID`.
 - Safe actor type.
 - Safe reason code.
-- Synthetic marker.
-- Dispatch status.
+- Synthetic marker and source capability.
+- Dispatch status, always `not_dispatched` in Task 04.
+- Strict event-type-specific payload.
+- Cleanup metadata: `aggregate_version_superseded` and optional
+  `cleanup_eligible_at_utc`; neither is a dispatch state.
 
-Potential event types include:
+The exact event catalogue and payloads are the section 4A.13 discriminated
+union in [`api-and-zod-contracts.md`](api-and-zod-contracts.md). Representative
+types include:
 
 - `booking.created`
 - `booking.confirmed`
@@ -419,7 +528,7 @@ Domain events must not contain:
 Task 04 events do not send messages. Future external communication remains
 owned by Task 07.
 
-### 3.15 Audit reference
+### 3.17 Audit reference
 
 Represents safe transition evidence without storing sensitive payloads.
 
@@ -442,20 +551,20 @@ deleted to hide prior state.
 
 ## 4. Command model
 
-The domain must eventually support these commands:
+The canonical command/action/permission registry is section 4B of
+[`api-and-zod-contracts.md`](api-and-zod-contracts.md). It includes the public
+and protected reads plus:
 
-- Query public availability.
-- Create booking.
-- Retrieve authorized booking.
-- Cancel booking.
-- Reschedule booking.
-- Join waitlist.
-- Cancel waitlist entry.
-- Create waitlist offer.
-- Accept waitlist offer.
-- Expire waitlist offer.
-- Recover from an expired or revoked management path.
-- Query the synthetic pharmacist queue.
+- `booking:create`, `booking:confirm`, `booking:cancel`,
+  `booking:reschedule`, and `booking:expire`.
+- `waitlist:join`, `waitlist:leave`, `waitlist:promote`, and
+  `waitlist:expire`.
+- `waitlist:offer:create`, `waitlist:offer:accept`,
+  `waitlist:offer:decline`, and `waitlist:offer:withdraw`.
+- `management-credential:issue`, `management-credential:consume`, and
+  `management-credential:revoke`.
+- `queue:read`.
+- `automation:reconcile`, `automation:disable`, and `automation:enable`.
 
 Every command must:
 
@@ -485,7 +594,9 @@ DelegationGrant ── may authorize Actor for Subject
 Booking ── may reference predecessor/successor Booking
 Command ── protected by IdempotencyRecord
 Successful transition ── creates DomainEvent and AuditReference
-ManagementAccessToken ── authorizes a bounded management path
+ManagementAccessCredential ── supports a bounded, reverified management path
+Booking/WaitlistEntry ── owns immutable AdministrativePreferenceSnapshot
+Booking/WaitlistEntry ── owns AdministrativeAcknowledgementRecord
 ```
 
 ## 6. Required invariants
@@ -516,8 +627,8 @@ The synthetic booking workflow may represent only:
 - Modality preference.
 - Structured language preference.
 - Structured accessibility need.
-- Minimum necessary synthetic contact method.
-- Waitlist choice.
+- Server-owned `SyntheticContactReference`, never a raw contact destination.
+- Explicit waitlist-entry state created only by `waitlist:join`.
 - Required administrative acknowledgement.
 - Server-owned actor and subject references.
 
@@ -556,9 +667,9 @@ promotion policy has not been approved.
 
 ## 9. Database implementation boundary
 
-No database schema, migration, Docker configuration, PostgreSQL dependency, or
-Drizzle dependency will be added until the revised Task 01 sandbox approval is
-recorded.
-
-Once approved, the proposed schema must be reviewed against this domain model
-and implemented only inside the loopback-only synthetic environment.
+The exact loopback-only synthetic PostgreSQL scope was approved on 2026-08-02.
+Any future implementation must be reviewed against this domain model, remain
+inside `apps/experiment-sandbox/`, use deterministic synthetic data, and fail
+closed after 2026-08-05 unless review extends the approval. Production schema,
+production migration, cloud database, G2/G3, production import, and live-data
+work remain prohibited.

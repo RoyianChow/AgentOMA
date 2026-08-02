@@ -1,12 +1,30 @@
 # Task 04 — Pharmacist Booking Queue Contract
 
-**Status:** Draft for review
+**Status:** Draft documented; review/correction in progress; runtime not implemented
 **Branch:** `task-04-booking-waitlist`
 **Environment:** Task 01 local synthetic sandbox
 **Production authorization:** None
 **Production data:** Prohibited
-**Database implementation:** Blocked pending revised Task 01 approval
-**Task 11 Checkpoint 1:** Not yet reviewed
+**Synthetic implementation:** Approved on 2026-08-02 through 2026-08-05
+**Task 11 Checkpoint 1:** `APPROVED_TO_IMPLEMENT_SYNTHETIC`
+**Risk/autonomy:** `R3`; `A3_BOUNDED_AUTOMATION`
+**Expiry/review due:** 2026-08-05
+**Governance roles:** Accountable owner, backup owner, and Operations/SRE
+reviewer: Royian Chowdhury (consolidated, non-independent)
+
+Production, G2, G3, live data, cloud databases, external effects, and
+production imports remain prohibited. Royian Chowdhury holds the accountable
+owner, backup owner, and Operations/SRE reviewer roles; this is consolidated,
+non-independent coverage. Queue scope is always server-only `PHARMACY_ID`; no
+queue filter or session value may select a pharmacy or tenant.
+
+## Canonical planning references
+
+The exact queue query, item projection, enums, errors, and `queue:read`
+permission are canonical in
+[`api-and-zod-contracts.md`](api-and-zod-contracts.md); evidence mapping is
+canonical in section 11.1 of
+[`pre-implementation-test-plan.md`](pre-implementation-test-plan.md).
 
 ## 1. Purpose
 
@@ -145,9 +163,8 @@ Access requires:
 - Trusted synthetic staff identity.
 - Explicit approved staff actor type.
 - Active synthetic session.
-- Server-derived pharmacy scope.
-- Server-derived tenant scope.
-- Explicit queue-read permission.
+- Server-only `PHARMACY_ID`.
+- Exact `queue:read` permission.
 - Current Task 04 feature-gate approval.
 - Current kill-switch state.
 - Approved synthetic environment.
@@ -189,9 +206,9 @@ Every queue request must:
 4. Derive the actor from server context.
 5. Verify the synthetic staff actor type.
 6. Verify the active session.
-7. Derive pharmacy scope.
-8. Derive tenant scope.
-9. Verify the queue-read permission.
+7. Bind scope to server-only `PHARMACY_ID`, derived only from sandbox-owned
+   `TASK04_SANDBOX_PHARMACY_ID`.
+8. Verify the exact `queue:read` permission.
 10. Verify the Task 04 feature gate.
 11. Verify the kill switch.
 12. Apply only allowlisted filters.
@@ -287,37 +304,37 @@ The modality does not prove clinical suitability.
 
 ### 7.6 Administrative booking status
 
-Allowlisted administrative statuses may include:
+Allowlisted administrative statuses are:
 
 - `pending_confirmation`
 - `confirmed`
-- `cancelled`
 - `rescheduled`
-- `expired`
-
-Only statuses relevant to the queue should be included.
 
 ### 7.7 Structured language-preparation indicator
 
-Where necessary for administrative preparation, the queue may display a
-bounded structured indicator such as:
+The canonical enum is:
 
-- `none_recorded`
+- `no_preference`
 - `english`
 - `french`
-- `interpreter_preparation_requested`
-- `unknown`
+- `interpretation_coordination_requested`
 
 The queue must not display unrestricted language notes.
 
+The value is projected only from the current owning aggregate’s immutable
+`administrative_preference_snapshot`; it is not inferred from browser state,
+events, a profile, or a contact fixture.
+
 ### 7.8 Structured accessibility-preparation indicator
 
-Where necessary for administrative preparation, the queue may display:
+The canonical enum is:
 
-- `none_recorded`
-- `preparation_requested`
-- `contact_required`
-- `unknown`
+- `none`
+- `mobility_preparation`
+- `hearing_preparation`
+- `vision_preparation`
+- `communication_preparation`
+- `contact_about_accommodation`
 
 The queue must not reveal:
 
@@ -326,15 +343,15 @@ The queue must not reveal:
 - Medical explanation.
 - Unrestricted accommodation notes.
 
+The array is projected only from the same owning
+`administrative_preference_snapshot` as the language value.
+
 ### 7.9 Source
 
-The item may display a safe administrative source such as:
+The canonical source enum is:
 
-- `patient_booking`
-- `authorized_delegate_booking`
-- `staff_created_synthetic`
-- `waitlist_offer_acceptance`
-- `rescheduled_booking`
+- `booking`
+- `waitlist_promotion`
 
 The source must not reveal caregiver identity or grant details.
 
@@ -347,16 +364,11 @@ required.
 
 The item may display one allowlisted reason describing why it appears.
 
-Proposed reasons:
+The canonical reasons are:
 
-- `upcoming_confirmed_booking`
-- `pending_administrative_confirmation`
-- `language_preparation_requested`
-- `accessibility_preparation_requested`
+- `appointment_upcoming`
+- `confirmation_required`
 - `recently_rescheduled`
-- `waitlist_offer_accepted`
-- `administrative_review_required`
-- `unknown_safe_state`
 
 A reason code must not describe clinical urgency or patient health.
 
@@ -366,8 +378,7 @@ The item may indicate whether an approved administrative action is currently:
 
 - `permitted`
 - `not_permitted`
-- `blocked`
-- `unknown`
+- `temporarily_blocked`
 
 This value must be computed server-side.
 
@@ -399,7 +410,7 @@ The queue must not display or send to the client:
 - Email addresses.
 - Telephone numbers.
 - Mailing addresses.
-- Management tokens.
+- Management credentials.
 - Raw database identifiers.
 - Raw idempotency keys.
 - Billing codes.
@@ -421,19 +432,19 @@ The server should compose a purpose-built queue projection.
 Conceptual projection:
 
 ```text
-queueItemRef
+queueItemReference
 syntheticSubjectLabel
-appointmentStart
-appointmentEnd
+appointmentStartUtc
+appointmentEndUtc
 displayTimezone
 serviceCategoryLabel
 modality
 administrativeStatus
-languagePreparation
-accessibilityPreparation
-sourceCode
-createdAt
-operationalReasonCode
+languagePreference
+accessibilityPreferences
+source
+createdAtUtc
+operationalReason
 actionAvailability
 ```
 
@@ -442,12 +453,25 @@ hiding fields in the browser.
 
 Data minimization must happen before the server-to-client boundary.
 
+The strict response also includes the exact response-level fields from section
+4A.11 of [`api-and-zod-contracts.md`](api-and-zod-contracts.md):
+
+```text
+resultCompleteness
+unavailableSourceCategories
+freshnessState
+generatedAtUtc
+refreshGuidance
+```
+
+These fields are response metadata, not queue items and not authorization.
+
 ## 10. Server-rendering contract
 
 The protected queue route must:
 
 - Authenticate and authorize on the server.
-- Derive pharmacy and tenant scope on the server.
+- Bind scope to server-only `PHARMACY_ID`.
 - Query the authorized scope on the server.
 - Create the minimized projection on the server.
 - Render sensitive queue content on the server.
@@ -491,7 +515,7 @@ The final rendered page and hydration data must be inspected for:
 - Complete subject serialization.
 - Contact details.
 - Grant data.
-- Management tokens.
+- Management credentials.
 - Internal identifiers.
 - Hidden fields containing prohibited values.
 - Framework route-state leakage.
@@ -504,14 +528,15 @@ client bundle or hydration payload.
 
 The queue query must use a strict Zod object.
 
-Potential allowlisted fields:
+The exact allowlisted fields, types, strictness, and cross-field refinements are
+defined in section 4A.11 of
+[`api-and-zod-contracts.md`](api-and-zod-contracts.md). They are:
 
 - `status`
 - `modality`
-- `serviceCategory`
-- `operationalReason`
-- `dateFrom`
-- `dateTo`
+- `serviceCategoryRef`
+- `startDate`
+- `endDate`
 - `sort`
 - `cursor`
 - `pageSize`
@@ -535,17 +560,16 @@ The request must reject:
 
 ## 14. Filter contract
 
-Proposed safe filters:
+Safe filters are:
 
 - Administrative status.
 - Modality.
 - Service category.
-- Safe operational reason.
 - Bounded appointment-date range.
 
 Filters must not:
 
-- Change pharmacy or tenant scope.
+- Change `PHARMACY_ID` scope.
 - Search clinical information.
 - Search names.
 - Search contact information.
@@ -559,11 +583,8 @@ Unknown filter values fail closed.
 
 Queue ordering must be deterministic and server-owned.
 
-Proposed synthetic order:
-
-1. Appointment start time.
-2. Safe operational-reason order where explicitly approved.
-3. Opaque queue-item reference as a stable tie-breaker.
+Allowlisted order is `start_time_asc` or `created_at_asc`, with opaque
+queue-item reference as the stable server-owned tie-breaker.
 
 Ordering must not use:
 
@@ -667,6 +688,19 @@ The interface must provide usable states for:
 
 A partial or total failure must not appear as an empty successful queue.
 
+The strict response-state rules are:
+
+| State | Required response metadata |
+|---|---|
+| Both approved projections loaded within the freshness bound | `resultCompleteness = complete`; empty `unavailableSourceCategories`; `freshnessState = fresh`; `refreshGuidance = none` |
+| One projection unavailable | `resultCompleteness = partial`; the exact failed safe category in `unavailableSourceCategories`; truthful `freshnessState`; `refreshGuidance = refresh_available` or `retry_later` |
+| Any included projection outside its freshness bound | `freshnessState = stale`; `refreshGuidance = refresh_available` or `reauthenticate`; item actions are not presented as currently authoritative |
+| Both projections unavailable or response cannot be safely shaped | Fail with `TEMPORARILY_UNAVAILABLE`; do not return a successful empty response |
+
+The only safe source categories are `booking_projection` and
+`waitlist_promotion_projection`. `generatedAtUtc` always comes from trusted
+server time.
+
 ## 20. Empty state
 
 A successful empty state must clearly state that no matching synthetic
@@ -691,6 +725,10 @@ When one approved source fails:
 - Do not treat missing records as nonexistent.
 - Provide an accessible retry action where appropriate.
 
+These visible statements are driven by `resultCompleteness`,
+`unavailableSourceCategories`, and `refreshGuidance`; the client does not infer
+partial state from an empty array or a caught exception.
+
 ## 22. Total-failure state
 
 When the queue cannot be loaded safely:
@@ -710,6 +748,10 @@ Where freshness cannot be guaranteed, the queue must show:
 - The last safe refresh time where approved.
 - A safe retry action.
 - No claim that displayed action availability remains current.
+
+These statements are driven by `freshnessState`, `generatedAtUtc`, and
+`refreshGuidance`. The protected queue response is not browser- or
+shared-cacheable.
 
 All mutations must revalidate authoritative state.
 
@@ -810,7 +852,7 @@ Protected queue content must not be cached publicly.
 Any permitted server-side caching requires review of:
 
 - Authorization binding.
-- Pharmacy and tenant binding.
+- Server-only `PHARMACY_ID` binding.
 - Cache key.
 - Expiry.
 - Invalidation.
@@ -822,12 +864,11 @@ Browser persistence is prohibited.
 
 Unknown cache behavior fails closed.
 
-## 29. Cross-pharmacy and cross-tenant isolation
+## 29. Server-only pharmacy isolation
 
 Required controls:
 
-- Server-derived pharmacy scope.
-- Server-derived tenant scope.
+- Existing server-only `PHARMACY_ID` on every tenant read/write.
 - Scope predicates in every query.
 - Scope-safe relationships in the database where applicable.
 - No client-provided scope.
@@ -836,22 +877,22 @@ Required controls:
 - Denial tests.
 - Database constraint tests where applicable.
 
-A filter must never broaden scope.
+Task 04 has no pharmacy selector, tenant selector, or multi-pharmacy runtime. A
+filter must never broaden scope. Cross-pharmacy rows are database-level
+negative-test fixtures only; `QUEUE-AUTH-05` proves they cannot appear.
 
 ## 30. Safe errors
 
-Suggested safe errors:
+The queue uses only the canonical API subset:
 
-- `ACCESS_DENIED`
-- `SESSION_EXPIRED`
-- `QUEUE_TEMPORARILY_UNAVAILABLE`
-- `QUEUE_PARTIAL_RESULT`
-- `QUEUE_QUERY_INVALID`
-- `QUEUE_CURSOR_EXPIRED`
-- `QUEUE_ITEM_NO_LONGER_AVAILABLE`
-- `ACTION_NO_LONGER_PERMITTED`
+- `REQUEST_INVALID`
+- `NOT_AUTHORIZED`
+- `RATE_LIMIT_REACHED`
+- `TEMPORARILY_UNAVAILABLE`
 - `FEATURE_DISABLED`
-- `UNKNOWN_SAFE_STATE`
+
+Partial rendering is a successful minimized response with an allowlisted
+non-sensitive page state, not a second error-code namespace.
 
 Errors must not reveal:
 
@@ -879,8 +920,7 @@ Required queue fixtures include:
 - Action currently permitted.
 - Action currently blocked.
 - Unknown safe administrative state.
-- Item in another synthetic pharmacy.
-- Item in another synthetic tenant.
+- Cross-pharmacy database negative-test fixture.
 - Unauthorized staff actor.
 - Expired staff session.
 - Empty queue.
@@ -898,8 +938,8 @@ All fixtures must be deterministic and visibly synthetic.
 
 ### QUEUE-AUTH-01 — Authorized pharmacist
 
-Prove that an authorized synthetic pharmacist may access only the derived
-pharmacy and tenant scope.
+Prove that an authorized synthetic pharmacist with `queue:read` may access only
+the server-only `PHARMACY_ID` scope.
 
 ### QUEUE-AUTH-02 — Unauthorized role
 
@@ -914,7 +954,7 @@ Prove that submitting a pharmacist role does not grant access.
 
 Prove that a client-supplied pharmacy or tenant cannot broaden scope.
 
-### QUEUE-AUTH-05 — Cross-pharmacy item
+### QUEUE-AUTH-05 — Cross-pharmacy database negative-test fixture
 
 Prove that an item in another scope is not returned or revealed.
 
@@ -928,7 +968,9 @@ Prove that the server-owned feature gate denies access safely.
 
 ### QUEUE-AUTH-08 — Kill switch
 
-Prove that the reviewed kill-switch behavior is enforced.
+Prove that disabling promotion creation does not hide the read-only queue or
+prevent authorized safety cleanup. A separate confidentiality emergency gate
+may fail the view closed.
 
 ## 33. Required projection tests
 
@@ -982,7 +1024,8 @@ Prove free-text patient, contact, clinical, or caregiver searching is absent.
 
 ### QUEUE-FILTER-06 — Scope cannot change
 
-Prove filters and cursors cannot select another pharmacy or tenant.
+Prove filters and cursors cannot select a cross-pharmacy database negative-test
+fixture or any tenant/pharmacy selector.
 
 ## 35. Required state tests
 
@@ -1044,6 +1087,11 @@ Required checks include:
 - No colour-only status.
 - 56px frequent-action targets.
 - Loading, empty, stale, partial, denied, and error states.
+- Automated contrast checks for text, controls, status indicators, errors,
+  focus indicators, and non-text UI.
+- Manual contrast measurements for the same categories in default, hover,
+  focus, disabled, error, and high-zoom states, with screenshots and measured
+  ratios in the accessibility evidence deliverable.
 
 ## 38. Privacy and leakage tests
 
@@ -1110,7 +1158,7 @@ Before connecting a production pharmacist queue, the future owner must define:
 - Production pharmacist identity.
 - Staff role vocabulary.
 - Permission ownership.
-- Pharmacy and tenant scope.
+- Server-only `PHARMACY_ID` scope.
 - Authoritative booking source.
 - Data classification.
 - Minimum required fields.
@@ -1137,7 +1185,7 @@ Task 04 must not invent these production rules.
 Production queue access remains blocked until:
 
 - Task 05 production staff identity is approved.
-- Pharmacy and tenant scope are approved.
+- The production server-only `PHARMACY_ID` scope remains authoritative.
 - The production booking source is approved.
 - Minimum necessary production fields are approved.
 - Privacy review is complete.
@@ -1196,7 +1244,7 @@ The following remain unresolved:
 The Task 04 pharmacist queue will use a server-rendered, minimum-necessary
 synthetic projection for authorized staff.
 
-The queue will keep pharmacy and tenant scope server-derived, exclude clinical
+The queue will remain pinned to server-only `PHARMACY_ID`, exclude clinical
 and unnecessary identity information, prevent complete booking or patient
 objects from reaching client components, and present only safe administrative
 status, preparation, source, timing, reason, and action information.

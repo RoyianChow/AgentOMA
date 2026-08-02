@@ -2,14 +2,32 @@
 
 **Capability:** Synthetic Online Booking and Waitlist
 **Capability ID:** `TASK04_BOOKING_WAITLIST_SYNTHETIC`
-**Status:** Draft for Task 11 Checkpoint 1 review
+**Status:** Approved for synthetic implementation; evidence not yet produced
 **Branch:** `task-04-booking-waitlist`
 **Environment:** Task 01 local synthetic sandbox
-**Release stage:** `DESIGN_REVIEW`
+**Release stage:** `APPROVED_TO_IMPLEMENT_SYNTHETIC`
 **Production authorization:** None
-**Task 01 database extension:** Pending approval
-**Task 11 Checkpoint 1:** Not yet reviewed
-**Requested decision:** `APPROVED_TO_IMPLEMENT_SYNTHETIC`
+**Task 01 database extension:** Approved for the exact loopback-only synthetic scope
+**Task 11 Checkpoint 1:** `APPROVED_TO_IMPLEMENT_SYNTHETIC`
+**Synthetic approval recorded:** 2026-08-02
+**Risk tier:** `R3`
+**Autonomy:** `A3_BOUNDED_AUTOMATION`
+**Accountable owner:** Royian Chowdhury
+**Backup owner:** Royian Chowdhury
+**Operations/SRE reviewer:** Royian Chowdhury
+**Expiry/review due:** 2026-08-05
+
+These roles are consolidated and non-independent, as disclosed in the
+append-only approval record. Production, G2 hosted preview, G3 production
+imports, live or production-derived data, cloud databases, external effects,
+and production deployment remain prohibited.
+
+## Canonical planning references
+
+Boundary fields/enums/errors are canonical in
+[`api-and-zod-contracts.md`](api-and-zod-contracts.md); transitions are
+canonical in [`state-machines.md`](state-machines.md); section 11.1 of this
+document is the single control-to-evidence matrix.
 
 ## 1. Bounded purpose
 
@@ -88,7 +106,7 @@ Effects:
 - Capacity acquisition or release.
 - Idempotency result.
 - Audit reference.
-- Stubbed transactional outbox event.
+- Transactional outbox event with `dispatch_status = not_dispatched`.
 
 ### T04-C — Waitlist and promotion offers
 
@@ -103,7 +121,7 @@ Effects:
 - Booking creation after valid offer acceptance.
 - Idempotency result.
 - Audit reference.
-- Stubbed transactional outbox event.
+- Transactional outbox event with `dispatch_status = not_dispatched`.
 
 ### T04-D — Management and recovery
 
@@ -134,7 +152,7 @@ Effects:
 
 Purpose:
 
-- Expire synthetic offers, holds, pending requests, and access tokens using a
+- Expire synthetic offers, holds, pending requests, and management credentials using a
   deterministic clock.
 
 Effects:
@@ -144,29 +162,34 @@ Effects:
 
 ## 4. Risk tier and autonomy level
 
-### Proposed risk tier
+### Approved risk tier
 
-`R2`
+`R3`
 
 Reason:
 
 The capability creates mutable non-clinical administrative state and requires
-authorization, tenant pinning, audit evidence, idempotency, accessibility,
+authorization, server-only `PHARMACY_ID` pinning, audit evidence, idempotency,
+accessibility,
 rollback, and real-database constraint testing.
 
-Task 11 reviewers must confirm or raise the tier. The implementer must not lower
-an approved tier without independent review.
+Task 11 approved this tier on 2026-08-02. It must not be lowered without a new
+authorized review.
 
-### Proposed autonomy levels
+### Approved autonomy level
 
-| Capability | Proposed level | Reason |
+The capability-level registration is `A3_BOUNDED_AUTOMATION`. Individual
+human-triggered commands remain human-triggered behavior inside that exact
+registered capability; they are not separate capability registrations.
+
+| Capability behavior | Execution mode | Reason |
 |---|---|---|
-| Public availability | `A0_INERT` | Read-only display |
-| Patient booking, cancellation, and rescheduling | `A2_HUMAN_TRIGGERED` | Authorized actor triggers a bounded action |
-| Waitlist join, leave, and offer acceptance | `A2_HUMAN_TRIGGERED` | Authorized actor triggers a bounded action |
-| Staff administrative actions | `A2_HUMAN_TRIGGERED` | Authorized staff explicitly triggers action |
-| Offer and hold expiry | `A3_BOUNDED_AUTOMATION` | Deterministic worker acts after a configured deadline |
-| Promotion-offer creation, if automated | `A3_BOUNDED_AUTOMATION` | Server performs a preapproved non-clinical transition |
+| Public availability | Read-only within `A3_BOUNDED_AUTOMATION` | No mutation |
+| Booking, cancellation, rescheduling | Human-triggered within `A3_BOUNDED_AUTOMATION` | Authorized actor starts bounded command |
+| `waitlist:join`, `waitlist:leave`, `waitlist:offer:accept`, and `waitlist:offer:decline` | Human-triggered within `A3_BOUNDED_AUTOMATION` | Authorized actor starts bounded command |
+| Staff administrative actions | Human-triggered within `A3_BOUNDED_AUTOMATION` | Authorized staff starts bounded command |
+| Offer, hold, pending-booking, and credential expiry | Automated within `A3_BOUNDED_AUTOMATION` | Trusted-time worker executes bounded terminal transition |
+| Promotion-offer creation | Automated within `A3_BOUNDED_AUTOMATION` | Server applies the exact non-clinical `promotion_candidate` predicate |
 
 No `A4_PROHIBITED_AUTONOMY` is permitted.
 
@@ -202,15 +225,18 @@ A synthetic delegate may act only when a server-owned synthetic grant is:
 
 The production delegation policy remains owned by Task 05.
 
-### Pharmacy and tenant scope
+### Pharmacy scope
 
-Pharmacy and tenant scope are always server-derived.
-
-The client cannot select or switch pharmacy or tenant scope.
+Every tenant-scoped read/write is pinned to server-only `PHARMACY_ID`, derived
+only from sandbox-owned `TASK04_SANDBOX_PHARMACY_ID`. Task 04 adds no pharmacy
+selector, tenant selector, or
+multi-pharmacy runtime. Cross-pharmacy records are database-level negative-test
+fixtures only and can never select or broaden runtime scope.
 
 ### Staff authority
 
-Staff actions require a server-owned synthetic staff role.
+Staff actions require a server-owned synthetic staff role. Pharmacist queue
+reads require the exact `queue:read` permission.
 
 Displaying an action in the interface does not grant server authorization.
 
@@ -221,7 +247,7 @@ Displaying an action in the interface does not grant server authorization.
 | Actor identity | Task 01 server-owned synthetic identity |
 | Subject relationship | Server-owned synthetic fixture |
 | Delegation | Server-owned synthetic grant fixture |
-| Pharmacy scope | Task 01 trusted server context |
+| Pharmacy scope | Existing server-only `PHARMACY_ID` |
 | Service and slot configuration | Task 04 server-owned synthetic configuration |
 | Booking state | Task 04 booking domain service |
 | Capacity | Approved Task 04 PostgreSQL capacity model |
@@ -285,7 +311,7 @@ prohibited sink.
 
 1. Browser sends a bounded availability query.
 2. Server validates the query with strict Zod.
-3. Server derives pharmacy scope.
+3. Server binds scope to server-only `PHARMACY_ID`.
 4. Server reads synthetic availability.
 5. Server returns only a minimized public projection.
 6. No exact capacity, staff, patient, or private schedule data reaches the
@@ -301,7 +327,7 @@ prohibited sink.
 6. The same transaction stores:
    - Idempotency result.
    - Audit record.
-   - Stubbed outbox event.
+   - Outbox event with `dispatch_status = not_dispatched`.
 7. Server returns a minimized safe response.
 8. No external notification occurs.
 
@@ -321,7 +347,8 @@ prohibited sink.
 
 ### Pharmacist queue
 
-1. Server derives synthetic staff identity and pharmacy scope.
+1. Server derives synthetic staff identity and binds server-only
+   `PHARMACY_ID`.
 2. Server composes minimum necessary queue items.
 3. Server renders the queue.
 4. Client components receive only approved filter and interaction values.
@@ -338,7 +365,8 @@ prohibited sink.
 - Capacity-hold changes.
 - Idempotency records.
 - Append-only audit records.
-- Stubbed outbox records.
+- Outbox records with `dispatch_status = not_dispatched`,
+  `synthetic_marker`, and `source_capability`.
 - Lifecycle expiry transitions.
 
 ### Prohibited effects
@@ -370,7 +398,7 @@ Audit and event records must be append-only.
 - Capacity integrity.
 - Booking and waitlist state integrity.
 - Actor-subject authorization.
-- Pharmacy and tenant isolation.
+- Server-only `PHARMACY_ID` isolation.
 - Management credentials.
 - Idempotency results.
 - Audit and event history.
@@ -386,7 +414,7 @@ Audit and event records must be append-only.
 - Cancellation.
 - Rescheduling.
 - Waitlist join.
-- Waitlist cancellation.
+- `waitlist:leave`.
 - Offer acceptance.
 - Management recovery.
 - Pharmacist queue filters and actions.
@@ -444,6 +472,129 @@ Each implemented control must have:
 A skipped, cancelled, timed-out, flaky, missing, stale, or unavailable test is
 not a pass.
 
+### 11.1 Canonical control-to-evidence matrix
+
+This is the single Task 04 requirement-to-evidence matrix. Other Task 04
+documents reference these rows rather than creating conflicting matrices.
+“Registered reviewer” means Royian Chowdhury acting in the named consolidated
+role; the resulting review is explicitly non-independent.
+
+| Control/requirement ID | Requirement/invariant | Test IDs | Environment | Expected evidence | Required reviewer | Pass semantics | Checkpoint | Current blocker/approval state |
+|---|---|---|---|---|---|---|---|---|
+| `T04-GOV-01` | Exact scope, `R3`, `A3_BOUNDED_AUTOMATION`, owner/reviewer, expiry, and fail-closed gate | `T04-DRILL-AUTOMATION-DISABLE` | Pure plus sandbox lifecycle | Decision hash, gate tests, trusted expiry evidence | Task 11/Operations registered reviewer | Exact metadata matches; execution denied after expiry | CP1 and CP2 | CP1 approved through 2026-08-05; runtime evidence pending |
+| `T04-SCOPE-01` | No production, G2/G3, live data, cloud DB, external effect, or production import | `T04-ARCH-TASK01-BOUNDARY` | Pure/architecture | Import/network/env scans and production-invariance artifact | Security/Privacy registered reviewer | Every prohibited path unreachable; any unknown is fail | CP2 | Synthetic scope approved; evidence pending |
+| `T04-PHARMACY-01` | Sandbox loader derives server-only `PHARMACY_ID` only from `TASK04_SANDBOX_PHARMACY_ID`; no production inheritance, selector, or runtime switching | `T04-ARCH-TASK01-BOUNDARY`, `T04-DB`, `T04-QUEUE` | Pure plus real PostgreSQL | Startup validation, injection denials, and cross-pharmacy negative-fixture results | Security/Privacy registered reviewer | Missing/malformed/non-synthetic config fails closed; no fixture outside `PHARMACY_ID` can be read, related, or mutated | CP2 | Design approved; evidence pending |
+| `T04-ADMIN-01` | Administrative-only; no clinical/eligibility/billing behavior or unrestricted clinical text | `T04-ZOD`, `T04-PRIV`, `T04-UI` | Pure/UI | Schema rejection, content scan, UI evidence | Quality/Security registered reviewer | All prohibited fields/claims absent | CP2 | Design approved; evidence pending |
+| `T04-CAP-01` | Confirmed bookings plus active holds never exceed capacity | `T04-DB`, `T04-RACE` (`RACE-01`-`RACE-19`) | Real PostgreSQL | Constraint and synchronized race results | Quality/Operations registered reviewer | Invariant holds after every commit/rollback | CP2 | Database scope approved; implementation/evidence pending |
+| `T04-HOLD-01` | Pending booking/offer hold is atomic and counted; confirm/accept consumes, clock expires, early exit releases once | `T04-BOOK`, `T04-WAIT`, `T04-DB`, `T04-RACE` | Pure plus real PostgreSQL | State assertions, row ownership, event/audit evidence | Quality/Operations registered reviewer | Exactly one terminal state/effect under all races | CP2 | Design approved; implementation/evidence pending |
+| `T04-IDEM-01` | Same request returns original; changed payload conflicts; one concurrent effect | `T04-IDEM`, `T04-RACE` | Pure plus real PostgreSQL | Receipt/fingerprint/race evidence | Quality registered reviewer | One effect/receipt; no success after rollback | CP2 | Design approved; evidence pending |
+| `T04-WAIT-01` | Exact non-clinical `promotion_candidate`, `PROPOSED_SYNTHETIC_ORDERING_PENDING_PRODUCT_CONFIRMATION`, and live duplicate scope | `T04-WAIT`, `T04-DB`, `T04-RACE` | Pure plus real PostgreSQL | Predicate cases, ordering-label assertion, partial unique constraint, worker races | Quality registered reviewer | Only matching candidate selected under the proposed synthetic order; one live scoped entry/offer | CP2 | Synthetic predicate implementation approved; ordering remains pending product confirmation and production priority remains blocked |
+| `T04-AUTH-01` | Server-derived actor/subject/grant/current authority for every command | `T04-AUTH` | Pure plus real PostgreSQL where relationship constrained | Authorization matrix and denial equivalence | Security/Privacy registered reviewer | All negative cases denied without existence leak | CP2 | Synthetic fixture contract approved; production Task 05 blocked |
+| `T04-CRED-01` | Reusable/session-bound and one-time credential issuance, digest/scope/expiry/revocation/atomic consumption enforced | `T04-CREDENTIAL-LIFECYCLE` | Pure plus real PostgreSQL | Issuance, replay, failed-mutation, success-consumption, revocation-race, generic recovery evidence | Security registered reviewer | Raw secret returned once; failures do not consume; terminal/wrong-scope authority never authorizes | CP2 | Design approved; evidence pending |
+| `T04-ZOD-01` | Every request/response/event uses exact strict canonical schema and bounds | `T04-REGISTRY-COMMAND`, `T04-EVENT-ENVELOPE` | Pure | Positive/negative parse cases and response-shape snapshots | Quality registered reviewer | Unknown/invalid/out-of-bound data rejected; normalized outputs exact | CP2 | Canonical contract documented; runtime evidence pending |
+| `T04-ERROR-01` | Canonical generic error registry and endpoint subsets | `T04-ZOD`, `T04-PRIV`, `T04-UI` | Pure/UI | Error mapping and forbidden-marker scans | Security/Accessibility registered reviewer | Only allowed code/message emitted; no raw detail | CP2 | Canonical contract documented; evidence pending |
+| `T04-EVENT-01` | Canonical versioned discriminated union, exact payload/reason, aggregate version/protected scope, no external delivery | `T04-EVENT-ENVELOPE` | Pure plus real PostgreSQL/architecture | Atomic outbox rows, every union member parses, wrong payload/reason rejects, network denial | Security/Quality registered reviewer | One committed event; `dispatch_status=not_dispatched`; no forbidden field or dispatch state | CP2 | Synthetic outbox approved; Task 07 delivery blocked |
+| `T04-AUDIT-01` | Every successful transition has append-only synthetic audit evidence; audit failure rolls back | `T04-DB`, `T04-RACE`, `T04-EVENT` | Real PostgreSQL | Append-only/rollback/concurrency results | Quality registered reviewer | No domain success without one matching safe audit effect | CP2 | Synthetic audit model approved; production audit implementation excluded |
+| `T04-PRIV-01` | No PHI/contact/credentials in URLs, logs, storage, analytics, events, screenshots, hydration | `T04-PRIV`, `T04-BOUNDARY` | Pure/architecture/UI | Deterministic forbidden-marker scans | Security/Privacy registered reviewer | Zero forbidden-marker sink findings | CP2 | Design approved; evidence pending |
+| `T04-QUEUE-01` | Server-rendered minimized queue; `queue:read`; canonical query/item; strict complete/partial/stale response; no aggregate ref | `T04-QUEUE-PARTIAL` | Pure/UI plus real PostgreSQL scope test | Projection allowlist, response-state parses, bundle/hydration scans, permission denials | Security/Accessibility registered reviewer | Exact fields only; partial/stale is truthful; unauthorized/cross-scope reads denied | CP2 | Design documented; runtime evidence pending |
+| `T04-ABUSE-01` | Privacy-preserving bounded rate/size/enumeration/replay controls and safe public-availability cache | `T04-ABUSE`, `T04-ZOD`, `T04-CACHE-AVAILABILITY` | Pure/integration | Limit, cache, recovery, and failure-mode evidence | Security/Accessibility registered reviewer | Cache hits cannot bypass controls/auth/capacity; protected data never cached; recovery remains accessible | CP2 | Synthetic configuration bounds remain implementation inputs, not production policy |
+| `T04-A11Y-01` | Keyboard, screen reader, reflow, touch, status, automated/manual contrast | `T04-A11Y`, `T04-UI` | UI automated plus manual | Reports, notes, screenshots, measured contrast ratios | Accessibility registered reviewer | No blocking finding; every listed category evidenced | CP2 | Evidence deliverable planned |
+| `T04-TIME-01` | UTC instants, explicit IANA timezone, calendar/DST ambiguity handled | `T04-TIME`, `T04-ZOD`, `T04-RACE` | Pure/UI plus real PostgreSQL time races | DST cases, render evidence, trusted-time race result | Quality/Accessibility registered reviewer | No silent reinterpretation; database time decides expiry | CP2 | Design documented; evidence pending |
+| `T04-A3-01` | Promotion breaker/kill switch stops new automation but preserves bounded safety cleanup | `T04-DRILL-AUTOMATION-DISABLE` | Pure plus real PostgreSQL/drill | Queued/in-flight/acceptance/expiry/reconciliation artifacts | Operations/Task 11 registered reviewer | No new offer after disable; cleanup completes; reset is authorized/evidenced | CP2 | Behavior documented; drill pending |
+| `T04-REC-01` | Unknown outcome, rollback, downtime, restore, and reconciliation are safe | `T04-DRILL-RECOVERY` | Real PostgreSQL/drill | Reconciliation report and rollback/restore evidence | Operations/Quality registered reviewer | No partial state; every mismatch blocked or owned | CP2 | Design documented; evidence pending |
+| `T04-VERIFY-01` | Root and sandbox sanctioned commands pass at exact source commit | `T04-BOUNDARY` plus command manifests | Root and sandbox | Command outputs, hashes, evidence manifest | Quality/Task 11 registered reviewer | Every command exits zero; skipped/stale result is fail | CP2 | Planned; no verification claimed |
+
+### 11.2 Stable planned evidence/test contracts
+
+These identifiers are canonical and must be used unchanged in test names,
+artifact manifests, and the matrix above.
+
+#### T04-DRILL-AUTOMATION-DISABLE
+
+- Planned test: disable `A3_BOUNDED_AUTOMATION` with queued and
+  barrier-paused promotion work, then exercise acceptance, expiry,
+  cancellation, reconciliation, and authorized reset.
+- Pass: no new offer commits after disable; blocked acceptance has no mutation;
+  bounded safety cleanup completes; reset evidence identifies the authorized
+  actor and control version.
+- Evidence: sanitized run manifest, barrier trace categories, invariant query
+  results, and hashes.
+
+#### T04-DRILL-RECOVERY
+
+- Planned test: exercise unknown committed/uncommitted outcomes, expired and
+  revoked access, database interruption, restart, and reconciliation.
+- Pass: no duplicate effect or unsafe existence disclosure; committed results
+  are recovered; uncommitted work leaves no partial state.
+- Evidence: sanitized recovery matrix, reconciliation report, invariant query
+  results, and hashes.
+
+#### T04-ARCH-TASK01-BOUNDARY
+
+- Planned test: prove Task 04 imports and runtime reachability remain inside
+  `apps/experiment-sandbox/` and cannot reach production adapters, hosts,
+  environment, storage, authentication, or data.
+- Pass: every prohibited import/network/environment path fails closed; only
+  deterministic synthetic fixtures and loopback database are reachable.
+- Evidence: boundary scan, production-invariance artifact, and hashes.
+
+#### T04-REGISTRY-COMMAND
+
+- Planned test: table-drive every section 4B command through its exact actor,
+  permission/credential, strict request/response, idempotency, error subset,
+  event, audit, and boundary contract.
+- Pass: missing/unknown fields, wrong actors/permissions, aliases, and wrong
+  response shapes reject; every authorized success has only its registered
+  effects.
+- Evidence: command registry coverage report and snapshots.
+
+#### T04-CREDENTIAL-LIFECYCLE
+
+- Planned test: cover reusable server-session capability issuance/use,
+  one-time credential issuance, non-replay of the raw secret, failed-mutation
+  non-consumption, successful atomic consumption, expiry, revocation,
+  predecessor/successor rotation, and offer-to-booking transfer.
+- Pass: possession alone never authorizes; raw secret appears only once;
+  terminal/wrong-scope credentials fail generically; one protected commit
+  consumes once.
+- Evidence: lifecycle transition matrix, race results, prohibited-sink scan,
+  and hashes.
+
+#### T04-QUEUE-PARTIAL
+
+- Planned test: exercise complete/fresh, one-source partial, stale,
+  total-failure, denied, and reauthentication states against the exact strict
+  queue response.
+- Pass: empty success is never used for partial/total failure; unavailable
+  source categories, freshness, generated time, and refresh guidance are
+  truthful and accessible.
+- Evidence: schema snapshots, server-rendered UI results, hydration scan, and
+  accessibility notes.
+
+#### T04-EVENT-ENVELOPE
+
+- Planned test: parse every event union member and reject mismatched
+  `eventType`, `aggregateType`, payload, safe reason code, scope, version,
+  dispatch status, cleanup metadata, and forbidden field.
+- Pass: event and domain mutation commit or roll back together;
+  `dispatch_status` remains only `not_dispatched`; payloads are minimized; no
+  external effect occurs.
+- Evidence: union coverage report, transaction results, forbidden-marker
+  scan, network-denial artifact, and hashes.
+
+#### T04-CACHE-AVAILABILITY
+
+- Planned test: cover complete cache-key isolation, configured TTL expiry,
+  hit/miss equivalence for rate/enumeration controls, post-commit
+  invalidation, bypass on absent TTL/unknown freshness, startup failure for
+  malformed TTL, request failure for unknown controls, and transactional
+  booking revalidation after a stale displayed result.
+- Pass: HTTP response is always `Cache-Control: no-store`; only strict public
+  availability response data enters the server cache; protected responses and
+  browser storage remain empty; cache state never authorizes capacity.
+- Evidence: sanitized cache trace categories, response-header assertions,
+  protected-cache scan, transaction result, and hashes.
+
 ## 12. Synthetic fixture plan
 
 ### Fixture-set version
@@ -489,7 +640,7 @@ Proposed:
 - Rescheduled booking with successor.
 - Expired request.
 - Booking owned by another subject.
-- Booking in another synthetic pharmacy scope.
+- Booking in a cross-pharmacy database negative-test fixture.
 
 #### Waitlist entries
 
@@ -500,7 +651,7 @@ Proposed:
 - Expired entry.
 - Entry with no live offer.
 - Entry with one live offer.
-- Ineligible entry.
+- Entry that fails one `promotion_candidate` criterion.
 
 #### Offers and holds
 
@@ -581,6 +732,10 @@ Prove:
 - Full slot returns `SLOT_NO_LONGER_AVAILABLE`.
 - Displayed availability is revalidated.
 - Pending confirmation is used only where configured.
+- Pending confirmation and its active expiring hold are created atomically.
+- The pending hold counts against capacity.
+- Confirmation consumes the hold; cancellation releases it; trusted-time
+  expiry expires it, each exactly once.
 - Cancellation transitions once.
 - Rescheduling creates a successor and preserves history.
 - Invalid state transitions fail closed.
@@ -593,10 +748,15 @@ Prove:
 
 - Valid join creates one active entry.
 - Duplicate active entry is prevented.
-- Cancellation is idempotent.
+- `waitlist:leave` is idempotent, results in `cancelled`, and emits
+  `waitlist.cancelled`.
 - Cancelled or expired entries cannot be promoted.
+- Promotion uses only the exact non-clinical `promotion_candidate` predicate.
+- The live-entry duplicate scope is `(PHARMACY_ID, subject_reference,
+  service_category_reference, modality_preference)` for `active` or `offered`.
 - Only one live offer exists per entry.
-- Offer expiry releases its hold.
+- Offer clock expiry changes its hold to `expired`; early decline,
+  cancellation, or withdrawal changes it to `released`.
 - Acceptance creates one booking.
 - Retry returns the same booking.
 - Exact waitlist position is never exposed.
@@ -609,7 +769,7 @@ Cover:
 - Repeated cancellation.
 - Repeated rescheduling.
 - Repeated waitlist join.
-- Repeated waitlist cancellation.
+- Repeated `waitlist:leave`.
 - Repeated offer creation.
 - Repeated offer acceptance.
 - Same key with changed payload.
@@ -631,7 +791,7 @@ Cover:
 - Insufficient-scope delegate.
 - Authorized staff.
 - Unauthorized staff role.
-- Cross-pharmacy attempt.
+- Cross-pharmacy database negative-test fixture attempt.
 - Expired session.
 - Active management credential.
 - Expired management credential.
@@ -642,7 +802,7 @@ Cover:
 
 ### T04-DB — PostgreSQL constraints
 
-Run only after the Task 01 database extension is approved.
+Run only inside the exact Task 01 database scope approved on 2026-08-02.
 
 Prove at the database layer:
 
@@ -653,7 +813,8 @@ Prove at the database layer:
 - Terminal states cannot become active again.
 - Cancelled or expired entries cannot be promoted.
 - Historical predecessor and successor relationships remain valid.
-- Cross-pharmacy relationships are rejected.
+- Cross-pharmacy negative-test fixtures cannot satisfy a scoped relationship,
+  query, capacity mutation, or command.
 - Audit records cannot be silently altered.
 - Outbox records commit with domain state.
 
@@ -677,6 +838,9 @@ Cover:
 - Cancellation racing offer creation.
 - Offer acceptance racing expiry.
 - Offer acceptance racing cancellation.
+- Pending confirmation racing confirmation.
+- Pending confirmation racing cancellation.
+- Pending confirmation racing trusted-time expiry.
 - Two slots becoming available simultaneously.
 - Concurrent identical idempotency keys.
 - Concurrent conflicting payloads using one key.
@@ -746,9 +910,10 @@ Cover:
 - Booking confirmation.
 - Cancellation.
 - Rescheduling.
-- Waitlist opt-in.
-- Waitlist cancellation.
-- Offer acceptance.
+- Explicit `waitlist:join` choice; booking creation contains no
+  `waitlistOptIn` field.
+- `waitlist:leave`.
+- `waitlist:offer:accept` and `waitlist:offer:decline`.
 - Expired access.
 - Expired offer.
 - Stale slot.
@@ -777,6 +942,10 @@ Cover:
 - No essential hover-only action.
 - Frequent one-handed actions meeting the repository’s 56px target.
 - Accessible recovery after rate limiting or expiry.
+- Automated contrast checks for text, controls, status indicators, errors,
+  focus indicators, and non-text UI.
+- Manual contrast measurements for those same categories in default, hover,
+  focus, disabled, error, and high-zoom states.
 
 ### T04-TIME — Timezone and localization
 
@@ -805,7 +974,8 @@ Prove:
 - Outbox rows commit with domain changes.
 - Failed transactions leave no outbox row.
 - No email, SMS, push, webhook, or calendar adapter is contacted.
-- Events remain explicitly `stubbed` or `not_dispatched`.
+- Every event has `dispatch_status = not_dispatched`; synthetic stub identity
+  uses `synthetic_marker` and `source_capability`.
 - No event can complete an assessment or create a claim.
 
 ### T04-QUEUE — Pharmacist queue
@@ -813,7 +983,8 @@ Prove:
 Prove:
 
 - Queue is server-rendered.
-- Staff and pharmacy scope are server-derived.
+- Staff authority includes `queue:read` and scope is server-only
+  `PHARMACY_ID`.
 - Only minimum necessary administrative fields are shown.
 - Complete booking and contact objects do not reach client components.
 - Cross-pharmacy items are denied.
@@ -853,6 +1024,10 @@ Evidence will include:
 - Long-label evidence.
 - Focus-order and visible-focus evidence.
 - 56px frequent-action evidence.
+- Automated contrast reports covering text, controls, status indicators,
+  errors, focus indicators, and non-text UI.
+- Manual contrast measurements and screenshots for the same categories,
+  including interaction states that automated tools cannot establish.
 
 Screenshots must contain only unmistakably synthetic data.
 
@@ -864,6 +1039,29 @@ Every accessibility finding must have:
 - Remediation owner.
 - Regression test.
 - Review status.
+
+## 14A. Administrative copy contract
+
+The copy below is a synthetic planning contract, not approved production
+wording. It contains no production response-time promise.
+
+| Copy ID | Required synthetic meaning | Placement | Owner/status |
+|---|---|---|---|
+| `COPY-EMERGENCY` | “Synthetic prototype: If this were an emergency, do not use this booking form. Use the emergency service appropriate to your location.” | Visibly before submission and repeated on confirmation/recovery | Product/copy owner Royian Chowdhury; `DRAFT_SYNTHETIC_COPY`, human copy/accessibility approval required before implementation |
+| `COPY-NOT-MONITORED` | “This booking service is not monitored for symptoms or emergencies. Do not enter medical details.” | Before the first data entry, immediately before submission, and on confirmation | Same owner/status |
+| `COPY-CONFIRMATION` | “Your request is confirmed only when the displayed status is Confirmed. Pending confirmation is a temporary administrative hold, not a confirmed appointment.” | Immediately before submission and adjacent to the resulting status | Same owner/status |
+| `COPY-ADMIN-RESPONSE` | “This synthetic prototype sends no messages. Check the displayed administrative status. No production response time has been approved.” | Before submission, on confirmation, and in recovery | Same owner/status |
+
+Production copy, jurisdiction-specific emergency wording, and response times
+require separate product, accessibility, privacy/legal, and operations approval.
+Implementation must source copy from a versioned synthetic configuration
+object owned by the capability owner; components must not create variants.
+
+Accessibility tests must prove the copy is visible (not only ARIA text), precedes
+the submit control in reading/focus order, remains present at 375px and 400%
+zoom, has appropriate live-region behavior for changed confirmation status,
+uses plain language, does not rely on colour, and passes the automated/manual
+contrast evidence requirements above.
 
 ## 15. Failure plan
 
@@ -922,7 +1120,7 @@ The service must prove:
 
 ## 17. Concurrency plan
 
-After database approval:
+Within the approved synthetic database scope:
 
 - Use a fresh loopback-only Docker PostgreSQL instance.
 - Use a synthetic database and schema.
@@ -1023,7 +1221,7 @@ Task 04 is enabled only when the trusted server confirms:
 - Synthetic environment.
 - Task 01-approved sandbox state.
 - Required Task 11 checkpoint decision.
-- Database approval where the database path is used.
+- Current unexpired 2026-08-02 synthetic database approval.
 - Current expiry.
 - Current dependency state.
 - Kill-switch state.
@@ -1034,42 +1232,43 @@ A browser flag is not authorization.
 
 ### Kill switch
 
-The kill switch must:
+The canonical `A3_BOUNDED_AUTOMATION` breaker/kill-switch behavior is defined
+in section 33 of
+[`concurrency-and-capacity-design.md`](concurrency-and-capacity-design.md).
+In summary:
 
-- Be server-owned.
-- Deny new booking, waitlist, offer, and worker commands.
-- Remain usable when Task 04 components are unhealthy.
-- Define whether in-flight transactions finish or roll back.
-- Stop automated expiry or promotion work safely.
-- Preserve read-only recovery where safe.
-- Produce payload-free audit evidence.
-- Be tested through an automation-disable drill.
+- new promotion creation stops immediately;
+- unclaimed queued promotion work is rejected;
+- in-flight promotion transactions recheck immediately before commit and roll
+  back when disabled;
+- the capability kill switch denies new booking, reschedule, waitlist join,
+  confirmation, promotion, and offer acceptance with `FEATURE_DISABLED`;
+- cancellation, `waitlist:leave`, expiry, hold cleanup, read-only queue access,
+  and reconciliation continue as bounded safety cleanup;
+- already-issued offers cannot be accepted while the capability kill switch is
+  active and instead cancel or expire through trusted-time cleanup;
+- no production or external fallback exists; and
+- safe signals, registered owner/reset authority, evidence fields, and the
+  automation-disable drill are mandatory.
 
 Unknown, unavailable, malformed, stale, or expired gate state denies execution.
 
 ## 22. Required approvals
 
-### Before database-backed implementation
+### Before database-backed or runnable synthetic implementation
 
-Required:
+Satisfied on 2026-08-02 for the exact approved scope:
 
-- Revised Task 01 approval for the loopback-only synthetic PostgreSQL
-  extension.
-- Exact approved database boundary.
-- Confirmation that no production imports, data, credentials, or migrations
-  are involved.
+- Task 11 Checkpoint 1 `APPROVED_TO_IMPLEMENT_SYNTHETIC`.
+- Loopback-only Task 01 PostgreSQL/database boundary.
+- `R3` and `A3_BOUNDED_AUTOMATION`.
+- Capability-owner, Quality, Security/Privacy, Operations/SRE, Accessibility,
+  and Task 11 review by Royian Chowdhury.
+- Expiry and review due 2026-08-05.
 
-### Before runnable Task 04 implementation
-
-Required:
-
-- Task 11 Checkpoint 1 decision.
-- Quality review.
-- Security review.
-- Privacy review.
-- Accessibility review.
-- Capability-owner approval.
-- Confirmation of the synthetic scope.
+The role consolidation is non-independent. Any later production or promotion
+stage requiring independent coverage remains blocked until an eligible
+independent person supplies it.
 
 ### Before synthetic promotion
 
@@ -1096,8 +1295,10 @@ approvals.
 Stop the affected workstream when:
 
 - Repository instructions conflict with the proposed change.
-- Database approval has not been granted for database work.
-- Task 11 Checkpoint 1 is missing for runnable implementation.
+- The synthetic approval is expired, missing, contradictory, or exceeded.
+- The recorded Task 11 Checkpoint 1 decision becomes missing, superseded,
+  contradictory, or expired for runnable implementation. The current
+  2026-08-02 Checkpoint 1 is satisfied through 2026-08-05.
 - Real or production-derived data appears.
 - A production credential, host, route, database, storage system, or integration
   becomes reachable.
@@ -1122,12 +1323,12 @@ Stop the affected workstream when:
 - Any required test is skipped or made unconditional merely to obtain a pass.
 
 Safe independent documentation and design work may continue when only the
-database or production path is blocked.
+production path is blocked.
 
 ## 24. Planned implementation areas
 
-These paths are proposed and remain subject to approval and repository
-conventions:
+These paths are proposed under the 2026-08-02 synthetic approval and remain
+subject to repository conventions and approval expiry:
 
 ```text
 apps/experiment-sandbox/src/booking/
@@ -1146,22 +1347,26 @@ No production route or module will be imported.
 
 ## 25. Planned verification commands
 
-Final commands will use existing repository scripts and the approved database
-runbook.
-
-At minimum:
+Root:
 
 ```text
-npm run typecheck
+npm exec -- tsc --noEmit --incremental false
 npm run lint
 npm run test
-npm run verify-boundary
-npm run verify-production
 npm run build
 ```
 
-Database commands will be added only after approval and must use the approved
-loopback-only Docker PostgreSQL workflow.
+Sandbox:
+
+```text
+npm run sandbox:verify
+npm run sandbox:verify-artifact
+npm run sandbox:verify-evidence
+npm run sandbox:verify-production
+npm run sandbox:build
+```
+
+This planning correction adds no package scripts or database commands.
 
 Required checks must not be skipped, renamed to unconditional success, or run
 against an already contaminated database.
@@ -1194,26 +1399,15 @@ Planned evidence:
 No evidence artifact may contain PHI, secrets, contact information, management
 tokens, raw payloads, or reusable identifiers.
 
-## 27. Review request
+## 27. Review status
 
-Requested Task 11 Checkpoint 1 decision:
+Task 11 Checkpoint 1 is `APPROVED_TO_IMPLEMENT_SYNTHETIC`. The approval
+record's later registration block resolves the fields that its earlier
+narrative called unresolved: `R3`, `A3_BOUNDED_AUTOMATION`, Royian Chowdhury as
+accountable owner/backup/Operations-SRE reviewer, and 2026-08-05 for expiry and
+review due. The append-only approval record is not edited.
 
-`APPROVED_TO_IMPLEMENT_SYNTHETIC`
-
-Known blocking condition:
-
-The PostgreSQL-backed work remains blocked until the revised Task 01 database
-extension receives explicit approval.
-
-Permitted work while blocked:
-
-- Documentation.
-- Threat modelling.
-- Zod contract design.
-- Pure state-transition logic.
-- Deterministic synthetic fixture design.
-- UI wireframes and non-persistent components, where Task 11 reviewers permit.
-- Accessibility planning.
-- Test skeleton design without bypassing required database evidence.
-
-The implementer does not self-approve this plan.
+Runtime implementation and Checkpoint 2 evidence are not claimed. Production,
+G2, G3, live data, cloud databases, external effects, production imports, and
+production deployment remain blocked. The implementer does not self-approve
+promotion.

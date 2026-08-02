@@ -1,12 +1,32 @@
 # Task 04 — Data Minimization and Retention Proposal
 
-**Status:** Draft for review
+**Status:** Draft documented; review/correction in progress; runtime not implemented
 **Branch:** `task-04-booking-waitlist`
 **Environment:** Task 01 local synthetic sandbox
 **Production authorization:** None
 **Real PHI or personal information:** Prohibited
-**Database implementation:** Blocked pending revised Task 01 approval
-**Task 11 Checkpoint 1:** Not yet reviewed
+**Synthetic implementation:** Approved on 2026-08-02 through 2026-08-05
+**Task 11 Checkpoint 1:** `APPROVED_TO_IMPLEMENT_SYNTHETIC`
+**Risk/autonomy:** `R3`; `A3_BOUNDED_AUTOMATION`
+**Expiry/review due:** 2026-08-05
+**Governance roles:** Accountable owner, backup owner, and Operations/SRE
+reviewer: Royian Chowdhury (consolidated, non-independent)
+
+Production, G2, G3, live data, cloud databases, external effects, and
+production imports remain prohibited. Royian Chowdhury holds the accountable
+owner, backup owner, and Operations/SRE reviewer roles; this is consolidated,
+non-independent coverage. Every tenant-scoped dataset is bound to server-only
+`PHARMACY_ID`, derived only from sandbox-owned
+`TASK04_SANDBOX_PHARMACY_ID`; cross-pharmacy rows are database negative-test
+fixtures only.
+
+## Canonical planning references
+
+Field/enumeration/event/error contracts are canonical in
+[`api-and-zod-contracts.md`](api-and-zod-contracts.md); terminal-state meanings
+are canonical in [`state-machines.md`](state-machines.md); evidence mapping is
+canonical in section 11.1 of
+[`pre-implementation-test-plan.md`](pre-implementation-test-plan.md).
 
 ## 1. Purpose
 
@@ -27,7 +47,7 @@ The proposal covers:
 - Contact details.
 - Language and accessibility-preparation fields.
 - Idempotency records.
-- Management-access tokens.
+- Management-access credentials.
 - Domain events and transactional outbox records.
 - Audit records.
 - Rate-limit records.
@@ -96,7 +116,7 @@ Hiding a field in the browser is not data minimization.
 
 ### DM-INV-05 — No raw secrets
 
-Raw management tokens, raw idempotency keys, limiter secrets, session secrets,
+Raw management credentials, raw idempotency keys, limiter secrets, session secrets,
 and credentials must not be stored in ordinary application records, logs, or
 evidence.
 
@@ -409,7 +429,7 @@ Represent an authoritative administrative appointment.
 ### Proposed fields
 
 - Opaque booking identifier.
-- Pharmacy and tenant scope.
+- Server-only `PHARMACY_ID`.
 - Service-category reference.
 - Slot reference.
 - Modality.
@@ -443,7 +463,7 @@ history.
 
 - Authorized subject.
 - Authorized delegate within scope.
-- Authorized staff within pharmacy and tenant scope.
+- Authorized staff within server-only `PHARMACY_ID`.
 - Approved system workers.
 
 ### Client exposure
@@ -610,7 +630,8 @@ Temporary hold:
 - Slot and unit references.
 - Hold purpose.
 - Offer reference where applicable.
-- Created, expiry, consumed, and released times.
+- Pending-booking reference where applicable.
+- Created, expiry-deadline, consumed, released, and expired times.
 - Current state.
 
 ### Source of truth
@@ -650,6 +671,8 @@ The client receives only a coarse availability result.
 Synthetic technical recommendation:
 
 - Active holds exist only until their configured expiry or transaction result.
+- A hold is `consumed` by acceptance/confirmation, `expired` only by trusted
+  clock expiry, and `released` by early cancellation, decline, or withdrawal.
 - Expired, released, or consumed holds are removed or minimized after
   reconciliation and evidence capture.
 - Capacity-unit rows may remain as slot configuration while ownership fields
@@ -691,7 +714,7 @@ Represent an authorized request to be considered for future availability.
 ### Proposed fields
 
 - Opaque entry identifier.
-- Pharmacy and tenant scope.
+- Existing server-only `PHARMACY_ID` scope.
 - Service-category reference.
 - Modality preference.
 - Actor and subject references.
@@ -739,7 +762,8 @@ Exact position and list length are prohibited.
 
 Technical recommendation:
 
-- Active entries remain only while eligible for the approved waitlist.
+- Active entries remain only while they can satisfy the administrative,
+  non-clinical `promotion_candidate` predicate.
 - Cancelled, promoted, or expired entries are minimized after operational
   reconciliation.
 - No indefinite retention for analytics.
@@ -758,8 +782,12 @@ Only an authorized scoped hold may suspend destruction.
 
 ### Backup behavior
 
-Restored entries must rerun expiry, grant, eligibility, and cancellation
-checks before use.
+Restored entries must rerun expiry, grant, `promotion_candidate`, and
+cancellation checks before use.
+
+Duplicate prevention permits one entry in `active` or `offered` for
+`(PHARMACY_ID, subject_reference, service_category_reference,
+modality_preference)`.
 
 ### Required approvals
 
@@ -833,7 +861,8 @@ Production duration requires approval.
 ### Cleanup method
 
 - Revoke management access.
-- Release or consume the hold.
+- Consume the hold on acceptance, expire it on trusted clock expiry, or release
+  it on early decline/cancellation/withdrawal.
 - Remove unnecessary transient fields.
 - Retain safe transition evidence only where approved.
 
@@ -867,7 +896,7 @@ Bind an action to the correct actor, subject, scope, and authorization grant.
 - Opaque subject reference.
 - Opaque delegation-grant reference.
 - Actor type.
-- Pharmacy and tenant scope.
+- Server-only `PHARMACY_ID`.
 - Authorization-policy version.
 - Safe grant-state reference where needed.
 
@@ -950,14 +979,21 @@ Task 04 may use only non-deliverable synthetic destinations for bounded tests.
 
 Current synthetic prototype:
 
-- Opaque non-deliverable contact reference where strictly required.
-- Synthetic channel category.
+- `SyntheticContactReference` matching
+  `SYNTH-CONTACT-[A-Z0-9_-]+`, 16-96 characters, normalized to uppercase.
+- A server-owned deterministic fixture; no raw email/telephone value and no
+  external delivery.
+- Store the normalized reference only inside the owning
+  `administrative_preference_snapshot`, never as a duplicate booking,
+  waitlist, event, audit, idempotency, queue, or credential field.
 
 Task 04 must not store a real-format recipient merely for realism.
 
 ### Source of truth
 
-Future approved Task 07 contact authority.
+For the synthetic prototype, the validated booking or `waitlist:join` request
+and its resolved server-owned Task 01 fixture. Future production authority
+remains a Task 07 decision.
 
 ### Classification
 
@@ -1017,24 +1053,49 @@ Support administrative preparation without requiring medical disclosure.
 
 ### Proposed fields
 
+The authoritative synthetic persistence record is
+`administrative_preference_snapshot`. It contains exactly one owning aggregate
+kind/reference (`booking` or `waitlist_entry`), the normalized language value,
+the bounded unique accessibility array, the synthetic contact reference,
+trusted creation time, and optional source-snapshot reference. It contains no
+free text.
+
 Language:
 
-- `none_recorded`
+- `no_preference`
 - `english`
 - `french`
-- `interpreter_preparation_requested`
-- `unknown`
+- `interpretation_coordination_requested`
 
 Accessibility preparation:
 
-- `none_recorded`
-- `preparation_requested`
-- `contact_required`
-- `unknown`
+- `none`
+- `mobility_preparation`
+- `hearing_preparation`
+- `vision_preparation`
+- `communication_preparation`
+- `contact_about_accommodation`
 
 ### Source of truth
 
-Authorized booking input or future approved patient-profile source.
+The strict validated request for `booking:create`, `booking:reschedule`,
+`waitlist:join`, or `waitlist:offer:accept`. Future approved patient-profile
+use remains outside Task 04.
+
+### Ownership and transfer
+
+- `booking:create` creates one booking-owned snapshot.
+- `waitlist:join` creates one waitlist-entry-owned snapshot.
+- `booking:reschedule` creates a new successor-booking snapshot and records
+  the predecessor snapshot as its source; it never mutates or reassigns the
+  predecessor snapshot.
+- `waitlist:offer:accept` creates a new booking-owned snapshot copied from the
+  waitlist entry and records the waitlist snapshot as its source.
+- No other transition copies the snapshot.
+- Queue reads project the current owning aggregate’s snapshot and never infer
+  preferences from events, browser state, or contact fixtures.
+- Cancellation, expiry, leave, decline, and withdrawal preserve the snapshot
+  only for the approved aggregate evidence lifecycle; they do not transfer it.
 
 ### Classification
 
@@ -1074,7 +1135,8 @@ Technical proposal:
 
 - Keep booking-specific indicators only while required for that appointment
   and approved follow-up.
-- Do not retain unrestricted historical preference copies in every booking.
+- Retain only immutable, bounded snapshots required to explain each booking or
+  waitlist command; do not retain unrestricted historical preference data.
 - Use a current authoritative profile reference where a future approved design
   permits it.
 
@@ -1101,6 +1163,53 @@ newer preferences after restoration.
 - Privacy.
 - Operations.
 - Task 11.
+
+## 6.10A Administrative acknowledgements
+
+### Purpose
+
+Prove that the exact non-clinical administrative warnings were accepted for
+the command without storing the full request or free text.
+
+### Authoritative synthetic persistence
+
+`administrative_acknowledgement_record` contains exactly:
+
+- Opaque record identifier.
+- One owning booking or waitlist-entry reference.
+- Canonical acknowledgement-version identifier.
+- Literal `true` values for `administrativeOnly`, `notMonitored`,
+  `noMedicalDetails`, `notClinicalAssessment`, and
+  `statusControlsConfirmation`.
+- Trusted acceptance instant.
+- Safe actor type and optional delegation-grant reference.
+- Opaque command-receipt reference.
+
+`booking:create`, `booking:reschedule`, `waitlist:join`, and
+`waitlist:offer:accept` each persist the validated acknowledgement record in
+the same transaction as the affected aggregate. Rescheduling and offer
+acceptance require a new validated acknowledgement; they do not silently copy
+an earlier attestation. No contact value, signature, request body, clinical
+fact, or arbitrary metadata is stored.
+
+### Classification and access
+
+The record is `INTERNAL`, `PHI_POTENTIAL`, and `SYNTHETIC`. It is server-side
+only and available only to the minimum authorized Task 04 evidence boundary.
+
+### Lifecycle
+
+It follows the owning aggregate’s approved synthetic evidence lifecycle.
+Production retention and legal-hold treatment remain unapproved and require
+privacy, legal, operations, and Task 11 decisions.
+
+## 6.10B Explicit waitlist choice
+
+Booking creation does not collect or persist `waitlistOptIn`. Joining a
+waitlist is the explicit, independently validated and authorized
+`waitlist:join` command. Its committed waitlist entry is the authoritative
+choice evidence; no duplicate boolean is stored on a booking or preference
+snapshot.
 
 ## 6.11 Idempotency records
 
@@ -1190,7 +1299,7 @@ Cleanup and reconciliation run before mutable traffic resumes.
 - Operations.
 - Task 11.
 
-## 6.12 Management-access tokens
+## 6.12 Management-access credentials
 
 ### Purpose
 
@@ -1198,12 +1307,16 @@ Provide a bounded authorized path to one booking or waitlist workflow.
 
 ### Proposed stored fields
 
-- Opaque token-record identifier.
-- One-way token digest.
+- Opaque credential-record identifier.
+- Usage mode: `one_time` or `reusable`.
+- One-way token digest only for `one_time`; a reusable server-session
+  capability has no bearer secret.
+- Opaque capability reference.
 - Resource reference.
-- Action scope.
+- Non-empty allowlisted action scope.
 - Actor or subject binding.
-- Pharmacy and tenant scope.
+- Server-session binding for `reusable`.
+- Server-only `PHARMACY_ID`.
 - Issue and expiry times.
 - Consumption and revocation times.
 - Current state.
@@ -1228,7 +1341,10 @@ Server verification service and restricted security operations.
 
 ### Client exposure
 
-The raw presented secret may exist only in the approved access flow.
+The raw presented secret may exist only in the one-time successful HTTPS POST
+issuance response and transient request handling for its protected action.
+It must not enter browser persistence, URLs, logs, analytics, hydrated
+long-lived props, evidence, or idempotent response snapshots.
 
 The stored record and digest remain server-side.
 
@@ -1245,7 +1361,9 @@ The stored record and digest remain server-side.
 Technical recommendation:
 
 - Raw token: never stored.
-- Active digest record: until expiry, consumption, or revocation.
+- Active one-time digest record: until expiry, consumption, or revocation.
+- Reusable capability metadata: until expiry, revocation, or resource
+  termination.
 - Terminal record: minimize after a short approved replay-detection and
   reconciliation period.
 - Do not retain reusable access material in logs or evidence.
@@ -1284,15 +1402,18 @@ Record a minimum administrative fact for a future authorized consumer.
 
 - Event identifier.
 - Event type and schema version.
-- Aggregate type and opaque reference.
+- Aggregate type and opaque `aggregate_id` (`aggregateId` in the API union).
 - Aggregate version.
 - Occurrence time.
-- Protected pharmacy and tenant scope.
+- Protected server-only `PHARMACY_ID` scope and literal synthetic environment.
 - Safe reason code.
 - Synthetic marker.
 - Source capability.
 - Usefulness expiry where approved.
-- Dispatch state.
+- Dispatch status, always `not_dispatched`.
+- Exact event-type-specific strict payload.
+- `aggregate_version_superseded` and optional `cleanup_eligible_at_utc` as
+  cleanup metadata only.
 
 ### Source of truth
 
@@ -1344,7 +1465,8 @@ No.
 Technical recommendation:
 
 - Keep synthetic events only for the test and evidence lifecycle.
-- Mark stale events as cancelled, superseded, or expired.
+- Preserve `dispatch_status = not_dispatched`; represent cancellation,
+  supersession, or expiry through aggregate state/version and events.
 - Remove payload-bearing records after approved reconciliation and evidence
   needs end.
 - Do not treat the outbox as indefinite history.
@@ -1829,12 +1951,14 @@ Trigger:
 
 Action:
 
-- Release capacity transactionally.
-- Mark the hold terminal.
+- On trusted-time expiry, release capacity transactionally and mark the hold
+  `expired`.
+- For early cancellation, decline, or withdrawal, mark the hold `released`.
+- For acceptance or confirmation, mark the hold `consumed`.
 - Prevent reactivation.
 - Remove or minimize the terminal record after reconciliation.
 
-## 7.3 Expired management links
+## 7.3 Expired management capabilities and one-time credentials
 
 Trigger:
 
@@ -1891,7 +2015,9 @@ Trigger:
 
 Action:
 
-- Mark the record terminal before cleanup.
+- Set `aggregate_version_superseded` and `cleanup_eligible_at_utc` only when
+  their reviewed predicates are satisfied; do not change
+  `dispatch_status = not_dispatched`.
 - Ensure no external dispatch is possible.
 - Preserve minimum audit linkage where approved.
 - Delete or archive under the approved event policy.
@@ -2006,7 +2132,7 @@ A hold must not:
 | Identity/delegation reference | No | Minimum context | Minimum context | Minimum context | Verification only | Restricted |
 | Contact details | No real data | No Task 04 production access | No | No unless separately approved | No | Restricted future Task 07 boundary |
 | Idempotency record | No | Safe receipt only | Safe receipt only | Safe receipt only | Service access | Restricted |
-| Management-token record | No | Raw presented secret only in approved flow | Same | No ordinary access | Verification only | Restricted |
+| Management-credential record | No | Raw presented secret only in approved flow | Same | No ordinary access | Verification only | Restricted |
 | Event/outbox record | No | No | No | No ordinary access | Approved worker only | Restricted |
 | Audit record | No | No ordinary access | No | No ordinary access | Write minimum only | Restricted |
 | Rate-limit record | No | Safe response only | Safe response only | Safe response only | Service only | Restricted |
@@ -2017,7 +2143,7 @@ Every access remains subject to:
 
 - Current identity.
 - Current authorization.
-- Pharmacy and tenant scope.
+- Server-only `PHARMACY_ID`.
 - Resource relationship.
 - Purpose.
 - Feature gate.
@@ -2063,9 +2189,10 @@ Prove an abandoned draft becomes inaccessible and is cleaned up.
 
 ### RET-05 — Hold expiry
 
-Prove an expired hold releases capacity and cannot reactivate.
+Prove a hold in `expired` state stops counting against capacity exactly once
+and cannot reactivate.
 
-### RET-06 — Management-token cleanup
+### RET-06 — Management-credential cleanup
 
 Prove expired, consumed, and revoked tokens remain unusable before and after
 cleanup.
@@ -2178,7 +2305,7 @@ The following remain unresolved:
 - Booking-draft expiry.
 - Hold cleanup grace period.
 - Offer-record retention.
-- Management-token terminal-record retention.
+- Management-credential terminal-record retention.
 - Idempotency retry and retention window.
 - Event and outbox retention.
 - Audit retention.

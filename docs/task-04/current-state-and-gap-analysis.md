@@ -1,10 +1,33 @@
 # Task 04 — Current-State and Gap Analysis
 
-**Status:** In progress
+**Status:** Draft documented; review/correction in progress; runtime not implemented
 **Branch:** `task-04-booking-waitlist`
 **Environment:** Task 01 local synthetic sandbox
 **Production authorization:** None
-**Database-extension approval:** Pending
+**Synthetic scope:** Approved on 2026-08-02 through 2026-08-05
+**Task 11 Checkpoint 1:** `APPROVED_TO_IMPLEMENT_SYNTHETIC`
+**Risk/autonomy:** `R3`; `A3_BOUNDED_AUTOMATION`
+**Expiry/review due:** 2026-08-05
+**Governance roles:** Accountable owner, backup owner, and Operations/SRE
+reviewer: Royian Chowdhury (consolidated, non-independent)
+
+The approval is limited to the exact local synthetic scope in
+[`decisions/synthetic-sandbox-scope-approval-2026-08-02.md`](decisions/synthetic-sandbox-scope-approval-2026-08-02.md).
+Production, G2 hosted preview, G3 production imports, live or production-derived
+data, cloud databases, external effects, and production deployment remain
+prohibited. The accountable owner, backup owner, and Operations/SRE reviewer
+are Royian Chowdhury; these are consolidated, non-independent roles. The
+approval expires and is due for review on 2026-08-05.
+
+## Canonical planning references
+
+Shared request/response, queue, enum, synthetic-contact, event-envelope, error,
+and permission contracts are canonical in
+[`api-and-zod-contracts.md`](api-and-zod-contracts.md). State transitions are
+canonical in [`state-machines.md`](state-machines.md), and the single
+control-to-evidence matrix is section 11.1 of
+[`pre-implementation-test-plan.md`](pre-implementation-test-plan.md). The
+append-only approval record controls governance if any planning text conflicts.
 
 ## 1. Scope
 
@@ -39,8 +62,9 @@ The following repository materials were reviewed:
 - Existing sandbox routes, fixtures, identity helpers, lifecycle controls,
   architecture tests, and security tests
 
-The working tree was clean before Task 04 work began. Work is isolated on the
-`task-04-booking-waitlist` branch.
+Task 04 planning is isolated on the `task-04-booking-waitlist` branch. No claim
+about a clean working tree is a design control; the current tree must be
+verified with `git status --short` whenever evidence is captured.
 
 ## 3. Current implementation state
 
@@ -74,39 +98,47 @@ during inspection of the sandbox source tree.
 
 ### Persistence and database state
 
-The currently approved Task 01 sandbox has no database or object storage.
-
-Its architecture tests currently prohibit imports involving PostgreSQL,
-Drizzle ORM, Supabase, and other production-oriented persistence packages.
+The original Task 01 sandbox baseline has no database or object storage.
 
 Task 04 requires real PostgreSQL concurrency testing for capacity,
 idempotency, cancellation, rescheduling, and waitlist promotion. Approval has
-therefore been requested to add a separate loopback-only Docker PostgreSQL
-database using synthetic data.
+now been granted to add a separate loopback-only Docker PostgreSQL database,
+schema, migrations, lifecycle controls, and deterministic synthetic fixtures
+inside `apps/experiment-sandbox/`. That approval does not permit a cloud
+database, production migration, production import, or live data.
 
-No database dependency, schema, migration, Docker configuration, or persistence
-code will be added until that approval is recorded.
+The future synthetic implementation must load its single pharmacy scope from
+the sandbox-owned server configuration key `TASK04_SANDBOX_PHARMACY_ID`.
+The sandbox loader validates the exact `SYNTH-PHARMACY-[A-Z0-9_-]+` form and
+exposes it to Task 04 domain services as canonical server-only `PHARMACY_ID`.
+It must not inherit the production application’s pharmacy identifier or accept
+scope from a browser, URL, session claim, credential, QR code, or request.
+Missing or malformed configuration fails startup closed. Task 04 introduces no
+pharmacy selector, tenant selector, or multi-pharmacy runtime. Cross-pharmacy
+records may exist only as database-level negative-test fixtures and must never
+select runtime scope.
 
 ## 4. Identified gaps
 
 | Area | Current state | Required Task 04 state | Status |
 |---|---|---|---|
-| Public availability | Not implemented | Synthetic slot discovery with coarse availability | Gap |
-| Booking workflow | Not implemented | Create, retrieve, cancel, and reschedule | Gap |
-| Waitlist workflow | Not implemented | Join, leave, offer, accept, and expire | Gap |
-| Domain model | Not defined | Booking, slot, capacity, waitlist, token, event, and audit concepts | Gap |
-| State machines | Not defined | Explicit booking and waitlist transitions | Gap |
-| Database capacity | No sandbox database | PostgreSQL-enforced capacity and transactions | Blocked pending approval |
-| Idempotency | Not implemented | Retry-safe commands and stored outcomes | Gap |
-| Concurrency tests | Not implemented | Independent PostgreSQL connections and race barriers | Blocked pending approval |
-| Zod boundaries | Not implemented | Strict schemas for every command and response | Gap |
-| Delegated access | Not implemented | Synthetic grant contract; production integration remains blocked by Task 05 | Gap |
-| Domain events | Not implemented | Stubbed transactional outbox with no external delivery | Gap |
-| Pharmacist queue | Not implemented | Server-rendered minimum-necessary synthetic queue | Gap |
-| Accessibility | Shared shell only | Booking-specific keyboard, screen-reader, mobile, zoom, and reflow evidence | Gap |
-| Timezone and DST | Not implemented | UTC storage and explicit Ontario timezone/DST handling | Gap |
-| Abuse prevention | Not implemented | Enumeration, flooding, replay, and rate-limit design | Gap |
-| Ontario guidance mapping | Not started | Current first-party booking-guidance mapping | Gap |
+| Public availability | Draft documented; review/correction in progress; runtime not implemented | Synthetic slot discovery with coarse availability | Implementation pending |
+| Public availability cache | Strict named synthetic server-cache contract documented; runtime not implemented | Short-lived server projection cache with no-store HTTP response and transactional revalidation | Implementation pending |
+| Booking workflow | Draft documented; review/correction in progress; runtime not implemented | Create, retrieve, cancel, and reschedule | Implementation pending |
+| Waitlist workflow | Draft documented; review/correction in progress; runtime not implemented | Join, leave, offer, accept, and expire | Implementation pending |
+| Domain model | Draft documented; review/correction in progress; runtime not implemented | Booking, slot, capacity, waitlist, credential, event, and audit concepts | Review pending |
+| State machines | Draft documented; review/correction in progress; runtime not implemented | Complete transition contracts | Review pending |
+| Database capacity | Approved synthetic design; runtime not implemented | PostgreSQL-enforced capacity and transactions | Implementation pending |
+| Idempotency | Draft documented; review/correction in progress; runtime not implemented | Retry-safe commands and stored outcomes | Implementation pending |
+| Concurrency tests | Draft documented; review/correction in progress; runtime not implemented | Independent PostgreSQL connections and race barriers | Implementation pending |
+| Zod boundaries | Draft documented; review/correction in progress; runtime not implemented | Strict schemas for every command and response | Review pending |
+| Delegated access | Draft synthetic contract documented; runtime not implemented | Synthetic grants; production integration remains blocked by Task 05 | Implementation pending |
+| Domain events | Draft documented; review/correction in progress; runtime not implemented | Transactional outbox with `dispatch_status: not_dispatched` and no delivery | Implementation pending |
+| Pharmacist queue | Draft documented; review/correction in progress; runtime not implemented | Server-rendered minimum-necessary synthetic queue | Implementation pending |
+| Accessibility | Draft evidence plan documented; runtime evidence not produced | Keyboard, screen-reader, mobile, zoom, reflow, and contrast evidence | Evidence pending |
+| Timezone and DST | Draft documented; runtime not implemented | UTC storage and explicit Ontario timezone/DST handling | Implementation pending |
+| Abuse prevention | Draft documented; review/correction in progress; runtime not implemented | Enumeration, flooding, replay, and rate-limit controls | Implementation pending |
+| Ontario guidance mapping | Draft documented; verification in progress | Current first-party booking-guidance mapping | Human verification pending |
 | Production integration | Prohibited | Documented future handoff only | Intentionally blocked |
 
 ## 5. Existing boundaries that must remain unchanged
@@ -129,22 +161,24 @@ Task 04 must not:
 
 ## 6. Current blockers and required decisions
 
-### Database-extension approval
+### Synthetic implementation approval
 
-Approval is pending to extend the Task 01 sandbox with a loopback-only Docker
-PostgreSQL database for Task 04.
+The exact synthetic database and workflow scope was approved on 2026-08-02.
+Implementation must stay inside the Task 01 local sandbox, use deterministic
+synthetic data, derive server-only `PHARMACY_ID` exclusively from
+`TASK04_SANDBOX_PHARMACY_ID`, and fail closed after the 2026-08-05 expiry
+unless the approval is extended.
 
-Until approval is granted:
-
-- No database dependencies will be installed.
-- No schema or migration will be created.
-- No PostgreSQL or Drizzle imports will be added.
-- No database-backed workflow implementation will begin.
+The later registration block in the approval record resolves the fields that
+its earlier narrative described as unresolved. Planning uses the later values:
+`APPROVED_TO_IMPLEMENT_SYNTHETIC`, `R3`, `A3_BOUNDED_AUTOMATION`, Royian
+Chowdhury for the three named owner/reviewer roles, and 2026-08-05 for both
+expiry and review due. The decision file remains append-only.
 
 ### Task 11 review
 
-The bounded implementation and test plan must be prepared for Task 11
-checkpoint review before the affected implementation is treated as approved.
+Task 11 Checkpoint 1 is `APPROVED_TO_IMPLEMENT_SYNTHETIC`. Checkpoint 2 evidence
+review is not granted and remains required before any promotion.
 
 ### Production dependencies
 
@@ -157,9 +191,9 @@ Production booking remains blocked by:
 
 These dependencies do not prevent independent synthetic design work.
 
-## 7. Safe work permitted while approval is pending
+## 7. Work permitted by the synthetic approval
 
-The following work may proceed without adding persistence:
+The following work may proceed within the exact approved synthetic boundary:
 
 - Domain-model design.
 - Booking and waitlist state-transition tables.
@@ -179,5 +213,15 @@ The following work may proceed without adding persistence:
 2. Define booking and waitlist state machines.
 3. Define Zod command and response contracts.
 4. Prepare the concurrency, idempotency, privacy, and accessibility test plan.
-5. Record the database-extension approval or blocker.
-6. Begin database-backed implementation only after the required approval.
+5. Implement only inside the approved loopback-only sandbox after rechecking
+   approval expiry and lifecycle gates.
+6. Produce the planned accessibility/timezone/localization evidence and the
+   Task 11 Checkpoint 2 evidence package.
+
+## 9. Planned future deliverables
+
+| Deliverable | Owner | Checkpoint | Prerequisites | Current state |
+|---|---|---|---|---|
+| `docs/task-04/accessibility-timezone-localization-evidence.md` | Task 04 capability owner (Royian Chowdhury) | Task 11 Checkpoint 2 | Runnable synthetic UI, approved copy, automated and manual accessibility results | Planned |
+| Production-integration handoff | Task 04 capability owner with Tasks 02, 05, 07, and 11 owners | Production handoff; not authorized by this approval | Separate production approvals, independent role coverage where required, production identity/communication/retention decisions, G2/G3 as applicable | Planned and blocked |
+| Final Task 04 status/update | Task 04 capability owner (Royian Chowdhury) | Task 11 Checkpoint 2 | Source commit, verification artifacts, evidence manifest, findings, expiry review | Planned |

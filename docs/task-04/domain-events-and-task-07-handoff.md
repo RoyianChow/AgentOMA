@@ -1,13 +1,31 @@
 # Task 04 — Domain Events and Task 07 Handoff
 
-**Status:** Draft for review
+**Status:** Draft documented; review/correction in progress; runtime not implemented
 **Branch:** `task-04-booking-waitlist`
 **Environment:** Task 01 local synthetic sandbox
 **Production authorization:** None
 **External notification delivery:** Prohibited
 **Task 07 integration:** Contract only; not connected
-**Database implementation:** Blocked pending revised Task 01 approval
-**Task 11 Checkpoint 1:** Not yet reviewed
+**Synthetic implementation:** Approved on 2026-08-02 through 2026-08-05
+**Task 11 Checkpoint 1:** `APPROVED_TO_IMPLEMENT_SYNTHETIC`
+**Risk/autonomy:** `R3`; `A3_BOUNDED_AUTOMATION`
+**Expiry/review due:** 2026-08-05
+**Governance roles:** Accountable owner, backup owner, and Operations/SRE
+reviewer: Royian Chowdhury (consolidated, non-independent)
+
+Production, G2, G3, live data, cloud databases, external effects, and
+production imports remain prohibited. Royian Chowdhury holds the accountable
+owner, backup owner, and Operations/SRE reviewer roles; this is consolidated,
+non-independent coverage. Protected event scope comes only from server-only
+`PHARMACY_ID`; no event consumer selects pharmacy or tenant scope.
+
+## Canonical planning references
+
+The event envelope and error vocabulary are canonical in
+[`api-and-zod-contracts.md`](api-and-zod-contracts.md); emitted transition
+events are canonical in [`state-machines.md`](state-machines.md); evidence
+mapping is canonical in section 11.1 of
+[`pre-implementation-test-plan.md`](pre-implementation-test-plan.md).
 
 ## 1. Purpose
 
@@ -214,7 +232,7 @@ database structure, provided the distinction remains clear:
 ```text
 Domain fact
     -> stored transactionally in outbox
-        -> remains stubbed and not dispatched
+        -> dispatch_status remains not_dispatched
             -> future Task 07 consumer, only after approval
 ```
 
@@ -232,9 +250,10 @@ The outbox is not:
 
 ## 5. Proposed event envelope
 
-Every Task 04 event should use a versioned envelope.
-
-Proposed fields:
+Every Task 04 event uses the canonical strict discriminated union in section
+4A.13 of
+[`api-and-zod-contracts.md`](api-and-zod-contracts.md). The conceptual
+database-column mapping is:
 
 ```text
 event_id
@@ -243,20 +262,24 @@ event_schema_version
 aggregate_type
 aggregate_id
 aggregate_version
-occurred_at
-pharmacy_scope
-tenant_scope
+occurred_at_utc
+protected_scope
+actor_type
 synthetic_marker
 source_capability
-source_commit_or_build_reference
 safe_reason_code
-communication_policy_reference
-event_usefulness_expires_at
+event_usefulness_expires_at_utc
 dispatch_status
-created_at
+aggregate_version_superseded
+cleanup_eligible_at_utc
+payload
 ```
 
-The exact database representation remains subject to approval.
+`protected_scope` contains server-only `PHARMACY_ID`, derived only from
+sandbox-owned `TASK04_SANDBOX_PHARMACY_ID`, and the literal synthetic
+environment marker. It is never accepted from a request or
+returned through a public/queue boundary. There is no tenant or pharmacy
+selector and no multi-pharmacy runtime.
 
 ### 5.1 Event identifier
 
@@ -274,28 +297,35 @@ The exact database representation remains subject to approval.
 
 ### 5.3 Event schema version
 
-`event_schema_version` identifies the exact event contract.
+`event_schema_version` identifies the exact event contract. Every currently
+planned synthetic union member uses literal version `1`; a later version
+requires a separately documented union member and consumer review.
 
 A consumer must not guess how to process an unknown version.
 
 ### 5.4 Aggregate type
 
-Approved aggregate types may include:
+Canonical aggregate types are:
 
 - `booking`
 - `waitlist_entry`
 - `waitlist_offer`
+- `capacity_hold`
+- `management_credential`
+- `automation_control`
 
 ### 5.5 Aggregate identifier
 
-`aggregate_id` is an opaque internal reference.
+`aggregate_id` is the persistence form of the API field `aggregateId` and is
+an opaque internal identifier. The event contract does not use
+`aggregateReference` or `aggregate_reference`.
 
 It must not contain:
 
 - A patient identifier.
 - A contact destination.
 - A health number.
-- A management token.
+- A management credential.
 - A readable appointment purpose.
 
 ### 5.6 Aggregate version
@@ -308,13 +338,14 @@ version before dispatch.
 
 ### 5.7 Occurrence time
 
-`occurred_at` records when the authoritative transition occurred.
+`occurred_at_utc` records when the authoritative transition occurred.
 
 It must be stored as a UTC instant.
 
-### 5.8 Pharmacy and tenant scope
+### 5.8 Protected pharmacy scope
 
-Scope must use a protected server-only representation.
+Scope must use server-only `PHARMACY_ID` derived only from
+`TASK04_SANDBOX_PHARMACY_ID`.
 
 Scope must not be:
 
@@ -325,7 +356,7 @@ Scope must not be:
 
 ### 5.9 Synthetic marker
 
-Every prototype event must contain an unmistakable synthetic marker such as:
+Every prototype event must contain the exact synthetic marker:
 
 `SYNTHETIC_TASK_04_EVENT`
 
@@ -337,20 +368,17 @@ Proposed value:
 
 ### 5.11 Safe reason code
 
-A bounded safe reason code may explain the administrative transition.
-
-It must not contain free text.
+A bounded safe reason code explains the administrative transition. It must be
+the exact event-specific value in the section 4A.13 discriminated union; it is
+not a free-form string and consumers must reject a code that is valid only for
+another event member.
 
 ### 5.12 Communication-policy reference
 
-Task 04 may store an opaque communication-policy reference only when an
-approved Task 07 policy exists.
-
-The current synthetic prototype should use:
-
-`TASK07_POLICY_NOT_CONNECTED`
-
-This value does not authorize dispatch.
+No communication-policy reference is a Task 04 event field. Task 07 is not
+connected, and the absence of that field cannot authorize dispatch. A future
+approved Task 07 design must add its own versioned consumer contract rather
+than extending a Task 04 event with ad hoc metadata.
 
 ### 5.13 Event usefulness expiry
 
@@ -363,13 +391,21 @@ Task 04 must not invent reminder timing.
 
 ### 5.14 Dispatch status
 
-Allowed synthetic Task 04 statuses:
+The only Task 04 value is:
 
-- `stubbed`
 - `not_dispatched`
-- `cancelled_before_dispatch`
-- `superseded_before_dispatch`
-- `expired_before_dispatch`
+
+The synthetic stub is represented through `synthetic_marker` and
+`source_capability`, not through a second dispatch status. Cancellation,
+supersession, and usefulness expiry are authoritative aggregate/version fields
+or events; they do not mutate `dispatch_status`.
+
+`aggregate_version_superseded` and `cleanup_eligible_at_utc` are cleanup
+metadata only. They do not mean dispatched, cancelled delivery, expired
+delivery, acknowledged, or externally processed. The former becomes true only
+after a newer committed aggregate version makes the event obsolete for a
+future consumer. The latter is set only by the reviewed synthetic cleanup
+policy after both usefulness and evidence requirements are satisfied.
 
 The synthetic prototype must never use:
 
@@ -405,7 +441,7 @@ Task 04 events and outbox records must not contain:
 - Message subject.
 - Message body.
 - Message preview.
-- Appointment-management token.
+- Appointment-management credential.
 - Booking-management URL.
 - Password-reset or authentication token.
 - Session identifier.
@@ -433,16 +469,10 @@ This event does not necessarily mean:
 - The patient is eligible.
 - A notification should be sent.
 
-Minimum metadata:
-
-- Event envelope.
-- Booking aggregate reference.
-- Booking version.
-- Administrative state.
-- Modality code where approved.
-- Appointment start instant where required by a future consumer.
-- Appointment timezone identifier where required.
-- Safe source code.
+The exact payload contains `resultingState`, `modality`, `startTimeUtc`, and
+`endTimeUtc`. The common envelope contains the booking `aggregateId`, version,
+scope, actor type, and exact `BOOKING_REQUESTED` reason. No timezone,
+communication, contact, or additional source field is permitted.
 
 Current dispatch state:
 
@@ -500,13 +530,11 @@ Meaning:
 
 The original booking was superseded by a successor booking.
 
-Minimum metadata may include:
-
-- Original opaque booking reference.
-- Successor opaque booking reference.
-- Original aggregate version.
-- Successor aggregate version.
-- Safe supersession reason code.
+The exact payload contains
+`predecessorBookingReference`, `successorBookingReference`, and
+`successorState`. The common envelope contains the predecessor booking’s
+`aggregateId`, committed `aggregateVersion`, and exact
+`REPLACEMENT_COMMITTED` reason code. It contains no unregistered metadata.
 
 Potential future Task 07 use:
 
@@ -575,15 +603,11 @@ Meaning:
 
 A temporary administrative offer and capacity hold were created.
 
-Minimum metadata may include:
+Its exact section 4A.13 payload contains the opaque waitlist-entry and
+capacity-hold references, resulting `pending` state, and offer expiry instant.
+The common envelope carries the offer `aggregateId` and version.
 
-- Opaque offer reference.
-- Opaque waitlist-entry reference.
-- Offer version.
-- Offer expiry instant.
-- Safe management-path reference category.
-
-The event must not contain the raw management token or direct booking URL.
+The event must not contain the raw management credential or direct booking URL.
 
 Potential future Task 07 use:
 
@@ -629,7 +653,8 @@ Current dispatch state:
 
 Meaning:
 
-The offer expired and the temporary hold was released.
+The offer expired by trusted database time and the temporary hold became
+`expired`.
 
 Potential future Task 07 use:
 
@@ -640,11 +665,13 @@ Current dispatch state:
 
 `not_dispatched`
 
-### 7.12 `waitlist.offer_cancelled`
+### 7.12 `waitlist.offer_withdrawn`
 
 Meaning:
 
-The offer was administratively cancelled before acceptance.
+The offer was administratively withdrawn before acceptance. Its exact payload
+also records whether the linked entry became `active`, `cancelled`, or
+`expired`.
 
 Potential future Task 07 use:
 
@@ -653,6 +680,43 @@ Potential future Task 07 use:
 Current dispatch state:
 
 `not_dispatched`
+
+### 7.13 `waitlist.reactivated`
+
+Meaning:
+
+An offered waitlist entry returned to `active` because its offer expired or was
+withdrawn while the entry lifetime and authority remained current.
+
+Current dispatch state:
+
+`not_dispatched`
+
+### 7.14 Internal lifecycle events
+
+The state-machine contract also emits the following internal, non-delivery
+events:
+
+- `waitlist.expired`
+- `capacity_hold.created`
+- `capacity_hold.consumed`
+- `capacity_hold.released`
+- `capacity_hold.expired`
+- `management_credential.issued`
+- `management_credential.consumed`
+- `management_credential.expired`
+- `management_credential.revoked`
+- `booking.expired`
+- `automation.reconciled`
+- `automation.disabled`
+- `automation.enabled`
+
+These use the same canonical envelope and
+`dispatch_status = not_dispatched`. They support transactional evidence and
+reconciliation only;
+they are not Task 07 message requests. Hold terminal meanings are exact:
+confirmation/acceptance is `consumed`, clock expiry is `expired`, and early
+cancellation/decline/withdrawal is `released`.
 
 ## 8. Event schema versioning
 
@@ -738,41 +802,13 @@ After rollback:
 - No successful audit record remains.
 - No successful outbox event remains.
 
-## 10. Outbox states
+## 10. Outbox dispatch status
 
-Proposed Task 04 outbox states:
-
-- `stubbed`
-- `not_dispatched`
-- `cancelled_before_dispatch`
-- `superseded_before_dispatch`
-- `expired_before_dispatch`
-
-Future Task 07 states may include additional reviewed dispatch and provider
-states.
-
-Task 04 must not write provider-facing states.
-
-### 10.1 `stubbed`
-
-The event exists only to prove the future handoff contract.
-
-### 10.2 `not_dispatched`
-
-No delivery attempt has occurred.
-
-### 10.3 `cancelled_before_dispatch`
-
-The event became irrelevant because the authoritative booking or waitlist state
-changed.
-
-### 10.4 `superseded_before_dispatch`
-
-A newer event version or aggregate state replaced the event.
-
-### 10.5 `expired_before_dispatch`
-
-The event passed its usefulness expiry before any authorized dispatch.
+Task 04 has one state: `dispatch_status = not_dispatched`. No delivery attempt
+has occurred. The row also carries `synthetic_marker` and `source_capability`
+to prove its synthetic stub boundary. A future Task 07 design may define its
+own delivery work state after separate authorization, but Task 04 never writes
+provider-facing or delivered states.
 
 ## 11. Outbox worker boundary
 
@@ -785,7 +821,8 @@ The worker may:
 - Validate event schemas.
 - Validate synthetic markers.
 - Verify that production delivery is disabled.
-- Mark stale synthetic records as superseded or expired where reviewed.
+- Set `aggregate_version_superseded` or `cleanup_eligible_at_utc` only under
+  the reviewed synthetic cleanup rules, without changing `dispatch_status`.
 - Produce payload-free test evidence.
 
 The worker must not:
@@ -900,7 +937,8 @@ Task 07 must not dispatch or retry an offer message after:
 - The offer expired.
 - The offer was cancelled.
 - The capacity hold was released.
-- The entry became ineligible.
+- The entry stopped satisfying the administrative `promotion_candidate`
+  predicate.
 - The event usefulness expiry passed.
 
 A delayed provider result must not extend an offer.
@@ -1348,7 +1386,7 @@ Disabling Task 04 must not authorize Task 07 to invent or modify booking state.
 | Provider outcome unknown | Task 07 reconciliation; no booking change |
 | Provider unavailable | No alternate channel without approval |
 | Kill switch active | No dispatch |
-| Task 07 unavailable | Booking transaction may still commit with stubbed outbox, subject to approved architecture |
+| Task 07 unavailable | Booking transaction may commit with `dispatch_status = not_dispatched`; no delivery is attempted |
 
 ## 35. Required Task 04 tests
 
@@ -1515,7 +1553,7 @@ Required Task 04 event fixtures include:
 - Unsupported-schema-version event.
 - Duplicate event identifier.
 - Duplicate aggregate transition.
-- Cross-pharmacy event.
+- Cross-pharmacy database negative-test event fixture.
 - Event containing a forbidden marker.
 - Event missing a synthetic marker.
 - Event incorrectly marked delivered.
@@ -1564,7 +1602,7 @@ Evidence must not contain:
 
 - Event payloads with personal information.
 - Contact destinations.
-- Management tokens.
+- Management credentials.
 - Raw idempotency keys.
 - Production identifiers.
 - Provider credentials.
@@ -1586,7 +1624,7 @@ Before production integration, Task 04 must provide Task 07 with:
 9. Event usefulness fields.
 10. Producer idempotency guarantees.
 11. Duplicate-publication expectations.
-12. Pharmacy and tenant scope contract.
+12. Protected server-only `PHARMACY_ID` scope contract.
 13. Privacy classification.
 14. Prohibited-field list.
 15. Test fixtures.
@@ -1668,7 +1706,7 @@ Stop the affected workstream when:
 - Task 04 must resolve a real recipient.
 - Contact information must enter a Task 04 event.
 - Clinical information must enter an event.
-- A raw management token must enter an event.
+- A raw management credential must enter an event.
 - A message body must enter the outbox.
 - An event must grant booking authority.
 - Task 07 requires an unsupported or ambiguous event version.
@@ -1691,7 +1729,6 @@ blocked.
 
 The following remain unresolved:
 
-- Final event schema representation.
 - Final event serialization format.
 - Final outbox table structure.
 - Final event retention.

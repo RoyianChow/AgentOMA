@@ -1,11 +1,31 @@
 # Task 04 — Identity and Delegation Contract
 
-**Status:** Draft for review
+**Status:** Draft documented; review/correction in progress; runtime not implemented
 **Branch:** `task-04-booking-waitlist`
 **Environment:** Task 01 local synthetic sandbox
 **Production authorization:** None
 **Production identity integration:** Blocked pending Task 05
-**Task 11 Checkpoint 1:** Not yet reviewed
+**Synthetic implementation:** Approved on 2026-08-02 through 2026-08-05
+**Synthetic Task 11 Checkpoint 1:** `APPROVED_TO_IMPLEMENT_SYNTHETIC`
+**Risk/autonomy:** `R3`; `A3_BOUNDED_AUTOMATION`
+**Expiry/review due:** 2026-08-05
+**Governance roles:** Accountable owner, backup owner, and Operations/SRE
+reviewer: Royian Chowdhury (consolidated, non-independent)
+
+The synthetic approval runs through 2026-08-05 and excludes production, G2,
+G3, live data, cloud databases, external effects, and production imports.
+Royian Chowdhury holds the accountable owner, backup owner, and Operations/SRE
+reviewer roles; this is consolidated, non-independent coverage. Every
+tenant-scoped authorization uses server-only `PHARMACY_ID`; no client,
+credential, session, or fixture selects a pharmacy.
+
+## Canonical planning references
+
+Boundary fields, permission/error names, and `queue:read` are canonical in
+[`api-and-zod-contracts.md`](api-and-zod-contracts.md); credential transitions
+are canonical in [`state-machines.md`](state-machines.md); evidence mapping is
+canonical in section 11.1 of
+[`pre-implementation-test-plan.md`](pre-implementation-test-plan.md).
 
 ## 1. Purpose
 
@@ -19,10 +39,11 @@ The contract must ensure that:
   the appointment.
 - A delegate cannot create authority through self-attestation.
 - Every booking and waitlist action is authorized server-side.
-- Pharmacy and tenant scope are derived from trusted server context.
+- Scope is always server-only `PHARMACY_ID`, derived only from sandbox-owned
+  `TASK04_SANDBOX_PHARMACY_ID`.
 - Delegation expiry, revocation, subject scope, and action scope are enforced.
-- Possession of a booking reference or management link does not provide broad
-  authority.
+- Possession of a booking reference, management capability reference, or
+  one-time credential does not provide broad authority.
 - Synthetic identity cannot be accidentally activated in production.
 - Production identity and delegation semantics remain owned by Task 05.
 
@@ -78,7 +99,7 @@ Every protected decision must be evaluated by the server using:
 ```text
 actor
 + subject
-+ pharmacy or tenant scope
++ server-only PHARMACY_ID
 + resource
 + requested action
 + session and assurance state
@@ -100,8 +121,7 @@ The server must derive or verify:
 - Actor identity.
 - Actor type.
 - Appointment subject.
-- Pharmacy scope.
-- Tenant scope.
+- Server-only `PHARMACY_ID`.
 - Resource ownership.
 - Delegation grant.
 - Action scope.
@@ -127,8 +147,7 @@ An actor record contains or references:
 - Opaque synthetic actor identifier.
 - Actor type.
 - Synthetic marker.
-- Server-owned pharmacy scope.
-- Server-owned tenant scope.
+- Server-only `PHARMACY_ID`.
 - Synthetic session reference where applicable.
 - Active, suspended, or disabled state.
 - Fixture version.
@@ -151,7 +170,7 @@ A subject record contains or references:
 
 - Opaque synthetic subject identifier.
 - Synthetic marker.
-- Server-owned pharmacy or tenant relationship.
+- Server-only `PHARMACY_ID` relationship.
 - Fixture version.
 - Active synthetic status.
 
@@ -311,8 +330,7 @@ A synthetic delegation grant contains or references:
 - Opaque grant identifier.
 - Verified synthetic actor reference.
 - Verified synthetic subject reference.
-- Server-owned pharmacy scope.
-- Server-owned tenant scope.
+- Server-only `PHARMACY_ID`.
 - Authority type.
 - Permitted resource family.
 - Explicit permitted actions.
@@ -362,7 +380,7 @@ A grant is active only when:
 - The grant has not been superseded.
 - Actor matches.
 - Subject matches.
-- Pharmacy and tenant scope match.
+- Server-only `PHARMACY_ID` matches.
 - Requested action is explicitly allowed.
 - Required session assurance is satisfied.
 
@@ -370,7 +388,8 @@ A grant is active only when:
 
 An expired grant authorizes no new action.
 
-An old booking or management link must not restore an expired grant.
+An old booking, management capability reference, or one-time credential must
+not restore an expired grant.
 
 ### 9.3 Revoked
 
@@ -409,7 +428,12 @@ Required scopes:
 - `waitlist:join`
 - `waitlist:view`
 - `waitlist:leave`
-- `waitlist:offer_accept`
+- `waitlist:offer:accept`
+- `waitlist:offer:decline`
+- `management:recover`
+
+The exact synthetic staff permission for the pharmacist queue is `queue:read`.
+It is a staff permission, not a delegation scope, and grants no mutation.
 
 Optional future actions require separate review.
 
@@ -419,7 +443,8 @@ Examples:
 
 - `booking:view` does not permit cancellation.
 - `booking:create` does not permit rescheduling.
-- `waitlist:join` does not permit offer acceptance unless explicitly included.
+- `waitlist:join` does not permit `waitlist:offer:accept` unless explicitly
+  included.
 - Appointment-only access does not permit health-record access.
 - Booking authority does not permit account recovery.
 - Booking authority does not permit delegation creation.
@@ -432,14 +457,14 @@ Every protected command must perform these checks server-side:
 2. Reject unknown or client-supplied authority fields.
 3. Load the trusted synthetic environment.
 4. Derive the actor from trusted server context.
-5. Derive pharmacy and tenant scope.
+5. Bind server-only `PHARMACY_ID`.
 6. Resolve the appointment subject.
 7. Verify the actor-to-subject relationship.
 8. Require a grant when actor and subject differ.
 9. Load the authoritative grant.
 10. Verify actor binding.
 11. Verify subject binding.
-12. Verify pharmacy and tenant scope.
+12. Verify server-only `PHARMACY_ID`.
 13. Verify current grant state.
 14. Verify effective time and expiry.
 15. Verify required action scope.
@@ -460,8 +485,7 @@ A synthetic patient may create or manage their own appointment only when:
 - Actor type is `synthetic_patient`.
 - Synthetic session is active.
 - Actor-to-subject binding is valid.
-- Pharmacy scope matches.
-- Tenant scope matches.
+- Server-only `PHARMACY_ID` matches.
 - Resource belongs to the subject.
 - Requested action is permitted.
 - Resource state allows the transition.
@@ -479,7 +503,7 @@ A synthetic delegate may act only when:
 - A server-owned grant exists.
 - Grant actor matches.
 - Grant subject matches.
-- Grant pharmacy and tenant scope match.
+- Grant server-only `PHARMACY_ID` matches.
 - Grant is active.
 - Grant is effective.
 - Grant is unexpired.
@@ -535,7 +559,7 @@ Expected:
 - A view-only grant cannot cancel or reschedule.
 - A create-only grant cannot manage an existing booking.
 
-### AUTH-DELEGATE-06 — Wrong pharmacy or tenant
+### AUTH-DELEGATE-06 — Cross-pharmacy negative-test fixture
 
 Expected:
 
@@ -582,7 +606,8 @@ A caregiver or delegate cannot gain authority through:
 - Knowing a booking time.
 - Knowing a service category.
 - Possessing a predictable booking identifier.
-- Possessing another actor’s management link.
+- Possessing another actor’s management capability reference or one-time
+  credential.
 - Submitting a subject identifier.
 - Submitting a grant identifier without actor binding.
 - Submitting a pharmacy identifier.
@@ -630,20 +655,29 @@ It must not replace the full authorization decision.
 
 The stored record contains:
 
-- Opaque token-record identifier.
-- Digest of the presented secret.
+- Opaque credential-record identifier.
+- Usage mode: `one_time` or `reusable`.
+- Digest of the presented secret for `one_time`; no bearer secret exists for
+  a reusable server-session capability.
+- Opaque capability reference.
 - Authorized resource reference.
-- Authorized action scopes.
-- Actor or session binding where required.
+- Non-empty allowlisted authorized-action scopes.
+- Actor and current synthetic server-session binding for `reusable`.
 - Subject binding.
-- Pharmacy and tenant scope.
+- Server-only `PHARMACY_ID`.
 - Issue time.
 - Expiry time.
 - Consumption time where applicable.
 - Revocation time where applicable.
 - Current status.
 
-The raw token must not be stored.
+The initial booking or waitlist command creates a reusable capability bound to
+the current independently authenticated synthetic session. A raw one-time
+credential may be issued for exactly one protected mutation only after that
+session and reusable capability are reverified. It is returned once through a
+successful HTTPS POST response and must not be stored in the database,
+idempotent result, browser persistence, URL, log, analytics, or hydration
+payload.
 
 ### 17.1 Management credential states
 
@@ -656,7 +690,9 @@ The raw token must not be stored.
 
 The server must verify:
 
-- Token digest.
+- Token digest for one-time use, or opaque capability reference plus current
+  server-session binding for reusable use.
+- Exact `usageMode`.
 - Current status.
 - Expiry.
 - Revocation.
@@ -664,23 +700,31 @@ The server must verify:
 - Actor or session binding.
 - Subject binding.
 - Action scope.
-- Pharmacy and tenant scope.
+- Server-only `PHARMACY_ID`.
 - Current authorization policy.
 - Current resource state.
 
-### 17.3 Link limitations
+One-time consumption occurs atomically only when the protected mutation
+commits. Failed parsing, authorization, state, capacity, concurrency, or
+transaction checks do not consume it. Reusable capabilities stay `active`
+after use, subject to current checks. Rescheduling revokes the predecessor
+capability and creates a successor-booking capability; offer acceptance
+revokes the waitlist capability and creates a booking capability.
 
-A management link must not:
+### 17.3 Capability and credential limitations
+
+A management capability reference or one-time credential must not:
 
 - Contain patient identity.
 - Contain a booking identifier in readable form.
 - Contain appointment purpose.
-- Contain pharmacy or tenant authority.
+- Contain `PHARMACY_ID` authority.
 - Grant access to unrelated resources.
 - Bypass delegation.
 - Remain valid after revocation.
 - Remain valid beyond expiry.
 - Be stored in analytics or logs.
+- Be accepted through a URL or query string.
 
 ## 18. Staff authorization
 
@@ -688,8 +732,8 @@ Synthetic staff access requires:
 
 - Trusted synthetic staff identity.
 - Explicit staff actor type.
-- Server-derived pharmacy scope.
-- Server-derived tenant scope.
+- Existing server-only `PHARMACY_ID` scope.
+- Exact `queue:read` permission for pharmacist queue access, where applicable.
 - Explicit administrative action permission.
 - Active synthetic session.
 - Current resource relationship.
@@ -706,6 +750,10 @@ A staff actor must not gain cross-pharmacy access through:
 - Direct route access.
 - Cached queue data.
 
+Task 04 introduces no pharmacy selector, tenant selector, or multi-pharmacy
+runtime. Records with a different pharmacy identifier exist only as
+database-level negative-test fixtures.
+
 ## 19. System-worker authorization
 
 A synthetic system worker requires:
@@ -716,12 +764,13 @@ A synthetic system worker requires:
 - Approved environment.
 - Current feature-gate state.
 - Bounded operation type.
-- Server-derived pharmacy scope.
+- Existing server-only `PHARMACY_ID` scope.
 - Current kill-switch state.
 
 A worker may perform only the action assigned to that worker.
 
-For example, an expiry worker may expire eligible offers but may not:
+For example, an expiry worker may expire pending offers after trusted
+database-time deadlines but may not:
 
 - Create delegation.
 - Create arbitrary bookings.
@@ -750,8 +799,8 @@ The client must not receive:
 - Complete delegate object.
 - Complete grant object.
 - Grant verification provenance.
-- Internal pharmacy or tenant identifiers.
-- Raw management-token record.
+- Internal pharmacy identifiers.
+- Raw management-credential record.
 - Staff authorization object.
 - Full booking record.
 - Unnecessary contact details.
@@ -790,14 +839,14 @@ Opaque capability references still require:
 
 Authorization failures must use stable, non-enumerating responses.
 
-Suggested safe code:
+Canonical safe code:
 
-`ACCESS_DENIED`
+`NOT_AUTHORIZED`
 
-Where an expired management path requires a distinct recovery flow, the
+Where expired management authorization requires a distinct recovery flow, the
 response may use:
 
-`ACCESS_PATH_EXPIRED`
+`LINK_EXPIRED`
 
 The server must not reveal:
 
@@ -826,7 +875,7 @@ Approved audit fields may include:
 - Opaque subject reference.
 - Opaque grant reference where applicable.
 - Opaque resource reference.
-- Opaque pharmacy or tenant scope.
+- Protected server-only `PHARMACY_ID`.
 - Requested action.
 - Allowed or denied outcome.
 - Safe reason code.
@@ -898,7 +947,7 @@ Required scenarios include:
 - Revocation racing waitlist join.
 - Revocation racing offer acceptance.
 - Session expiry racing mutation.
-- Management-token consumption racing replay.
+- Management-credential consumption racing replay.
 
 The final result must follow one valid authoritative order.
 
@@ -957,7 +1006,7 @@ Rate limiting is not authorization.
 | Revoked grant | Deny | Deny | Deny | Deny | Deny | Deny | Deny |
 | Suspended grant | Deny | Deny | Deny | Deny | Deny | Deny | Deny |
 | Wrong subject | Deny | Deny | Deny | Deny | Deny | Deny | Deny |
-| Wrong pharmacy or tenant | Deny | Deny | Deny | Deny | Deny | Deny | Deny |
+| Cross-pharmacy negative-test fixture | Deny | Deny | Deny | Deny | Deny | Deny | Deny |
 | Expired session | Deny | Deny | Deny | Deny | Deny | Deny | Deny |
 | Unknown actor type | Deny | Deny | Deny | Deny | Deny | Deny | Deny |
 | Client-supplied role or authority | Deny | Deny | Deny | Deny | Deny | Deny | Deny |
@@ -992,7 +1041,7 @@ Required fixtures include:
 - Subject bound to self-service patient.
 - Subject bound to active delegate.
 - Wrong-subject fixture.
-- Subject in another pharmacy scope.
+- Subject in a cross-pharmacy database negative-test fixture.
 
 ### Grants
 
@@ -1007,7 +1056,7 @@ Required fixtures include:
 - Wrong-pharmacy grant.
 - Not-yet-effective grant.
 
-### Management paths
+### Management authorization
 
 - Active valid credential.
 - Expired credential.
@@ -1052,14 +1101,15 @@ Prove that scope is evaluated for every action.
 
 ### ID-AUTH-08 — Cross-pharmacy denial
 
-Prove that one pharmacy’s grant cannot access another pharmacy’s resource.
+Prove that a grant pinned to `PHARMACY_ID` cannot access a cross-pharmacy
+database negative-test fixture.
 
 ### ID-AUTH-09 — Client authority injection
 
 Prove that submitted actor, subject, role, grant state, pharmacy, tenant, and
 authorization fields are rejected or ignored.
 
-### ID-AUTH-10 — Management-token replay
+### ID-AUTH-10 — Management-credential replay
 
 Prove that consumed, expired, revoked, or tampered credentials fail.
 
@@ -1153,7 +1203,8 @@ Stop the affected workstream when:
 - Expired or revoked grants cannot be enforced server-side.
 - A grant for one subject can access another.
 - A grant for one pharmacy can access another.
-- A management link alone grants broad authority.
+- A management capability reference or one-time credential alone grants broad
+  authority.
 - Patient and staff sessions cannot be separated.
 - Synthetic identity could initialize in production.
 - Identity or booking information must appear in a URL, browser store, log,

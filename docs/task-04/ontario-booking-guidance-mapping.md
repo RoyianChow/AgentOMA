@@ -1,12 +1,31 @@
 # Task 04 — Ontario Booking Guidance Mapping
 
-**Status:** Draft for review
+**Status:** Draft documented; review/correction in progress; runtime not implemented
 **Branch:** `task-04-booking-waitlist`
 **Environment:** Task 01 local synthetic sandbox
 **Production authorization:** None
 **Research date:** 2026-07-31
-**Database implementation:** Blocked pending revised Task 01 approval
-**Task 11 Checkpoint 1:** Not yet reviewed
+**Synthetic implementation:** Approved on 2026-08-02 through 2026-08-05
+**Task 11 Checkpoint 1:** `APPROVED_TO_IMPLEMENT_SYNTHETIC`
+**Risk/autonomy:** `R3`; `A3_BOUNDED_AUTOMATION`
+**Expiry/review due:** 2026-08-05
+**Governance roles:** Accountable owner, backup owner, and Operations/SRE
+reviewer: Royian Chowdhury (consolidated, non-independent)
+
+Production, G2, G3, live data, cloud databases, external effects, and
+production imports remain prohibited. Royian Chowdhury holds the accountable
+owner, backup owner, and Operations/SRE reviewer roles; this is consolidated,
+non-independent coverage. Dates, classifications, and interpretations below
+remain planning assertions until verified against the cited first-party source;
+the 2026-08-02 approval does not approve their legal or policy substance.
+
+## Canonical planning references
+
+This mapping does not redefine Task 04 fields or transitions. Boundary
+contracts are canonical in
+[`api-and-zod-contracts.md`](api-and-zod-contracts.md), transitions in
+[`state-machines.md`](state-machines.md), and evidence mapping in section 11.1
+of [`pre-implementation-test-plan.md`](pre-implementation-test-plan.md).
 
 ## 1. Purpose
 
@@ -102,6 +121,8 @@ https://www.ontariohealth.ca/digital/standards/online-appointment-booking
 **Title:** Online Appointment Booking Solution Requirements
 **Document version:** Version 2.0
 **Document copyright:** 2024
+**Publication/revision date:** Not recorded in repository material; copyright
+2024 is not treated as a publication date
 **Accessed:** July 31, 2026
 **Official document:**
 
@@ -122,8 +143,14 @@ https://www.ontariohealth.ca/content/dam/ontariohealth/documents/online-appointm
 - Some previous notification requirements, including a specific SMS
   requirement, were removed.
 
-The exact priority and wording of every Version 2.0 requirement must be checked
-again before a future pilot or procurement decision.
+The repository summary directly records `recommended` for calendar download
+and English/French interfaces. It does not preserve the source table’s exact
+priority code for the other mapped statements. Those rows use
+`PRIORITY_REQUIRES_FIRST_PARTY_REVERIFICATION` below rather than converting
+words such as “must,” “should,” or “requirement” into an invented priority.
+The source priority and the target organization’s applicability are separate
+decisions and both must be checked before a future pilot or procurement
+decision.
 
 ### OH-DS-01 — Ontario Health Digital Standards in Health Care
 
@@ -240,13 +267,30 @@ https://www.ontario.ca/page/how-make-websites-accessible
 
 ## 5. Requirement mapping
 
-| ID | Source expectation | Current Task 04 design | Status | Required action | Future-pilot blocker |
+### 5.1 Source priority and organizational applicability
+
+| Mapped source subject | Repository-supported source priority | Organizational applicability |
+|---|---|---|
+| Version 2.0 calendar download | `RECOMMENDED_IN_REPOSITORY_SUMMARY` | `TARGET_ORGANIZATION_APPLICABILITY_UNCONFIRMED` |
+| Version 2.0 English/French interfaces | `RECOMMENDED_IN_REPOSITORY_SUMMARY`; repository summary also notes possible future mandatory status | `TARGET_ORGANIZATION_APPLICABILITY_UNCONFIRMED` |
+| Other Version 2.0 booking, confirmation, caregiver, device, privacy/security, or reporting rows | `PRIORITY_REQUIRES_FIRST_PARTY_REVERIFICATION` | `TARGET_ORGANIZATION_APPLICABILITY_UNCONFIRMED` |
+| IPC privacy guidance | `NOT_AN_OAB_MANDATORY_RECOMMENDED_CLASSIFICATION` | Privacy/legal owner must determine applicability |
+| PHIPA source material | `NOT_AN_OAB_MANDATORY_RECOMMENDED_CLASSIFICATION` | Privacy/legal owner must determine the organization’s role and obligations |
+| Ontario Regulation 191/11 and accessibility guidance | `NOT_AN_OAB_MANDATORY_RECOMMENDED_CLASSIFICATION` | Accessibility/legal owner must determine organization-specific applicability |
+
+`ALIGNED`, `PARTIAL`, `DEFERRED`, `BLOCKED`, and
+`VERIFY_BEFORE_PILOT` describe Task 04 design status only. They do not state
+the source priority or decide legal/organizational applicability.
+
+### 5.2 Design mapping
+
+| ID | Repository summary/paraphrase (not priority language) | Current Task 04 design | Status | Required action | Future-pilot blocker |
 |---|---|---|---|---|---|
-| MAP-01 | Patients should be able to initiate an appointment booking online | Public availability and a create-booking command are included in the design | `PARTIAL` | Implement only after Task 11 review and database approval | Yes |
+| MAP-01 | Patients should be able to initiate an appointment booking online | Public availability and a create-booking command are included in the design | `PARTIAL` | Implement only inside the 2026-08-02 approved synthetic scope; produce Checkpoint 2 evidence | Yes |
 | MAP-02 | Booking may support in-person, telephone, and video appointments | The modality allowlist contains `in_person`, `telephone`, and `video` | `ALIGNED` | Preserve strict allowlisting and avoid claiming clinical suitability | No for synthetic design |
 | MAP-03 | A patient should be able to choose an available date and time | Public-safe availability projections and opaque slot references are designed | `PARTIAL` | Implement bounded queries, expiry, revalidation, and pagination | Yes |
 | MAP-04 | A displayed appointment must be confirmed through a reliable booking process | Task 04 treats displayed availability as advisory and revalidates capacity transactionally | `PARTIAL` | Prove capacity and race behavior using real PostgreSQL | Yes |
-| MAP-05 | Solutions should support automated appointment confirmation | The design returns a safe in-application result and writes a stubbed outbox event | `DEFERRED` | Task 07 must own real delivery policy and implementation | Yes for real confirmations |
+| MAP-05 | Solutions should support automated appointment confirmation | The design returns a safe in-application result and writes an outbox event with `dispatch_status = not_dispatched` | `DEFERRED` | Task 07 must own real delivery policy and implementation | Yes for real confirmations |
 | MAP-06 | Solutions may offer email, text, or voice reminders | No external delivery is permitted in the Task 01 sandbox | `DEFERRED` | Define minimum-necessary content, consent, opt-out, delivery, and failure handling under Task 07 | Yes for real reminders |
 | MAP-07 | Designated caregivers may book for the people they care for | Actor and subject are separate; delegation requires a server-owned grant | `PARTIAL` | Task 05 must define production identity and delegation evidence | Yes |
 | MAP-08 | Caregiver access must not expose unrelated patient information | Commands require subject, scope, pharmacy, resource, and action authorization | `PARTIAL` | Add denial and cross-subject tests after implementation approval | Yes |
@@ -254,7 +298,7 @@ https://www.ontario.ca/page/how-make-websites-accessible
 | MAP-10 | The service should protect patient privacy | The prototype prohibits real data, clinical narratives, health-card data, URL leakage, browser persistence, and sensitive logs | `PARTIAL` | Complete privacy review and prohibited-sink tests | Yes |
 | MAP-11 | Collect no more health information than reasonably necessary | The booking contract excludes symptoms, diagnoses, medications, health-card numbers, and reason-for-visit free text | `ALIGNED` | Preserve strict schemas and reject unknown fields | No for synthetic design |
 | MAP-12 | Use non-health information when it can serve the purpose | Task 04 uses opaque references, service categories, modality, time, and structured administrative preferences | `ALIGNED` | Do not add clinical intake fields to booking | No |
-| MAP-13 | Protect information from unauthorized access and modification | Server-derived authority, tenant pinning, state machines, append-only audit references, and database constraints are designed | `PARTIAL` | Implement and independently test authorization, audit, and database controls | Yes |
+| MAP-13 | Protect information from unauthorized access and modification | Server-derived authority, server-only `PHARMACY_ID`, state machines, append-only audit references, and database constraints are designed | `PARTIAL` | Implement and test authorization, audit, and database controls; independent production review remains separate | Yes |
 | MAP-14 | Virtual-care privacy risks must be explained plainly | No production consent or risk notice has been approved | `BLOCKED` | Product, privacy, and professional owners must approve wording | Yes for video or telephone pilot |
 | MAP-15 | Consent for virtual-care technology must be valid and voluntary | The current prototype does not collect production consent | `DEFERRED` | Define consent authority, evidence, withdrawal, and versioning before production | Yes |
 | MAP-16 | Virtual-care appropriateness should be considered before the visit | Task 04 explicitly states that modality selection does not prove clinical suitability | `PARTIAL` | Define the professional review or confirmation boundary outside Task 04 | Yes for virtual-care production |
@@ -327,7 +371,7 @@ The server must verify:
 - Effective time.
 - Expiry.
 - Revocation.
-- Pharmacy and tenant scope.
+- Server-only `PHARMACY_ID` scope.
 
 Production delegation remains blocked on Task 05.
 
@@ -433,7 +477,7 @@ The current design supports:
 - Start and end time.
 - Structured language preference.
 - Structured accessibility-preparation indicator.
-- Minimum-necessary synthetic contact destination.
+- Server-owned `SyntheticContactReference`, never a raw contact destination.
 - Booking and waitlist state.
 
 The design excludes:
@@ -479,14 +523,20 @@ These items are outside the current synthetic authorization.
 The planning contracts exist, but no route, server action, UI, domain service,
 or database schema has been implemented.
 
-**Status:** Blocked pending Task 11 review and applicable Task 01 approval.
+**Status:** Approved for synthetic implementation on 2026-08-02; runtime and
+Checkpoint 2 evidence remain unimplemented.
 
-### GAP-02 — No approved PostgreSQL extension
+### GAP-02 — Approved PostgreSQL extension is not implemented
 
-Task 04 requires real PostgreSQL evidence for capacity and concurrency, but the
-current Task 01 approval prohibits adding a database.
+Task 04 requires real PostgreSQL evidence for capacity and concurrency. The
+approved loopback-only synthetic extension has not been implemented.
 
-**Status:** Blocked pending revised Task 01 approval.
+**Status:** Synthetic scope approved through 2026-08-05; implementation and
+evidence pending. Cloud or production databases remain prohibited.
+
+The database-extension authorization blocker is satisfied by the official
+2026-08-02 approval. The remaining gap is implementation and Checkpoint 2
+evidence, not permission to perform the approved loopback-only synthetic work.
 
 ### GAP-03 — No production identity or delegation
 
@@ -497,7 +547,8 @@ or caregiver-grant authority is connected.
 
 ### GAP-04 — No real confirmations or reminders
 
-Only a stubbed outbox contract is permitted.
+Only an internal outbox contract with `dispatch_status = not_dispatched`,
+`synthetic_marker`, and `source_capability` is permitted.
 
 **Status:** Deferred to Task 07.
 
@@ -615,6 +666,12 @@ Reviewers should answer:
 14. What production privacy impact assessment is required?
 15. What security, hosting, and vendor reviews are required?
 
+Task 11 Checkpoint 1 and the loopback-only PostgreSQL extension authorization
+are already satisfied by the 2026-08-02 approval. Review questions must not
+reopen them as missing approvals. Checkpoint 2 evidence, current first-party
+source verification, target-organization applicability, and every production
+decision remain open.
+
 ## 13. Review and update rule
 
 This mapping must be reviewed again:
@@ -654,8 +711,8 @@ of:
 - Safe cancellation and rescheduling.
 - Security, audit, recovery, and idempotency planning.
 
-The prototype is not ready for runnable database-backed implementation until
-the required approvals are recorded.
+The prototype is approved for runnable local synthetic implementation through
+2026-08-05, but no runtime implementation or verification is claimed.
 
 It is not ready for a real pilot because identity, delegation, virtual-care
 consent, professional suitability, communications, accessibility evidence,

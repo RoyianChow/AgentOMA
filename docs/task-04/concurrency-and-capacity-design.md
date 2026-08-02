@@ -1,11 +1,31 @@
 # Task 04 — Concurrency and Capacity Design
 
-**Status:** Draft for review
+**Status:** Draft documented; review/correction in progress; runtime not implemented
 **Branch:** `task-04-booking-waitlist`
 **Environment:** Task 01 local synthetic sandbox
 **Production authorization:** None
-**Database implementation:** Blocked pending revised Task 01 approval
-**Task 11 Checkpoint 1:** Not yet reviewed
+**Synthetic implementation:** Approved on 2026-08-02 through 2026-08-05
+**Task 11 Checkpoint 1:** `APPROVED_TO_IMPLEMENT_SYNTHETIC`
+**Risk/autonomy:** `R3`; `A3_BOUNDED_AUTOMATION`
+**Expiry/review due:** 2026-08-05
+**Governance roles:** Accountable owner, backup owner, and Operations/SRE
+reviewer: Royian Chowdhury (consolidated, non-independent)
+
+Production, G2, G3, live data, cloud databases, external effects, and
+production imports remain prohibited. Royian Chowdhury holds the accountable
+owner, backup owner, and Operations/SRE reviewer roles; this consolidated
+coverage is non-independent. Every tenant-scoped lock, query, and write uses
+server-only `PHARMACY_ID`. Cross-pharmacy rows exist only as database
+negative-test fixtures and never select runtime scope.
+
+## Canonical planning references
+
+Boundary names/errors are canonical in
+[`api-and-zod-contracts.md`](api-and-zod-contracts.md); transition effects and
+hold terminal states are canonical in
+[`state-machines.md`](state-machines.md); evidence mapping is canonical in
+section 11.1 of
+[`pre-implementation-test-plan.md`](pre-implementation-test-plan.md).
 
 ## 1. Purpose
 
@@ -26,11 +46,11 @@ The design must prove that concurrent operations cannot create:
 - A successful idempotency receipt for a rolled-back transaction.
 - Silent loss of booking or waitlist history.
 
-This document defines the intended PostgreSQL behavior only.
-
-No database schema, migration, Docker configuration, PostgreSQL dependency, or
-runnable database code may be added until the revised Task 01 approval and the
-required Task 11 review are recorded.
+This document defines the intended PostgreSQL behavior only. The exact
+loopback-only synthetic PostgreSQL scope and Task 11 Checkpoint 1 were approved
+on 2026-08-02. This correction pass does not implement it. Any later runtime
+work must stay inside the approved sandbox and fail closed after 2026-08-05
+unless the approval is extended.
 
 ## 2. Scope
 
@@ -89,6 +109,10 @@ Available capacity must never be negative.
 One capacity unit may be assigned to only one live booking or one active hold
 at a time.
 
+An active hold belongs to either one `pending_confirmation` booking or one
+pending waitlist offer. It is created atomically with that owner and counts
+against capacity.
+
 ### CAP-INV-04 — Exact cancellation release
 
 Cancelling one confirmed booking releases its capacity exactly once.
@@ -118,8 +142,8 @@ Only one live promotion offer may exist for one waitlist entry.
 
 ### CAP-INV-08 — Valid promotion only
 
-A cancelled, expired, promoted, or otherwise ineligible waitlist entry cannot
-receive a new offer.
+A cancelled, expired, promoted, or non-`promotion_candidate` waitlist entry
+cannot receive a new offer.
 
 ### CAP-INV-09 — Offer and hold agreement
 
@@ -127,7 +151,9 @@ A pending offer must have one valid active hold.
 
 An accepted offer must consume that hold.
 
-An expired, declined, or cancelled offer must release or expire that hold.
+Offer acceptance changes the hold to `consumed`; clock expiry changes it to
+`expired`; early decline, cancellation, or withdrawal changes it to
+`released`.
 
 ### CAP-INV-10 — Idempotent command effects
 
@@ -156,8 +182,11 @@ silently delete or rewrite previous authoritative history.
 
 ### CAP-INV-15 — Scope isolation
 
-Capacity, bookings, holds, waitlist entries, and offers from one pharmacy or
-tenant scope must never satisfy or modify a command in another scope.
+Every scoped record and predicate uses server-only `PHARMACY_ID`, derived only
+from sandbox-owned `TASK04_SANDBOX_PHARMACY_ID`.
+Task 04 has no pharmacy/tenant selector or multi-pharmacy runtime.
+Cross-pharmacy rows exist only as database negative-test fixtures and must never
+satisfy a runtime command.
 
 ## 4. Proposed PostgreSQL capacity model
 
@@ -266,15 +295,17 @@ The current prototype assumes one unit per booking.
 
 One active hold cannot own multiple units unless separately approved.
 
-The current prototype assumes one unit per offer.
+The current prototype assumes one unit per offer or
+`pending_confirmation` booking.
 
 ### DB-CAP-05
 
-A booking cannot reference a slot from another pharmacy or tenant scope.
+A booking cannot reference a slot outside server-only `PHARMACY_ID`.
 
 ### DB-CAP-06
 
-A hold cannot reference a slot or offer from another pharmacy or tenant scope.
+A hold cannot reference a slot, offer, or pending booking outside server-only
+`PHARMACY_ID`.
 
 ### DB-CAP-07
 
@@ -282,13 +313,14 @@ Only one live offer may exist for one waitlist entry.
 
 ### DB-CAP-08
 
-Only one active waitlist entry may exist for the same approved
-subject-service-modality scope where duplicate entry prevention applies.
+Only one waitlist entry in `active` or `offered` may exist for
+`(PHARMACY_ID, subject_reference, service_category_reference,
+modality_preference)`.
 
 ### DB-CAP-09
 
-The predecessor and successor booking relationship must not cross pharmacy or
-tenant scope.
+The predecessor and successor booking relationship must remain within
+server-only `PHARMACY_ID`.
 
 ### DB-CAP-10
 
@@ -310,8 +342,8 @@ Terminal state values must be allowlisted.
 
 ### DB-CAP-14
 
-Database relationships must reject cross-pharmacy and cross-tenant references
-even when application authorization fails.
+Cross-pharmacy database negative-test rows must be unable to satisfy runtime
+relationships even when application authorization fails.
 
 ## 6. Transaction isolation and locking strategy
 
@@ -369,16 +401,20 @@ The transaction must not:
 A successful booking command must atomically:
 
 1. Validate the strict Zod request boundary.
-2. Derive actor, subject, pharmacy, tenant, and authority server-side.
+2. Derive actor, subject, server-only `PHARMACY_ID`, and authority server-side.
 3. Acquire or create the idempotency record.
 4. Revalidate the service, slot, modality, policy, and slot-reference expiry.
 5. Lock the authoritative slot.
 6. Acquire one available capacity unit.
 7. Create or transition the booking.
-8. Assign the capacity unit to the booking.
+8. For immediate confirmation, assign the unit to the booking. For
+   `pending_confirmation`, create an active expiring hold atomically with the
+   booking and assign the unit to that hold.
 9. Store the completed idempotency result.
 10. Insert the append-only audit record.
-11. Insert the stubbed transactional outbox event.
+11. Insert the transactional outbox event with
+    `dispatch_status = not_dispatched` and the synthetic marker/source
+    capability.
 12. Commit.
 
 If no capacity unit can be acquired, the command must return a safe
@@ -437,9 +473,9 @@ The transaction must:
 2. Cancel it only when cancellation is permitted.
 3. Identify the released capacity unit.
 4. Lock the applicable waitlist scope.
-5. Select one eligible waitlist entry.
+5. Select one entry that satisfies `promotion_candidate`.
 6. Lock the selected entry.
-7. Revalidate its current state and authorization-independent eligibility.
+7. Revalidate the complete administrative `promotion_candidate` predicate.
 8. Create one capacity hold using the released unit.
 9. Create one pending waitlist offer.
 10. Transition the waitlist entry to `offered`.
@@ -448,25 +484,33 @@ The transaction must:
 13. Store required idempotency outcomes.
 14. Commit all effects together.
 
-When no eligible waitlist entry exists:
+When no `promotion_candidate` entry exists:
 
 - Cancellation must still complete.
 - The unit becomes available.
 - No offer or hold is created.
 - Capacity must not be leaked.
 
+When the promotion breaker or capability control is disabled, cancellation
+still commits as bounded safety cleanup, the unit becomes available, and the
+transaction creates no offer or hold. The cancellation command does not bypass
+the disabled `waitlist:promote`/`waitlist:offer:create` boundary.
+
 ## 10. Synthetic waitlist ordering
 
 Task 04 must not invent a production clinical or legal priority policy.
 
-For deterministic synthetic testing only, proposed ordering is:
+For deterministic synthetic testing only, the proposed ordering is:
 
-1. Earliest eligible synthetic entry creation time.
+1. Earliest `promotion_candidate` synthetic entry creation time.
 2. Stable opaque entry identifier as a tie-breaker.
 
-The synthetic ordering must be labelled:
+The synthetic ordering identifier is exactly:
 
-`SYNTHETIC NON-CLINICAL ORDER — NOT PRODUCTION POLICY`
+`PROPOSED_SYNTHETIC_ORDERING_PENDING_PRODUCT_CONFIRMATION`
+
+User-facing evidence may additionally explain that it is synthetic and
+non-clinical, but must not call the ordering approved or production policy.
 
 Ordering must never use:
 
@@ -484,17 +528,34 @@ Ordering must never use:
 Production waitlist priority remains a documented product, professional,
 privacy, and legal decision.
 
+The exact non-clinical `promotion_candidate` predicate requires:
+
+1. entry state `active`;
+2. trusted database time before entry expiry;
+3. entry and slot scoped to server-only `PHARMACY_ID`;
+4. equal service-category references and waitlisting currently enabled;
+5. modality preference exactly equal to slot modality;
+6. active slot with an available capacity unit;
+7. no live offer or active hold for the entry; and
+8. selection by `created_at`, then opaque internal entry identifier.
+
+It does not use symptoms, diagnosis, identity traits, contact values, claims,
+or clinical priority. Duplicate prevention allows at most one `active` or
+`offered` entry for `(PHARMACY_ID, subject_reference,
+service_category_reference, modality_preference)`.
+
 ## 11. Concurrent promotion workers
 
 When more than one worker attempts promotion:
 
 - Each worker must use an independent database connection.
-- Eligible entries must be locked before an offer is created.
+- `promotion_candidate` entries must be locked before an offer is created.
 - A worker may use PostgreSQL `FOR UPDATE SKIP LOCKED` or another reviewed
   pattern that prevents duplicate selection.
 - A database constraint must still prevent multiple live offers for one entry.
 - The selected entry must be revalidated inside the transaction.
-- A worker finding no eligible entry must complete without changing capacity.
+- A worker finding no `promotion_candidate` entry must complete without
+  changing capacity.
 
 A worker lock is not a replacement for the unique live-offer constraint.
 
@@ -576,7 +637,7 @@ When cancellation and rescheduling target the same booking:
 A successful offer acceptance must atomically:
 
 1. Validate the strict request boundary.
-2. Derive actor, subject, delegation, pharmacy, and tenant scope.
+2. Derive actor, subject, delegation, and server-only `PHARMACY_ID` scope.
 3. Acquire or validate the idempotency record.
 4. Lock the waitlist offer.
 5. Lock the waitlist entry.
@@ -591,10 +652,16 @@ A successful offer acceptance must atomically:
 14. Consume the hold.
 15. Mark the offer `accepted`.
 16. Mark the waitlist entry `promoted`.
-17. Store the idempotency result.
-18. Insert audit records.
-19. Insert outbox events.
-20. Commit.
+17. Copy the waitlist-owned administrative preference snapshot to a new
+    booking-owned snapshot and store the newly validated booking
+    acknowledgement record.
+18. Consume/revoke the waitlist management authority as applicable and create
+    the booking-bound reusable capability.
+19. Store the idempotency result.
+20. Insert audit records.
+21. Insert `capacity_hold.consumed`, `waitlist.offer_accepted`,
+    `booking.created`, `booking.confirmed`, and credential outbox events.
+22. Commit.
 
 A repeated acceptance with the same key and request must return the same
 booking result.
@@ -610,7 +677,7 @@ The expiry worker must:
 3. Revalidate the authoritative database time and offer state.
 4. Lock the corresponding hold and capacity unit.
 5. Mark the offer `expired`.
-6. Mark the hold `expired` or `released`.
+6. Mark the hold `expired`.
 7. Release the capacity unit.
 8. Return the waitlist entry to the approved synthetic state or mark it
    expired according to the reviewed state machine.
@@ -637,8 +704,8 @@ Both operations must lock the authoritative offer and hold.
 ### When expiry commits first
 
 - The offer becomes `expired`.
-- The hold is released.
-- The acceptance command returns `OFFER_EXPIRED`.
+- The hold is `expired`.
+- The acceptance command returns `WAITLIST_OFFER_EXPIRED`.
 - No booking is created.
 
 Both commands must not succeed.
@@ -654,7 +721,7 @@ When cancellation and a promotion worker run concurrently:
 - Promotion may use only a unit released or transferred through the protected
   transaction.
 - Two workers cannot create two offers for the same released unit.
-- A cancelled or otherwise ineligible waitlist entry must be skipped.
+- A cancelled or non-`promotion_candidate` waitlist entry must be skipped.
 - A unique constraint and row locks must prevent duplicate live offers.
 
 ## 18. Two slots becoming available concurrently
@@ -663,27 +730,29 @@ When two slots become available at the same time:
 
 - Workers must lock candidate waitlist entries before assignment.
 - One entry cannot receive two live offers.
-- Distinct eligible entries may receive distinct offers.
+- Distinct `promotion_candidate` entries may receive distinct offers.
 - Each offer must reference one active hold and one capacity unit.
 - The final state must remain valid regardless of worker execution order.
 
-If only one eligible entry exists, at most one offer may be created.
+If only one `promotion_candidate` entry exists, at most one offer may be
+created.
 
-The other unit remains available or is offered to another eligible entry.
+The other unit remains available or is offered to another
+`promotion_candidate` entry.
 
-## 19. Selected entry becoming ineligible
+## 19. Selected entry ceasing to be a promotion candidate
 
 A worker may identify an entry that becomes cancelled, expired, promoted, or
-otherwise ineligible before offer creation.
+otherwise stops satisfying `promotion_candidate` before offer creation.
 
 The worker must revalidate the entry after obtaining its lock.
 
-When the entry is no longer eligible:
+When the entry no longer satisfies `promotion_candidate`:
 
 - No offer is created.
 - No hold is created.
 - No unit is leaked.
-- The worker may select another eligible entry within the reviewed bounded
+- The worker may select another `promotion_candidate` entry within the bounded
   process.
 - The rejected candidate is recorded only through safe metadata where needed.
 
@@ -693,7 +762,7 @@ When the entry is no longer eligible:
 
 Each mutable command must be bound to:
 
-- Trusted pharmacy or tenant scope.
+- Trusted server-only `PHARMACY_ID`.
 - Trusted actor scope.
 - Operation type.
 - Resource scope where applicable.
@@ -777,10 +846,14 @@ Every successful transition must insert:
 Both records must be part of the same PostgreSQL transaction as the domain
 state change.
 
-Outbox records remain explicitly:
+Every outbox record has only `dispatch_status = not_dispatched`. Synthetic-stub
+identity is represented by `synthetic_marker` and `source_capability`, not a
+second dispatch status.
 
-- `stubbed`
-- `not_dispatched`
+Supersession and cleanup are represented only by
+`aggregate_version_superseded` and optional `cleanup_eligible_at_utc`. Those
+fields do not change `dispatch_status`, prove dispatch, or create an external
+effect.
 
 Task 04 must not:
 
@@ -864,19 +937,18 @@ The server must not automatically retry:
 
 ## 24. Safe error contract
 
-Concurrency and capacity failures must map to stable safe errors such as:
+Concurrency and capacity failures map only to the canonical endpoint subsets
+in [`api-and-zod-contracts.md`](api-and-zod-contracts.md):
 
+- `REQUEST_INVALID`
+- `NOT_AUTHORIZED`
 - `SLOT_NO_LONGER_AVAILABLE`
-- `SLOT_REFERENCE_EXPIRED`
-- `BOOKING_STATE_CONFLICT`
-- `WAITLIST_STATE_CONFLICT`
-- `OFFER_EXPIRED`
-- `OFFER_NO_LONGER_AVAILABLE`
+- `INVALID_TRANSITION`
+- `WAITLIST_OFFER_EXPIRED`
 - `IDEMPOTENCY_KEY_CONFLICT`
 - `REQUEST_IN_PROGRESS`
-- `RETRYABLE_DATABASE_CONFLICT`
 - `TEMPORARILY_UNAVAILABLE`
-- `ACCESS_DENIED`
+- `FEATURE_DISABLED`
 
 Errors must not reveal:
 
@@ -1004,7 +1076,7 @@ Expected:
 Expected:
 
 - One entry does not receive two live offers.
-- Distinct eligible entries may receive distinct offers.
+- Distinct `promotion_candidate` entries may receive distinct offers.
 
 ### RACE-12 — Same idempotency key
 
@@ -1041,6 +1113,31 @@ Expected:
 
 - Failed attempt leaves no partial state.
 - A bounded retry reaches one valid result or returns safe temporary failure.
+
+### RACE-17 - Pending confirmation versus confirmation
+
+Expected:
+
+- Concurrent confirmations consume the active hold once.
+- One confirmed booking owns the unit.
+- All retries return the same terminal result.
+
+### RACE-18 - Pending confirmation versus cancellation
+
+Expected:
+
+- Exactly one of confirmation or cancellation commits.
+- The hold is either `consumed` or `released`, never both.
+- Capacity is owned or available exactly once.
+
+### RACE-19 - Pending confirmation versus expiry
+
+Expected:
+
+- Trusted database time governs the result.
+- Exactly one of confirmation or expiry commits.
+- The hold is either `consumed` or `expired`, never both.
+- No capacity, audit, event, or idempotency row is duplicated.
 
 ## 27. Test synchronization method
 
@@ -1200,36 +1297,85 @@ Logs and metrics must not include:
 
 ## 33. Kill-switch behavior
 
-When the Task 04 kill switch is active:
+Task 04 has two server-owned, fail-closed controls:
 
-- New booking commands are denied.
-- New reschedule commands are denied.
-- New waitlist joins are denied.
-- New promotion offers are denied.
-- Offer acceptance behavior follows the reviewed safe shutdown policy.
-- Automated promotion workers stop.
-- Expiry and reconciliation behavior must be explicitly defined so capacity is
-  not leaked.
-- Existing committed state remains preserved.
-- No production or external fallback is attempted.
+- The **promotion circuit breaker** stops creation of new automated promotion
+  offers but leaves other synthetic administrative commands subject to their
+  normal gates.
+- The **capability kill switch** denies new booking, rescheduling, waitlist
+  join, confirmation, promotion, and offer-acceptance commands with
+  `FEATURE_DISABLED`.
 
-The kill switch must be server-owned and fail closed.
+Both controls:
+
+1. stop new promotion creation immediately;
+2. reject queued promotion work that has not begun;
+3. require an in-flight promotion transaction to recheck the control after
+   locking and immediately before commit, rolling back when disabled;
+4. preserve already committed state and events;
+5. keep cancellation, `waitlist:leave`, trusted-time expiry, hold release or
+   expiry, and bounded `automation:reconcile` available as safety cleanup;
+6. deny acceptance of an already-issued offer while the capability kill switch
+   is active, leaving the hold for cancellation or trusted-time expiry;
+7. continue bounded expiry/reconciliation workers so holds cannot leak;
+8. never fall back to production, an external provider, or a cloud database.
+
+`automation:disable` is the only staff command that changes the capability
+control from `enabled` to `disabled`; `automation:enable` is the only staff
+command that changes it from `disabled` to `enabled`. Both require the exact
+permission, expected control version, idempotency key, transactional audit, and
+the matching `automation.disabled` or `automation.enabled` event. Repeating the
+same request returns its original result; another version fails closed.
+
+An allowlisted signal invokes `automation:disable` through the authorized
+system-control boundary. Signals are:
+
+- any observed capacity-ceiling or negative-capacity invariant breach;
+- any duplicate live offer or duplicate capacity owner;
+- any cross-`PHARMACY_ID` scope finding;
+- an expiry/reconciliation backlog above
+  `TASK04_BREAKER_MAX_EXPIRY_BACKLOG`;
+- transaction conflict/deadlock or retry exhaustion above
+  `TASK04_BREAKER_MAX_DATABASE_CONFLICTS`;
+- required audit/outbox insertion failures above
+  `TASK04_BREAKER_MAX_EVIDENCE_FAILURES`; or
+- missing, expired, or contradictory capability approval/configuration.
+
+Configuration values are positive, synthetic-only startup configuration and
+must not be invented as production thresholds. Unknown signal state opens the
+breaker. Royian Chowdhury is the accountable operator and Operations/SRE
+reviewer under the approved consolidated, non-independent role assignment.
+Only that registered authority may invoke `automation:enable` after
+`automation:reconcile`
+shows no over-capacity, duplicate-owner, active-hold, scope, audit, or outbox
+finding.
+
+Evidence must record safe reason code, control version, trusted activation and
+reset time, queued/in-flight counts by bucket, cleanup results, reconciliation
+result, and reviewer decision without identifiers or contact data.
+
+The automation-disable drill must:
+
+1. create deterministic queued and barrier-paused in-flight synthetic
+   promotion work;
+2. invoke `automation:disable`;
+3. prove no new offer commits and queued work is rejected;
+4. prove cancellation, expiry, and reconciliation still release/expire holds;
+5. prove offer acceptance returns `FEATURE_DISABLED`;
+6. reconcile capacity, events, audit, and idempotency rows in real PostgreSQL;
+7. capture evidence, perform authorized `automation:enable`, and prove new
+   work remains disabled until that command commits.
 
 ## 34. Approval boundary
 
-Before implementing this design, the project requires:
-
-- Revised Task 01 approval for loopback-only synthetic PostgreSQL.
-- Confirmation of the approved PostgreSQL version.
-- Confirmation of permitted Docker configuration.
-- Confirmation of permitted schema and migration location.
-- Task 11 Checkpoint 1 review.
-- Security review.
-- Privacy review.
-- Quality review.
-- Accessibility review where affected.
-- Confirmation that no production imports, credentials, data, or migrations
-  are involved.
+The append-only 2026-08-02 record approved the loopback-only synthetic
+PostgreSQL database, schema/migrations, Docker lifecycle, deterministic
+fixtures, concurrency work, `A3_BOUNDED_AUTOMATION`, kill switch,
+security/privacy,
+quality, accessibility, and Task 11 Checkpoint 1 scope. It expires on
+2026-08-05 and does not authorize G2, G3, production imports, live data, cloud
+databases, external effects, or production migration/deployment. Checkpoint 2
+evidence review remains required before promotion.
 
 ## 35. Stop conditions
 
@@ -1244,7 +1390,8 @@ Stop implementation and report the blocker when:
 - Acceptance and expiry can both succeed.
 - Audit or outbox failure leaves committed domain state.
 - A completed idempotency result can exist after rollback.
-- Cross-pharmacy relationships are possible.
+- A cross-pharmacy negative-test fixture can satisfy or modify a runtime
+  command.
 - A production migration or database would be required.
 - A production policy would need to be invented.
 - Clinical information would influence waitlist ordering.
@@ -1267,7 +1414,6 @@ The following remain subject to approval:
 - Final offer duration.
 - Final idempotency retention.
 - Final waitlist ordering policy.
-- Final behavior after kill-switch activation.
 - Final reconciliation and repair authority.
 - Final production capacity-management policy.
 

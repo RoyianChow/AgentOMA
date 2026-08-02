@@ -1,10 +1,33 @@
 # Task 04 — Abuse and Rate-Limit Design
 
-**Status:** Draft for review
+**Status:** Draft documented; review/correction in progress; runtime not implemented
 **Branch:** `task-04-booking-waitlist`
 **Environment:** Task 01 local synthetic sandbox
 **Production authorization:** None
-**Implementation:** Blocked pending Task 11 review and applicable Task 01 approval
+**Synthetic implementation:** Approved on 2026-08-02 through 2026-08-05
+**Task 11 Checkpoint 1:** `APPROVED_TO_IMPLEMENT_SYNTHETIC`
+**Risk/autonomy:** `R3`; `A3_BOUNDED_AUTOMATION`
+**Expiry/review due:** 2026-08-05
+**Governance roles:** Accountable owner, backup owner, and Operations/SRE
+reviewer: Royian Chowdhury (consolidated, non-independent)
+
+Production, G2, G3, live data, cloud databases, external effects, and
+production imports remain prohibited. Royian Chowdhury holds the accountable
+owner, backup owner, and Operations/SRE reviewer roles; this is consolidated,
+non-independent coverage. Rate-limit scope may include only a protected digest
+derived from server-only `PHARMACY_ID`, itself loaded only from sandbox-owned
+`TASK04_SANDBOX_PHARMACY_ID`; it cannot select a tenant or pharmacy.
+
+## Canonical planning references
+
+Boundary limits/configuration keys, command names, and error subsets are
+canonical in
+[`api-and-zod-contracts.md`](api-and-zod-contracts.md);
+`A3_BOUNDED_AUTOMATION` control behavior is
+canonical in
+[`concurrency-and-capacity-design.md`](concurrency-and-capacity-design.md);
+evidence mapping is canonical in section 11.1 of
+[`pre-implementation-test-plan.md`](pre-implementation-test-plan.md).
 
 ## 1. Purpose
 
@@ -29,7 +52,7 @@ control for:
 
 - Authentication.
 - Authorization.
-- Pharmacy or tenant isolation.
+- Server-only `PHARMACY_ID` isolation.
 - Booking capacity.
 - Idempotency.
 - Booking or waitlist state transitions.
@@ -54,7 +77,7 @@ Rate-limit keys must not contain raw:
 - Health-card information.
 - Actor or subject identifiers.
 - Booking references.
-- Management tokens.
+- Management credentials.
 - Idempotency keys.
 - Clinical information.
 
@@ -103,7 +126,7 @@ Separate limits should exist for:
 - Waitlist leave.
 - Waitlist-offer acceptance.
 - Management-access recovery.
-- Management-token verification.
+- Management-credential verification.
 - Pharmacist queue access.
 - Expiry and promotion workers where applicable.
 
@@ -140,29 +163,41 @@ The subject is derived server-side.
 
 ### Resource scope
 
-May protect one booking, waitlist entry, offer, or management path.
+May protect one booking, waitlist entry, offer, management capability
+reference, or one-time credential.
 
 Raw resource identifiers must not be used directly as stored limiter keys.
 
 ### Operation scope
 
-Each command uses an allowlisted operation code such as:
+Each command uses its exact section 4B registry name. The protected
+human-facing operations include:
 
 - `availability:query`
 - `booking:create`
+- `booking:view`
 - `booking:cancel`
 - `booking:reschedule`
 - `waitlist:join`
+- `waitlist:view`
 - `waitlist:leave`
-- `offer:accept`
-- `management:verify`
+- `waitlist:offer:accept`
+- `waitlist:offer:decline`
+- `management-credential:issue`
+- `management:recover`
+- `queue:read`
 
-### Pharmacy or tenant scope
+Worker and staff-only operations use their own canonical registry names and
+separate limiter scopes; aliases such as `waitlist:accept_offer` and
+`management:verify` are invalid.
 
-Where applicable, the server-derived pharmacy or tenant scope prevents one
-scope’s traffic from consuming another scope’s complete allowance.
+### Protected pharmacy scope
 
-The client cannot provide this value authoritatively.
+The server-only `PHARMACY_ID` contributes only through a protected digest that
+prevents a cross-pharmacy negative-test fixture from consuming the configured
+scope's complete allowance.
+
+The client cannot provide or select this value.
 
 ## 5. Privacy-preserving key construction
 
@@ -190,7 +225,7 @@ The implementation must not expose:
 - A reversible encoded identifier.
 - A predictable identifier.
 - Contact information.
-- Booking or management tokens.
+- Booking or management credentials.
 
 Limiter secrets must be managed through the approved server-secret mechanism
 and must never enter browser code.
@@ -216,11 +251,27 @@ Required controls:
 - No total booking or waitlist counts.
 - Request-size limits.
 - Privacy-preserving network and operation limits.
-- Safe caching only where separately approved.
+- The named synthetic server-only availability cache contract below.
 - Constant safe error shapes.
 
 Rate limiting must not reveal whether a particular slot, staff member, or
 appointment exists.
+
+### 6.1 Synthetic availability-cache abuse controls
+
+Only the strict public availability response data may be cached, using
+`TASK04_SYNTHETIC_AVAILABILITY_CACHE_TTL_SECONDS` and the complete key defined
+in [`api-and-zod-contracts.md`](api-and-zod-contracts.md). Rate limiting,
+request-size checks, date/page bounds, cursor validation, feature controls, and
+enumeration defenses run before serving both hits and misses. A hit does not
+extend a slot reference or bypass transactional `booking:create` checks.
+
+HTTP responses remain `Cache-Control: no-store`. An absent optional TTL or
+unknown projection freshness bypasses the cache and computes a fresh response.
+A malformed TTL fails startup, while unknown feature/automation state fails
+the request closed without serving cached data. Protected booking, waitlist,
+queue, identity, management, credential, and recovery responses are never
+cached.
 
 ## 7. Slot-hoarding protection
 
@@ -238,7 +289,9 @@ Required controls include:
 - No client-controlled hold duration.
 - No capacity reservation from public slot discovery.
 
-An expired or abandoned hold must release capacity transactionally.
+Clock expiry must change a hold to `expired`; early abandonment must change it
+to `released`. Either terminal transition stops the hold counting against
+capacity exactly once.
 
 ## 8. Booking and rescheduling protection
 
@@ -246,7 +299,7 @@ Booking and rescheduling commands require:
 
 - Strict Zod validation.
 - Trusted actor and subject scope.
-- Server-derived pharmacy scope.
+- Server-only `PHARMACY_ID`.
 - Idempotency.
 - Resource-state validation.
 - PostgreSQL capacity enforcement.
@@ -274,7 +327,7 @@ Required controls:
 - Server authorization.
 - Booking-state validation.
 - Idempotency.
-- Management-token expiry and revocation.
+- Management-credential expiry and revocation.
 - Operation-specific rate limits.
 - Transactional capacity release.
 - One authoritative cancellation transition.
@@ -401,7 +454,7 @@ This applies to:
 - Rescheduling.
 - Waitlist changes.
 - Offer acceptance.
-- Management-token verification.
+- Management-credential verification.
 
 ### Public availability
 
@@ -440,7 +493,7 @@ Recovery may include:
 - A bounded retry period.
 - A clear retry time.
 - Reauthentication.
-- A fresh authorized management path.
+- A fresh authorized management capability or one-time credential.
 - Contacting the pharmacy through an approved alternative route.
 - Human review where approved.
 
@@ -457,15 +510,17 @@ privacy, security, and product approval.
 
 ## 16. Safe response contract
 
-Suggested safe codes:
+Rate limiting uses only the canonical registry and endpoint subsets in
+[`api-and-zod-contracts.md`](api-and-zod-contracts.md):
 
 - `RATE_LIMIT_REACHED`
 - `TEMPORARILY_UNAVAILABLE`
-- `REQUEST_ALREADY_PROCESSED`
-- `ACCESS_DENIED`
-- `ACCESS_PATH_EXPIRED`
+- `ACTION_ALREADY_COMPLETED`
+- `NOT_AUTHORIZED`
+- `LINK_EXPIRED`
 - `SLOT_NO_LONGER_AVAILABLE`
-- `OFFER_NO_LONGER_AVAILABLE`
+- `WAITLIST_OFFER_EXPIRED`
+- `FEATURE_DISABLED`
 
 A limited response may include:
 
@@ -524,7 +579,7 @@ Logs and metrics must not include:
 - Contact details.
 - Booking references.
 - Subject or caregiver details.
-- Management tokens.
+- Management credentials.
 - Request bodies.
 - Clinical information.
 
@@ -638,7 +693,8 @@ non-production values.
 ## 22. Current conclusion
 
 Task 04 will use layered, privacy-preserving abuse controls across public,
-session, actor, resource, operation, pharmacy, and tenant scopes.
+session, actor, resource, operation, and protected server-only `PHARMACY_ID`
+scopes. It introduces no tenant/pharmacy selector or multi-pharmacy runtime.
 
 Rate limiting will support—but never replace—authorization, idempotency,
 PostgreSQL capacity enforcement, state-machine checks, token security, and
