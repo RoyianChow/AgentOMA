@@ -1,5 +1,17 @@
 Task 11 — Cross-Cutting Quality, Security, Privacy, and Release Control Plane
 
+## Governance approval — 2026-08-02
+
+Royian Chowdhury has authorized implementation of Task 11's local, synthetic
+control plane as an R4 capability with autonomy level
+`A3_BOUNDED_AUTOMATION`. The bounded approval and exclusions are recorded in
+[`../../task-11/decisions/implementation-approval-2026-08-02.md`](../../task-11/decisions/implementation-approval-2026-08-02.md).
+
+Implementation is authorized, but merge and promotion remain blocked pending
+independent quality and security review of the resulting commit and evidence.
+No production data, credentials, integrations, migrations, effects, or release
+authority are granted by this approval.
+
 Owner profile: QA/security engineerRequired reviewers: capability owner, quality, security, privacy, accessibility, operations/SRE, and the professional or legal approver required by the affected capabilityPriority: P0 foundation, then continuousStatus: ready for control-plane implementation; no roadmap capability may be promoted by assumption while required gates are absent, bypassed, stale, or unresolvedUpdated: 2026-07-30
 
 Outcome
