@@ -8,6 +8,25 @@ import { G3_PRODUCTION_IMPORT_ALLOWLIST } from "../integrations/production-impor
 const sourceRoot = fileURLToPath(new URL("..", import.meta.url));
 const toolsRoot = fileURLToPath(new URL("../../tools", import.meta.url));
 const boundaryVerifier = join(toolsRoot, "verify-boundary.mjs");
+const clientModuleDirective = /^\s*["']use client["'];/m;
+const slotReferenceSecretName =
+  /TASK04_PUBLIC_SLOT_REFERENCE_SECRET|publicSlotReferenceSecret/;
+
+function importedModuleSpecifiers(source: string): string[] {
+  return [
+    ...source.matchAll(
+      /(?:from\s+|import\s*\(\s*|import\s+)\s*["']([^"']+)["']/g,
+    ),
+  ].map((match) => match[1]!.replaceAll("\\", "/"));
+}
+
+function isServerOwnedModuleSpecifier(specifier: string): boolean {
+  return (
+    /(?:^|\/)env\/server(?:$|[./])/.test(specifier) ||
+    /(?:^|\/)db(?:\/|$)/.test(specifier) ||
+    /(?:^|\/)public-slot-reference(?:$|[./])/.test(specifier)
+  );
+}
 
 function filesUnder(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -55,13 +74,60 @@ describe("sandbox import and storage boundary", () => {
       .filter((file) => {
         const source = readFileSync(file, "utf8");
         return (
-          /^["']use client["'];/m.test(source) &&
+          clientModuleDirective.test(source) &&
           source.includes(guardName)
         );
       });
     expect(
       clientOffenders.map((file) => relative(sourceRoot, file)),
     ).toEqual([]);
+  });
+
+  it("keeps slot-reference secrets and services server-only", () => {
+    const clientFiles = filesUnder(sourceRoot)
+      .filter((file) => /\.(ts|tsx)$/.test(file))
+      .filter((file) =>
+        clientModuleDirective.test(readFileSync(file, "utf8")),
+      );
+    const clientOffenders = clientFiles.flatMap((file) => {
+      const source = readFileSync(file, "utf8");
+      return [
+        ...(slotReferenceSecretName.test(source)
+          ? [`${relative(sourceRoot, file)}:secret`]
+          : []),
+        ...importedModuleSpecifiers(source)
+          .filter(isServerOwnedModuleSpecifier)
+          .map(
+            (specifier) =>
+              `${relative(sourceRoot, file)}:${specifier}`,
+          ),
+      ];
+    });
+    expect(clientOffenders).toEqual([]);
+    for (const forbiddenImport of [
+      "../env/server",
+      "../db/client",
+      "../db/availability",
+      "../db/public-slot-reference",
+    ]) {
+      expect(isServerOwnedModuleSpecifier(forbiddenImport)).toBe(true);
+    }
+
+    const sharedBookingSource = filesUnder(
+      join(sourceRoot, "booking"),
+    )
+      .filter((file) => /\.(ts|tsx)$/.test(file))
+      .map((file) => readFileSync(file, "utf8"))
+      .join("\n");
+    expect(sharedBookingSource).not.toContain(
+      "TASK04_PUBLIC_SLOT_REFERENCE_SECRET",
+    );
+    expect(sharedBookingSource).not.toContain(
+      "publicSlotReferenceSecret",
+    );
+    expect(sharedBookingSource).not.toMatch(
+      /from\s+["'][^"']*public-slot-reference[^"']*["']/,
+    );
   });
 
   it("contains no production imports, browser persistence, analytics, or external URLs", () => {

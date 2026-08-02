@@ -1,5 +1,23 @@
 import { z } from "zod";
 
+import {
+  TASK04_MAX_AVAILABILITY_WINDOW_DAYS,
+  TASK04_MAX_REQUEST_BYTES,
+  TASK04_PENDING_HOLD_MINUTES,
+  TASK04_PUBLIC_LOCATION_LABEL,
+  TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS,
+  TASK04_SYNTHETIC_SUPPORTED_DISPLAY_TIMEZONES,
+} from "../booking/config.ts";
+
+export {
+  TASK04_MAX_AVAILABILITY_WINDOW_DAYS,
+  TASK04_MAX_REQUEST_BYTES,
+  TASK04_PENDING_HOLD_MINUTES,
+  TASK04_PUBLIC_LOCATION_LABEL,
+  TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS,
+  TASK04_SYNTHETIC_SUPPORTED_DISPLAY_TIMEZONES,
+} from "../booking/config.ts";
+
 export const SANDBOX_G1_DECISION_ID = "G1-2026-07-31-task-01" as const;
 export const SANDBOX_ORIGIN = "http://127.0.0.1:3101" as const;
 export const TASK04_APPROVAL_DECISION_VERSION =
@@ -16,6 +34,8 @@ export const TASK04_SANDBOX_OWNER_POSTGRES_URL =
 export const TASK04_DEFAULT_MAX_SLOT_CAPACITY = 2 as const;
 export const TASK04_DEFAULT_MAX_ACCESSIBILITY_SELECTIONS = 3 as const;
 export const TASK04_DEFAULT_MAX_PAGE_SIZE = 10 as const;
+const TASK04_SYNTHETIC_TEST_PUBLIC_SLOT_REFERENCE_SECRET =
+  "SYNTHETIC_TASK04_TEST_SLOT_REFERENCE_SECRET_2026_08_02";
 const MAX_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
 
 const requiredSchema = z.object({
@@ -40,14 +60,19 @@ export const sandboxPharmacyIdSchema = z
 
 export type SandboxPharmacyId = z.infer<typeof sandboxPharmacyIdSchema>;
 
-function positiveIntegerSetting(defaultValue: number) {
+function positiveIntegerSetting() {
   return z
     .string()
     .regex(/^[1-9]\d*$/)
-    .default(String(defaultValue))
     .transform(Number)
     .refine(Number.isSafeInteger);
 }
+
+export const task04PublicSlotReferenceSecretSchema = z
+  .string()
+  .min(32)
+  .max(128)
+  .regex(/^[A-Za-z0-9_-]+$/);
 
 const task04RequiredSchema = z.object({
   TASK04_APPROVAL_DECISION_VERSION: z.literal(
@@ -55,15 +80,32 @@ const task04RequiredSchema = z.object({
   ),
   TASK04_SANDBOX_PHARMACY_ID: sandboxPharmacyIdSchema,
   TASK04_SANDBOX_POSTGRES_URL: z.literal(TASK04_SANDBOX_POSTGRES_URL),
-  TASK04_MAX_SLOT_CAPACITY: positiveIntegerSetting(
-    TASK04_DEFAULT_MAX_SLOT_CAPACITY,
+  TASK04_MAX_SLOT_CAPACITY: positiveIntegerSetting(),
+  TASK04_MAX_ACCESSIBILITY_SELECTIONS: positiveIntegerSetting(),
+  TASK04_MAX_PAGE_SIZE: positiveIntegerSetting(),
+  TASK04_PENDING_HOLD_MINUTES: z
+    .literal(String(TASK04_PENDING_HOLD_MINUTES))
+    .transform(Number),
+  TASK04_PUBLIC_LOCATION_LABEL: z.literal(
+    TASK04_PUBLIC_LOCATION_LABEL,
   ),
-  TASK04_MAX_ACCESSIBILITY_SELECTIONS: positiveIntegerSetting(
-    TASK04_DEFAULT_MAX_ACCESSIBILITY_SELECTIONS,
-  ),
-  TASK04_MAX_PAGE_SIZE: positiveIntegerSetting(
-    TASK04_DEFAULT_MAX_PAGE_SIZE,
-  ),
+  TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS: z
+    .literal(String(TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS))
+    .transform(Number),
+  TASK04_MAX_REQUEST_BYTES: z
+    .literal(String(TASK04_MAX_REQUEST_BYTES))
+    .transform(Number),
+  TASK04_MAX_AVAILABILITY_WINDOW_DAYS: z
+    .literal(String(TASK04_MAX_AVAILABILITY_WINDOW_DAYS))
+    .transform(Number),
+  TASK04_PUBLIC_SLOT_REFERENCE_SECRET:
+    task04PublicSlotReferenceSecretSchema,
+  TASK04_SYNTHETIC_AVAILABILITY_CACHE_TTL_SECONDS: z
+    .string()
+    .regex(/^[1-9]\d*$/)
+    .transform(Number)
+    .refine((value) => Number.isSafeInteger(value) && value <= 60)
+    .optional(),
 });
 
 const TASK04_ALLOWED_ENVIRONMENT_KEYS = new Set([
@@ -73,6 +115,13 @@ const TASK04_ALLOWED_ENVIRONMENT_KEYS = new Set([
   "TASK04_MAX_SLOT_CAPACITY",
   "TASK04_MAX_ACCESSIBILITY_SELECTIONS",
   "TASK04_MAX_PAGE_SIZE",
+  "TASK04_PENDING_HOLD_MINUTES",
+  "TASK04_PUBLIC_LOCATION_LABEL",
+  "TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS",
+  "TASK04_MAX_REQUEST_BYTES",
+  "TASK04_MAX_AVAILABILITY_WINDOW_DAYS",
+  "TASK04_PUBLIC_SLOT_REFERENCE_SECRET",
+  "TASK04_SYNTHETIC_AVAILABILITY_CACHE_TTL_SECONDS",
 ]);
 
 const PROHIBITED_EXACT_ENVIRONMENT_KEYS = new Set([
@@ -174,6 +223,15 @@ export type Task04SandboxEnv = SandboxEnv & {
   maxSlotCapacity: number;
   maxAccessibilitySelections: number;
   maxPageSize: number;
+  pendingHoldMinutes: number;
+  publicLocationLabel: string;
+  publicSlotReferenceTtlSeconds: number;
+  maxRequestBytes: number;
+  maxAvailabilityWindowDays: number;
+  supportedDisplayTimezones:
+    typeof TASK04_SYNTHETIC_SUPPORTED_DISPLAY_TIMEZONES;
+  publicSlotReferenceSecret: string;
+  availabilityCacheTtlSeconds?: number;
 };
 
 function createSandboxConfigDeniedError(reason: string): Error {
@@ -295,6 +353,27 @@ export function parseTask04SandboxEnv(
     maxAccessibilitySelections:
       parsed.data.TASK04_MAX_ACCESSIBILITY_SELECTIONS,
     maxPageSize: parsed.data.TASK04_MAX_PAGE_SIZE,
+    pendingHoldMinutes:
+      parsed.data.TASK04_PENDING_HOLD_MINUTES,
+    publicLocationLabel:
+      parsed.data.TASK04_PUBLIC_LOCATION_LABEL,
+    publicSlotReferenceTtlSeconds:
+      parsed.data.TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS,
+    maxRequestBytes: parsed.data.TASK04_MAX_REQUEST_BYTES,
+    maxAvailabilityWindowDays:
+      parsed.data.TASK04_MAX_AVAILABILITY_WINDOW_DAYS,
+    supportedDisplayTimezones:
+      TASK04_SYNTHETIC_SUPPORTED_DISPLAY_TIMEZONES,
+    publicSlotReferenceSecret:
+      parsed.data.TASK04_PUBLIC_SLOT_REFERENCE_SECRET,
+    ...(parsed.data
+      .TASK04_SYNTHETIC_AVAILABILITY_CACHE_TTL_SECONDS === undefined
+      ? {}
+      : {
+          availabilityCacheTtlSeconds:
+            parsed.data
+              .TASK04_SYNTHETIC_AVAILABILITY_CACHE_TTL_SECONDS,
+        }),
   };
 }
 
@@ -351,6 +430,19 @@ export function task04SyntheticEnvironmentInput(): Record<string, string> {
       TASK04_DEFAULT_MAX_ACCESSIBILITY_SELECTIONS,
     ),
     TASK04_MAX_PAGE_SIZE: String(TASK04_DEFAULT_MAX_PAGE_SIZE),
+    TASK04_PENDING_HOLD_MINUTES: String(
+      TASK04_PENDING_HOLD_MINUTES,
+    ),
+    TASK04_PUBLIC_LOCATION_LABEL,
+    TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS: String(
+      TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS,
+    ),
+    TASK04_MAX_REQUEST_BYTES: String(TASK04_MAX_REQUEST_BYTES),
+    TASK04_MAX_AVAILABILITY_WINDOW_DAYS: String(
+      TASK04_MAX_AVAILABILITY_WINDOW_DAYS,
+    ),
+    TASK04_PUBLIC_SLOT_REFERENCE_SECRET:
+      TASK04_SYNTHETIC_TEST_PUBLIC_SLOT_REFERENCE_SECRET,
   };
 }
 

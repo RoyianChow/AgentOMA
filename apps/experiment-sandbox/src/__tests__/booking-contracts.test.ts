@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  TASK04_UNRESOLVED_CONFIGURATION_KEYS,
+  TASK04_REQUIRED_CONFIGURATION_KEYS,
   parseTask04CommandConfiguration,
 } from "../booking/config";
 import {
@@ -11,12 +11,12 @@ import {
 import { assertTask04AuthoritativeRawRequestWithinLimit } from "../db/transaction";
 
 const TEST_CONFIGURATION = Object.freeze({
-  TASK04_PENDING_HOLD_MINUTES: 12,
-  TASK04_PUBLIC_LOCATION_LABEL: "Synthetic local test location",
-  TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS: 90,
-  TASK04_MAX_REQUEST_BYTES: 4_096,
+  TASK04_PENDING_HOLD_MINUTES: 15,
+  TASK04_PUBLIC_LOCATION_LABEL: "Synthetic Pharmacy Location",
+  TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS: 900,
+  TASK04_MAX_REQUEST_BYTES: 16_384,
   TASK04_MAX_PAGE_SIZE: 10,
-  TASK04_MAX_AVAILABILITY_WINDOW_DAYS: 14,
+  TASK04_MAX_AVAILABILITY_WINDOW_DAYS: 31,
   TASK04_SUPPORTED_DISPLAY_TIMEZONES: ["America/Toronto"],
 });
 
@@ -51,9 +51,9 @@ function validBookingCreateRequest() {
   };
 }
 
-describe("Task 04 unresolved command configuration", () => {
-  it("requires every unresolved value and applies no defaults", () => {
-    for (const key of TASK04_UNRESOLVED_CONFIGURATION_KEYS) {
+describe("Task 04 approved command configuration", () => {
+  it("requires every approved value and applies no defaults", () => {
+    for (const key of TASK04_REQUIRED_CONFIGURATION_KEYS) {
       const incomplete = { ...TEST_CONFIGURATION };
       delete incomplete[key];
       expect(() => parseTask04CommandConfiguration(incomplete)).toThrow(
@@ -64,14 +64,31 @@ describe("Task 04 unresolved command configuration", () => {
 
   it("normalizes an explicitly injected test configuration", () => {
     expect(parseTask04CommandConfiguration(TEST_CONFIGURATION)).toEqual({
-      pendingHoldMinutes: 12,
-      publicLocationLabel: "Synthetic local test location",
-      publicSlotReferenceTtlSeconds: 90,
-      maxRequestBytes: 4_096,
+      pendingHoldMinutes: 15,
+      publicLocationLabel: "Synthetic Pharmacy Location",
+      publicSlotReferenceTtlSeconds: 900,
+      maxRequestBytes: 16_384,
       maxPageSize: 10,
-      maxAvailabilityWindowDays: 14,
+      maxAvailabilityWindowDays: 31,
       supportedDisplayTimezones: ["America/Toronto"],
     });
+  });
+
+  it.each([
+    ["TASK04_PENDING_HOLD_MINUTES", 14],
+    ["TASK04_PUBLIC_LOCATION_LABEL", ""],
+    ["TASK04_PUBLIC_LOCATION_LABEL", "X".repeat(81)],
+    ["TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS", 899],
+    ["TASK04_MAX_REQUEST_BYTES", 16_383],
+    ["TASK04_MAX_AVAILABILITY_WINDOW_DAYS", 30],
+    ["TASK04_MAX_PAGE_SIZE", 0],
+  ])("rejects unapproved or invalid %s", (key, value) => {
+    expect(() =>
+      parseTask04CommandConfiguration({
+        ...TEST_CONFIGURATION,
+        [key]: value,
+      }),
+    ).toThrow("TASK04_COMMAND_CONFIG_DENIED");
   });
 });
 

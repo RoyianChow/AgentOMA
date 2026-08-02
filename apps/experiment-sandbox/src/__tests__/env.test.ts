@@ -8,6 +8,11 @@ import {
   TASK04_DEFAULT_MAX_ACCESSIBILITY_SELECTIONS,
   TASK04_DEFAULT_MAX_PAGE_SIZE,
   TASK04_DEFAULT_MAX_SLOT_CAPACITY,
+  TASK04_MAX_AVAILABILITY_WINDOW_DAYS,
+  TASK04_MAX_REQUEST_BYTES,
+  TASK04_PENDING_HOLD_MINUTES,
+  TASK04_PUBLIC_LOCATION_LABEL,
+  TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS,
   TASK04_SANDBOX_EXPIRES_AT,
   TASK04_SANDBOX_PHARMACY_ID,
   TASK04_SANDBOX_POSTGRES_URL,
@@ -35,6 +40,19 @@ function validEnv(): Record<string, string> {
       TASK04_DEFAULT_MAX_ACCESSIBILITY_SELECTIONS,
     ),
     TASK04_MAX_PAGE_SIZE: String(TASK04_DEFAULT_MAX_PAGE_SIZE),
+    TASK04_PENDING_HOLD_MINUTES: String(
+      TASK04_PENDING_HOLD_MINUTES,
+    ),
+    TASK04_PUBLIC_LOCATION_LABEL,
+    TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS: String(
+      TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS,
+    ),
+    TASK04_MAX_REQUEST_BYTES: String(TASK04_MAX_REQUEST_BYTES),
+    TASK04_MAX_AVAILABILITY_WINDOW_DAYS: String(
+      TASK04_MAX_AVAILABILITY_WINDOW_DAYS,
+    ),
+    TASK04_PUBLIC_SLOT_REFERENCE_SECRET:
+      "SYNTHETIC_TASK04_ENV_TEST_SLOT_REFERENCE_SECRET",
   };
 }
 
@@ -171,23 +189,29 @@ describe("sandbox environment contract", () => {
     ).toThrow("SANDBOX_CONFIG_DENIED:TASK04_MISSING_OR_MALFORMED_VARIABLE");
   });
 
-  it("uses conservative synthetic defaults and validates configured limits", () => {
-    const defaults = validEnv();
-    delete defaults.TASK04_MAX_SLOT_CAPACITY;
-    delete defaults.TASK04_MAX_ACCESSIBILITY_SELECTIONS;
-    delete defaults.TASK04_MAX_PAGE_SIZE;
-    const parsedDefaults = parseTask04SandboxEnv(
-      defaults,
-      new Date("2026-08-04T00:00:00.000Z"),
-    );
-    expect(parsedDefaults.maxSlotCapacity).toBe(
-      TASK04_DEFAULT_MAX_SLOT_CAPACITY,
-    );
-    expect(parsedDefaults.maxAccessibilitySelections).toBe(
-      TASK04_DEFAULT_MAX_ACCESSIBILITY_SELECTIONS,
-    );
-    expect(parsedDefaults.maxPageSize).toBe(TASK04_DEFAULT_MAX_PAGE_SIZE);
-
+  it("requires every synthetic setting and validates configured limits", () => {
+    for (const key of [
+      "TASK04_MAX_SLOT_CAPACITY",
+      "TASK04_MAX_ACCESSIBILITY_SELECTIONS",
+      "TASK04_MAX_PAGE_SIZE",
+      "TASK04_PENDING_HOLD_MINUTES",
+      "TASK04_PUBLIC_LOCATION_LABEL",
+      "TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS",
+      "TASK04_MAX_REQUEST_BYTES",
+      "TASK04_MAX_AVAILABILITY_WINDOW_DAYS",
+      "TASK04_PUBLIC_SLOT_REFERENCE_SECRET",
+    ]) {
+      const missing = validEnv();
+      delete missing[key];
+      expect(() =>
+        parseTask04SandboxEnv(
+          missing,
+          new Date("2026-08-04T00:00:00.000Z"),
+        ),
+      ).toThrow(
+        "SANDBOX_CONFIG_DENIED:TASK04_MISSING_OR_MALFORMED_VARIABLE",
+      );
+    }
     const boundary = validEnv();
     boundary.TASK04_MAX_SLOT_CAPACITY = "1";
     boundary.TASK04_MAX_ACCESSIBILITY_SELECTIONS = "1";
@@ -215,6 +239,99 @@ describe("sandbox environment contract", () => {
           "SANDBOX_CONFIG_DENIED:TASK04_MISSING_OR_MALFORMED_VARIABLE",
         );
       }
+    }
+  });
+
+  it("accepts only the coordinator-approved synthetic values", () => {
+    const parsed = parseTask04SandboxEnv(
+      validEnv(),
+      new Date("2026-08-04T00:00:00.000Z"),
+    );
+    expect(parsed).toMatchObject({
+      pendingHoldMinutes: 15,
+      publicLocationLabel: "Synthetic Pharmacy Location",
+      publicSlotReferenceTtlSeconds: 900,
+      maxRequestBytes: 16_384,
+      maxAvailabilityWindowDays: 31,
+      supportedDisplayTimezones: ["America/Toronto"],
+    });
+
+    for (const [key, value] of [
+      ["TASK04_PENDING_HOLD_MINUTES", "14"],
+      ["TASK04_PUBLIC_LOCATION_LABEL", ""],
+      ["TASK04_PUBLIC_LOCATION_LABEL", "X".repeat(81)],
+      ["TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS", "899"],
+      ["TASK04_MAX_REQUEST_BYTES", "16383"],
+      ["TASK04_MAX_AVAILABILITY_WINDOW_DAYS", "30"],
+      ["TASK04_PUBLIC_SLOT_REFERENCE_SECRET", "too-short"],
+    ]) {
+      expect(() =>
+        parseTask04SandboxEnv(
+          { ...validEnv(), [key]: value },
+          new Date("2026-08-04T00:00:00.000Z"),
+        ),
+      ).toThrow(
+        "SANDBOX_CONFIG_DENIED:TASK04_MISSING_OR_MALFORMED_VARIABLE",
+      );
+    }
+  });
+
+  it("never prints or reflects the slot-reference secret", () => {
+    const secret = "SYNTHETIC_SLOT_REFERENCE_SECRET_MUST_NOT_APPEAR";
+    const input = {
+      ...validEnv(),
+      TASK04_PUBLIC_SLOT_REFERENCE_SECRET: secret,
+      TASK04_MAX_REQUEST_BYTES: "invalid",
+    };
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    let failure: unknown;
+    try {
+      parseTask04SandboxEnv(
+        input,
+        new Date("2026-08-04T00:00:00.000Z"),
+      );
+    } catch (error) {
+      failure = error;
+    }
+    expect((failure as Error).message).toBe(
+      "SANDBOX_CONFIG_DENIED:TASK04_MISSING_OR_MALFORMED_VARIABLE",
+    );
+    expect((failure as Error).message).not.toContain(secret);
+    expect(consoleError).not.toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it("keeps the synthetic availability cache optional and bounded", () => {
+    expect(
+      parseTask04SandboxEnv(
+        validEnv(),
+        new Date("2026-08-04T00:00:00.000Z"),
+      ).availabilityCacheTtlSeconds,
+    ).toBeUndefined();
+    expect(
+      parseTask04SandboxEnv(
+        {
+          ...validEnv(),
+          TASK04_SYNTHETIC_AVAILABILITY_CACHE_TTL_SECONDS: "60",
+        },
+        new Date("2026-08-04T00:00:00.000Z"),
+      ).availabilityCacheTtlSeconds,
+    ).toBe(60);
+    for (const invalid of ["0", "61", "1.5", "invalid"]) {
+      expect(() =>
+        parseTask04SandboxEnv(
+          {
+            ...validEnv(),
+            TASK04_SYNTHETIC_AVAILABILITY_CACHE_TTL_SECONDS:
+              invalid,
+          },
+          new Date("2026-08-04T00:00:00.000Z"),
+        ),
+      ).toThrow(
+        "SANDBOX_CONFIG_DENIED:TASK04_MISSING_OR_MALFORMED_VARIABLE",
+      );
     }
   });
 
