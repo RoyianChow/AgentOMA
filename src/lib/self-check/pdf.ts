@@ -26,6 +26,13 @@ const COLOURS = {
 const PAGE_MARGIN = 18;
 const FOOTER_HEIGHT = 43;
 
+// The logo is a public, non-PHI asset. Keep one successful rasterization in
+// module memory so repeated downloads in the same tab do not repeat the GET,
+// image decode, and canvas conversion. Failed loads are not cached, allowing
+// a later download to retry without introducing browser persistence.
+let cachedLogoDataUrl: string | undefined;
+let logoLoadPromise: Promise<string | null> | null = null;
+
 function toneColours(tone: SelfCheckPdfContent["tone"]): {
   strong: RGB;
   soft: RGB;
@@ -55,9 +62,7 @@ function textHeight(fontSize: number, lineCount: number): number {
   return fontSize * 0.4 * lineCount;
 }
 
-async function loadBrandLogo(): Promise<string | null> {
-  if (typeof document === "undefined") return null;
-
+async function loadBrandLogoUncached(): Promise<string | null> {
   try {
     // This GET loads a public static asset only. No self-check answers or other
     // session state are sent to the server.
@@ -86,6 +91,24 @@ async function loadBrandLogo(): Promise<string | null> {
     // Do not log: future logo-loader errors must never expose report context.
     return null;
   }
+}
+
+async function loadBrandLogo(): Promise<string | null> {
+  if (typeof document === "undefined") return null;
+  if (cachedLogoDataUrl !== undefined) return cachedLogoDataUrl;
+
+  if (!logoLoadPromise) {
+    logoLoadPromise = loadBrandLogoUncached()
+      .then((logoDataUrl) => {
+        if (logoDataUrl) cachedLogoDataUrl = logoDataUrl;
+        return logoDataUrl;
+      })
+      .finally(() => {
+        logoLoadPromise = null;
+      });
+  }
+
+  return logoLoadPromise;
 }
 
 export function renderSelfCheckPdf(

@@ -88,6 +88,11 @@ pharmacy fee-tier summary now counts rows in one pass and sorts the small
 aggregate deterministically. The verification script still reports aggregate
 evidence only; it does not expose patient or clinical rows.
 
+The public self-check PDF renderer now deduplicates concurrent logo loads and
+reuses a successful logo rasterization in module memory for repeat downloads.
+Failed loads remain retryable, and no report data enters the cache or the
+browser's persistent storage.
+
 ## Protected surfaces intentionally not revised
 
 This pass did not edit:
