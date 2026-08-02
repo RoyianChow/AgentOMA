@@ -11,6 +11,8 @@ const boundaryVerifier = join(toolsRoot, "verify-boundary.mjs");
 const clientModuleDirective = /^\s*["']use client["'];/m;
 const slotReferenceSecretName =
   /TASK04_PUBLIC_SLOT_REFERENCE_SECRET|publicSlotReferenceSecret/;
+const protectedBookingBoundaryName =
+  /capabilityReference|serverSessionBinding|credentialDigest|TASK04_SYNTHETIC_BOOKING_(?:CREATE|CONFIRM)_AUTHORITY|executeTask04Booking(?:Retrieve|Confirm)/;
 
 function importedModuleSpecifiers(source: string): string[] {
   return [
@@ -128,6 +130,36 @@ describe("sandbox import and storage boundary", () => {
     expect(sharedBookingSource).not.toMatch(
       /from\s+["'][^"']*public-slot-reference[^"']*["']/,
     );
+  });
+
+  it("keeps booking retrieval and confirmation authority server-only", () => {
+    const commandModules = [
+      join(sourceRoot, "db", "booking-retrieve.ts"),
+      join(sourceRoot, "db", "booking-confirm.ts"),
+    ];
+    for (const commandModule of commandModules) {
+      expect(statSync(commandModule).isFile()).toBe(true);
+    }
+
+    const clientOffenders = filesUnder(sourceRoot)
+      .filter((file) => /\.(ts|tsx)$/.test(file))
+      .filter((file) =>
+        clientModuleDirective.test(readFileSync(file, "utf8")),
+      )
+      .filter((file) =>
+        protectedBookingBoundaryName.test(
+          readFileSync(file, "utf8"),
+        ),
+      );
+    expect(
+      clientOffenders.map((file) => relative(sourceRoot, file)),
+    ).toEqual([]);
+    for (const forbiddenImport of [
+      "../db/booking-retrieve",
+      "../db/booking-confirm",
+    ]) {
+      expect(isServerOwnedModuleSpecifier(forbiddenImport)).toBe(true);
+    }
   });
 
   it("contains no production imports, browser persistence, analytics, or external URLs", () => {

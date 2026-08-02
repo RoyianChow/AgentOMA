@@ -333,11 +333,17 @@ export type Task04BookingCreateRequest = z.infer<
 export type Task04BookingConfirmRequest = z.infer<
   Task04BookingSchemas["bookingConfirmRequestSchema"]
 >;
+export type Task04BookingRetrieveRequest = z.infer<
+  Task04BookingSchemas["bookingRetrieveRequestSchema"]
+>;
 export type Task04BookingCreateResponseData = z.infer<
   Task04BookingSchemas["bookingCreateResponseDataSchema"]
 >;
 export type Task04BookingConfirmResponseData = z.infer<
   Task04BookingSchemas["bookingConfirmResponseDataSchema"]
+>;
+export type Task04BookingRetrieveResponseData = z.infer<
+  Task04BookingSchemas["bookingRetrieveResponseDataSchema"]
 >;
 
 export function parseTask04Request<T>(
