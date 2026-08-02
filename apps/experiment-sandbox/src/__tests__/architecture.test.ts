@@ -29,6 +29,41 @@ describe("sandbox import and storage boundary", () => {
     expect(offenders.map((file) => relative(sourceRoot, file))).toEqual([]);
   });
 
+  it("keeps authoritative raw request sizing behind the server database boundary", () => {
+    const guardName =
+      "assertTask04AuthoritativeRawRequestWithinLimit";
+    const serverBoundary = join(sourceRoot, "db", "transaction.ts");
+    expect(readFileSync(serverBoundary, "utf8")).toContain(
+      `export function ${guardName}`,
+    );
+
+    const sharedBookingOffenders = filesUnder(
+      join(sourceRoot, "booking"),
+    )
+      .filter((file) => /\.(ts|tsx)$/.test(file))
+      .filter((file) =>
+        readFileSync(file, "utf8").includes(guardName),
+      );
+    expect(
+      sharedBookingOffenders.map((file) =>
+        relative(sourceRoot, file),
+      ),
+    ).toEqual([]);
+
+    const clientOffenders = filesUnder(sourceRoot)
+      .filter((file) => /\.(ts|tsx)$/.test(file))
+      .filter((file) => {
+        const source = readFileSync(file, "utf8");
+        return (
+          /^["']use client["'];/m.test(source) &&
+          source.includes(guardName)
+        );
+      });
+    expect(
+      clientOffenders.map((file) => relative(sourceRoot, file)),
+    ).toEqual([]);
+  });
+
   it("contains no production imports, browser persistence, analytics, or external URLs", () => {
     const sourceFiles = [...filesUnder(sourceRoot), ...filesUnder(toolsRoot)]
       .filter((file) => /\.(ts|tsx|mjs|cjs)$/.test(file))
