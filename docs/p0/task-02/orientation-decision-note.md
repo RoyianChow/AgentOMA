@@ -1,56 +1,47 @@
-# Task 02 orientation-override decision note
+# Task 02 orientation decision note
 
-**Status:** BLOCKED (G3 not decided; current invariant is false)  
-**Decision authority:** product/compliance with pilot-pharmacist review  
-**Code owner after decision:** assessment-completion/auth owner under separate
-approval
+**Status:** DECIDED — HARD GATE; NO ADMIN OVERRIDE
 
-## Required rule and current behavior
+**Decision date:** 2026-08-02
 
-The required release rule is a server-side hard gate: the prescribing
-pharmacist—or supervising pharmacist for an intern/student—must have a recorded
-completion of the OCP Mandatory Orientation for Minor Ailments Module before a
-billable assessment can be completed or `deriveClaimDraft` called.
+**Approver:** Royian Chowdhury, lead approver
 
-`src/app/(dashboard)/pharmacist/actions.ts:538–566` performs that check, but it
-also permits a `pharmacy_admin` without recorded completion to supply free-text
-`orientationOverrideReason` and continue. Lines 1083–1103 attempt a separate
-best-effort override audit after commit. The database suite explicitly expects
-that override to create a billable assessment.
+**Implementation commit:** `813e360546f6dc1b4c03ead5de7d22002f063759`
 
-Auditability does not establish billing eligibility. Because no G3 decision
-authorizes the bypass, T02-18 and AC15 are currently **FAIL**, not merely
-unverified.
+## Decision
 
-## Exact decision required
+The prescribing pharmacist—or the supervising pharmacist for an
+intern/student—must have a recorded completion of the OCP Mandatory
+Orientation for Minor Ailments Module before a billable assessment can be
+completed or claim derivation reached.
 
-Must the admin override be removed so missing orientation always blocks
-billable completion, or is a break-glass override authorized? If authorized,
-the decision must state all of:
+No role, including `pharmacy_admin`, may override this requirement. A claim of
+recent completion, a pending upload, or a free-text explanation does not replace
+the recorded profile fact. A pharmacy admin must record completion on the
+prescriber's profile before the assessment can proceed.
 
-- the exact role(s) allowed to invoke it;
-- the objective conditions, evidence and reason required;
-- whether it applies to the actor, supervisor, or both;
-- duration/expiry and effective scope;
-- required audit event and whether audit failure must roll back completion;
-- revocation and retrospective-review process; and
-- the authoritative product/compliance basis for treating the resulting
-  service as billable.
+The exact scoped authorization is recorded in
+`lead-remediation-authorization-2026-08-02.md`.
 
-No candidate role is approved by this note. `pharmacy_admin` is an observation
-from current code, not an approved policy.
+## Implemented boundary
 
-## Safety and implementation impact
+- `createAssessment()` checks the resolved prescriber before its transaction,
+  row insertion, or `deriveClaimDraft()` call.
+- The request schema is strict and no longer accepts
+  `orientationOverrideReason`.
+- The pharmacist workspace and page no longer expose an override prop, state,
+  reason field, or resubmission button.
+- The retired `assessment.orientation_override` completion event is no longer
+  emitted because the bypass no longer exists.
+- Pure regressions prove the client/server override symbols are absent and the
+  strict boundary rejects the retired input.
+- Real-PostgreSQL tests cover pharmacist, admin, and supervising-pharmacist
+  behavior, but the current candidate has not run them because G1-D is not
+  granted and Docker Desktop is unavailable.
 
-The current override can create an assessment, immutable evidence, claim draft,
-and follow-up for a prescriber who does not meet the recorded orientation gate.
-Its audit event can also fail after those records commit. A future approved
-change therefore needs server-action, schema/boundary, UI, audit atomicity,
-authorization, negative role, expiry/revocation, and real-PostgreSQL tests.
+## Release disposition
 
-## Task 02 disposition
-
-No override policy was inferred, approved, removed, or expanded. The protected
-completion path was not edited. G3 remains BLOCKED and production promotion is
-blocked until a separately approved remediation restores the hard gate or
-implements an authoritative policy.
+G3 is **DECIDED**. T02-18 is PASS at the static/pure boundary. Full Task 02
+remains blocked on G1-D database proof, other outstanding controls, live
+verification, and Task 11 review. This decision grants no Docker, live, or
+production-deployment authority.

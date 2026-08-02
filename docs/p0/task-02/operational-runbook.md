@@ -162,6 +162,7 @@ against live rows.
 
 Update the evidence manifest, Task 11 capability/release record, compliance and
 handoff status. Promotion requires G4 from the independent reviewers against
-the exact evidence manifest and source commit. Current protected defects in
-assessment audit atomicity and orientation override must be remediated under
-separate approval before a production-readiness claim is possible.
+the exact evidence manifest and source commit. Assessment audit atomicity and
+the orientation hard gate were remediated under the scoped 2026-08-02 lead
+approval; their real-PostgreSQL tests must pass under G1-D before any
+production-readiness claim is possible.

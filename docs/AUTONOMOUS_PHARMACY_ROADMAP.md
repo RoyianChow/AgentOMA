@@ -72,9 +72,10 @@ because another feature passed review.
 
 Before adding online autonomy:
 
-1. Deploy and verify migration `0018` and complete the P0-C workflow.
-2. Add billability evidence to complete-patient retrieval.
-3. Resolve LTC billing and the orientation override.
+1. Verify migration `0018`, the transactional assessment audit, and the full
+   P0-C workflow on real PostgreSQL before deployment.
+2. Verify the implemented billability-evidence patient retrieval/PDF/export.
+3. Resolve LTC billing. The orientation override is already removed.
 4. Complete the first Canadian-region restore drill.
 5. Finish authenticated mobile/accessibility testing and close the known
    emergency-screen issue.

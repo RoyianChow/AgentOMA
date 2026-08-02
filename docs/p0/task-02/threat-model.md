@@ -47,11 +47,11 @@ edge to evidence, claims, audits, migration state, or release approval.
 | Evidence/audit mutation | Trigger + app-role revoke; append-only application paths | App-role UPDATE/DELETE/TRUNCATE and trigger-bypass tests | Block promotion; incident review | Runtime proof pending |
 | Parent cascade deletes evidence | Evidence trigger permits only transaction-marked reviewed destruction | Ordinary cascade refusal and governed-destruction tests | Stop destructive workflow | Runtime proof pending |
 | `SECURITY DEFINER` escalation | Reviewed governance function revokes PUBLIC and performs policy checks | Function ownership/search-path/grant catalog plus unauthorized execution tests | Revoke execution / forward-fix under approval | Earlier migration surface; runtime proof pending |
-| Partial assessment/evidence/claim commit | One DB transaction for assessment/evidence/claim/follow-up | Deterministic fault injection after each stage | Roll back and return safe refusal | **FAIL:** assessment-created audit is outside transaction |
+| Partial assessment/evidence/claim commit | One DB transaction now includes assessment/evidence/claim/follow-up/intake and required assessment audit | Deterministic required-audit failure injection | Roll back and return safe refusal | Code remediated; real-PostgreSQL proof pending G1-D |
 | Duplicate/retry/race claim | Advisory locks, unique/constraint-backed rules, immutable active draft model | Real-Postgres retry/concurrency tests | Safe duplicate outcome; reconcile | 0018 rerun pending |
 | Red-flag/referral confusion | Separate terminal triage path; defensive claim refusal; five outcomes retained | Zero-row and completed-referral tests | No claim; pharmacist referral path | Existing tests only; fresh proof pending |
 | Hardcoded/stale billing mapping | Seeded reference lookup injected into pure derivation; unknown refuses | Forbidden-hardcode scan and money-rule tests | Block claim/export; configuration incident | Protected derivation unchanged |
-| Orientation bypass | Intended server gate before transaction | Missing-orientation negative test | Refuse before derivation | **FAIL:** admin override currently enables completion without G3 |
+| Orientation bypass | Unconditional server gate before transaction; strict schema has no override field | Missing-orientation admin/pharmacist/supervisor tests plus pure source regression | Refuse before derivation | G3 decided; override removed; DB rerun pending |
 | Unsafe LTC claim | Every LTC fact combination currently refuses claim derivation | Pure refusal and DB zero-claim tests | Record clinical assessment only; escalate to ODB Help Desk | Parked by G2, safe behavior intended |
 | Unauthorized export | Route and query revalidate session/role/pharmacy; server-only PHI rendering | Unauthorized/revoked/cross-tenant tests | Generic 401/404; safe audit failure record | Workstream F DB proof pending |
 | Manifest/artifact tampering | Canonical SHA-256 stored in server manifest | Compare retained manifest to exact bundle/artifacts | Reject artifact and investigate | **BLOCKED(S27):** repeat/canonical contract and reconstruction verifier unresolved |
@@ -71,7 +71,8 @@ errors. Synthetic negative probes must be unmistakably synthetic.
 
 ## Release consequence
 
-Two required controls are statically false: required assessment audit is not
-failure-atomic, and orientation can be overridden without G3. Task 02 cannot
-promote while either remains. The threat model itself does not authorize fixes,
-database execution, or production deployment.
+The two previously false code controls are remediated under the scoped lead
+decision. Task 02 still cannot promote until the atomicity test and complete
+database suite pass on real disposable PostgreSQL, S27 is resolved, Task 11
+reviews the exact evidence, and live/recovery gates are satisfied. This threat
+model grants no database execution or production-deployment authority.

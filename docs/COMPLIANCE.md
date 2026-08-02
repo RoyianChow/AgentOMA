@@ -103,7 +103,7 @@ UTI sections. It does not authorize future clinical-content changes.
 | Requirement | Notice | Current implementation | Status |
 |---|---|---|---|
 | Pharmacy HNS subscription/account identity | p.6 | `pharmacy.hns_account_id` and authenticated pharmacy settings exist; operational verification is still required | 🔶 |
-| OCP orientation module completed before billable assessment | p.6 | Server gate and supervisor logic exist, but an audited admin override currently bypasses the hard gate | 🔶 |
+| OCP orientation module completed before billable assessment | p.6 | Server gate and supervisor logic are mandatory; G3 is decided as a hard gate and no role can override a missing recorded completion | 🟦 |
 | Clinical viewer check | p.6 | P0-C requires the source, attestation, timestamp, and maximum state and stores them in an immutable sidecar; migration `0018` is pending live deployment | 🟦 |
 | Portal protects PHI | PHIPA posture | better-auth, mandatory TOTP, invitation-only roles, rolling/revocable sessions, server-action authorization | ✅ |
 
@@ -113,7 +113,7 @@ UTI sections. It does not authorize future clinical-content changes.
 
 | Requirement | Notice | Current implementation | Status |
 |---|---|---|---|
-| Defensible activity trail for post-payment review | p.12 | Pharmacy-scoped append-only audit storage exists, but Task 02 proved the required assessment-created event is written post-commit on a best-effort path and can be absent after a successful completion | 🔶 |
+| Defensible activity trail for post-payment review | p.12 | Pharmacy-scoped append-only audit storage exists; the required assessment-created event now shares the completion transaction, with real-PostgreSQL rollback proof added but pending G1-D execution | 🟦 |
 | Audit records cannot be updated/deleted by the app | p.12 | Trigger plus `agentoma_app` privilege revocation; real-Postgres grant tests | ✅ |
 | Retain ten years from last service or ten years after age 18, whichever later | p.12 | Live `0016` patient-wide recomputation extends every prior record after a returning service; live horizon comparison is clean and the pediatric fixture retains through 2047 | ✅ |
 | Complete, readily retrievable patient record | PHIPA/OCP recordkeeping posture | Server-only export schema v3, record view, PDF, and manifest projection now include persisted P0-C evidence without recomputation. Database-backed verification and live availability remain blocked on 0018 and Task 02 gates | 🟦 |
@@ -136,10 +136,9 @@ P0-C eligibility, existing-prescription, and claim-history boundary is merged
 and tested in application code, but migration `0018` is not yet live; the last
 fully verified live and fresh-Docker chain is `0017`. All LTC claim drafting
 remains parked. The product is **not yet ready for full production** until
-`0018` is deployed and verified and the P0-C retrieval projection is verified
-against that live schema,
-the assessment-created audit is made failure-atomic, the undecided orientation
-override is removed or authoritatively resolved, export-integrity S27 is
-closed, and the LTC-billing and first restore-drill items are closed. The
+`0018` is deployed and verified and the P0-C retrieval projection plus the
+transactional assessment-created audit are verified against that schema. The
+orientation override is resolved and removed. Export-integrity S27,
+LTC-billing, Task 11 review, and the first restore-drill items remain open. The
 ordered remediation list is
 [`NEXT_STEPS.md`](NEXT_STEPS.md).

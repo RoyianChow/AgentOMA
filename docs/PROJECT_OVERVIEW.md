@@ -5,17 +5,19 @@
 **Current stage:** authenticated pilot foundation; **not production-ready**
 
 **Verification at this snapshot:** the current tree is TypeScript-clean,
-ESLint-clean, passes all 110 database-free tests, and completes a production
+ESLint-clean, passes all 113 database-free tests, and completes a production
 build with `/check` statically generated. The last complete database-backed
 suite run on 2026-07-25
 passed 135/135 tests and rebuilt a fresh Docker Postgres database from zero
 through migration `0017`. Supabase is also live through `0017`; post-migration
 inspection reports one Demo Pharmacy, no cross-pharmacy relationships, three
 preserved users with TOTP, and matching patient-wide retention horizons.
-Migration `0018` and its P0-C application code are merged but are not yet live.
-Task 02's bounded static review found two release-blocking protected defects:
-the required assessment-created audit is post-commit/best-effort, and an
-undecided admin orientation override can bypass the hard gate.
+Migration `0018` and its P0-C application code are committed on this branch but
+are not yet live.
+Task 02's two protected code defects were remediated under Royian Chowdhury's
+scoped 2026-08-02 authorization: the required assessment-created audit now
+shares the completion transaction, and orientation is a hard gate with no
+admin override. Real-PostgreSQL proof remains gated and not run.
 
 AgentOMA supports Ontario pharmacy minor-ailment services. The Ministry of Health Executive Officer Notice effective July 1, 2026 is the source of truth for covered ailment groups, claim maximums, fees, PINs, and billing rules. See [`COMPLIANCE.md`](COMPLIANCE.md) for traceability and [`NEXT_STEPS.md`](NEXT_STEPS.md) for the remaining go-live work.
 
@@ -183,7 +185,9 @@ route, environment, or product rename from the briefs.
 - `MOCK_PHARMACY_ID` has been removed.
 - The application runs through a non-owner database role so audit and claim-draft grants are effective.
 
-There is currently an audited pharmacy-admin break-glass path around the orientation record. That policy conflicts with the intended hard eligibility gate and must be resolved before production; see [`NEXT_STEPS.md`](NEXT_STEPS.md).
+Orientation is an unconditional server-side billability gate. No role can
+override a missing recorded completion; a pharmacy admin must first record the
+module completion on the prescriber's profile.
 
 ## Data model
 
@@ -280,11 +284,9 @@ idempotent.
 ## What is complete and what is not
 
 Implemented work is recorded in [`COMPLETED_WORK.md`](COMPLETED_WORK.md). The
-highest-priority operational step is reviewing and applying migration `0018`,
-but it must not be applied for promotion until the protected assessment-audit
-atomicity defect and unauthorized orientation override are remediated under
-separate approval. Then prove the P0-C completion boundary against fresh Docker
-and live Supabase. The P0-C evidence export projection is implemented but not
+highest-priority operational step is obtaining G1-D and proving migration
+`0018` plus the remediated completion boundary against fresh Docker. Only then
+can recovery/live gates be considered. The P0-C evidence export projection is implemented but not
 real-PostgreSQL verified. Remaining blockers include LTC billing guidance,
 export-hash/reconstruction contract S27, Task 11 review, and the first isolated
 restore drill. See

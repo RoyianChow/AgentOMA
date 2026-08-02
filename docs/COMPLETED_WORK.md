@@ -106,7 +106,9 @@ This is the implementation record requested for the project. It describes capabi
 - Added pharmacist profile fields for OCP number, As-of-Right status, orientation completion, and intern/student supervision.
 - Protected `/pharmacist/*`; `src/proxy.ts` provides navigation UX only, while each server action independently verifies session, role, and pharmacy scope.
 - Removed all `MOCK_PHARMACY_ID` usage and derives pharmacy/prescriber identity from the session.
-- Added orientation gating and tests, including supervisor handling for interns/students. An audited admin override currently exists and is explicitly listed as a pre-production decision in [`NEXT_STEPS.md`](NEXT_STEPS.md).
+- Added orientation gating and tests, including supervisor handling for
+  interns/students. The 2026-08-02 G3 decision makes this a hard server gate:
+  no role, including pharmacy admin, can override a missing orientation record.
 
 ## Portal, audit, and settings
 
@@ -237,10 +239,14 @@ This is the implementation record requested for the project. It describes capabi
   raw export-audit exception logging with the payload-free failure record.
 - Restricted destructive test PostgreSQL to loopback and the exact disposable
   database endpoint; pure negative tests fail closed for every other URL.
+- Under scoped lead authorization, moved the required assessment-created audit
+  into the completion transaction and removed the admin orientation bypass from
+  the strict server boundary and client workspace. Added static/pure tombstones
+  and a real-PostgreSQL required-audit failure-injection test.
 - The bounded code is TypeScript/lint/build clean and the pure suite is
-  110/110. Task 02 is **not complete or production-ready**: Docker/live phases
-  were not authorized, S27 is unresolved, and static review proved protected
-  audit-atomicity and orientation-gate defects.
+  113/113. Task 02 remains **blocked and not production-ready**: the new
+  transaction test and full Docker/live phases were not authorized or run, and
+  S27 plus Task 11/recovery/release controls remain unresolved.
 
 ## Verification and regression coverage
 
@@ -249,5 +255,5 @@ This is the implementation record requested for the project. It describes capabi
 - Tests cover claim derivation combinations, refusal paths, LTC behaviour, remote-virtual tiers, retention, one-per-day, concurrent mutex enforcement, claim persistence/supersession, follow-up completion/supersession/concurrency/export, invitations/auth data, audit grants/triggers, and red-flag zero-claim behaviour.
 - TypeScript, ESLint, and the production build are clean for the current tree.
   The last fully recorded database-backed suite has 135 passing tests through
-  `0017`; 110 database-free tests currently run independently through
+  `0017`; 113 database-free tests currently run independently through
   `npm run test:pure`.

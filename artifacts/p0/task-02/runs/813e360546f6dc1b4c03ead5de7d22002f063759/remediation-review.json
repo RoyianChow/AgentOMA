@@ -1,0 +1,32 @@
+{
+  "schema_version": "1",
+  "task": "02",
+  "source_commit_sha": "813e360546f6dc1b4c03ead5de7d22002f063759",
+  "authorization_record": "docs/p0/task-02/lead-remediation-authorization-2026-08-02.md",
+  "scope": [
+    "required assessment-created audit transaction atomicity",
+    "orientation hard gate with no administrative override"
+  ],
+  "static_results": {
+    "required_assessment_audit_uses_transaction_writer": "PASS",
+    "post_commit_required_assessment_audit_removed": "PASS",
+    "production_orientation_override_references": 0,
+    "strict_boundary_rejects_retired_override_input": "PASS",
+    "client_override_affordance_removed": "PASS"
+  },
+  "database_fault_injection": {
+    "test_path": "src/app/(dashboard)/pharmacist/__tests__/create-assessment.db.test.ts",
+    "test_added": true,
+    "execution_status": "NOT RUN",
+    "reason": "G1-D_NOT_GRANTED_AND_DOCKER_UNAVAILABLE"
+  },
+  "protected_surfaces_not_changed": [
+    "src/config/triage.ts",
+    "src/config/ailment-reference.ts",
+    "src/lib/db/migrations/",
+    "deriveClaimDraft",
+    "LTC billing"
+  ],
+  "contains_phi": false,
+  "contains_secrets": false
+}

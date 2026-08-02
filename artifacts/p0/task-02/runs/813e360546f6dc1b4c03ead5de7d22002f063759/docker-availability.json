@@ -1,0 +1,15 @@
+{
+  "schema_version": "1",
+  "task": "02",
+  "source_commit_sha": "813e360546f6dc1b4c03ead5de7d22002f063759",
+  "command": "docker version --format '{{json .}}'",
+  "started_at_utc": "2026-08-02T03:20:20.5739322Z",
+  "ended_at_utc": "2026-08-02T03:20:20.7335896Z",
+  "exit_code": 1,
+  "result": "NOT AVAILABLE",
+  "safe_summary": "Docker CLI 29.6.2 is installed, but the local Docker Desktop Linux engine is not running.",
+  "database_commands_run": false,
+  "reason_database_commands_not_run": "G1-D was not granted; the disposable database engine was also unavailable.",
+  "contains_phi": false,
+  "contains_secrets": false
+}
