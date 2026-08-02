@@ -25,7 +25,7 @@ isolation, immutability, concurrency, red-flag zero-claim, referral separation,
 reference-derived persistence and evidence export passed. Its evidence remains
 unchanged under `docs/p0/task-02/evidence/runs/dcaab91f…/`.
 
-## Newly implemented; deliberately NOT RUN
+## Predecessor/restart harness — failed run preserved
 
 Royian Chowdhury granted implementation-only authority in
 `docs/p0/task-02/lead-predecessor-harness-implementation-authorization-2026-08-02.md`
@@ -44,9 +44,19 @@ Royian Chowdhury granted implementation-only authority in
 Compose startup uses `--pull never`; a future G1-D must bind the exact locally
 installed `postgres:16-alpine` image ID.
 
-Fourteen database-free contract tests pass, and the no-approval command was
-proved to return `TASK02_UPGRADE_DENIED:APPROVAL_FILE_DENIED` before Docker.
-**No Docker command or database connection for this new harness has run.**
+The first exact-candidate G1-D run used
+`dd503a14da24ea80a0f0e046e179f6b4b4e77b3c` and failed closed at the initial
+database identity probe with `DATABASE_IDENTITY_DENIED`. It did not migrate,
+seed, inspect database rows, access Supabase, use PHI/production credentials,
+or call an external integration. The runner's finally teardown passed; the
+exact container, network, and volume were removed. Preserve
+`docs/p0/task-02/evidence/runs/dd503a14da24ea80a0f0e046e179f6b4b4e77b3c/predecessor-upgrade-run.json`.
+
+The remediation is database-free: bounded read-only loopback readiness, a
+five-second connection limit, granular safe diagnostic codes, and pure
+regression tests. It does not change any migration or protected runtime surface.
+Do not rerun `dd503a14…`; its evidence path is non-overwriting. Freeze the next
+clean candidate, then require a fresh exact G1-D.
 
 The exact execution approval schema and command are in
 `docs/p0/task-02/g1-d-predecessor-upgrade-approval-contract.md`. The old G1-D
@@ -59,8 +69,8 @@ npm run test:db:upgrade -- --approval-file <absolute-path-to-approval.json>
 
 ## Remaining blockers
 
-1. **T02-07/T02-08 NOT RUN:** execute the new predecessor/restart harness only
-   after exact-candidate G1-D.
+1. **T02-07/T02-08 FAIL:** finish and verify the database-free remediation, then
+   obtain a new G1-D for the next clean candidate and execute the single runner.
 2. **S27 BLOCKED:** canonical repeat-export and reconstruction/tamper semantics
    still need an approved contract.
 3. **Task 11 BLOCKED:** no independent review of the resulting candidate and

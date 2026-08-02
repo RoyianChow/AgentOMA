@@ -284,11 +284,14 @@ idempotent.
 ## What is complete and what is not
 
 Implemented work is recorded in [`COMPLETED_WORK.md`](COMPLETED_WORK.md). The
-highest-priority Task 02 step is exact-candidate G1-D execution of the now
-implemented `0017 → 0018`/restart harness, followed by the S27 canonical
-export/reconstruction decision. After those, independent Task 11 review and
-recovery evidence are required before any exact G1-L request. Remaining product
-blockers also include LTC billing guidance and the first isolated restore drill. See
+first G1-D run of the `0017 → 0018`/restart harness failed closed before any
+migration or fixture write; its evidence and teardown are preserved. The
+highest-priority Task 02 step is completing the database-free harness
+remediation, then obtaining a new exact-candidate G1-D for one rerun. That is
+followed by the S27 canonical export/reconstruction decision. After those,
+independent Task 11 review and recovery evidence are required before any exact
+G1-L request. Remaining product blockers also include LTC billing guidance and
+the first isolated restore drill. See
 [`NEXT_STEPS.md`](NEXT_STEPS.md) for an ordered plan and
 [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) for decisions that must come from a
 pharmacist or ODB.

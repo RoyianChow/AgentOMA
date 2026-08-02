@@ -2,9 +2,9 @@
 
 **Recorded:** 2026-08-02
 **Candidate:** `dcaab91f9adba7457a85214d51d1614c8560f404`
-**Later harness implementation:** `c17f7bc4`; database execution **NOT RUN**
+**Failed predecessor-harness candidate:** `dd503a14da24ea80a0f0e046e179f6b4b4e77b3c`
 **Overall:** **BLOCKED — DO NOT PROMOTE**
-**Docker:** **PASS for prior from-zero suite; new predecessor/restart harness NOT RUN**
+**Docker:** **PASS for prior from-zero suite; predecessor/restart run FAIL (fail closed)**
 **Live:** **NOT RUN**
 **Production promotion:** **BLOCKED**
 
@@ -19,7 +19,7 @@
 | Predecessor | `0017_tense_pandemic` |
 | Migration SHA-256 | `33bcf5ab4aa289c17100fb59af1c9527204303e54b5f7d47dcdf5a2424a07a1c` |
 | Chain digest | `ac7202c197b876b143b7b83ec04cbe65f6b5116f53674ff95bf73e05aaade4bb` |
-| G1-D | GRANTED by Royian Chowdhury; exact-candidate run completed inside the UTC window |
+| G1-D | GRANTED by Royian Chowdhury for `dd503a14…`; consumed by a failed closed run and cannot carry forward |
 | G1-L | NOT GRANTED |
 | G2 | PARKED |
 | G3 | DECIDED — HARD GATE; NO ADMIN OVERRIDE |
@@ -42,6 +42,7 @@ All timestamps are 2026-08-02 UTC.
 | `npm test` confirmation | 06:38:05.0798340Z → 06:38:51.0933078Z | PASS, 20 files/211 tests/0 skipped | Same |
 | Restart-persistence checks | After confirmation run | BLOCKED; both failed attempts retained | `evidence/runs/dcaab91f9adba7457a85214d51d1614c8560f404/restart-persistence.json` |
 | `npm run test:db:down` | After restart checks | PASS; container/network removed | From-zero record |
+| `npm run test:db:upgrade` | 08:21:59.737Z → 08:23:04.134Z | FAIL, exit 1 — `DATABASE_IDENTITY_DENIED`; teardown PASS | `evidence/runs/dd503a14da24ea80a0f0e046e179f6b4b4e77b3c/predecessor-upgrade-run.json` |
 
 The disposable environment used Docker 29.6.2, PostgreSQL 16.14,
 `postgres:16-alpine`, loopback `127.0.0.1:5433`, and tmpfs storage. No live
@@ -62,12 +63,12 @@ database, production credential, PHI, or external route was accessed.
 |---|---|---|
 | T02-01 | PASS | Baseline and current-state analysis |
 | T02-02 | PASS | Candidate, migration, predecessor, hashes, and chain digest locked |
-| T02-03 | BLOCKED | G1-D passed; G1-L and G4 remain separate and ungranted |
+| T02-03 | BLOCKED | The `dd503a14…` G1-D was exact but its execution failed; a new candidate requires a new approval. G1-L and G4 remain ungranted. |
 | T02-04 | BLOCKED | Docker identity fails closed and passed; live identity NOT RUN |
 | T02-05 | PASS | Synthetic loopback-only tmpfs environment verified and removed |
 | T02-06 | PASS | Complete 19-migration chain replayed from zero twice |
-| T02-07 | NOT RUN | Reviewed local-only runner now exists; a new exact-candidate G1-D and execution evidence are absent |
-| T02-08 | NOT RUN | Runner has catalog/count/grant checks, but no authorized runtime artifact exists; live deltas also remain unproven |
+| T02-07 | FAIL | The `dd503a14…` predecessor run denied before migration or fixture writes. It proves no upgrade path; remediation needs a new candidate and new G1-D. |
+| T02-08 | FAIL | The same failed run never reached catalog/aggregate verification. No passing runtime proof exists. |
 | T02-09 | PASS | Cross-pharmacy patient, assessment, evidence, intake, and export denials passed |
 | T02-10 | PASS | App-role/trigger-backed evidence mutation denials passed |
 | T02-11 | PASS | App-role audit UPDATE/DELETE denial and INSERT allowance passed |
@@ -94,6 +95,8 @@ database, production credential, PHI, or external route was accessed.
 The machine-readable control map is
 `evidence/runs/dcaab91f9adba7457a85214d51d1614c8560f404/control-map.json`.
 Restart persistence is not silently waived: the prior tmpfs result remains
-BLOCKED. A separate named-volume harness is implemented with exact resource
-ownership and teardown, but remains NOT RUN until a new G1-D binds its final
-candidate. No old evidence file or control status was relabelled.
+BLOCKED. The separate named-volume harness preserved a fail-closed runtime
+record for `dd503a14…`; it will not be rerun on that candidate. Its remediation
+adds only bounded read-only readiness and granular safe diagnostics. A new clean
+candidate and new G1-D are required before another runtime proof. No old
+evidence file or control status was relabelled.

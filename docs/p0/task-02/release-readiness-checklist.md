@@ -2,7 +2,7 @@
 
 **As of:** 2026-08-02
 **Candidate:** `dcaab91f9adba7457a85214d51d1614c8560f404`
-**Later harness implementation:** `c17f7bc4`; database execution **NOT RUN**
+**Failed predecessor-harness candidate:** `dd503a14da24ea80a0f0e046e179f6b4b4e77b3c`
 **Overall:** **BLOCKED — DO NOT PROMOTE**
 
 | Control | Status | Evidence / blocker |
@@ -13,8 +13,8 @@
 | T02-04 environment identity fails closed | BLOCKED | Docker PASS; live NOT RUN |
 | T02-05 disposable environment isolated | PASS | Loopback-only synthetic tmpfs environment removed |
 | T02-06 full-chain replay | PASS | 19 migrations through `0018`, twice |
-| T02-07 predecessor upgrade | NOT RUN | Runner implemented; exact-candidate G1-D execution absent |
-| T02-08 catalog/aggregate deltas | NOT RUN | Checks implemented; predecessor/live runtime evidence absent |
+| T02-07 predecessor upgrade | FAIL | The approved `dd503a14…` run denied before migration or fixture writes; a remediated candidate needs a new G1-D. |
+| T02-08 catalog/aggregate deltas | FAIL | The failed run did not reach catalog/aggregate verification; no passing proof exists. |
 | T02-09 tenant/patient isolation | PASS | Real-PostgreSQL cross-scope denials |
 | T02-10 evidence immutability as app role | PASS | Grant/trigger-backed denial tests |
 | T02-11 audit immutability as app role | PASS | UPDATE/DELETE denied; INSERT allowed |
@@ -46,7 +46,7 @@
 | Docker execution authorization | PASS |
 | Protected defect remediation | PASS on real PostgreSQL |
 | From-zero database/clinical matrix | PASS |
-| Predecessor/restart persistence | NOT RUN on the new gated harness; prior tmpfs attempt remains BLOCKED |
+| Predecessor/restart persistence | FAIL before restart on `dd503a14…`; prior tmpfs attempt remains BLOCKED |
 | Orientation hard gate + LTC parked | PASS |
 | Export evidence projection | PASS |
 | Canonical reconstruction/tamper contract | BLOCKED — S27 |

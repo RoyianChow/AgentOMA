@@ -256,8 +256,11 @@ This is the implementation record requested for the project. It describes capabi
   internal network, named disposable volume, exact G1-D/candidate/hash checks,
   Drizzle-through-0017 migration view, synthetic predecessor rows, unmodified
   0018 application, preservation/catalog/grant checks, restart verification,
-  and exact finally-block teardown. Its database-free contract passes; runtime
-  status remains **NOT RUN** pending a new exact-candidate G1-D.
+   and exact finally-block teardown. Its database-free contract passes. The
+   first authorized runtime attempt on `dd503a14…` failed closed at the initial
+   database identity probe before migration or fixture writes, and teardown
+   passed. The evidence is preserved; a remediated clean candidate requires a
+   fresh exact-candidate G1-D.
 
 ## Verification and regression coverage
 

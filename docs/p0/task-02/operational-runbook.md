@@ -116,8 +116,12 @@ Do not manually run Compose lifecycle commands for this service. The runner
 owns startup, migration, restart, evidence capture and teardown in one process.
 It refuses stale resources before creation, verifies the same container ID and
 an increased restart count, and removes only resources whose exact names and
-synthetic Task 02 labels prove ownership. Runtime status remains **NOT RUN**
-until that gated command succeeds.
+synthetic Task 02 labels prove ownership. The first approved run for
+`dd503a14…` failed closed at the initial database identity probe and tore down
+successfully; see `predecessor-upgrade-failure-dd503a14-2026-08-02.md`.
+Do not rerun that candidate. The remediation adds only bounded read-only
+loopback readiness and granular safe diagnostic codes; its new clean candidate
+requires a new exact G1-D before runtime execution.
 
 ### Docker failure and teardown
 

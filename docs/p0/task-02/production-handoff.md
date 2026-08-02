@@ -1,7 +1,7 @@
 # Task 02 production handoff
 
 **Tested implementation candidate:** `dcaab91f9adba7457a85214d51d1614c8560f404`
-**Later harness implementation:** `c17f7bc4`; database execution **NOT RUN**
+**Failed predecessor-harness candidate:** `dd503a14da24ea80a0f0e046e179f6b4b4e77b3c`
 **Handoff status:** **BLOCKED — DO NOT PROMOTE**
 **Live migration authorized:** **NO**
 
@@ -23,17 +23,20 @@
 
 ## Why promotion remains blocked
 
-1. A reviewed local-only runner now exists, but no new exact-candidate G1-D has
-   authorized its `0017 → 0018` database execution.
+1. The first exact G1-D predecessor run failed closed before migration or
+   fixture writes with `DATABASE_IDENTITY_DENIED`; its evidence and teardown are
+   preserved. The remediated candidate needs a new exact G1-D.
 2. The old tmpfs/PID-1 restart attempts remain BLOCKED. The separate
-   named-volume restart proof is NOT RUN and cannot inherit the old evidence.
+   named-volume restart proof was not reached after the predecessor failure and
+   cannot inherit the old evidence.
 3. S27 canonical export/reconstruction semantics remain unresolved.
 4. Task 11 has not independently reviewed this candidate/evidence set.
 5. Recovery evidence, G1-L, live preflight/apply/parity, and G4 do not exist.
 
 ## Resume sequence
 
-1. Freeze the final clean candidate and grant a new expiring G1-D using
+1. Finish the database-free readiness/diagnostic remediation, freeze the clean
+   candidate, and grant a new expiring G1-D using
    `g1-d-predecessor-upgrade-approval-contract.md`.
 2. Run `npm run test:db:upgrade -- --approval-file <absolute-path>` once. The
    runner owns create, `0017` seed/upgrade, restart, evidence and exact teardown;
