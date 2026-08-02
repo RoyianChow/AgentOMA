@@ -251,6 +251,13 @@ This is the implementation record requested for the project. It describes capabi
   proven. Task 02 remains **blocked and not production-ready** because
   predecessor/restart-persistence, S27, Task 11, recovery, live, and promotion
   controls remain unresolved.
+- Under a separate implementation-only authorization, added a fail-closed
+  predecessor-upgrade/restart harness: isolated loopback PostgreSQL 16,
+  internal network, named disposable volume, exact G1-D/candidate/hash checks,
+  Drizzle-through-0017 migration view, synthetic predecessor rows, unmodified
+  0018 application, preservation/catalog/grant checks, restart verification,
+  and exact finally-block teardown. Its database-free contract passes; runtime
+  status remains **NOT RUN** pending a new exact-candidate G1-D.
 
 ## Verification and regression coverage
 

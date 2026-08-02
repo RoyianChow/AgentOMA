@@ -14,6 +14,9 @@ synthetic writes, and ambiguous retries are prohibited.
 - Reviewed chain digest:
   `ac7202c197b876b143b7b83ec04cbe65f6b5116f53674ff95bf73e05aaade4bb`
 - Configured live command ID: `npm:db:migrate`
+- Predecessor harness command ID: `npm:test:db:upgrade`
+- Harness implementation authority:
+  `lead-predecessor-harness-implementation-authorization-2026-08-02.md`
 
 Recompute these from the frozen candidate. A mismatch invalidates approval and
 stops the run.
@@ -63,8 +66,8 @@ version, candidate SHA, migration/chain hashes, and safe catalog/count results.
 Never persist raw SQL errors, connection URLs, fixture row contents, or clinical
 payloads.
 
-After the test, run read-only catalog/invariant checks before teardown. The
-current exact environment **cannot provide restart-persistence proof**:
+After the test, run read-only catalog/invariant checks before teardown. This
+tmpfs-backed from-zero environment **cannot provide restart-persistence proof**:
 
 - restarting the container clears its required tmpfs database; and
 - PostgreSQL is PID 1 in `postgres:16-alpine`, so `pg_ctl restart` stops the
@@ -72,23 +75,47 @@ current exact environment **cannot provide restart-persistence proof**:
 
 Both behaviors were observed and retained in
 `evidence/runs/dcaab91f9adba7457a85214d51d1614c8560f404/restart-persistence.json`.
-Do not weaken tmpfs, silently add a volume, or relabel reload as restart. A
-separately reviewed persistence-capable disposable harness, with exact
-ownership and teardown controls, is required before this proof can be PASS.
+Do not weaken this service's tmpfs, silently add a volume, or relabel reload as
+restart. A separate persistence-capable harness is now implemented as described
+below, but has not been executed and requires a new exact-candidate G1-D.
 
-### Predecessor-upgrade run
+### Predecessor-upgrade and restart-persistence run
 
-The current generic Vitest setup always rebuilds from zero. It is not an
-independent predecessor-upgrade proof. Until a reviewed local-only runner can:
+The separately authorized implementation is:
 
-1. migrate an empty disposable instance through 0017;
-2. seed unmistakably synthetic pre-migration patient/assessment rows;
-3. capture safe counts/catalog fingerprint;
-4. apply the unmodified repository 0018 once through Drizzle; and
-5. compare preserved counts, new objects, grants and zero evidence rows,
+- Compose file: `docker-compose.task-02-upgrade.yml`
+- Runner: `tools/task-02/run-predecessor-upgrade-harness.ts`
+- Database: PostgreSQL 16 at `127.0.0.1:5434`, synthetic-only
+- Resources: `agentoma-task02-upgrade-db`,
+  `agentoma-task02-upgrade-network`, `agentoma-task02-upgrade-data`
+- Storage/network: one disposable named volume and an internal-only network
+- Evidence: `evidence/runs/<candidate>/predecessor-upgrade-run.json`
 
-report predecessor upgrade as **NOT RUN**, not PASS. Do not simulate it by
-editing 0018 or manually changing `__drizzle_migrations`.
+It does not weaken or reuse the tmpfs service. It creates an OS-temporary,
+byte-identical Drizzle migration view containing `0000` through `0017`, then
+uses the same `drizzle-orm/postgres-js/migrator` used by the repository test
+setup. After synthetic predecessor rows are inserted, the runner points that
+same migrator at the unmodified repository folder; Drizzle applies `0018` once
+from the recorded predecessor. It never inserts into or edits
+`drizzle.__drizzle_migrations` itself.
+
+Execution requires the exact JSON G1-D record documented in
+[`g1-d-predecessor-upgrade-approval-contract.md`](g1-d-predecessor-upgrade-approval-contract.md).
+The old `dcaab91…` G1-D is expired and does not authorize this new harness.
+Without a matching record, the command denies before its first Docker command.
+
+After freezing the new clean candidate and obtaining G1-D, run only:
+
+```powershell
+npm run test:db:upgrade -- --approval-file <absolute-path-to-approval.json>
+```
+
+Do not manually run Compose lifecycle commands for this service. The runner
+owns startup, migration, restart, evidence capture and teardown in one process.
+It refuses stale resources before creation, verifies the same container ID and
+an increased restart count, and removes only resources whose exact names and
+synthetic Task 02 labels prove ownership. Runtime status remains **NOT RUN**
+until that gated command succeeds.
 
 ### Docker failure and teardown
 

@@ -3,14 +3,18 @@
 **Recorded:** 2026-08-02
 **Initial baseline:** `76098acad4afee5e80aa0dc71074d7ec97e14cf3`
 **Tested code candidate:** `dcaab91f9adba7457a85214d51d1614c8560f404`
+**Predecessor-harness implementation commit:** `c17f7bc4` (database execution
+not authorized or run)
 **Branch:** `feat/moh-compliance-migration`
 **Assessment:** **BLOCKED — DO NOT PROMOTE**
 
 The two authorized P0 defects are remediated and now proven by real PostgreSQL.
 The exact candidate passed the complete from-zero suite twice: 20 test files,
-211 tests, zero skipped or focused tests. Task 02 remains blocked because the
-predecessor upgrade, restart-persistence contract, S27 export reconstruction,
-Task 11 review, recovery, G1-L, live verification, and G4 remain incomplete.
+211 tests, zero skipped or focused tests. A separate, fail-closed predecessor
+upgrade/restart harness is implemented under bounded authority, but is **NOT
+RUN** pending a new exact-candidate G1-D. Task 02 remains blocked on that run,
+S27 export reconstruction, Task 11 review, recovery, G1-L, live verification,
+and G4.
 
 ## Locked identity
 
@@ -53,10 +57,12 @@ clears the database. Attempting `pg_ctl restart` also cannot prove persistence
 because PostgreSQL is PID 1; stopping it exits the container before restart.
 Both failed attempts are preserved as **BLOCKED**, not relabelled PASS.
 
-Do not weaken tmpfs or substitute reload for restart. Resolve this through a
-separately reviewed persistence-capable disposable harness (for example, an
-ephemeral volume with exact ownership and teardown controls) or an independent
-decision changing the evidence contract.
+Do not weaken tmpfs or substitute reload for restart. The approved
+implementation now supplies a separate loopback-only PostgreSQL 16 service with
+an internal network, named disposable volume, exact ownership checks, restart
+verification and finally-block teardown. Its pure contract is green, but its
+database proof remains **NOT RUN** because implementation authority was not
+G1-D execution authority.
 
 ## Remaining gap register
 
@@ -64,7 +70,7 @@ decision changing the evidence contract.
 |---|---|---|
 | GAP-01 | RESOLVED | Completion/audit atomicity passed fault injection on real PostgreSQL. |
 | GAP-02 | RESOLVED | Orientation override removed; hard gate passed. |
-| GAP-03 | BLOCKED | From-zero and runtime matrix pass; independent `0017 → 0018` upgrade, full bypass matrix, and restart-persistence proof remain. |
+| GAP-03 | BLOCKED | From-zero and runtime matrix pass. The independent `0017 → 0018` and restart harness is implemented but NOT RUN pending exact-candidate G1-D; the full bypass matrix also remains incomplete. |
 | GAP-04 | BLOCKED | S27: approve canonical export-hash and reconstruction semantics; do not invent them. |
 | GAP-05 | BLOCKED | G1-L/S17: recovery proof, exact live target, preflight, one-time apply, and parity evidence absent. |
 | GAP-06 | BLOCKED | S25: independent Task 11 review has not examined this candidate/evidence. |

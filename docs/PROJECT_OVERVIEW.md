@@ -12,9 +12,11 @@ Fresh Docker replay installed all 19 migrations through `0018`; audit-failure
 atomicity, tenant isolation, immutability, concurrency, red-flag zero-claim,
 completed-referral separation, reference-derived persistence, and evidence
 export cases passed. Supabase remains live only through `0017`; `0018` is not
-authorized or applied live. Task 02 remains blocked on predecessor-upgrade and
-restart-persistence proof, S27 export reconstruction, independent Task 11
-review, recovery, G1-L, live parity, and G4.
+authorized or applied live. A separate predecessor-upgrade/restart harness is
+implemented and database-free verified, but has not run because its approval
+was implementation-only, not G1-D. Task 02 remains blocked on that proof, S27
+export reconstruction, independent Task 11 review, recovery, G1-L, live parity,
+and G4.
 
 AgentOMA supports Ontario pharmacy minor-ailment services. The Ministry of Health Executive Officer Notice effective July 1, 2026 is the source of truth for covered ailment groups, claim maximums, fees, PINs, and billing rules. See [`COMPLIANCE.md`](COMPLIANCE.md) for traceability and [`NEXT_STEPS.md`](NEXT_STEPS.md) for the remaining go-live work.
 
@@ -50,7 +52,7 @@ Next.js route groups isolate layouts without changing URLs:
 | ORM and migrations | Drizzle ORM; file-based migrations only |
 | Authentication | better-auth 1.6 with Drizzle, email/password, TOTP, database sessions and rate limits |
 | Validation | Zod and `@t3-oss/env-nextjs` |
-| Tests | Vitest; database tests use a fresh Docker Postgres on port 5433 |
+| Tests | Vitest; from-zero database tests use Docker Postgres on port 5433; the separately gated predecessor/restart harness uses port 5434 and a disposable named volume |
 | Exports | Server-rendered claim handoff, audit CSV/PDF, assessment-record PDF; browser-generated public self-check PDF |
 
 Firebase is no longer part of the stack. PHI and operational data use Canadian-region Postgres. Future Rx/referral document storage is planned for Supabase Storage but is not implemented.
@@ -282,8 +284,8 @@ idempotent.
 ## What is complete and what is not
 
 Implemented work is recorded in [`COMPLETED_WORK.md`](COMPLETED_WORK.md). The
-highest-priority Task 02 steps are a reviewed `0017 → 0018` upgrade runner,
-resolution of the tmpfs restart-persistence contract, and the S27 canonical
+highest-priority Task 02 step is exact-candidate G1-D execution of the now
+implemented `0017 → 0018`/restart harness, followed by the S27 canonical
 export/reconstruction decision. After those, independent Task 11 review and
 recovery evidence are required before any exact G1-L request. Remaining product
 blockers also include LTC billing guidance and the first isolated restore drill. See

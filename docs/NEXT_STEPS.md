@@ -7,11 +7,13 @@ the P0 items are resolved, deployed, and re-verified.
 
 ## P0 — clinical and compliance blockers
 
-1. **Complete the remaining Docker proofs.** Exact candidate `dcaab91…` passed
-   the full 211-test from-zero PostgreSQL suite twice. Add a separately reviewed
-   local-only `0017 → 0018` upgrade runner, and resolve the restart-persistence
-   conflict: container restart clears required tmpfs, while PostgreSQL is PID 1.
-   Do not weaken tmpfs or edit migration/history to manufacture evidence.
+1. **Run the gated predecessor/restart proof.** Exact candidate `dcaab91…`
+   passed the full 211-test from-zero PostgreSQL suite twice. A separate
+   loopback-only `0017 → 0018`/restart harness is now implemented and its pure
+   contract is green. Freeze the final clean SHA, grant a new expiring G1-D
+   using `docs/p0/task-02/g1-d-predecessor-upgrade-approval-contract.md`, then
+   run its single orchestrated command. Do not reuse the expired G1-D, operate
+   Compose manually, weaken tmpfs, or edit migration/history.
 2. **Resolve export-integrity stop S27.** Approve canonical repeat-export,
    retained-manifest, and reconstruction-verification semantics before changing
    hashes. The current bundle changes as export/audit history grows.

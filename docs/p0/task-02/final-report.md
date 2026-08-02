@@ -3,11 +3,12 @@
 Task 02 overall status: **BLOCKED — DO NOT PROMOTE**
 Task 02 Docker from-zero verification: **PASS**
 Task 02 predecessor upgrade: **NOT RUN**
-Task 02 restart-persistence verification: **BLOCKED**
+Task 02 restart-persistence verification: **NOT RUN on the new harness**
 Task 02 live verification: **NOT RUN**
 Task 02 production promotion: **BLOCKED**
 
 Tested source commit: `dcaab91f9adba7457a85214d51d1614c8560f404`
+Later harness implementation commit: `c17f7bc4` — database execution NOT RUN
 G1-D approval record commit: `f82f0fec3bf9fe2ae42e1c9cf5ac54488e7eb5e9`
 Migration head: `0018_clever_mister_fear`
 Migration SHA-256: `33bcf5ab4aa289c17100fb59af1c9527204303e54b5f7d47dcdf5a2424a07a1c`
@@ -32,8 +33,9 @@ Migration-chain digest: `ac7202c197b876b143b7b83ec04cbe65f6b5116f53674ff95bf73e0
 | Completed-referral separation | PASS |
 | Reference-derived persistence | PASS |
 | Evidence export projection | PASS |
-| `0017 → 0018` predecessor upgrade | NOT RUN — no reviewed runner |
-| Restart persistence | BLOCKED — tmpfs/PID-1 contract conflict |
+| `0017 → 0018` predecessor upgrade | NOT RUN — gated runner implemented; new exact-candidate G1-D absent |
+| New predecessor/restart harness | IMPLEMENTED, database-free contract PASS; database execution NOT RUN |
+| Restart persistence | Old tmpfs harness BLOCKED; separate named-volume harness NOT RUN |
 | Canonical export/reconstruction | BLOCKED — S27 |
 | Task 11 exact-candidate review | BLOCKED |
 | Recovery, G1-L, live apply/parity, G4 | BLOCKED — prerequisites/approvals absent |
@@ -57,9 +59,9 @@ Evidence is under
 
 ## Required next order
 
-1. Decide and implement a reviewed `0017 → 0018` local upgrade runner without
-   editing migration history or migration `0018`.
-2. Resolve the restart-persistence harness/contract conflict.
+1. Freeze the new clean harness candidate and obtain a new exact, expiring G1-D.
+2. Run the single gated predecessor/restart command and review its payload-free
+   T02-07/T02-08 evidence; do not reuse the expired `dcaab91…` G1-D.
 3. Resolve S27 canonical export and reconstruction semantics.
 4. Obtain independent Task 11 review of the exact candidate and evidence.
 5. Establish recovery proof, then request a separately scoped G1-L for one

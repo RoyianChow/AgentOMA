@@ -2,8 +2,9 @@
 
 **Recorded:** 2026-08-02
 **Candidate:** `dcaab91f9adba7457a85214d51d1614c8560f404`
+**Later harness implementation:** `c17f7bc4`; database execution **NOT RUN**
 **Overall:** **BLOCKED — DO NOT PROMOTE**
-**Docker:** **PASS for from-zero suite; restart-persistence BLOCKED**
+**Docker:** **PASS for prior from-zero suite; new predecessor/restart harness NOT RUN**
 **Live:** **NOT RUN**
 **Production promotion:** **BLOCKED**
 
@@ -65,8 +66,8 @@ database, production credential, PHI, or external route was accessed.
 | T02-04 | BLOCKED | Docker identity fails closed and passed; live identity NOT RUN |
 | T02-05 | PASS | Synthetic loopback-only tmpfs environment verified and removed |
 | T02-06 | PASS | Complete 19-migration chain replayed from zero twice |
-| T02-07 | NOT RUN | No reviewed predecessor-upgrade runner exists |
-| T02-08 | NOT RUN | Predecessor/live catalog and aggregate deltas remain unproven |
+| T02-07 | NOT RUN | Reviewed local-only runner now exists; a new exact-candidate G1-D and execution evidence are absent |
+| T02-08 | NOT RUN | Runner has catalog/count/grant checks, but no authorized runtime artifact exists; live deltas also remain unproven |
 | T02-09 | PASS | Cross-pharmacy patient, assessment, evidence, intake, and export denials passed |
 | T02-10 | PASS | App-role/trigger-backed evidence mutation denials passed |
 | T02-11 | PASS | App-role audit UPDATE/DELETE denial and INSERT allowance passed |
@@ -92,7 +93,7 @@ database, production credential, PHI, or external route was accessed.
 
 The machine-readable control map is
 `evidence/runs/dcaab91f9adba7457a85214d51d1614c8560f404/control-map.json`.
-Restart persistence is not silently waived: restarting the container clears
-the required tmpfs, while stopping PostgreSQL PID 1 exits the container. A
-separately reviewed persistence-capable disposable harness or an independent
-contract decision is required.
+Restart persistence is not silently waived: the prior tmpfs result remains
+BLOCKED. A separate named-volume harness is implemented with exact resource
+ownership and teardown, but remains NOT RUN until a new G1-D binds its final
+candidate. No old evidence file or control status was relabelled.
