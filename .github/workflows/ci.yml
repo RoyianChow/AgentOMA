@@ -47,7 +47,7 @@ jobs:
           cache: npm
       # Fails on lockfile drift rather than silently resolving a different
       # dependency tree than the one committed.
-      - run: npm ci
+      - run: npm ci --ignore-scripts
 
   quality-typescript:
     name: quality-typescript
@@ -59,8 +59,10 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npx tsc --noEmit
+      - run: npm ci --ignore-scripts
+      # npm run, not npx: runs the locally-installed, lockfile-pinned
+      # typescript binary rather than letting npx resolve/fetch a package.
+      - run: npm run typecheck
 
   quality-eslint:
     name: quality-eslint
@@ -72,7 +74,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: npm run lint
 
   quality-pure-tests:
@@ -85,7 +87,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       # Database-free logic tests only (vitest.pure.config.mts excludes
       # *.db.test.ts) — no network, no Docker, deterministic.
       - run: npm run test:pure
@@ -100,7 +102,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: npm run build
         env:
           # Build-time-only placeholder so env.ts's client-var inlining has a
@@ -117,7 +119,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       # Same throwaway Postgres as local dev (docker-compose.yml): tmpfs
       # storage, port 5433, fsync off. Never the live Supabase database — see
       # docker-compose.yml and src/lib/db/test/harness.ts's assertLocalTestDb
@@ -142,7 +144,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: npm run test:db:up
       # Constraint-backed money rules (one-per-day, the mutex race,
       # claim_draft/audit_log immutability triggers) are exercised by the same
