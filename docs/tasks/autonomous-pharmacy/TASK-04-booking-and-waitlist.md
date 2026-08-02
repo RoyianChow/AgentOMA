@@ -22,6 +22,21 @@ The booking experience is strictly administrative. It must never collect clinica
 
 The synthetic prototype is reported as ready but must be treated as unverified until its implementation, tests, privacy boundaries, and concurrency guarantees satisfy this task.
 
+### Governance decision — 2026-08-02
+
+Royian Chowdhury has approved the Task 04 synthetic design scope in the Product
+Lead/Capability Owner, Security/Privacy, Operations/SRE, Quality/Test,
+Accessibility, and Task 11 reviewer roles. The consolidated decisions and their
+explicit non-independent-review disclosure are recorded in
+[`../../task-04/decisions/synthetic-sandbox-scope-approval-2026-08-02.md`](../../task-04/decisions/synthetic-sandbox-scope-approval-2026-08-02.md).
+
+Task 11 Checkpoint 1 is `APPROVED_TO_IMPLEMENT_SYNTHETIC` for risk tier R3 and
+autonomy level `A3_BOUNDED_AUTOMATION`. Royian Chowdhury is recorded as the
+accountable owner, backup owner, Operations/SRE reviewer, and consolidated
+kill-switch operator. The experimental capability expires and is due for review
+on 2026-08-05. Production, G2 hosted-preview, G3 production-import, live-data,
+and external-effect authorization remain excluded.
+
 ### Authorized now
 
 * Inspect and improve the existing synthetic prototype.
