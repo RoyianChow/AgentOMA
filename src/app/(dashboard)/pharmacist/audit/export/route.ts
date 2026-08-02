@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { requirePortalUser, AuthorizationError } from "@/lib/auth-guard";
-import { writeAudit } from "@/lib/audit";
+import { recordAuditWriteFailure, writeAudit } from "@/lib/audit";
 import {
   OUTCOME_LABELS,
   queryAuditRecordsForExport,
@@ -143,7 +143,14 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (auditErr) {
-    console.error("AUDIT WRITE FAILED for audit.exported", auditErr);
+    await recordAuditWriteFailure(
+      {
+        action: "audit.exported",
+        entityType: "audit_export",
+        source: "audit_export",
+      },
+      auditErr,
+    );
   }
 
   if (format === "pdf") {
@@ -151,7 +158,7 @@ export async function GET(request: NextRequest) {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="agentoma-audit-${stamp}.pdf"`,
-        "Cache-Control": "no-store",
+        "Cache-Control": "private, no-store",
       },
     });
   }
@@ -159,7 +166,7 @@ export async function GET(request: NextRequest) {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
       "Content-Disposition": `attachment; filename="agentoma-audit-${stamp}.csv"`,
-      "Cache-Control": "no-store",
+      "Cache-Control": "private, no-store",
     },
   });
 }

@@ -1,0 +1,13 @@
+{
+  "control": "SBX-01",
+  "run": "green",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run verify-production --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:04:52.6234968Z",
+  "finishedAt": "2026-07-31T06:04:53.9247592Z",
+  "exitCode": 0,
+  "environment": "Primary final worktree; local production build output; no credentials, PHI, or network resources.",
+  "artifactSha256": "d19dc3d54f80ef2209f3ddbd12b34830bd75659dce55f85d25961c472d4eb44c",
+  "safeSummary": "Production invariance passed with no sandbox route, marker, or deployment-output change.",
+  "evidencePath": "docs/task-01/evidence/SBX-01/green.json"
+}

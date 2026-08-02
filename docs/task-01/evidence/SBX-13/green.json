@@ -1,0 +1,14 @@
+{
+  "control": "SBX-13",
+  "run": "green",
+  "testedSha": "939440c236f9a78a91669947966978a88b7bc07c",
+  "command": "npm run sandbox:verify-production",
+  "startedAt": "2026-07-31T09:36:47.4937576Z",
+  "finishedAt": "2026-07-31T09:36:48.8169171Z",
+  "exitCode": 0,
+  "environment": "Final implementation worktree with the root production build output; no credentials, PHI, production URLs, or live resources.",
+  "artifactPath": "docs/task-01/evidence/runs/939440c2/SBX-13-green-summary.json",
+  "artifactSha256": "21b155761de0afca771aa730fca02b7de044def3f60042869ba7fd1ee70d7462",
+  "safeSummary": "Production invariance passed with explicit locale/property comparators and the comparator-aligned baseline.",
+  "evidencePath": "docs/task-01/evidence/SBX-13/green.json"
+}

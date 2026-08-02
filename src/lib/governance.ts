@@ -1,13 +1,15 @@
 import { createHash } from "node:crypto";
 
-import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
 import { writeAuditWith } from "@/lib/audit";
 import type { PortalUser } from "@/lib/auth-guard";
+import { serializeBillabilityEvidence } from "@/lib/billability-evidence-export";
 import { db } from "@/lib/db";
 import {
   accessCorrectionRequest,
   assessment,
+  assessmentBillabilityEvidence,
   auditLog,
   auditWriteFailure,
   claimDraft,
@@ -37,7 +39,7 @@ function canonicalJson(value: unknown): string {
   }
   const object = value as Record<string, unknown>;
   return `{${Object.keys(object)
-    .sort()
+    .sort((left, right) => left.localeCompare(right, "en-US", { sensitivity: "variant", numeric: false }))
     .map((key) => `${JSON.stringify(key)}:${canonicalJson(object[key])}`)
     .join(",")}}`;
 }
@@ -92,6 +94,7 @@ export async function collectPatientRecord(actor: PortalUser, patientId: string)
   const [
     claimDrafts,
     followUps,
+    billabilityEvidenceRows,
     intakeSessions,
     retentionRows,
     holds,
@@ -113,6 +116,21 @@ export async function collectPatientRecord(actor: PortalUser, patientId: string)
           .select()
           .from(followUp)
           .where(inArray(followUp.assessmentId, assessmentIds))
+      : [],
+    assessmentIds.length
+      ? db
+          .select()
+          .from(assessmentBillabilityEvidence)
+          .where(
+            and(
+              inArray(assessmentBillabilityEvidence.assessmentId, assessmentIds),
+              eq(assessmentBillabilityEvidence.pharmacyId, pharmacyId),
+            ),
+          )
+          .orderBy(
+            asc(assessmentBillabilityEvidence.assessmentId),
+            asc(assessmentBillabilityEvidence.id),
+          )
       : [],
     intakeIds.length
       ? db
@@ -172,6 +190,7 @@ export async function collectPatientRecord(actor: PortalUser, patientId: string)
     ...intakeIds,
     ...claimDrafts.map((row) => row.id),
     ...followUps.map((row) => row.id),
+    ...billabilityEvidenceRows.map((row) => row.id),
   ];
   const auditEntries = await db
     .select()
@@ -191,6 +210,9 @@ export async function collectPatientRecord(actor: PortalUser, patientId: string)
     assessments,
     claimDrafts,
     followUps,
+    billabilityEvidence: billabilityEvidenceRows.map(
+      serializeBillabilityEvidence,
+    ),
     intakeSessions,
     auditEntries,
     retention: retentionRows[0] ?? null,
@@ -209,6 +231,7 @@ function recordArtifacts(
     ["assessment", record.assessments],
     ["claim_draft", record.claimDrafts],
     ["follow_up", record.followUps],
+    ["assessment_billability_evidence", record.billabilityEvidence],
     ["intake_session", record.intakeSessions],
     ["audit_log", record.auditEntries],
     ["retention", record.retention ? [record.retention] : []],
@@ -247,7 +270,9 @@ export async function assemblePatientExport(
   const { artifacts } = recordArtifacts(record);
   const generatedAt = new Date();
   const bundle = {
-    schemaVersion: 2,
+    // Version 3 adds the immutable P0-C billability-evidence sidecar. Existing
+    // bundle/hash semantics are deliberately unchanged by Task 02.
+    schemaVersion: 3,
     generatedAt: generatedAt.toISOString(),
     record,
   };

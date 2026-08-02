@@ -1,0 +1,13 @@
+{
+  "control": "SBX-09",
+  "run": "red",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run test --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:16:16.7941208Z",
+  "finishedAt": "2026-07-31T06:16:27.1016028Z",
+  "exitCode": 1,
+  "environment": "Isolated temporary worktree; synthetic-only fixture; verifySyntheticSamplePdf temporarily bypassed with return true; no credentials, PHI, production URLs, or live resources.",
+  "artifactSha256": "904899cbcaf8bee9399c9a715ca0bd98451e7aa296e3291c5f55f8d9bc040541",
+  "safeSummary": "Expected non-zero exit: the artifact test rejected the unmarked-artifact bypass mutation. The mutation was removed without commit or upload.",
+  "evidencePath": "docs/task-01/evidence/SBX-09/red.json"
+}

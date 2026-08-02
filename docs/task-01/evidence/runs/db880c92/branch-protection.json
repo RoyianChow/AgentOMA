@@ -1,0 +1,12 @@
+{
+    "candidateCommit":  "db880c926f169b14ab73892a7c2a02627c22c067",
+    "name":  "branch-protection",
+    "command":  "gh api repos/RoyianChow/AgentOMA/branches/main/protection",
+    "startedAt":  "2026-07-31T02:49:15.3091190Z",
+    "finishedAt":  "2026-07-31T02:49:16.4339563Z",
+    "exitCode":  1,
+    "outputBytes":  534,
+    "outputSha256":  "156c3bba48f8f06e1ebce64ae968ad440a4925f7df792dd9ab91189046d43229",
+    "safeSummary":  "NOT VERIFIED: GitHub returned Branch not protected (HTTP 404).",
+    "evidencePath":  "docs/task-01/evidence/runs/db880c92/branch-protection.json"
+}

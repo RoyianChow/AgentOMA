@@ -1,0 +1,13 @@
+{
+  "control": "SBX-05",
+  "run": "red",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run verify-boundary --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:10:17.1557759Z",
+  "finishedAt": "2026-07-31T06:10:19.7634437Z",
+  "exitCode": 1,
+  "environment": "Detached temporary worktree; synthetic adapter mutation only; no credentials, PHI, DNS, sockets, or external resources.",
+  "artifactSha256": "b927caf14d250f2dbb58e305092cf65e7fae34ac5f3ba29e398bce82cb12fc48",
+  "safeSummary": "A temporary adapter imported node:http; verify-boundary denied raw network transport before execution.",
+  "evidencePath": "docs/task-01/evidence/SBX-05/red.json"
+}

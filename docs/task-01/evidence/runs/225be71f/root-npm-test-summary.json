@@ -1,0 +1,10 @@
+{
+  "testedCommit": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm test",
+  "startedAt": "2026-07-31T06:01:28.8331492Z",
+  "finishedAt": "2026-07-31T06:02:07.0631568Z",
+  "exitCode": 0,
+  "testFiles": 17,
+  "tests": 181,
+  "environment": "Docker test-db on localhost:5433; synthetic throwaway database; no live Supabase data; raw output not retained."
+}

@@ -2,6 +2,9 @@
   "name": "website",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/experiment-sandbox"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -20,7 +23,15 @@
     "db:seed:demo": "tsx src/lib/db/seed-demo.ts",
     "db:verify": "tsx src/lib/db/verify.ts",
     "db:inspect-tenancy": "tsx src/lib/db/inspect-tenancy.ts",
-    "auth:bootstrap-admin": "tsx src/lib/db/bootstrap-admin.ts"
+    "auth:bootstrap-admin": "tsx src/lib/db/bootstrap-admin.ts",
+    "sandbox:dev": "npm run dev --workspace @agentoma/experiment-sandbox",
+    "sandbox:build": "npm run build --workspace @agentoma/experiment-sandbox",
+    "sandbox:test": "npm run test --workspace @agentoma/experiment-sandbox",
+    "sandbox:verify-boundary": "npm run verify-boundary --workspace @agentoma/experiment-sandbox",
+    "sandbox:verify-artifact": "npm run verify-artifact --workspace @agentoma/experiment-sandbox",
+    "sandbox:verify-evidence": "npm run verify-evidence --workspace @agentoma/experiment-sandbox",
+    "sandbox:verify-production": "npm run verify-production --workspace @agentoma/experiment-sandbox",
+    "sandbox:verify": "npm run verify --workspace @agentoma/experiment-sandbox"
   },
   "dependencies": {
     "@t3-oss/env-nextjs": "^0.13.11",

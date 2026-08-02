@@ -1,0 +1,12 @@
+{
+    "candidateCommit":  "db880c926f169b14ab73892a7c2a02627c22c067",
+    "name":  "sandbox-boundary",
+    "command":  "npm run sandbox:verify-boundary",
+    "startedAt":  "2026-07-31T02:50:49.4514071Z",
+    "finishedAt":  "2026-07-31T02:50:51.9023836Z",
+    "exitCode":  0,
+    "outputBytes":  457,
+    "outputSha256":  "3ad023e25f27d7593b9fe952949f998deb4e616389f758755008a9e79a8cb26f",
+    "safeSummary":  "Sandbox boundary scan passed.",
+    "evidencePath":  "docs/task-01/evidence/runs/db880c92/sandbox-boundary.json"
+}

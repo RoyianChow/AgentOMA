@@ -1,0 +1,13 @@
+{
+  "control": "SBX-15",
+  "run": "red",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run test --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:22:57.3520268Z",
+  "finishedAt": "2026-07-31T06:22:59.6067218Z",
+  "exitCode": 1,
+  "environment": "Isolated temporary worktree; Cache-Control temporarily weakened to public caching; no credentials, PHI, production URLs, or live resources.",
+  "artifactSha256": "15ed1c2f4ec0801488e3b22b572e7872f9b44f22887eaa206914174c612eff6c",
+  "safeSummary": "Expected non-zero exit: security-header tests rejected the unsafe public-cache mutation. The mutation was removed without commit or upload.",
+  "evidencePath": "docs/task-01/evidence/SBX-15/red.json"
+}

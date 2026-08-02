@@ -221,7 +221,26 @@ This is the implementation record requested for the project. It describes capabi
   evidence persistence, immutability, tenant isolation, and failure atomicity.
 - The application code and `0018_clever_mister_fear` migration are merged, but
   this capability is not live until `0018` is reviewed, migrated, and verified.
-  The evidence sidecar also remains to be added to complete-patient export.
+  Task 02's bounded Workstream F now includes the sidecar in server-only export
+  schema v3, manifest artifact hashing, audit record view, and assessment PDF.
+  Database-backed verification remains gated and not run.
+
+## Task 02 bounded production-readiness work
+
+- Locked the repository/migration baseline and completed a static review of the
+  exact 0018 bytes, data flow, database objects, threats, gates, and runbook.
+- Added one explicit serializer for immutable billability evidence. Missing
+  evidence stays absent; no billing or clinical state is inferred.
+- Added the evidence to complete-patient retrieval, export artifacts, the
+  server-rendered record, and server-generated assessment PDF.
+- Removed patient/assessment identifiers from download filenames and replaced
+  raw export-audit exception logging with the payload-free failure record.
+- Restricted destructive test PostgreSQL to loopback and the exact disposable
+  database endpoint; pure negative tests fail closed for every other URL.
+- The bounded code is TypeScript/lint/build clean and the pure suite is
+  110/110. Task 02 is **not complete or production-ready**: Docker/live phases
+  were not authorized, S27 is unresolved, and static review proved protected
+  audit-atomicity and orientation-gate defects.
 
 ## Verification and regression coverage
 
@@ -230,5 +249,5 @@ This is the implementation record requested for the project. It describes capabi
 - Tests cover claim derivation combinations, refusal paths, LTC behaviour, remote-virtual tiers, retention, one-per-day, concurrent mutex enforcement, claim persistence/supersession, follow-up completion/supersession/concurrency/export, invitations/auth data, audit grants/triggers, and red-flag zero-claim behaviour.
 - TypeScript, ESLint, and the production build are clean for the current tree.
   The last fully recorded database-backed suite has 135 passing tests through
-  `0017`; 95 database-free tests currently run independently through
+  `0017`; 110 database-free tests currently run independently through
   `npm run test:pure`.

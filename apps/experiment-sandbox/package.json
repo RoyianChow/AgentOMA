@@ -1,0 +1,39 @@
+{
+  "name": "@agentoma/experiment-sandbox",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx tools/next-with-deny.ts dev",
+    "build": "tsx tools/next-with-deny.ts build",
+    "start": "tsx tools/next-with-deny.ts start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run --config vitest.config.ts --configLoader native --pool threads --maxWorkers 1",
+    "verify-boundary": "node tools/verify-boundary.mjs",
+    "verify-artifact": "node tools/verify-artifact.mjs",
+    "verify-evidence": "node tools/verify-evidence.mjs",
+    "verify-production": "node tools/verify-production-invariance.mjs",
+    "inspect": "tsx tools/lifecycle.ts inspect",
+    "disable": "tsx tools/lifecycle.ts disable",
+    "reset": "tsx tools/lifecycle.ts reset",
+    "teardown": "tsx tools/lifecycle.ts teardown",
+    "verify": "npm run typecheck && npm run lint && npm run test && npm run verify-boundary"
+  },
+  "dependencies": {
+    "next": "16.2.10",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.10",
+    "tsx": "^4.23.0",
+    "typescript": "^5",
+    "vitest": "^4.1.10"
+  }
+}

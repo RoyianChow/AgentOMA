@@ -1,0 +1,13 @@
+{
+  "control": "SBX-16",
+  "run": "red",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run test --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:23:47.8083703Z",
+  "finishedAt": "2026-07-31T06:23:49.6908083Z",
+  "exitCode": 1,
+  "environment": "Isolated temporary worktree; synthetic browser-storage marker added to runtime source; no credentials, PHI, production URLs, or live resources.",
+  "artifactSha256": "64745a4fd9c41a8ece027499bc9741447ec096915e18c011e7bef7188eb3ffd1",
+  "safeSummary": "Expected non-zero exit: architecture tests rejected the browser-storage mutation. The mutation was removed without commit or upload.",
+  "evidencePath": "docs/task-01/evidence/SBX-16/red.json"
+}

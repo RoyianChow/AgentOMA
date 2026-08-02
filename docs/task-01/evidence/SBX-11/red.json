@@ -1,0 +1,13 @@
+{
+  "control": "SBX-11",
+  "run": "red",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run test --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:20:08.8738333Z",
+  "finishedAt": "2026-07-31T06:20:11.0612158Z",
+  "exitCode": 1,
+  "environment": "Isolated temporary worktree; synthetic external URL marker added to runtime source; no credentials, PHI, production URLs, or live resources.",
+  "artifactSha256": "a2a9883ecc2d88184a056e8ccc9f2247a7c23f00fd8a44a6f7702289d5879246",
+  "safeSummary": "Expected non-zero exit: sandbox architecture tests rejected the external-URL leakage mutation. The mutation was removed without commit or upload.",
+  "evidencePath": "docs/task-01/evidence/SBX-11/red.json"
+}

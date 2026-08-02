@@ -1,0 +1,13 @@
+{
+  "control": "SBX-08",
+  "run": "red",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run verify-artifact --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:15:12.8145777Z",
+  "finishedAt": "2026-07-31T06:15:15.3149978Z",
+  "exitCode": 1,
+  "environment": "Detached temporary worktree; synthetic artifact watermark mutation only; no credentials, PHI, or external resources.",
+  "artifactSha256": "fc39ede94835c7e2731828fad2cc1cdb237c79d1529509e4812a7df132590ca2",
+  "safeSummary": "A temporary rendered artifact source lost the required synthetic banner; artifact verification denied SBX_ARTIFACT_DENIED:WATERMARK_SOURCE_MISSING.",
+  "evidencePath": "docs/task-01/evidence/SBX-08/red.json"
+}

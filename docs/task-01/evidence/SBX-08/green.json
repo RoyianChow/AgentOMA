@@ -1,0 +1,13 @@
+{
+  "control": "SBX-08",
+  "run": "green",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run verify-artifact --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:15:29.5994159Z",
+  "finishedAt": "2026-07-31T06:15:31.8883576Z",
+  "exitCode": 0,
+  "environment": "Primary final worktree; synthetic marked artifact verifier; no credentials, PHI, or external resources.",
+  "artifactSha256": "e3dab93e1ba65e7df5962d7a17543a387a1c38a5b4fa4cad2616153858c2b859",
+  "safeSummary": "Persistent synthetic banner source verification passed.",
+  "evidencePath": "docs/task-01/evidence/SBX-08/green.json"
+}

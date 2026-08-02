@@ -896,6 +896,15 @@ describe("createAssessment → claim_draft", () => {
     if (!res.assessmentId) return;
     const detail = await queryAuditRecordById({ ...testAuth.actor }, res.assessmentId);
     expect(detail?.clinical?.followUpPlan).toBe("Synthetic monitoring and follow-up plan");
+    expect(detail?.billabilityEvidence).toMatchObject({
+      assessmentId: res.assessmentId,
+      pharmacyId: PHARMACY_ID,
+      evidenceVersion: 1,
+      patientSelfReportStatus: "no",
+      platformAssessmentCount: 0,
+      maximumState: "not_confirmed_met",
+      documentInspectedAttestation: true,
+    });
     expect(detail?.followUps).toHaveLength(1);
     expect(detail?.followUps[0]).toMatchObject({
       dueDate: "2026-07-18",

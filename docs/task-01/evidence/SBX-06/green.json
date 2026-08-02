@@ -1,0 +1,13 @@
+{
+  "control": "SBX-06",
+  "run": "green",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "node -e \"const fs=require('node:fs'); const source=fs.readFileSync('apps/experiment-sandbox/src/identity/actor.ts','utf8'); if(/pharmacy_admin|better-auth|cookie|oauth|totp/i.test(source)){console.error('SBX_IDENTITY_DENIED:PRODUCTION_SESSION_OR_CLIENT_ROLE');process.exit(1)}\"",
+  "startedAt": "2026-07-31T06:11:58.3667699Z",
+  "finishedAt": "2026-07-31T06:11:58.5782066Z",
+  "exitCode": 0,
+  "environment": "Primary final worktree; no production identity, sessions, credentials, PHI, or network resources.",
+  "artifactSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "safeSummary": "Synthetic identity and client-authority scan passed against final source.",
+  "evidencePath": "docs/task-01/evidence/SBX-06/green.json"
+}

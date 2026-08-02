@@ -1,0 +1,13 @@
+{
+  "control": "SBX-12",
+  "run": "red",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run test --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:21:02.8141321Z",
+  "finishedAt": "2026-07-31T06:21:04.8697253Z",
+  "exitCode": 1,
+  "environment": "Isolated temporary worktree; synthetic lifecycle instance-id validator weakened to accept any string; no credentials, PHI, production identifiers, or live resources.",
+  "artifactSha256": "26ca624021168397c9124c5ff04aaf5b7072b929312c75c30e0a53104e74aa6a",
+  "safeSummary": "Expected non-zero exit: lifecycle validation tests rejected the invalid-target mutation. The mutation was removed without commit or upload.",
+  "evidencePath": "docs/task-01/evidence/SBX-12/red.json"
+}

@@ -1,0 +1,12 @@
+{
+  "testedCommit": "f84bec23828b73849897eb944917d2787323076b",
+  "command": "npm run verify-production --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T10:12:36.1664096Z",
+  "finishedAt": "2026-07-31T10:12:37.7564260Z",
+  "exitCode": 0,
+  "environment": "local",
+  "result": "PASS",
+  "outputArtifact": "docs/task-01/evidence/runs/f84bec23828b73849897eb944917d2787323076b/production-invariance-summary.json",
+  "outputArtifactSha256": "22083b8095603deb2fb11e75fc49e5ac5f5f40663d8ac6a09548ccb101c57ca8",
+  "evidencePath": "docs/task-01/evidence/runs/f84bec23828b73849897eb944917d2787323076b/production-invariance.json"
+}

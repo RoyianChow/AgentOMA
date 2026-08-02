@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 2,
+  "status": "PASS",
+  "candidate": {
+    "commit": "db880c926f169b14ab73892a7c2a02627c22c067",
+    "tag": "task-01-candidate-db880c92",
+    "branch": "feat/moh-compliance-migration",
+    "worktreeCleanAtCapture": true,
+    "capturedAt": "2026-07-31T02:49:15.1457286Z",
+    "evidenceRoot": "docs/task-01/evidence/runs/db880c92/"
+  },
+  "latestImplementation": {
+    "commit": "f84bec23828b73849897eb944917d2787323076b",
+    "capturedAt": "2026-07-31T10:12:37.7564260Z",
+    "evidenceRoot": "docs/task-01/evidence/runs/f84bec23828b73849897eb944917d2787323076b/"
+  },
+  "hostedOrigin": null,
+  "reviewedCommit": "abb72ec5dced5327b6351009270e72b1199046c8",
+  "approval": {
+    "g1DecisionId": "G1-2026-07-31-task-01",
+    "g1Record": "docs/task-01/decisions/G1-design-approval.md",
+    "finalProductLead": "APPROVED",
+    "finalSecurityPrivacy": "APPROVED",
+    "finalReviewer": "Royian Chowdhury",
+    "finalSignoffRecord": "docs/task-01/decisions/final-review-signoffs-2026-07-31.md",
+    "g2": "NOT_REQUESTED",
+    "g3": [],
+    "branchProtection": {
+      "status": "PASS",
+      "command": "gh api repos/RoyianChow/AgentOMA/branches/main/protection",
+      "exitCode": 0,
+      "reason": "GitHub returned HTTP 200; one approving review is required and force pushes/deletions are disabled.",
+      "evidence": "docs/task-01/evidence/runs/abb72ec5/branch-protection.json"
+    }
+  },
+  "blockingReasons": [],
+  "checks": {
+    "candidateWorktree": "docs/task-01/evidence/runs/db880c92/candidate-worktree.json",
+    "rootTypecheck": "docs/task-01/evidence/runs/db880c92/root-tsc.json",
+    "rootLint": "docs/task-01/evidence/runs/db880c92/root-lint.json",
+    "rootPureTests": "docs/task-01/evidence/runs/db880c92/root-pure-tests.json",
+    "rootAllTests": "docs/task-01/evidence/runs/db880c92/root-all-tests.json",
+    "rootProductionBuild": "docs/task-01/evidence/runs/db880c92/root-production-build.json",
+    "productionInvariance": "docs/task-01/evidence/runs/f84bec23828b73849897eb944917d2787323076b/production-invariance.json",
+    "sandboxTypecheck": "docs/task-01/evidence/runs/db880c92/sandbox-typecheck.json",
+    "sandboxLint": "docs/task-01/evidence/runs/db880c92/sandbox-lint.json",
+    "sandboxTestsUnfiltered": "docs/task-01/evidence/runs/db880c92/sandbox-tests-unfiltered.json",
+    "sandboxTestsVerbose": "docs/task-01/evidence/runs/db880c92/sandbox-tests-verbose.json",
+    "sandboxBoundary": "docs/task-01/evidence/runs/db880c92/sandbox-boundary.json",
+    "sandboxBuild": "docs/task-01/evidence/runs/db880c92/sandbox-build.json",
+    "sandboxArtifact": "docs/task-01/evidence/runs/db880c92/sandbox-artifact.json",
+    "manifestSchema": "docs/task-01/evidence/runs/db880c92/sandbox-manifest-schema-final.json",
+    "finalScans": "docs/task-01/evidence/final-scans.json",
+    "branchProtectionLatest": "docs/task-01/evidence/runs/abb72ec5/branch-protection.json",
+    "finalSignoffs": "docs/task-01/decisions/final-review-signoffs-2026-07-31.md",
+    "rootNpmTest": "docs/task-01/evidence/runs/225be71f/root-npm-test.json",
+    "sbx14Decision": "docs/task-01/decisions/SBX-14-not-applicable-g2-not-requested-2026-07-31.md",
+    "finalReviewerConfirmation": "Royian Chowdhury confirmed branch protection and final reviewer approval on 2026-07-31."
+  },
+  "controls": [
+    { "id": "SBX-01", "name": "Production route, middleware, action, manifest, and deployment-output exclusion", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-01/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-01/green.json" } },
+    { "id": "SBX-02", "name": "Production code cannot import sandbox", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-02/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-02/green.json" } },
+    { "id": "SBX-03", "name": "Sandbox cannot import production modules", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-03/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-03/green.json" } },
+    { "id": "SBX-04", "name": "Fail-closed sandbox configuration", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-04/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-04/green.json" } },
+    { "id": "SBX-05", "name": "External integration and network denial", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-05/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-05/green.json" } },
+    { "id": "SBX-06", "name": "Production identity and session authorization isolation", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-06/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-06/green.json" } },
+    { "id": "SBX-07", "name": "Expiry validation and expiry-during-use denial", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-07/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-07/green.json" } },
+    { "id": "SBX-08", "name": "Persistent synthetic banner", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-08/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-08/green.json" } },
+    { "id": "SBX-09", "name": "Marked and watermarked artifact", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-09/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-09/green.json" } },
+    { "id": "SBX-10", "name": "No plausible identifiers, seed overlap, PHI, or secrets", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-10/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-10/green.json" } },
+    { "id": "SBX-11", "name": "No PHI, tokens, payloads, clinical text, or identifiers in browser or telemetry surfaces", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-11/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-11/green.json" } },
+    { "id": "SBX-12", "name": "Idempotent, targeted kill switch and teardown", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-12/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-12/green.json" } },
+    { "id": "SBX-13", "name": "Production build invariance", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-13/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-13/green.json" } },
+    { "id": "SBX-14", "name": "Hosted access denial", "applicability": "NOT_APPLICABLE", "status": "NOT_APPLICABLE", "redRun": { "status": "NOT_RUN", "reason": "G2_NOT_REQUESTED" }, "greenRun": { "status": "NOT_RUN", "reason": "G2_NOT_REQUESTED" } },
+    { "id": "SBX-15", "name": "No-store, no-referrer, indexing, CSP, Permissions Policy, and shared-cache denial", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-15/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-15/green.json" } },
+    { "id": "SBX-16", "name": "Unknown lifecycle, adapter, operation, fixture, actor, and authorization fail-closed handling", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-16/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-16/green.json" } },
+    { "id": "SBX-17", "name": "Evidence integrity", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-17/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-17/green.json" } },
+    { "id": "SBX-18", "name": "Lifecycle races: reset, expiry, disablement, teardown, duplicates, and stale queued actions", "status": "PASS", "redRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-18/red.json" }, "greenRun": { "status": "PASS", "evidence": "docs/task-01/evidence/SBX-18/green.json" } }
+  ]
+}

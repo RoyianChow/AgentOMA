@@ -1,0 +1,13 @@
+{
+  "control": "SBX-03",
+  "run": "red",
+  "testedSha": "225be71f99b9859aea8a9b088ea6a66ebcdd46cb",
+  "command": "npm run verify-boundary --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-07-31T06:07:21.0076128Z",
+  "finishedAt": "2026-07-31T06:07:21.9133148Z",
+  "exitCode": 1,
+  "environment": "Detached temporary worktree; synthetic source mutation only; no credentials, PHI, or network resources.",
+  "artifactSha256": "0cc6783731b28152315ab103b0c388bb5e525cf6cb2c4d753399624b6643a0fa",
+  "safeSummary": "A temporary sandbox source file imported drizzle-orm; verify-boundary denied SBX_BOUNDARY_DENIED:PRODUCTION_IMPORT.",
+  "evidencePath": "docs/task-01/evidence/SBX-03/red.json"
+}
