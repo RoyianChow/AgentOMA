@@ -1,11 +1,11 @@
 # Task 02 static SQL review — migration 0018
 
-**Review class:** read-only static review  
-**Reviewed source commit:** `76098acad4afee5e80aa0dc71074d7ec97e14cf3`  
-**Migration:** `src/lib/db/migrations/0018_clever_mister_fear.sql`  
-**Migration SHA-256:** `33bcf5ab4aa289c17100fb59af1c9527204303e54b5f7d47dcdf5a2424a07a1c`  
-**Ordered chain digest:** `ac7202c197b876b143b7b83ec04cbe65f6b5116f53674ff95bf73e05aaade4bb`  
-**G1-D:** NOT GRANTED  
+**Review class:** read-only static review
+**Reviewed source commit:** `76098acad4afee5e80aa0dc71074d7ec97e14cf3`
+**Migration:** `src/lib/db/migrations/0018_clever_mister_fear.sql`
+**Migration SHA-256:** `33bcf5ab4aa289c17100fb59af1c9527204303e54b5f7d47dcdf5a2424a07a1c`
+**Ordered chain digest:** `ac7202c197b876b143b7b83ec04cbe65f6b5116f53674ff95bf73e05aaade4bb`
+**G1-D:** GRANTED and executed for candidate `dcaab91f9adba7457a85214d51d1614c8560f404`
 **G1-L:** NOT GRANTED
 
 This review does not claim migration replay, live parity, privilege behavior,
@@ -55,7 +55,9 @@ database transaction (`node_modules/drizzle-orm/pg-core/dialect.js:44–71`).
 Therefore, 0018's DDL and its migration-history row are expected to commit or
 roll back together when it is the pending migration. Static source inspection
 cannot prove the installed driver/database behaves as expected under failure;
-G1-D must test a confirmed rollback and restart.
+G1-D proved confirmed rollback. Restart persistence remains BLOCKED because the
+approved tmpfs/PID-1 environment cannot preserve state across either available
+restart mechanism.
 
 The SQL is intentionally non-idempotent. The migration runner, not raw SQL
 reruns, provides already-applied behavior. Never execute 0018 manually or a
@@ -123,28 +125,29 @@ reference-data change is expected.
 
 | Invariant | Conclusion | Reason |
 |---|---|---|
-| Exact bytes, ordering and registry | PASS_STATIC | File, journal order and SHA-256 are consistent |
-| Additive/non-destructive change | PASS_STATIC | No DML/drop/rename/backfill/re-owner found |
-| Tenant-safe evidence FK | PASS_STATIC | Composite FK targets assessment ID plus pharmacy ID |
-| One evidence row per assessment | PASS_STATIC | Unique assessment index exists |
-| Domain validation | PASS_STATIC | Required checks exist in SQL |
-| App-role UPDATE/DELETE revoke | PASS_STATIC | Explicit revoke follows default future-table grant |
-| Trigger immutability | RUNTIME_PROOF_REQUIRED | Trigger/function bytes exist; execution and role behavior untested |
-| Controlled cascade | RUNTIME_PROOF_REQUIRED | Relies on earlier governance function and transaction marker |
-| Full-chain replay/history | RUNTIME_PROOF_REQUIRED | G1-D absent and Docker daemon unavailable |
-| Predecessor upgrade/preserved rows | RUNTIME_PROOF_REQUIRED | Requires synthetic existing rows under G1-D |
-| Failure rollback/restart | RUNTIME_PROOF_REQUIRED | Static runner source is not execution evidence |
+| Exact bytes, ordering and registry | PASS | Static review: file, journal order and SHA-256 are consistent |
+| Additive/non-destructive change | PASS | Static review: no DML/drop/rename/backfill/re-owner found |
+| Tenant-safe evidence FK | PASS | Static review: composite FK targets assessment ID plus pharmacy ID |
+| One evidence row per assessment | PASS | Static review: unique assessment index exists |
+| Domain validation | PASS | Static review: required checks exist in SQL |
+| App-role UPDATE/DELETE revoke | PASS | Static review plus Docker grant tests pass |
+| Trigger immutability | PASS | App-role and trigger-backed mutation denials passed on Docker PostgreSQL 16.14 |
+| Controlled cascade | PASS | Authorized destruction and rollback cases passed on Docker PostgreSQL |
+| Full-chain replay/history | PASS | All 19 migrations replayed from zero twice; head hash matched |
+| Predecessor upgrade/preserved rows | NOT RUN | Requires a reviewed runner with synthetic existing rows |
+| Failure rollback/restart | BLOCKED | Failure rollback passed; restart persistence conflicts with required tmpfs/PID-1 environment |
 | Live parity/grants/role | BLOCKED | G1-L, project identity and safe preflight package absent |
 
 ## Open questions and stop conditions
 
-- **S01/S02:** G1-D and G1-L are not granted for these exact bytes and a frozen
-  candidate commit.
+- **S01/S02:** G1-D passed for the frozen Docker candidate; G1-L remains absent.
 - **S09/S17:** no current live migration-history, backup/restore, recovery
   owner, or change-window evidence was authorized.
 - **S24:** final evidence cannot be commit-bound until a clean candidate commit
   is frozen.
-- Docker Desktop was not running during this review.
+- Docker evidence is bound under
+  `docs/p0/task-02/evidence/runs/dcaab91f9adba7457a85214d51d1614c8560f404/`.
 
-No migration was edited or executed, no database was started, and no live data
-or credentials were accessed.
+No migration was edited and no live data or credentials were accessed. The
+unmodified migration chain was executed only in the approved disposable Docker
+database.

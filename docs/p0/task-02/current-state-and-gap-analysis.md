@@ -1,89 +1,73 @@
 # Task 02 current-state and gap analysis
 
 **Recorded:** 2026-08-02
-
 **Initial baseline:** `76098acad4afee5e80aa0dc71074d7ec97e14cf3`
-
-**Current candidate:** `813e360546f6dc1b4c03ead5de7d22002f063759`
-
+**Tested code candidate:** `dcaab91f9adba7457a85214d51d1614c8560f404`
 **Branch:** `feat/moh-compliance-migration`
+**Assessment:** **BLOCKED — DO NOT PROMOTE**
 
-**Assessment:** the two proven protected defects are remediated in code under
-scoped lead approval. Task 02 is now **BLOCKED**, not FAIL and not PASS, because
-real-PostgreSQL, live, recovery, export-integrity, and Task 11 proofs remain
-unavailable.
+The two authorized P0 defects are remediated and now proven by real PostgreSQL.
+The exact candidate passed the complete from-zero suite twice: 20 test files,
+211 tests, zero skipped or focused tests. Task 02 remains blocked because the
+predecessor upgrade, restart-persistence contract, S27 export reconstruction,
+Task 11 review, recovery, G1-L, live verification, and G4 remain incomplete.
 
-## Locked repository and migration identity
+## Locked identity
 
 | Fact | Value |
 |---|---|
-| Runtime | Node v24.18.0; npm 11.16.0; Windows PowerShell |
-| Framework | Next.js 16.2.10 (`src/proxy.ts` is UX only) |
-| Database | Supabase PostgreSQL in Canada; Drizzle ORM + postgres.js |
-| Migration workflow | `db:generate` → SQL review → `db:migrate`; `db:push` banned |
 | Migration head | `0018_clever_mister_fear` |
 | Predecessor | `0017_tense_pandemic` |
 | Migration SHA-256 | `33bcf5ab4aa289c17100fb59af1c9527204303e54b5f7d47dcdf5a2424a07a1c` |
 | Ordered chain digest | `ac7202c197b876b143b7b83ec04cbe65f6b5116f53674ff95bf73e05aaade4bb` |
+| G1-D approval | Exact, expiring, granted by Royian Chowdhury; execution complete |
+| G1-L / G4 | NOT GRANTED |
 
-No existing migration, triage rule, reference PIN/fee/maximum, claim derivation,
-LTC behavior, auth architecture, or live database state changed.
+No migration, triage rule, reference PIN/fee/maximum, claim derivation, LTC
+billing behavior, authentication architecture, or live database state changed.
 
-## Completion and evidence flow
+## Proven on disposable PostgreSQL
 
-| Step | Current behavior | Verification state |
-|---|---|---|
-| Request authorization | Server action rechecks session, TOTP, role, configured pharmacy, patient tenancy, and prescriber identity. | Existing tests; candidate DB run NOT RUN. |
-| Orientation | Resolved prescriber must have recorded module completion. No role or input can override it. | Static + pure PASS; DB cases added but NOT RUN. |
-| Red-flag exit | Separate terminal path; completion is never called and no evidence/claim rows should exist. | Candidate DB proof NOT RUN. |
-| Assessment/evidence/claim/follow-up | Persisted through one `db.transaction()` using seeded reference lookup and unchanged `deriveClaimDraft()`. | Static path reviewed; DB proof NOT RUN. |
-| Required assessment audit | `writeAuditWith(tx)` now inserts the assessment-created event before transaction commit. Failure propagates and rolls back every completion write. | Static + pure structure PASS; deterministic PostgreSQL fault test added, NOT RUN. |
-| PDF/export | Reads persisted evidence and active claim; no clinical/billing recomputation. | Pure projection PASS; integrated DB proof NOT RUN. |
-| Manifest/reconstruction | Existing hashes include changing generation/history state; no approved reconstruction verifier exists. | BLOCKED(S27). |
+- Full chain migrated from zero through `0018` twice.
+- Required-audit insertion failure rolled back assessment, evidence, claim,
+  follow-up, intake consumption, and audit together.
+- Cross-pharmacy patient/evidence/intake/export references were denied.
+- Evidence and audit immutability, active-draft supersession, governed
+  destruction, retention, and follow-up constraints passed.
+- One-per-day and insect/tick mutex rules passed, including concurrency.
+- Concurrent completion and invitation/follow-up races converged exactly once.
+- Red-flag exit wrote zero claim rows; completed-then-referred remained a
+  distinct billable outcome.
+- Unknown PIN lookup refused; seeded-reference and remote-eligibility paths
+  passed without changing claim derivation or reference data.
+- Orientation remained a hard server gate with no admin override.
+- Persisted billability evidence appeared in tenant-pinned export artifacts;
+  missing evidence was not fabricated.
 
-## Scoped remediation details
+Evidence: `docs/p0/task-02/evidence/runs/dcaab91f9adba7457a85214d51d1614c8560f404/`.
 
-### T02-13 — completion/audit atomicity
+## Restart-persistence finding
 
-At baseline, the completion transaction returned before `writeAudit()` and the
-post-commit audit failure was swallowed. Commit `813e3605…` moved the required
-`assessment.created.claim_drafted` / `assessment.created.no_claim` insert into
-the same transaction as:
+The approved environment requires tmpfs. Restarting the container therefore
+clears the database. Attempting `pg_ctl restart` also cannot prove persistence
+because PostgreSQL is PID 1; stopping it exits the container before restart.
+Both failed attempts are preserved as **BLOCKED**, not relabelled PASS.
 
-- assessment;
-- `assessment_billability_evidence`;
-- claim draft when billable;
-- follow-up plan and its audit when billable; and
-- intake consumption.
-
-The database test installs a synthetic test-only trigger that rejects the
-required assessment audit insert, then asserts all of those rows remain zero
-and the intake remains unconsumed. The hook exists only in a `.db.test.ts` file.
-G1-D and Docker are still required to execute this proof, so T02-13 is
-**BLOCKED (RUNTIME_PROOF_REQUIRED)** rather than PASS.
-
-### T02-18 — orientation hard gate
-
-Royian Chowdhury decided G3 as **HARD GATE; NO ADMIN OVERRIDE**. Commit
-`813e3605…` removed the request field, admin role branch, client override UI,
-and override event. The strict request schema rejects the retired field. Pure
-tests pass, so T02-18 is PASS for the current code boundary.
+Do not weaken tmpfs or substitute reload for restart. Resolve this through a
+separately reviewed persistence-capable disposable harness (for example, an
+ephemeral volume with exact ownership and teardown controls) or an independent
+decision changing the evidence contract.
 
 ## Remaining gap register
 
-| ID | Status | Gap and safe next action |
+| ID | Status | Gap / next action |
 |---|---|---|
-| GAP-01 | BLOCKED (G1-D/S11) | Execute the new audit-failure rollback test and the complete migration/database suite on exact candidate `813e3605…`. |
-| GAP-02 | RESOLVED IN CODE | G3 decided; orientation override removed. Preserve the hard gate. |
-| GAP-03 | BLOCKED (G1-D) | Full-chain and 0017→0018 replay, role, trigger, tenant, concurrency, clinical, red-flag, referral, and export tests not run. |
-| GAP-04 | BLOCKED (S27) | Obtain an approved canonical export-hash/reconstruction contract; do not invent one. |
-| GAP-05 | BLOCKED (G1-L/S17) | Recovery proof, exact live target, preflight, one-time apply, catalog/grant, and aggregate parity are absent. |
-| GAP-06 | BLOCKED (S25) | Task 11 has not reviewed this exact candidate and evidence manifest. |
-| GAP-07 | BLOCKED | Docker CLI exists but Docker Desktop is not running. |
+| GAP-01 | RESOLVED | Completion/audit atomicity passed fault injection on real PostgreSQL. |
+| GAP-02 | RESOLVED | Orientation override removed; hard gate passed. |
+| GAP-03 | BLOCKED | From-zero and runtime matrix pass; independent `0017 → 0018` upgrade, full bypass matrix, and restart-persistence proof remain. |
+| GAP-04 | BLOCKED | S27: approve canonical export-hash and reconstruction semantics; do not invent them. |
+| GAP-05 | BLOCKED | G1-L/S17: recovery proof, exact live target, preflight, one-time apply, and parity evidence absent. |
+| GAP-06 | BLOCKED | S25: independent Task 11 review has not examined this candidate/evidence. |
 
-## Conclusion
-
-No mandatory invariant is currently proven false in the candidate. The correct
-overall status is **BLOCKED** because the transaction claim has not yet been
-proven on real PostgreSQL and the remaining release gates are incomplete. No
-database or production action is authorized by this document.
+No production command, credential, live row, PHI, external integration, claim,
+or deployment was used. The correct overall status remains **BLOCKED**.

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "status": "BLOCKED",
+  "recordedAtUtc": "2026-08-02T06:42:17.4670648Z",
+  "testedCandidate": "dcaab91f9adba7457a85214d51d1614c8560f404",
+  "environment": "DISPOSABLE_LOCAL_DOCKER_POSTGRESQL_WITH_TMPFS",
+  "preAttemptCatalog": {
+    "migrationRows": 19,
+    "requiredEnabledTriggers": 8,
+    "migrationHeadHash": "33bcf5ab4aa289c17100fb59af1c9527204303e54b5f7d47dcdf5a2424a07a1c"
+  },
+  "attempts": [
+    {
+      "action": "Restart the Docker container, then query migration history",
+      "status": "BLOCKED",
+      "safeResult": "The approved tmpfs was cleared by the container restart, so the migration schema was absent. No persistence claim was made."
+    },
+    {
+      "action": "Restart PostgreSQL with pg_ctl inside the same container",
+      "status": "BLOCKED",
+      "safeResult": "PostgreSQL is PID 1 in the approved image. Stopping it exited the container before pg_ctl could restart it; the environment verifier denied the stopped state."
+    }
+  ],
+  "invariant": "Restart-persistence proof must not weaken tmpfs, relabel reload as restart, or hide either failed attempt.",
+  "requiredNextDecision": "Approve a separately reviewed persistence-capable disposable harness, such as an ephemeral Docker volume with fail-closed ownership and teardown controls. Do not weaken or remove the check to obtain PASS.",
+  "productionDataAccessed": false,
+  "liveDatabaseAccessed": false,
+  "containerRemoved": true
+}

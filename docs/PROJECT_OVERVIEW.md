@@ -4,20 +4,17 @@
 
 **Current stage:** authenticated pilot foundation; **not production-ready**
 
-**Verification at this snapshot:** the current tree is TypeScript-clean,
-ESLint-clean, passes all 113 database-free tests, and completes a production
-build with `/check` statically generated. The last complete database-backed
-suite run on 2026-07-25
-passed 135/135 tests and rebuilt a fresh Docker Postgres database from zero
-through migration `0017`. Supabase is also live through `0017`; post-migration
-inspection reports one Demo Pharmacy, no cross-pharmacy relationships, three
-preserved users with TOTP, and matching patient-wide retention horizons.
-Migration `0018` and its P0-C application code are committed on this branch but
-are not yet live.
-Task 02's two protected code defects were remediated under Royian Chowdhury's
-scoped 2026-08-02 authorization: the required assessment-created audit now
-shares the completion transaction, and orientation is a hard gate with no
-admin override. Real-PostgreSQL proof remains gated and not run.
+**Verification at this snapshot:** exact candidate
+`dcaab91f9adba7457a85214d51d1614c8560f404` is TypeScript- and ESLint-clean,
+passes 123 database-free tests, completes a production build, and passed the
+complete 211-test real-PostgreSQL suite twice with zero skipped/focused tests.
+Fresh Docker replay installed all 19 migrations through `0018`; audit-failure
+atomicity, tenant isolation, immutability, concurrency, red-flag zero-claim,
+completed-referral separation, reference-derived persistence, and evidence
+export cases passed. Supabase remains live only through `0017`; `0018` is not
+authorized or applied live. Task 02 remains blocked on predecessor-upgrade and
+restart-persistence proof, S27 export reconstruction, independent Task 11
+review, recovery, G1-L, live parity, and G4.
 
 AgentOMA supports Ontario pharmacy minor-ailment services. The Ministry of Health Executive Officer Notice effective July 1, 2026 is the source of truth for covered ailment groups, claim maximums, fees, PINs, and billing rules. See [`COMPLIANCE.md`](COMPLIANCE.md) for traceability and [`NEXT_STEPS.md`](NEXT_STEPS.md) for the remaining go-live work.
 
@@ -135,7 +132,9 @@ The bounded Task 02 Workstream F implementation upgrades the server-only
 complete export to schema version 3 and adds the immutable P0-C evidence row to
 the JSON bundle, manifest artifact hashes, record view, and assessment PDF. It
 serializes persisted evidence only and never recomputes billing or clinical
-state. Its database-backed verification remains gated with migration `0018`.
+state. Its persisted-evidence database/export cases pass on the exact Docker
+candidate; canonical repeat-export and reconstruction semantics remain blocked
+under S27.
 
 ## Autonomous pharmacy program (planned)
 
@@ -257,9 +256,8 @@ Authentication data:
 
 ## Migration state
 
-The live Supabase database and last verified from-zero Docker database are
-applied through `0017`. The repository migration chain continues through
-`0018`:
+The live Supabase database remains applied through `0017`. The exact-candidate
+from-zero Docker database was verified through repository migration `0018`:
 
 | Range | Purpose |
 |---|---|
@@ -274,7 +272,7 @@ applied through `0017`. The repository migration chain continues through
 | `0015_tidy_luke_cage` | Deleted the two approved disposable TEST tenants, preserved Demo auth/TOTP rows, and enforced one pharmacy |
 | `0016_brown_lightspeed` | Patient-wide retention, export manifests, holds, correction overlays, deliberate destruction, restore evidence, governance audit/reporting |
 | `0017_tense_pandemic` | Follow-up plans/attempts, immutable supersession, one-active-plan constraint, retention propagation, and app-role grants |
-| `0018_clever_mister_fear` | Immutable P0-C billability-evidence sidecar and its application-role immutability grants; checked in but pending live migration and fresh-Docker verification |
+| `0018_clever_mister_fear` | Immutable P0-C billability-evidence sidecar and application-role immutability grants; fresh-Docker verified, pending predecessor-upgrade/recovery/live gates |
 
 Use `db:generate`, review the SQL, then `db:migrate`. Never use `db:push`.
 `db:seed` is reference-only. `db:seed:demo` attaches synthetic records to
@@ -284,12 +282,11 @@ idempotent.
 ## What is complete and what is not
 
 Implemented work is recorded in [`COMPLETED_WORK.md`](COMPLETED_WORK.md). The
-highest-priority operational step is obtaining G1-D and proving migration
-`0018` plus the remediated completion boundary against fresh Docker. Only then
-can recovery/live gates be considered. The P0-C evidence export projection is implemented but not
-real-PostgreSQL verified. Remaining blockers include LTC billing guidance,
-export-hash/reconstruction contract S27, Task 11 review, and the first isolated
-restore drill. See
+highest-priority Task 02 steps are a reviewed `0017 → 0018` upgrade runner,
+resolution of the tmpfs restart-persistence contract, and the S27 canonical
+export/reconstruction decision. After those, independent Task 11 review and
+recovery evidence are required before any exact G1-L request. Remaining product
+blockers also include LTC billing guidance and the first isolated restore drill. See
 [`NEXT_STEPS.md`](NEXT_STEPS.md) for an ordered plan and
 [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) for decisions that must come from a
 pharmacist or ODB.

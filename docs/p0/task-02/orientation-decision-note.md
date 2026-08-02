@@ -35,13 +35,12 @@ The exact scoped authorization is recorded in
   emitted because the bypass no longer exists.
 - Pure regressions prove the client/server override symbols are absent and the
   strict boundary rejects the retired input.
-- Real-PostgreSQL tests cover pharmacist, admin, and supervising-pharmacist
-  behavior, but the current candidate has not run them because G1-D is not
-  granted and Docker Desktop is unavailable.
+- Real-PostgreSQL tests for pharmacist, admin, and supervising-pharmacist
+  behavior passed on exact candidate `dcaab91…` under G1-D.
 
 ## Release disposition
 
-G3 is **DECIDED**. T02-18 is PASS at the static/pure boundary. Full Task 02
-remains blocked on G1-D database proof, other outstanding controls, live
-verification, and Task 11 review. This decision grants no Docker, live, or
-production-deployment authority.
+G3 is **DECIDED** and T02-18 is PASS at static, pure, and real-PostgreSQL
+boundaries. Full Task 02 remains blocked on predecessor/restart-persistence,
+S27, Task 11, recovery, live verification, and G4. This decision grants no live
+or production-deployment authority.

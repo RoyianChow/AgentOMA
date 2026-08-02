@@ -63,8 +63,18 @@ version, candidate SHA, migration/chain hashes, and safe catalog/count results.
 Never persist raw SQL errors, connection URLs, fixture row contents, or clinical
 payloads.
 
-After the test, restart PostgreSQL and run read-only catalog/invariant checks.
-Confirm the trigger remains enabled and migration head/hash is unchanged.
+After the test, run read-only catalog/invariant checks before teardown. The
+current exact environment **cannot provide restart-persistence proof**:
+
+- restarting the container clears its required tmpfs database; and
+- PostgreSQL is PID 1 in `postgres:16-alpine`, so `pg_ctl restart` stops the
+  container before PostgreSQL can restart.
+
+Both behaviors were observed and retained in
+`evidence/runs/dcaab91f9adba7457a85214d51d1614c8560f404/restart-persistence.json`.
+Do not weaken tmpfs, silently add a volume, or relabel reload as restart. A
+separately reviewed persistence-capable disposable harness, with exact
+ownership and teardown controls, is required before this proof can be PASS.
 
 ### Predecessor-upgrade run
 

@@ -1,13 +1,12 @@
 # Completed work
 
-**Verified through:** 2026-07-30
+**Verified through:** 2026-08-02
 
-**Quality snapshot:** the current tree is TypeScript- and ESLint-clean, passes
-95/95 database-free tests, and completes a production build with `/check`
-statically generated. The last complete database-backed run on 2026-07-25
-passed 135/135 tests, including a fresh Docker Postgres migration replay through
-`0017`. Supabase is live through `0017`; repository migration `0018` is pending
-deployment and a new full database-suite run.
+**Quality snapshot:** exact candidate `dcaab91…` is TypeScript- and ESLint-clean,
+passes 123/123 database-free tests, completes a production build, and passed
+211/211 real-PostgreSQL tests twice. Fresh Docker replay installed all 19
+migrations through `0018`. Supabase remains live through `0017`; `0018` is not
+authorized or applied live.
 
 This is the implementation record requested for the project. It describes capabilities present in the repository, not planned work. Remaining items are in [`NEXT_STEPS.md`](NEXT_STEPS.md).
 
@@ -221,11 +220,13 @@ This is the implementation record requested for the project. It describes capabi
   errors.
 - Added pure and real-Postgres coverage for the schemas, workflow gates,
   evidence persistence, immutability, tenant isolation, and failure atomicity.
-- The application code and `0018_clever_mister_fear` migration are merged, but
-  this capability is not live until `0018` is reviewed, migrated, and verified.
+- The application code and `0018_clever_mister_fear` migration are merged and
+  fresh-Docker verified, but this capability is not live until predecessor,
+  recovery, G1-L, apply, and post-apply verification gates pass.
   Task 02's bounded Workstream F now includes the sidecar in server-only export
   schema v3, manifest artifact hashing, audit record view, and assessment PDF.
-  Database-backed verification remains gated and not run.
+  Persisted evidence/export database cases pass; S27 canonical reconstruction
+  remains blocked.
 
 ## Task 02 bounded production-readiness work
 
@@ -243,17 +244,19 @@ This is the implementation record requested for the project. It describes capabi
   into the completion transaction and removed the admin orientation bypass from
   the strict server boundary and client workspace. Added static/pure tombstones
   and a real-PostgreSQL required-audit failure-injection test.
-- The bounded code is TypeScript/lint/build clean and the pure suite is
-  113/113. Task 02 remains **blocked and not production-ready**: the new
-  transaction test and full Docker/live phases were not authorized or run, and
-  S27 plus Task 11/recovery/release controls remain unresolved.
+- Exact candidate `dcaab91…` is TypeScript/lint/build clean, passes 123 pure
+  tests, and passed the complete 211-test PostgreSQL suite twice. Required-audit
+  rollback, isolation, immutability, concurrency, red-flag zero-claim,
+  referral separation, reference-derived persistence, and export evidence are
+  proven. Task 02 remains **blocked and not production-ready** because
+  predecessor/restart-persistence, S27, Task 11, recovery, live, and promotion
+  controls remain unresolved.
 
 ## Verification and regression coverage
 
 - Vitest runs pure unit tests and real-Postgres integration tests.
 - Docker Postgres uses port 5433, is guarded against non-local database URLs, and rebuilds the migration chain from zero.
 - Tests cover claim derivation combinations, refusal paths, LTC behaviour, remote-virtual tiers, retention, one-per-day, concurrent mutex enforcement, claim persistence/supersession, follow-up completion/supersession/concurrency/export, invitations/auth data, audit grants/triggers, and red-flag zero-claim behaviour.
-- TypeScript, ESLint, and the production build are clean for the current tree.
-  The last fully recorded database-backed suite has 135 passing tests through
-  `0017`; 113 database-free tests currently run independently through
-  `npm run test:pure`.
+- TypeScript, ESLint, and production build are clean for the exact candidate.
+  The recorded suites are 123 database-free tests and 211 complete tests
+  through migration `0018`, with zero skipped/focused tests.

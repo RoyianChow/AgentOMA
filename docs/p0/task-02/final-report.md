@@ -1,96 +1,69 @@
 # Task 02 final report
 
-Task 02 overall status: BLOCKED
-Task 02 Docker verification: NOT RUN
-Task 02 live verification: NOT RUN
-Task 02 production-promotion status: BLOCKED
+Task 02 overall status: **BLOCKED — DO NOT PROMOTE**
+Task 02 Docker from-zero verification: **PASS**
+Task 02 predecessor upgrade: **NOT RUN**
+Task 02 restart-persistence verification: **BLOCKED**
+Task 02 live verification: **NOT RUN**
+Task 02 production promotion: **BLOCKED**
 
-Source commit SHA: `813e360546f6dc1b4c03ead5de7d22002f063759`
-Working tree at start: DIRTY
-Working tree at end: CLEAN
+Tested source commit: `dcaab91f9adba7457a85214d51d1614c8560f404`
+G1-D approval record commit: `f82f0fec3bf9fe2ae42e1c9cf5ac54488e7eb5e9`
 Migration head: `0018_clever_mister_fear`
 Migration SHA-256: `33bcf5ab4aa289c17100fb59af1c9527204303e54b5f7d47dcdf5a2424a07a1c`
 Migration-chain digest: `ac7202c197b876b143b7b83ec04cbe65f6b5116f53674ff95bf73e05aaade4bb`
 
-Task 01 synthetic environment: PASS
-Task 11 test-plan review: NOT VERIFIED
-Task 11 evidence review: NOT VERIFIED
+## Verification outcome
 
-G1-D Docker replay approval: NOT GRANTED
-G1-L live apply approval: NOT GRANTED
-G2 LTC decision: PARKED
-G3 orientation decision: DECIDED
-G4 promotion approval: NOT GRANTED
+| Gate | Result |
+|---|---|
+| TypeScript | PASS |
+| Lint | PASS |
+| Pure suite | PASS — 13 files, 123 tests, zero skipped/focused |
+| Production build | PASS with non-routable synthetic build-only env |
+| Docker preflight/runtime identity | PASS |
+| Full PostgreSQL suite | PASS twice — 20 files, 211 tests, zero skipped/focused |
+| Full migration chain from zero | PASS — 19 migration rows; head hash matched `0018` |
+| Required-audit failure atomicity | PASS |
+| Tenant/patient isolation | PASS |
+| Evidence/audit immutability | PASS |
+| Idempotency/concurrency | PASS |
+| Red-flag zero-claim | PASS |
+| Completed-referral separation | PASS |
+| Reference-derived persistence | PASS |
+| Evidence export projection | PASS |
+| `0017 → 0018` predecessor upgrade | NOT RUN — no reviewed runner |
+| Restart persistence | BLOCKED — tmpfs/PID-1 contract conflict |
+| Canonical export/reconstruction | BLOCKED — S27 |
+| Task 11 exact-candidate review | BLOCKED |
+| Recovery, G1-L, live apply/parity, G4 | BLOCKED — prerequisites/approvals absent |
 
-Current-state and gap analysis: PASS
-Static SQL review: PASS
-Full-chain Docker replay: NOT RUN
-Predecessor upgrade: NOT RUN
-App-role immutability: NOT RUN
-Tenant and patient isolation: NOT RUN
-Failure atomicity: BLOCKED
-Idempotency and concurrency: NOT RUN
-Synthetic clinical validation: NOT RUN
-Red-flag zero-row proof: NOT RUN
-Referral/red-flag separation: NOT RUN
-Reference-derived billing values: NOT RUN
-Export and PDF coverage: BLOCKED
-Manifest and restore coverage: BLOCKED
-Live backup/restore precondition: NOT RUN
-Live migration application: NOT RUN
-Live catalog and aggregate verification: NOT RUN
-PHI/secret leakage checks: PASS
-Evidence-manifest validation: BLOCKED
+## Safety facts
 
-Real PHI used: NO
-Live row contents read: NO
-Existing migration edited: NO
-Protected clinical or billing logic changed: YES — only the two lead-authorized remediation items
-Production authentication changed: NO
-Production schema changed outside approved migration: NO
-Live migration applied more than once: NO
-External messages or vendor calls made: NO
-Claims submitted: NO
+- Real PHI used: NO.
+- Production credentials used: NO.
+- Live database accessed: NO.
+- Existing migration edited: NO.
+- Triage, reference billing data, `deriveClaimDraft`, or LTC billing changed: NO.
+- External messages, integrations, claims, or deployments performed: NO.
+- Disposable container/network/tmpfs removed after the run: YES.
 
-Stop conditions fired: S4, S11, S17, S25, S27; S24 was resolved by rebinding
-repository evidence to the current candidate.
+The first build attempt without an env failed closed and is retained. The final
+build used explicit synthetic values only. Two restart-persistence attempts
+also remain recorded as BLOCKED; neither was hidden or converted to PASS.
 
-Blocking issues: G1-D/G1-L/G4 absent; Docker unavailable; Task 11 review,
-recovery/live parity, and the canonical export/reconstruction contract absent.
+Evidence is under
+`docs/p0/task-02/evidence/runs/dcaab91f9adba7457a85214d51d1614c8560f404/`.
 
-Failed invariants: none currently proven false in the candidate. Assessment
-audit atomicity is implemented but remains unproven on real PostgreSQL.
+## Required next order
 
-Excluded release scope: LTC billing, migration execution, live apply,
-production promotion, export-hash redesign, stored-bundle reconstruction, and
-cross-task automation.
+1. Decide and implement a reviewed `0017 → 0018` local upgrade runner without
+   editing migration history or migration `0018`.
+2. Resolve the restart-persistence harness/contract conflict.
+3. Resolve S27 canonical export and reconstruction semantics.
+4. Obtain independent Task 11 review of the exact candidate and evidence.
+5. Establish recovery proof, then request a separately scoped G1-L for one
+   exact live target/window/operator/observer.
+6. Perform metadata-only post-apply verification and obtain independent G4.
 
-Unresolved lead decisions: canonical export/reconstruction contract; G1-D,
-G1-L, and G4.
-
-Unresolved professional or billing decisions: LTC remains parked. Orientation
-is resolved as a hard gate with no override.
-
-Unresolved privacy/security/release decisions: Task 11 review, recovery proof,
-exact live target/preflight, and app-role catalog proof.
-
-Evidence locations: `artifacts/p0/task-02/`, `docs/p0/task-02/`.
-
-Files changed: assessment transaction/audit boundary; strict completion input;
-orientation server/client path; synthetic DB and pure regressions; scoped
-decision and evidence documents. No migration or claim derivation changed.
-
-Tests run and results: `npx tsc --noEmit` PASS; `npm run lint` PASS; `npm run
-test:pure` PASS (12 files, 113 tests, zero skipped); `npm run build` PASS. Full
-database tests were NOT RUN.
-
-Rollback or recovery state: no database/live state changed. Revert
-`813e360546f6dc1b4c03ead5de7d22002f063759` to remove the remediation; no data
-rollback is needed. Production recovery readiness remains unverified.
-
-Recommended next action: grant exact G1-D for candidate `813e3605…`, start
-Docker Desktop, and execute the complete real-PostgreSQL suite including the
-new required-audit failure-injection test.
-
-Task 02 is not production-ready. Its two code defects are remediated, but real
-database, recovery, live, and independent release evidence remain mandatory.
+Task 02 is not production-ready despite the green Docker suite.

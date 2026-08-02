@@ -1,46 +1,45 @@
 # Task 02 production handoff
 
-**Candidate implementation commit:** `813e360546f6dc1b4c03ead5de7d22002f063759`
-
+**Tested implementation candidate:** `dcaab91f9adba7457a85214d51d1614c8560f404`
 **Handoff status:** **BLOCKED — DO NOT PROMOTE**
-
 **Live migration authorized:** **NO**
 
-## Completed in the candidate
+## Completed and proven
 
-- The required assessment-created audit now runs inside the same transaction as
-  assessment, billability evidence, claim draft, follow-up, and intake
-  consumption. Its failure propagates and rolls the transaction back.
-- A deterministic, synthetic real-PostgreSQL test injects failure at that audit
-  insert and checks all completion rows remain absent and intake unconsumed.
-- G3 is decided as **HARD GATE; NO ADMIN OVERRIDE**. The server branch, request
-  field, client UI/state, and override event were removed.
-- TypeScript, lint, 113 pure tests, and production build pass on the candidate.
-- Workstream F evidence export/PDF behavior and local database safeguards from
-  the prior candidate remain intact.
-- No migration, triage, reference data, claim derivation, LTC, auth architecture,
-  live database, claim, or external system changed.
+- Required assessment audit is in the same transaction as assessment,
+  billability evidence, claim draft, follow-up, and intake consumption.
+- Deterministic required-audit failure injection proved that all completion
+  effects roll back together.
+- G3 is **HARD GATE; NO ADMIN OVERRIDE**, and real-PostgreSQL cases passed.
+- The exact candidate passed TypeScript, lint, 123 pure tests, production build,
+  and the complete 211-test PostgreSQL suite twice.
+- From-zero replay installed all 19 migrations through `0018` with the approved
+  head hash and enforcement triggers.
+- Concurrency, tenant isolation, immutability, red-flag zero-claim,
+  completed-referral separation, reference-derived persistence, and export
+  evidence tests passed.
+- The loopback-only synthetic container, network, and tmpfs were removed.
 
 ## Why promotion remains blocked
 
-1. G1-D is not granted and Docker Desktop is unavailable. The new atomicity
-   fault test and full 0018 database suite have not run.
-2. Manifest/reconstruction semantics remain blocked by S27.
-3. Task 11 has not reviewed the exact candidate/evidence.
-4. Recovery proof, G1-L, live preflight/apply/parity, and G4 do not exist.
+1. No reviewed runner has proved `0017 → 0018` with preserved synthetic rows.
+2. Restart persistence is incompatible with the exact tmpfs/PID-1 environment;
+   both failed attempts are retained as BLOCKED.
+3. S27 canonical export/reconstruction semantics remain unresolved.
+4. Task 11 has not independently reviewed this candidate/evidence set.
+5. Recovery evidence, G1-L, live preflight/apply/parity, and G4 do not exist.
 
 ## Resume sequence
 
-1. Keep candidate `813e3605…` unchanged and obtain expiring G1-D bound to its
-   full SHA, migration hash, chain digest, exact Docker image/environment, and
-   commands.
-2. Start Docker Desktop. Run the complete real-PostgreSQL suite from zero and
-   the independent 0017→0018 upgrade. The audit fault-injection test must pass.
-3. Rebind the manifest to the tested commit and obtain Task 11 review.
-4. Resolve S27 under a separate approved export contract.
-5. Establish verified recovery evidence, then request exact G1-L. Apply once
-   through `npm run db:migrate`; never use `db:push` or ad hoc SQL.
-6. Perform metadata-only live verification and obtain G4 before promotion.
+1. Approve and add a local-only predecessor-upgrade runner without editing
+   migration `0018` or migration history manually; freeze a new candidate and
+   rerun G1-D if code changes.
+2. Resolve the restart-persistence evidence contract with a separately reviewed
+   disposable harness; do not weaken tmpfs silently.
+3. Resolve S27, then obtain exact-candidate Task 11 review.
+4. Establish verified recovery evidence and request exact G1-L.
+5. Apply once through `npm run db:migrate`, perform metadata-only verification,
+   and obtain independent G4 before promotion.
 
-No current approval permits `npm test`, Docker database commands, live queries,
-live migration, or production deployment. LTC remains parked.
+No current approval permits live queries, live migration, production
+deployment, or promotion. `db:push` remains banned and LTC remains parked.
