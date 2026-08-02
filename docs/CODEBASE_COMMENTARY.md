@@ -2,7 +2,7 @@
 
 **Snapshot:** 2026-08-02
 **Branch:** `feat/moh-compliance-migration`
-**Current HEAD:** `1f2abf4ceb87a0c1edc5b38adc3786857b663d9c`
+**Current revision:** run `git rev-parse HEAD` after checkout
 
 ## Why this file exists
 
@@ -80,6 +80,14 @@ session input, QR parameters, and URLs cannot select a pharmacy.
 The comments describe trust boundaries and reasons. They do not restate the
 PIN table, clinical algorithms, or claim-derivation rules.
 
+## Optimization added in this pass
+
+`src/lib/db/verify.ts` now uses aggregate `COUNT(*)` queries for assessment
+and follow-up totals instead of loading every record ID into memory. Its
+pharmacy fee-tier summary now counts rows in one pass and sorts the small
+aggregate deterministically. The verification script still reports aggregate
+evidence only; it does not expose patient or clinical rows.
+
 ## Protected surfaces intentionally not revised
 
 This pass did not edit:
@@ -127,7 +135,7 @@ approval/evidence. Changes there need their own lead-approved scope.
 
 ## Verification note
 
-This commentary pass is documentation/comments only; it does not replace the
-recorded candidate evidence or authorize a live migration. Before merging any
-future behavioural change, rerun the relevant TypeScript, lint, pure, and
-fresh-Postgres gates and bind new evidence to the exact resulting commit.
+This pass does not replace the recorded candidate evidence or authorize a live
+migration. Before merging future behavioural changes, rerun the relevant
+TypeScript, lint, pure, and fresh-Postgres gates and bind new evidence to the
+exact resulting commit.
