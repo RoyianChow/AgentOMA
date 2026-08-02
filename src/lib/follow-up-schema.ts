@@ -23,6 +23,8 @@ export const FOLLOW_UP_NEXT_STEP_LABELS: Record<FollowUpNextStep, string> = {
   new_assessment_needed: "New assessment needed",
 };
 
+// A due date is a calendar date, not a timestamp. Keeping it date-only avoids
+// timezone conversion changing the day shown on the pharmacist worklist.
 const dateOnly = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a valid follow-up due date.")
@@ -82,6 +84,11 @@ export const followUpAttemptSchema = z
 export type FollowUpAttemptInput = z.input<typeof followUpAttemptSchema>;
 export type FollowUpAttempt = z.output<typeof followUpAttemptSchema>;
 
+/**
+ * Completion calls this parser before inserting a billable assessment. The
+ * lower bound is checked against the service day here so the UI and server
+ * action share the same minimum evidence rule.
+ */
 export function parseFollowUpPlan(
   input: unknown,
   serviceDate: Date,

@@ -2,6 +2,9 @@ import { spawnSync } from "node:child_process";
 
 import { z } from "zod";
 
+// These constants are the test-only trust boundary: loopback TCP, a fixed
+// Postgres image, and disposable storage. A test must fail closed rather than
+// silently connect to Supabase or reuse a container from another worktree.
 const TEST_CONTAINER_NAME = "agentoma-test-db";
 const TEST_COMPOSE_SERVICE = "test-db";
 const TEST_IMAGE = "postgres:16-alpine";
