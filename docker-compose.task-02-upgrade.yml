@@ -1,0 +1,51 @@
+# Task 02 predecessor-upgrade and restart-persistence database.
+#
+# This service is deliberately separate from docker-compose.yml's tmpfs-backed
+# from-zero test database. It may be started only by the gated Task 02 harness
+# after an exact-candidate G1-D record passes executable validation.
+#
+# The named volume exists solely to prove persistence across one PostgreSQL
+# container restart. The harness refuses stale resources and removes this exact
+# container, network, and volume in a finally block.
+
+services:
+  task02-upgrade-db:
+    image: postgres:16-alpine
+    container_name: agentoma-task02-upgrade-db
+    restart: "no"
+    labels:
+      com.agentoma.environment: synthetic
+      com.agentoma.task: task-02
+      com.agentoma.capability: predecessor-upgrade
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: agentoma_task02_upgrade
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - task02_upgrade_data:/var/lib/postgresql/data
+    networks:
+      - task02_upgrade_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d agentoma_task02_upgrade"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  task02_upgrade_data:
+    name: agentoma-task02-upgrade-data
+    labels:
+      com.agentoma.environment: synthetic
+      com.agentoma.task: task-02
+      com.agentoma.capability: predecessor-upgrade
+
+networks:
+  task02_upgrade_network:
+    name: agentoma-task02-upgrade-network
+    internal: true
+    labels:
+      com.agentoma.environment: synthetic
+      com.agentoma.task: task-02
+      com.agentoma.capability: predecessor-upgrade
