@@ -418,4 +418,55 @@ describe("Task 02 persistent Docker isolation contract", () => {
       expect(source).not.toContain("tools/task-02/predecessor-upgrade");
     }
   });
+
+  it("keeps approval ahead of Docker and teardown in the orchestrator finally path", () => {
+    const packageJson = JSON.parse(
+      readFileSync(resolve(process.cwd(), "package.json"), "utf8"),
+    ) as { scripts: Record<string, string> };
+    expect(packageJson.scripts["test:db:upgrade"]).toBe(
+      "tsx tools/task-02/run-predecessor-upgrade-harness.ts",
+    );
+
+    const runner = readFileSync(
+      resolve(
+        process.cwd(),
+        "tools/task-02/run-predecessor-upgrade-harness.ts",
+      ),
+      "utf8",
+    );
+    expect(
+      runner.indexOf("assertTask02UpgradeApproval(approvalInput"),
+    ).toBeLessThan(
+      runner.indexOf("state.dockerServerVersion = assertPreStart(cwd)"),
+    );
+    expect(runner).toContain("finally {");
+    expect(runner).toContain("teardownExactResources(cwd);");
+    expect(runner).not.toContain("process.env");
+    expect(runner).not.toMatch(/@supabase|db:push|DATABASE_URL|DIRECT_URL/iu);
+  });
+
+  it("uses Drizzle for both phases without touching migration history", () => {
+    const databaseRunner = readFileSync(
+      resolve(process.cwd(), "tools/task-02/predecessor-upgrade-db.ts"),
+      "utf8",
+    );
+    const predecessorMigration = databaseRunner.indexOf(
+      "migrateSafely(client, generatedView.folder)",
+    );
+    const syntheticSeed = databaseRunner.indexOf(
+      "await seedSyntheticPredecessorRows(client)",
+    );
+    const headMigration = databaseRunner.indexOf(
+      "resolve(repositoryRoot, TASK02_UPGRADE_CONTRACT.migrationFolder)",
+    );
+    expect(predecessorMigration).toBeGreaterThanOrEqual(0);
+    expect(syntheticSeed).toBeGreaterThan(predecessorMigration);
+    expect(headMigration).toBeGreaterThan(syntheticSeed);
+    expect(databaseRunner).not.toMatch(
+      /insert\s+into\s+drizzle\.__drizzle_migrations/iu,
+    );
+    expect(databaseRunner).not.toContain("process.env");
+    expect(databaseRunner).not.toMatch(/supabase|db:push/iu);
+    expect(databaseRunner).not.toMatch(/\b\d{10}\b/u);
+  });
 });
