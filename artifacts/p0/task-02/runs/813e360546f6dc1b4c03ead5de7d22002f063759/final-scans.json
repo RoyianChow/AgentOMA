@@ -1,0 +1,49 @@
+{
+  "schema_version": "1",
+  "task": "02",
+  "source_commit_sha": "813e360546f6dc1b4c03ead5de7d22002f063759",
+  "environment": "local Windows repository; Task 02 documentation, manifest, evidence, and production-source boundary scans",
+  "started_at_utc": "2026-08-02T03:35:26.1806685Z",
+  "ended_at_utc": "2026-08-02T03:35:26.3656454Z",
+  "scans": [
+    {
+      "name": "secret-pattern scan",
+      "scope": "docs/p0/task-02, the Task 02 evidence manifest, and the candidate run metadata",
+      "raw_rg_exit_code": 1,
+      "matches": 0,
+      "result": "PASS"
+    },
+    {
+      "name": "identifier and email-pattern scan",
+      "scope": "docs/p0/task-02, the Task 02 evidence manifest, and the candidate run metadata",
+      "raw_rg_exit_code": 1,
+      "matches": 0,
+      "result": "PASS"
+    },
+    {
+      "name": "unsafe payload and PHI logging-pattern scan",
+      "scope": "production source changed by the authorized remediation",
+      "raw_rg_exit_code": 1,
+      "matches": 0,
+      "result": "PASS"
+    },
+    {
+      "name": "production orientation-override and fault-hook scan",
+      "scope": "src excluding test files",
+      "raw_rg_exit_code": 1,
+      "matches": 0,
+      "result": "PASS"
+    },
+    {
+      "name": "unauthorized protected-path change scan",
+      "scope": "git diff 666fd6f83f9f8c5ecc97f8c550663cf4c0481e8a..813e360546f6dc1b4c03ead5de7d22002f063759 for triage, reference data, migrations, and deriveClaimDraft",
+      "raw_rg_exit_code": 1,
+      "matches": 0,
+      "result": "PASS"
+    }
+  ],
+  "wrapper_exit_code": 0,
+  "result": "PASS",
+  "contains_phi": false,
+  "contains_secrets": false
+}

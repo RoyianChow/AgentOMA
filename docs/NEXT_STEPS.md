@@ -5,43 +5,52 @@
 **Release posture:** do not treat the current build as production-ready until
 the P0 items are resolved, deployed, and re-verified.
 
+**Latest Task 02 runtime update:** the remediated exact candidate
+`5b576b7ba8be6917c133590aee5e1fa0d33368d4` received an expiring local G1-D
+from Royian Chowdhury and ran once on 2026-08-02. It failed closed with
+`DATABASE_CONNECTIVITY_DENIED` before any database migration or synthetic
+fixture write; exact-resource teardown passed. Preserve
+`docs/p0/task-02/evidence/runs/5b576b7ba8be6917c133590aee5e1fa0d33368d4/predecessor-upgrade-run.json`.
+Do not rerun that candidate or manually operate its Compose service.
+
+The permitted database-free diagnostic is now implemented: it distinguishes an
+unreachable loopback TCP endpoint from PostgreSQL protocol readiness without
+logging raw errors. It has not been run against Docker because its source bytes
+need a fresh exact G1-D. See
+`docs/p0/task-02/predecessor-upgrade-connectivity-diagnostic-2026-08-02.md`.
+
 ## P0 — clinical and compliance blockers
 
-1. **Remediate the two Task 02 protected defects under explicit lead review.**
-   Move the required assessment-created audit into the completion transaction
-   with deterministic fault-injection coverage. Remove the admin orientation
-   override, or implement only a separately approved G3 policy. Task 02 itself
-   did not edit either protected path.
-2. **Obtain G1-D and verify P0-C migration `0018` in fresh Docker.** The identity, eligibility,
-   self/family, existing-prescription, claim-history, and clinical-viewer gates
-   are merged in the application, but the live Supabase database is still at
-   `0017`. Replay the full chain and the independent 0017→0018 upgrade, run the
-   complete database suite, and prove triggers/grants/atomicity/concurrency.
-   Never use `db:push`.
-3. **Obtain G1-L, recovery evidence, and verify the one-time live migration.**
+1. **Remediate then rerun the gated predecessor/restart proof.** Exact candidate
+   `dcaab91…` passed the full 211-test from-zero PostgreSQL suite twice. The
+   later `dd503a14…` predecessor/restart run failed closed at its first database
+   identity probe, before migration or fixture writes, and teardown passed.
+   Preserve that evidence; do not rerun its non-overwriting evidence path.
+   Freeze the remediated clean SHA, grant a new expiring G1-D using
+   `docs/p0/task-02/g1-d-predecessor-upgrade-approval-contract.md`, then run its
+   single orchestrated command. Do not manually operate Compose, weaken tmpfs,
+   or edit migration/history.
+2. **Resolve export-integrity stop S27.** Approve canonical repeat-export,
+   retained-manifest, and reconstruction-verification semantics before changing
+   hashes. The current bundle changes as export/audit history grows.
+3. **Obtain independent Task 11 review.** Bind the exact candidate, migration,
+   G1-D artifacts, remaining controls, and approved S27 contract.
+4. **Establish recovery evidence, obtain G1-L, and verify the one-time live migration.**
    Apply only through `npm run db:migrate` in the named change window after all
    Docker blockers are green. Verify catalog/grants and safe aggregate deltas.
-4. **Smoke-test the complete P0-C workflow.** Use a realistic synthetic case to
+5. **Smoke-test the complete P0-C workflow.** Use a realistic synthetic case to
    prove missing eligibility fails closed, unresolved prescription evidence
    blocks completion, the three history signals persist side by side, and the
    UI never promises HNS payment. Confirm a red-flag exit still writes zero
    assessment, evidence, and claim-draft rows.
-5. **Resolve all LTC minor-ailment billing.** The current conservative rule
+6. **Resolve all LTC minor-ailment billing.** The current conservative rule
    records the assessment and LTC facts but refuses claim drafting for every LTC
    resident. Confirm primary, secondary-emergency, and secondary-non-emergency
    submission/fee rules with the ODB Pharmacy Help Desk, including footnote 5
    and `LT`. Do not add `$0`, capitation, or `LT` logic until a human decision is
    documented; see [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md).
-6. **Resolve export-integrity stop S27.** Approve the canonical repeat-export,
-   retained-manifest, and reconstruction-verification contract before changing
-   hashes. The current bundle intentionally changes as export/audit history
-   grows; Task 02 did not invent a competing hash contract.
-7. **Obtain Task 11 test-plan/evidence review and G4.** Task 02 cannot approve
-   its own production promotion.
-8. **Resolve the orientation break-glass policy.** The intended rule is a hard
-   billing-eligibility gate, but a pharmacy admin can currently provide an
-   audited override reason. Remove it or obtain explicit regulatory/product
-   approval before production.
+7. **Obtain independent G4 after live verification.** Task 02 cannot approve its
+   own production promotion.
 
 ## Completed P0 implementation
 
@@ -57,8 +66,10 @@ the P0 items are resolved, deployed, and re-verified.
   and migration `0018` are merged. The server validates inspected public-service
   identity evidence, self/family and structured existing-Rx facts, and persists
   patient self-report, an exact advisory platform lookback, and clinical-viewer
-  attestation. The feature code is merged but **not production-ready** until
-  the protected defects and the Docker/live steps above are complete.
+   attestation. Candidate `dcaab91…` passed atomic-audit rollback, orientation,
+   persistence, isolation, concurrency, red-flag, referral, and export evidence
+   tests on real PostgreSQL. The feature is **not production-ready** until the
+   remaining predecessor/restart, S27, Task 11, recovery, live, and G4 gates pass.
 - **P0-D — virtual/LTC facts and fee-tier reference:** migrations `0013`–`0014`
   are live. Remote eligibility is reference-driven and all LTC drafting remains
   parked. Migration `0015` removed disposable TEST tenants and enforces one
@@ -85,7 +96,7 @@ the P0 items are resolved, deployed, and re-verified.
 4. **Verify P0-C evidence in complete retrieval.** The schema-v3 export,
    manifest projection, record view, and PDF implementation are present. Run
    their real-PostgreSQL linkage, missing-evidence, tenant, authorization, and
-   hash assertions after G1-D; do not claim them live before 0018.
+   hash assertions are green under G1-D; do not claim them live before 0018.
 5. Exercise `/pharmacist/governance` with a realistic synthetic case: complete
    export, patient and record holds, request decision, correction supersession,
    destruction dry run, second-admin refusal/approval, and restore-drill record.
@@ -103,10 +114,10 @@ the P0 items are resolved, deployed, and re-verified.
 10. Extend Zod validation to any future external integration/FHIR responses.
     Assessment, invitation, settings, and external-session boundaries are now
     covered; preserve safe, non-PHI errors as integrations are added.
-11. Review remaining best-effort audit boundaries. Governance mutations are
-    transactional and record-access failures have a secondary failure table;
-    older assessment/settings/invitation paths still need an explicit atomicity
-    decision.
+11. Review remaining best-effort audit boundaries. Assessment completion and
+    governance mutations are transactional, and record-access failures have a
+    secondary failure table; settings/invitation paths still need an explicit
+    atomicity decision.
 
 ## Completed P1 foundation
 

@@ -407,6 +407,81 @@ describe("createAssessment → claim_draft", () => {
     );
   });
 
+  it("rolls back assessment, evidence, claim, follow-up, intake consumption, and audit when the required audit insert fails", async () => {
+    const { createAssessment } = await import("../actions");
+
+    await db.execute(sql.raw(`
+      create or replace function task02_fail_required_assessment_audit()
+      returns trigger
+      language plpgsql
+      as $task02$
+      begin
+        if new.action in (
+          'assessment.created.claim_drafted',
+          'assessment.created.no_claim'
+        ) then
+          raise exception 'TASK02_TEST_REQUIRED_AUDIT_FAILURE'
+            using errcode = 'P0001';
+        end if;
+        return new;
+      end;
+      $task02$
+    `));
+    await db.execute(sql.raw(`
+      create trigger task02_fail_required_assessment_audit_trg
+      before insert on audit_log
+      for each row execute function task02_fail_required_assessment_audit()
+    `));
+
+    try {
+      const result = await createAssessment(baseInput());
+      expect(result.success).toBe(false);
+
+      const [counts] = (await db.execute<{
+        assessments: number;
+        evidence: number;
+        claims: number;
+        follow_ups: number;
+        audits: number;
+      }>(sql`
+        select
+          (select count(*)::int from assessment) as assessments,
+          (select count(*)::int from assessment_billability_evidence) as evidence,
+          (select count(*)::int from claim_draft) as claims,
+          (select count(*)::int from follow_up) as follow_ups,
+          (select count(*)::int from audit_log) as audits
+      `)) as unknown as {
+        assessments: number;
+        evidence: number;
+        claims: number;
+        follow_ups: number;
+        audits: number;
+      }[];
+      expect(counts).toEqual({
+        assessments: 0,
+        evidence: 0,
+        claims: 0,
+        follow_ups: 0,
+        audits: 0,
+      });
+
+      const [intake] = (await db.execute<{ consumed_at: Date | null }>(sql`
+        select consumed_at
+        from intake_session
+        where id = ${intakeSessionId}::uuid
+      `)) as unknown as { consumed_at: Date | null }[];
+      expect(intake.consumed_at).toBeNull();
+    } finally {
+      await db.execute(sql.raw(`
+        drop trigger if exists task02_fail_required_assessment_audit_trg
+          on audit_log
+      `));
+      await db.execute(sql.raw(`
+        drop function if exists task02_fail_required_assessment_audit()
+      `));
+    }
+  });
+
   it("persists the complete P0-C evidence snapshot beside the P0-B record", async () => {
     const { createAssessment } = await import("../actions");
     const res = await createAssessment(baseInput());
@@ -900,7 +975,8 @@ describe("createAssessment → claim_draft", () => {
       assessmentId: res.assessmentId,
       pharmacyId: PHARMACY_ID,
       evidenceVersion: 1,
-      patientSelfReportStatus: "no",
+      patientSelfReportStatus: "yes",
+      patientSelfReportApproximateCount: 1,
       platformAssessmentCount: 0,
       maximumState: "not_confirmed_met",
       documentInspectedAttestation: true,
@@ -1423,7 +1499,7 @@ describe("createAssessment → claim_draft", () => {
     expect(drafts).toEqual([{ prescriber_id: "PHR888" }]);
   });
 
-  it("ADMIN OVERRIDE: an admin with no orientation completes WITH a reason, and it is audited", async () => {
+  it("ORIENTATION GATE: an admin without recorded orientation is refused with no bypass", async () => {
     const { createAssessment } = await import("../actions");
     const rows = await db.execute<{ id: string }>(sql`
       insert into "user" (name, email, role, pharmacy_id, ocp_number)
@@ -1433,64 +1509,35 @@ describe("createAssessment → claim_draft", () => {
     testAuth.actor.userId = (rows as unknown as { id: string }[])[0].id;
     testAuth.actor.role = "pharmacy_admin";
 
-    const res = await createAssessment({
-      ...baseInput(),
-      orientationOverrideReason: "Module done 2026-07-20, OCP upload pending",
-    });
-    expect(res.success).toBe(true);
-    expect(res.claim?.billable).toBe(true);
-    expect(await countRows("assessment")).toBe(1);
-    // The break-glass is recorded as its own audited statement, with the reason.
-    const audit = (await db.execute<{ metadata: { reason: string } }>(
-      sql`select metadata from audit_log where action = 'assessment.orientation_override'`,
-    )) as unknown as { metadata: { reason: string } }[];
-    expect(audit).toHaveLength(1);
-    expect(audit[0].metadata.reason).toMatch(/OCP upload pending/);
+    const res = await createAssessment(baseInput());
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect("orientationRequired" in res && res.orientationRequired).toBe(true);
+      expect("canOverride" in res).toBe(false);
+    }
+    expect(await countRows("assessment")).toBe(0);
+    expect(await countRows("assessment_billability_evidence")).toBe(0);
+    expect(await countRows("claim_draft")).toBe(0);
   });
 
-  it("ADMIN OVERRIDE: an admin with no orientation and NO reason is refused, with the override signal", async () => {
+  it("ORIENTATION GATE: the retired override input is rejected at the strict server boundary", async () => {
     const { createAssessment } = await import("../actions");
     const rows = await db.execute<{ id: string }>(sql`
       insert into "user" (name, email, role, pharmacy_id, ocp_number)
-      values ('Admin NoReason', 'admin-noreason@test.local', 'pharmacy_admin'::user_role, ${PHARMACY_ID}::uuid, '777002')
+      values ('Admin LegacyInput', 'admin-legacy@test.local', 'pharmacy_admin'::user_role, ${PHARMACY_ID}::uuid, '777002')
       returning id
     `);
     testAuth.actor.userId = (rows as unknown as { id: string }[])[0].id;
     testAuth.actor.role = "pharmacy_admin";
 
-    const res = await createAssessment(baseInput());
-    expect(res.success).toBe(false);
-    if (!res.success) {
-      expect("orientationRequired" in res && res.orientationRequired).toBe(true);
-      expect("canOverride" in res && res.canOverride).toBe(true);
-    }
-    expect(await countRows("assessment")).toBe(0);
-  });
-
-  it("ADMIN OVERRIDE is admin-only: a non-admin passing a reason is STILL refused and writes nothing", async () => {
-    const { createAssessment } = await import("../actions");
-    const rows = await db.execute<{ id: string }>(sql`
-      insert into "user" (name, email, role, pharmacy_id, ocp_number)
-      values ('Pharm NoOrient', 'pharm-noorient@test.local', 'pharmacist'::user_role, ${PHARMACY_ID}::uuid, '777003')
-      returning id
-    `);
-    testAuth.actor.userId = (rows as unknown as { id: string }[])[0].id;
-    testAuth.actor.role = "pharmacist";
-
     const res = await createAssessment({
       ...baseInput(),
-      orientationOverrideReason: "let me through",
-    });
+      orientationOverrideReason: "Retired input must never bypass the gate",
+    } as unknown as Parameters<typeof createAssessment>[0]);
     expect(res.success).toBe(false);
-    if (!res.success) {
-      expect("canOverride" in res && res.canOverride).toBe(false);
-    }
     expect(await countRows("assessment")).toBe(0);
+    expect(await countRows("assessment_billability_evidence")).toBe(0);
     expect(await countRows("claim_draft")).toBe(0);
-    const overrideEvents = (await db.execute<{ n: number }>(
-      sql`select count(*)::int as n from audit_log where action = 'assessment.orientation_override'`,
-    )) as unknown as { n: number }[];
-    expect(overrideEvents[0].n).toBe(0);
   });
 
   it("ORIENTATION GATE: an intern's completion keys off the SUPERVISOR's orientation, and bills the supervisor's OCP", async () => {

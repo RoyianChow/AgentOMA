@@ -11,6 +11,9 @@ export interface SelfReportedAnswer {
 }
 
 interface SummaryBase {
+  // The public self-check keeps health-related answers in memory only. There
+  // is intentionally no identity, health number, demographic, or persistence
+  // field in this model.
   generatedAtIso: string;
   answers: SelfReportedAnswer[];
 }

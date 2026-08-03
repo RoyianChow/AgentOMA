@@ -3,6 +3,7 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import * as schema from "../schema";
 import { seedReferenceData } from "../seed-reference";
+import { assertRunningTestDbEnvironment } from "./docker-environment";
 import { TEST_DATABASE_URL, assertLocalTestDb } from "./harness";
 
 /**
@@ -16,6 +17,11 @@ import { TEST_DATABASE_URL, assertLocalTestDb } from "./harness";
  */
 export default async function setup() {
   assertLocalTestDb();
+  // URL validation alone is insufficient: a stale or externally exposed
+  // Postgres can still listen on localhost:5433. Prove Docker ownership,
+  // current Compose bytes, loopback binding, health, image, and tmpfs before
+  // opening the first database connection.
+  assertRunningTestDbEnvironment();
 
   const client = postgres(TEST_DATABASE_URL, { max: 1 });
   try {

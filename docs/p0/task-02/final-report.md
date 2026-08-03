@@ -1,101 +1,82 @@
 # Task 02 final report
 
-Task 02 overall status: FAIL
-Task 02 Docker verification: NOT RUN
-Task 02 live verification: NOT RUN
-Task 02 production-promotion status: BLOCKED
+**Latest runtime update:** a second exact G1-D run on
+`5b576b7ba8be6917c133590aee5e1fa0d33368d4` failed closed with
+`DATABASE_CONNECTIVITY_DENIED` before migration or fixture writes, and teardown
+passed. Preserve its record at
+`evidence/runs/5b576b7ba8be6917c133590aee5e1fa0d33368d4/predecessor-upgrade-run.json`.
+Neither failed predecessor candidate may be rerun.
 
-Source commit SHA: `4f8fdd844c243f5dafcf4e78652116a9d632b222`
-Working tree at start: DIRTY
-Working tree at end: DIRTY
+Task 02 overall status: **BLOCKED — DO NOT PROMOTE**
+Task 02 Docker from-zero verification: **PASS**
+Task 02 predecessor upgrade: **FAIL — fail closed before migration**
+Task 02 restart-persistence verification: **FAIL — not reached after predecessor failure**
+Task 02 live verification: **NOT RUN**
+Task 02 production promotion: **BLOCKED**
+
+Tested source commit: `dcaab91f9adba7457a85214d51d1614c8560f404`
+Failed predecessor-harness candidate: `dd503a14da24ea80a0f0e046e179f6b4b4e77b3c`
+G1-D: consumed by a failed closed run; no later candidate is approved
 Migration head: `0018_clever_mister_fear`
 Migration SHA-256: `33bcf5ab4aa289c17100fb59af1c9527204303e54b5f7d47dcdf5a2424a07a1c`
 Migration-chain digest: `ac7202c197b876b143b7b83ec04cbe65f6b5116f53674ff95bf73e05aaade4bb`
 
-Task 01 synthetic environment: PASS
-Task 11 test-plan review: NOT VERIFIED
-Task 11 evidence review: NOT VERIFIED
+## Verification outcome
 
-G1-D Docker replay approval: NOT GRANTED
-G1-L live apply approval: NOT GRANTED
-G2 LTC decision: PARKED
-G3 orientation decision: BLOCKED
-G4 promotion approval: NOT GRANTED
+| Gate | Result |
+|---|---|
+| TypeScript | PASS |
+| Lint | PASS |
+| Pure suite | PASS — 13 files, 123 tests, zero skipped/focused |
+| Production build | PASS with non-routable synthetic build-only env |
+| Docker preflight/runtime identity | PASS |
+| Full PostgreSQL suite | PASS twice — 20 files, 211 tests, zero skipped/focused |
+| Full migration chain from zero | PASS — 19 migration rows; head hash matched `0018` |
+| Required-audit failure atomicity | PASS |
+| Tenant/patient isolation | PASS |
+| Evidence/audit immutability | PASS |
+| Idempotency/concurrency | PASS |
+| Red-flag zero-claim | PASS |
+| Completed-referral separation | PASS |
+| Reference-derived persistence | PASS |
+| Evidence export projection | PASS |
+| `0017 → 0018` predecessor upgrade | FAIL — `dd503a14…` denied at its initial database identity probe before migration or fixture writes |
+| New predecessor/restart harness | IMPLEMENTED; first database execution failed closed and teardown passed; remediation is database-free and needs a new G1-D |
+| Restart persistence | Old tmpfs harness BLOCKED; named-volume restart was not reached after the predecessor failure |
+| Canonical export/reconstruction | BLOCKED — S27 |
+| Task 11 exact-candidate review | BLOCKED |
+| Recovery, G1-L, live apply/parity, G4 | BLOCKED — prerequisites/approvals absent |
 
-Current-state and gap analysis: PASS
-Static SQL review: PASS
-Full-chain Docker replay: NOT RUN
-Predecessor upgrade: NOT RUN
-App-role immutability: NOT RUN
-Tenant and patient isolation: NOT RUN
-Failure atomicity: FAIL
-Idempotency and concurrency: NOT RUN
-Synthetic clinical validation: NOT RUN
-Red-flag zero-row proof: NOT RUN
-Referral/red-flag separation: NOT RUN
-Reference-derived billing values: NOT RUN
-Export and PDF coverage: BLOCKED
-Manifest and restore coverage: BLOCKED
-Live backup/restore precondition: NOT RUN
-Live migration application: NOT RUN
-Live catalog and aggregate verification: NOT RUN
-PHI/secret leakage checks: PASS
-Evidence-manifest validation: FAIL
+## Safety facts
 
-Real PHI used: NO
-Live row contents read: NO
-Existing migration edited: NO
-Protected clinical or billing logic changed: NO
-Production authentication changed: NO
-Production schema changed outside approved migration: NO
-Live migration applied more than once: NO
-External messages or vendor calls made: NO
-Claims submitted: NO
+- Real PHI used: NO.
+- Production credentials used: NO.
+- Live database accessed: NO.
+- Existing migration edited: NO.
+- Triage, reference billing data, `deriveClaimDraft`, or LTC billing changed: NO.
+- External messages, integrations, claims, or deployments performed: NO.
+- Disposable container/network/tmpfs removed after the run: YES.
 
-Stop conditions fired: S4, S11, S15, S17, S24, S25, S27
+The first build attempt without an env failed closed and is retained. The final
+build used explicit synthetic values only. Two restart-persistence attempts
+also remain recorded as BLOCKED; neither was hidden or converted to PASS.
 
-Blocking issues: G1-D/G1-L/G4 are absent; G3 and Task 11 review are unresolved;
-Docker Desktop is unavailable; recovery and live parity evidence do not exist;
-the canonical export-hash contract is unresolved.
+Evidence is under
+`docs/p0/task-02/evidence/runs/dcaab91f9adba7457a85214d51d1614c8560f404/`.
+The separate failure record is
+`docs/p0/task-02/evidence/runs/dd503a14da24ea80a0f0e046e179f6b4b4e77b3c/predecessor-upgrade-run.json`.
 
-Failed invariants: mandatory assessment-created audit is not transactionally
-atomic with assessment/evidence/claim persistence (T02-13); orientation is not
-a hard billability gate while G3 is unresolved (T02-18).
+## Required next order
 
-Excluded release scope: LTC billing, orientation override approval, migration
-execution, live apply, production promotion, export-hash redesign, stored-bundle
-restore verification, and cross-task automation.
+1. Preserve the `dd503a14…` failure evidence, finish the read-only readiness/
+   safe-diagnostic remediation, and freeze a new clean harness candidate.
+2. Obtain a new exact, expiring G1-D and run the single gated
+   predecessor/restart command. Do not rerun `dd503a14…` or manually operate
+   the named-volume service.
+3. Resolve S27 canonical export and reconstruction semantics.
+4. Obtain independent Task 11 review of the exact candidate and evidence.
+5. Establish recovery proof, then request a separately scoped G1-L for one
+   exact live target/window/operator/observer.
+6. Perform metadata-only post-apply verification and obtain independent G4.
 
-Unresolved lead decisions: protected completion/audit remediation approval;
-approved canonical export-hash contract; G1-D, G1-L, and G4.
-
-Unresolved professional or billing decisions: LTC handling remains parked;
-orientation override policy remains blocked.
-
-Unresolved privacy/security/release decisions: Task 11 test-plan and evidence
-review; verified recovery point and recovery ownership; exact live-target
-preflight and app-role catalog proof.
-
-Evidence locations: `artifacts/p0/task-02/`, `docs/p0/task-02/`, and the source
-and tests listed in `artifacts/p0/task-02/evidence-manifest.json`.
-
-Files changed: bounded Workstream F serializer/projection, server-side record
-retrieval/PDF/export inclusion, privacy-safe filenames and audit failure logging,
-local test-database guard, synthetic tests, and Task 02 documentation/evidence.
-No protected surface or migration changed.
-
-Tests run and results: `npx tsc --noEmit` PASS; `npm run lint` PASS; `npm run
-test:pure` PASS (12 files, 110 tests, zero skipped); `npm run build` PASS. Full
-database tests were NOT RUN.
-
-Rollback or recovery state: no database or live state changed. Reverting commit
-`4f8fdd844c243f5dafcf4e78652116a9d632b222` removes the bounded implementation;
-no data rollback is required. Production recovery readiness remains unverified.
-
-Recommended next action: obtain explicit approval for the two protected fixes,
-resolve G3, produce a new clean candidate, and only then request G1-D for the
-exact candidate and disposable environment.
-
-Task 02 is not production-ready. Docker and live migration work remain gated,
-and the two proven-false mandatory invariants must be remediated before further
-release verification.
+Task 02 is not production-ready despite the green Docker suite.

@@ -28,6 +28,9 @@ type Phase =
   | "result";
 
 export default function SelfCheckFlow() {
+  // This is a public, pharmacy-agnostic flow. State is deliberately transient
+  // React memory: no answer is written to storage, put in a URL, sent to an
+  // application endpoint, or included in analytics.
   const [phase, setPhase] = useState<Phase>("intro");
   const [nodeId, setNodeId] = useState(TRIAGE_ROOT);
   const [nodeStack, setNodeStack] = useState<string[]>([]);
@@ -40,6 +43,8 @@ export default function SelfCheckFlow() {
     "idle" | "working" | "failed"
   >("idle");
 
+  // Restart is also the privacy reset: leaving a completed result or starting
+  // over must discard every answer and generated summary from this tab.
   function restart() {
     setPhase("intro");
     setNodeId(TRIAGE_ROOT);

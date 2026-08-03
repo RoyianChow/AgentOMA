@@ -15,6 +15,18 @@ const WORKSPACE_PATH = fileURLToPath(
     import.meta.url,
   ),
 );
+const ASSESSMENT_ACTIONS_PATH = fileURLToPath(
+  new URL("../../app/(dashboard)/pharmacist/actions.ts", import.meta.url),
+);
+const ASSESSMENT_BOUNDARY_PATH = fileURLToPath(
+  new URL("../p0-c-boundary-schema.ts", import.meta.url),
+);
+const ASSESSMENT_PAGE_PATH = fileURLToPath(
+  new URL(
+    "../../app/(dashboard)/pharmacist/assessment/page.tsx",
+    import.meta.url,
+  ),
+);
 
 function sourceFiles(path: string): string[] {
   return readdirSync(path).flatMap((entry) => {
@@ -57,8 +69,6 @@ describe("authenticated pharmacist PHI lifecycle", () => {
       setSameAilmentPrescription: vi.fn(),
       setVerificationConsultation: vi.fn(),
       setPatientSelfReportLocation: vi.fn(),
-      setOrientationBlock: vi.fn(),
-      setOverrideReason: vi.fn(),
       setError: vi.fn(),
     };
 
@@ -92,8 +102,6 @@ describe("authenticated pharmacist PHI lifecycle", () => {
       ["setSameAilmentPrescription", ""],
       ["setVerificationConsultation", ""],
       ["setPatientSelfReportLocation", ""],
-      ["setOrientationBlock", false],
-      ["setOverrideReason", ""],
       ["setError", null],
     ];
 
@@ -157,7 +165,6 @@ describe("authenticated pharmacist PHI lifecycle", () => {
       "clinical",
       "virtualLocation",
       "remoteReason",
-      "overrideReason",
     ];
     for (const field of sensitiveNames) {
       expect(clientSource).not.toMatch(
@@ -180,7 +187,6 @@ describe("authenticated pharmacist PHI lifecycle", () => {
       "patientSelfReportLocation",
       "virtualLocation",
       "remoteReason",
-      "overrideReason",
     ]) {
       expect(workspace).toMatch(
         new RegExp(
@@ -205,5 +211,44 @@ describe("authenticated pharmacist PHI lifecycle", () => {
     const nextConfig = readFileSync(`${ROOT}/next.config.ts`, "utf8");
     expect(nextConfig).toContain('source: "/pharmacist/:path*"');
     expect(nextConfig).toContain("headers: [...PHARMACIST_ROUTE_HEADERS]");
+  });
+
+  it("has no client or server orientation-override path", () => {
+    const sources = [
+      readFileSync(WORKSPACE_PATH, "utf8"),
+      readFileSync(ASSESSMENT_ACTIONS_PATH, "utf8"),
+      readFileSync(ASSESSMENT_BOUNDARY_PATH, "utf8"),
+      readFileSync(ASSESSMENT_PAGE_PATH, "utf8"),
+    ].join("\n");
+
+    expect(sources).not.toContain("orientationOverrideReason");
+    expect(sources).not.toContain("assessment.orientation_override");
+    expect(sources).not.toContain("canOverrideOrientation");
+    expect(sources).not.toContain("Override & sign assessment");
+
+    const actions = readFileSync(ASSESSMENT_ACTIONS_PATH, "utf8");
+    expect(actions).toMatch(
+      /if \(!prescriber\.orientationCompletedAt\) \{[\s\S]*?orientationRequired: true as const,[\s\S]*?\n    \}/,
+    );
+  });
+
+  it("keeps the required assessment-created audit inside the completion transaction", () => {
+    const actions = readFileSync(ASSESSMENT_ACTIONS_PATH, "utf8");
+    const transactionStart = actions.indexOf(
+      "const completion = await db.transaction(async (tx) => {",
+    );
+    const transactionEnd = actions.indexOf(
+      "if (!completion.success)",
+      transactionStart,
+    );
+    const transaction = actions.slice(transactionStart, transactionEnd);
+    const afterTransaction = actions.slice(transactionEnd);
+
+    expect(transactionStart).toBeGreaterThan(-1);
+    expect(transactionEnd).toBeGreaterThan(transactionStart);
+    expect(transaction).toContain("await writeAuditWith(tx, {");
+    expect(transaction).toContain('"assessment.created.claim_drafted"');
+    expect(transaction).toContain('"assessment.created.no_claim"');
+    expect(afterTransaction).not.toContain('action: "assessment.created.');
   });
 });

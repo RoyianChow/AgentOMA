@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "candidate": "dcaab91f9adba7457a85214d51d1614c8560f404",
+  "environment": "DETACHED_EXACT_CANDIDATE_WITH_SYNTHETIC_BUILD_ONLY_ENV",
+  "gates": [
+    {
+      "command": "npx tsc --noEmit",
+      "startedAtUtc": "2026-08-02T06:45:25.3340924Z",
+      "endedAtUtc": "2026-08-02T06:45:39.3484457Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "command": "npm run lint",
+      "startedAtUtc": "2026-08-02T06:45:39.3537850Z",
+      "endedAtUtc": "2026-08-02T06:46:06.0562148Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "command": "npm run test:pure",
+      "startedAtUtc": "2026-08-02T06:46:06.0562148Z",
+      "endedAtUtc": "2026-08-02T06:46:19.8672585Z",
+      "exitCode": 0,
+      "status": "PASS",
+      "testFilesPassed": 13,
+      "testFilesTotal": 13,
+      "testsPassed": 123,
+      "testsTotal": 123,
+      "skippedOrFocusedTests": 0
+    },
+    {
+      "command": "npm run build",
+      "startedAtUtc": "2026-08-02T06:46:19.8796387Z",
+      "endedAtUtc": "2026-08-02T06:47:12.7585175Z",
+      "exitCode": 0,
+      "status": "PASS",
+      "environmentValues": "NON_ROUTABLE_SYNTHETIC_BUILD_ONLY_VALUES; VALUES NOT RETAINED"
+    }
+  ],
+  "preservedFailedAttempt": {
+    "command": "npm run build",
+    "startedAtUtc": "2026-08-02T06:44:13.5476741Z",
+    "endedAtUtc": "2026-08-02T06:44:17.7715538Z",
+    "exitCode": 1,
+    "status": "BLOCKED",
+    "safeReason": "DETACHED_WORKTREE_MISSING_REQUIRED_BUILD_ENV",
+    "resolution": "Reran with explicit non-routable synthetic values; no production credential was copied or used."
+  },
+  "productionCredentialsUsed": false,
+  "externalServicesContacted": false
+}

@@ -178,7 +178,6 @@ export const assessmentCompletionBoundarySchema = z
       .optional(),
     clinicalViewer: clinicalViewerEvidenceSchema,
     ltc: ltcFactsSchema.optional(),
-    orientationOverrideReason: z.string().max(2_000).optional(),
   })
   .strict();
 

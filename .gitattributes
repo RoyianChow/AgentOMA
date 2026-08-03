@@ -1,0 +1,3 @@
+# Task 02 evidence hashes are byte-level records. Keep their checkout bytes
+# stable across Windows and Unix so the documented SHA-256 values remain valid.
+docs/p0/task-02/evidence/**/*.json text eol=lf

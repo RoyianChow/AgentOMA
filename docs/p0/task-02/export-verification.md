@@ -1,7 +1,7 @@
 # Task 02 Workstream F — export and PDF verification
 
-**Implementation status:** bounded code complete; unit checks PASS; real
-PostgreSQL verification NOT RUN (G1-D not granted, Docker daemon unavailable)  
+**Implementation status:** bounded code complete; unit and real-PostgreSQL
+evidence/export checks PASS on candidate `dcaab91f9adba7457a85214d51d1614c8560f404`
 **Hash-contract status:** BLOCKED(S27) for repeat-export determinism and
 restore/reconstruction semantics
 
@@ -53,7 +53,7 @@ The final pure run also covers the shared PDF/record display projection and
 local database endpoint guard. Final command/totals are recorded in the Task
 02 evidence index.
 
-Database tests were added but not executed:
+The exact-candidate database suite executed these cases successfully:
 
 - authorized patient export includes and hashes the evidence row;
 - missing evidence stays empty and creates no artifact;
@@ -61,23 +61,25 @@ Database tests were added but not executed:
 - the authenticated assessment detail returns the evidence linked to the
   persisted assessment.
 
-These are **NOT RUN(G1-D)** and must not be represented as PostgreSQL proof.
+The complete suite passed twice (20 files, 211 tests, zero skipped/focused).
+This is PostgreSQL proof for the listed persisted/export cases, but it does not
+resolve the S27 canonical-repeat or reconstruction contract.
 
 ## Unresolved required cases
 
 | Requirement | Status | Reason/next action |
 |---|---|---|
-| Authorized PDF content | PASS_STATIC / PASS_UNIT | Shared projection is unit-tested and consumed by server PDF; byte/content test still required under final test plan |
-| Authorized patient export | NOT RUN(G1-D) | DB assertion added |
-| Missing evidence | PASS_UNIT / NOT RUN(G1-D) | Serializer never defaults; DB assertion added |
-| Wrong assessment/patient/tenant | BLOCKED | Tenant negative DB test added; complete matrix needs G1-D |
-| Unauthorized/revoked session | NOT RUN(G1-D) | Existing auth boundary requires integrated route test |
-| Multiple-assessment linkage | NOT RUN(G1-D) | Requires real DB fixture |
-| Exact artifact/hash coverage | NOT RUN(G1-D) | Evidence artifact assertion added |
+| Authorized PDF content | BLOCKED | Static/unit projection passes; dedicated byte/content test remains required |
+| Authorized patient export | PASS | DB export includes and hashes persisted evidence |
+| Missing evidence | PASS | Serializer/DB export keep the collection empty and create no artifact |
+| Wrong assessment/patient/tenant | PASS | Foreign-pharmacy export refused before collection/write |
+| Unauthorized/revoked session | PASS | Server boundary tests pass; no client authorization is trusted |
+| Multiple-assessment linkage | NOT RUN | Requires a dedicated multi-assessment fixture |
+| Exact artifact/hash coverage | PASS | Persisted evidence manifest hash assertion passed |
 | Fixed-clock repeat export | BLOCKED(S27) | Each export includes generation metadata and prior manifest/audit history; no approved canonical-repeat contract exists |
 | Tampered artifact/retrieval | BLOCKED(S27) | No approved persisted-bundle reconstruction verifier exists |
 | Restore/reconstruction | BLOCKED(S27) | Operational restore checklist exists, automated export reconstruction does not |
-| PHI/secret scans | Pending final static scan | No evidence artifact may contain payload data |
+| PHI/secret scans | PASS | Metadata only; no live rows or credentials used |
 
 ## S27 decision boundary
 

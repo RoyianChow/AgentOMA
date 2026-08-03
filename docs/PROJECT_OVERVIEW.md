@@ -4,18 +4,21 @@
 
 **Current stage:** authenticated pilot foundation; **not production-ready**
 
-**Verification at this snapshot:** the current tree is TypeScript-clean,
-ESLint-clean, passes all 110 database-free tests, and completes a production
-build with `/check` statically generated. The last complete database-backed
-suite run on 2026-07-25
-passed 135/135 tests and rebuilt a fresh Docker Postgres database from zero
-through migration `0017`. Supabase is also live through `0017`; post-migration
-inspection reports one Demo Pharmacy, no cross-pharmacy relationships, three
-preserved users with TOTP, and matching patient-wide retention horizons.
-Migration `0018` and its P0-C application code are merged but are not yet live.
-Task 02's bounded static review found two release-blocking protected defects:
-the required assessment-created audit is post-commit/best-effort, and an
-undecided admin orientation override can bypass the hard gate.
+**Verification at this snapshot:** exact candidate
+`dcaab91f9adba7457a85214d51d1614c8560f404` is TypeScript- and ESLint-clean,
+passes 123 database-free tests, completes a production build, and passed the
+complete 211-test real-PostgreSQL suite twice with zero skipped/focused tests.
+Fresh Docker replay installed all 19 migrations through `0018`; audit-failure
+atomicity, tenant isolation, immutability, concurrency, red-flag zero-claim,
+completed-referral separation, reference-derived persistence, and evidence
+export cases passed. Supabase remains live only through `0017`; `0018` is not
+authorized or applied live. The separate predecessor-upgrade/restart harness
+has now had two exact-candidate G1-D runs. Both failed closed before migration
+or fixture writes (`DATABASE_IDENTITY_DENIED` on `dd503a14…`, then
+`DATABASE_CONNECTIVITY_DENIED` on `5b576b7b…`); both teardown checks passed.
+Task 02 remains blocked on execution of the completed safe diagnostic under a
+new exact-candidate proof, S27 export reconstruction, independent Task 11 review,
+recovery, G1-L, live parity, and G4.
 
 AgentOMA supports Ontario pharmacy minor-ailment services. The Ministry of Health Executive Officer Notice effective July 1, 2026 is the source of truth for covered ailment groups, claim maximums, fees, PINs, and billing rules. See [`COMPLIANCE.md`](COMPLIANCE.md) for traceability and [`NEXT_STEPS.md`](NEXT_STEPS.md) for the remaining go-live work.
 
@@ -51,7 +54,7 @@ Next.js route groups isolate layouts without changing URLs:
 | ORM and migrations | Drizzle ORM; file-based migrations only |
 | Authentication | better-auth 1.6 with Drizzle, email/password, TOTP, database sessions and rate limits |
 | Validation | Zod and `@t3-oss/env-nextjs` |
-| Tests | Vitest; database tests use a fresh Docker Postgres on port 5433 |
+| Tests | Vitest; from-zero database tests use Docker Postgres on port 5433; the separately gated predecessor/restart harness uses port 5434 and a disposable named volume |
 | Exports | Server-rendered claim handoff, audit CSV/PDF, assessment-record PDF; browser-generated public self-check PDF |
 
 Firebase is no longer part of the stack. PHI and operational data use Canadian-region Postgres. Future Rx/referral document storage is planned for Supabase Storage but is not implemented.
@@ -133,7 +136,9 @@ The bounded Task 02 Workstream F implementation upgrades the server-only
 complete export to schema version 3 and adds the immutable P0-C evidence row to
 the JSON bundle, manifest artifact hashes, record view, and assessment PDF. It
 serializes persisted evidence only and never recomputes billing or clinical
-state. Its database-backed verification remains gated with migration `0018`.
+state. Its persisted-evidence database/export cases pass on the exact Docker
+candidate; canonical repeat-export and reconstruction semantics remain blocked
+under S27.
 
 ## Autonomous pharmacy program (planned)
 
@@ -183,7 +188,9 @@ route, environment, or product rename from the briefs.
 - `MOCK_PHARMACY_ID` has been removed.
 - The application runs through a non-owner database role so audit and claim-draft grants are effective.
 
-There is currently an audited pharmacy-admin break-glass path around the orientation record. That policy conflicts with the intended hard eligibility gate and must be resolved before production; see [`NEXT_STEPS.md`](NEXT_STEPS.md).
+Orientation is an unconditional server-side billability gate. No role can
+override a missing recorded completion; a pharmacy admin must first record the
+module completion on the prescriber's profile.
 
 ## Data model
 
@@ -253,9 +260,8 @@ Authentication data:
 
 ## Migration state
 
-The live Supabase database and last verified from-zero Docker database are
-applied through `0017`. The repository migration chain continues through
-`0018`:
+The live Supabase database remains applied through `0017`. The exact-candidate
+from-zero Docker database was verified through repository migration `0018`:
 
 | Range | Purpose |
 |---|---|
@@ -270,7 +276,7 @@ applied through `0017`. The repository migration chain continues through
 | `0015_tidy_luke_cage` | Deleted the two approved disposable TEST tenants, preserved Demo auth/TOTP rows, and enforced one pharmacy |
 | `0016_brown_lightspeed` | Patient-wide retention, export manifests, holds, correction overlays, deliberate destruction, restore evidence, governance audit/reporting |
 | `0017_tense_pandemic` | Follow-up plans/attempts, immutable supersession, one-active-plan constraint, retention propagation, and app-role grants |
-| `0018_clever_mister_fear` | Immutable P0-C billability-evidence sidecar and its application-role immutability grants; checked in but pending live migration and fresh-Docker verification |
+| `0018_clever_mister_fear` | Immutable P0-C billability-evidence sidecar and application-role immutability grants; fresh-Docker verified, pending predecessor-upgrade/recovery/live gates |
 
 Use `db:generate`, review the SQL, then `db:migrate`. Never use `db:push`.
 `db:seed` is reference-only. `db:seed:demo` attaches synthetic records to
@@ -280,14 +286,14 @@ idempotent.
 ## What is complete and what is not
 
 Implemented work is recorded in [`COMPLETED_WORK.md`](COMPLETED_WORK.md). The
-highest-priority operational step is reviewing and applying migration `0018`,
-but it must not be applied for promotion until the protected assessment-audit
-atomicity defect and unauthorized orientation override are remediated under
-separate approval. Then prove the P0-C completion boundary against fresh Docker
-and live Supabase. The P0-C evidence export projection is implemented but not
-real-PostgreSQL verified. Remaining blockers include LTC billing guidance,
-export-hash/reconstruction contract S27, Task 11 review, and the first isolated
-restore drill. See
+first G1-D run of the `0017 → 0018`/restart harness failed closed before any
+migration or fixture write; its evidence and teardown are preserved. The
+highest-priority Task 02 step is completing the database-free harness
+remediation, then obtaining a new exact-candidate G1-D for one rerun. That is
+followed by the S27 canonical export/reconstruction decision. After those,
+independent Task 11 review and recovery evidence are required before any exact
+G1-L request. Remaining product blockers also include LTC billing guidance and
+the first isolated restore drill. See
 [`NEXT_STEPS.md`](NEXT_STEPS.md) for an ordered plan and
 [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) for decisions that must come from a
 pharmacist or ODB.

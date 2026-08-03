@@ -81,13 +81,9 @@ function emptyClinicalForm() {
 
 export default function AssessmentWorkspace({
   session,
-  canOverrideOrientation = false,
   remoteVirtualEligible,
 }: {
   session: IntakeSessionDTO;
-  /** True only for pharmacy admins — gates the audited orientation override
-   * affordance. The override is ALSO re-verified server-side. */
-  canOverrideOrientation?: boolean;
   /** Non-PHI pharmacy configuration resolved from seeded reference data. */
   remoteVirtualEligible: boolean;
 }) {
@@ -161,12 +157,6 @@ export default function AssessmentWorkspace({
   const [claimResult, setClaimResult] = useState<ClaimResult | null>(null);
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
 
-  // Admin orientation-override state. `orientationBlock` is set when the server
-  // refuses on the gate AND the current user can override; the admin then types
-  // a reason and re-submits with it.
-  const [orientationBlock, setOrientationBlock] = useState(false);
-  const [overrideReason, setOverrideReason] = useState("");
-
   /**
    * Clear every patient/encounter-specific browser value. The read-only claim
    * result may remain only after successful persistence because it is the
@@ -204,8 +194,6 @@ export default function AssessmentWorkspace({
         setSameAilmentPrescription,
         setVerificationConsultation,
         setPatientSelfReportLocation,
-        setOrientationBlock,
-        setOverrideReason,
         setError,
       });
 
@@ -330,9 +318,9 @@ export default function AssessmentWorkspace({
     }
   };
 
-  // Core submit. `overrideReason` is only passed on the admin break-glass
-  // re-submit; a normal submit passes nothing and the server enforces the gate.
-  const runSubmit = async (overrideReason?: string) => {
+  // The server independently enforces every billing gate, including the
+  // prescriber's recorded orientation completion.
+  const runSubmit = async () => {
     const dobResult = validateDateOfBirth(dob);
     const displayedIdentifier = healthNumber.trim();
     const healthNumberResult =
@@ -531,20 +519,9 @@ export default function AssessmentWorkspace({
                   : undefined,
             }
           : { isResident: false },
-        orientationOverrideReason: overrideReason,
       });
 
       if (!assessmentRes.success) {
-        // Orientation gate: if THIS user can override, surface the audited
-        // override panel instead of a dead-end error. Otherwise show the error.
-        const orientationRequired =
-          "orientationRequired" in assessmentRes && assessmentRes.orientationRequired;
-        const canOverride =
-          "canOverride" in assessmentRes && assessmentRes.canOverride;
-        if (orientationRequired && canOverride && canOverrideOrientation) {
-          setOrientationBlock(true);
-          return;
-        }
         throw new Error(assessmentRes.error || "Failed to create assessment.");
       }
 
@@ -1523,61 +1500,6 @@ export default function AssessmentWorkspace({
                 </div>
               )}
 
-              {/* Admin orientation override (break-glass). Only appears when the
-                  server refused on the gate AND this user is an admin. It is an
-                  AUDITED override, not a silent bypass. */}
-              {orientationBlock && (
-                <div
-                  style={{
-                    marginTop: "0.75rem",
-                    padding: "1rem",
-                    borderRadius: "var(--radius-md)",
-                    background: "var(--danger-light)",
-                    border: "1px solid var(--danger)",
-                  }}
-                >
-                  <div style={{ fontWeight: 700, color: "var(--danger-text)", marginBottom: "0.4rem" }}>
-                    Orientation not on file
-                  </div>
-                  <p style={{ fontSize: "0.85rem", color: "var(--danger-text)", marginBottom: "0.6rem", lineHeight: 1.45 }}>
-                    The prescribing pharmacist has no recorded OCP Mandatory Orientation
-                    completion. The compliant fix is to record it on their profile. As an
-                    admin you may override this once, with a reason — this is <strong>logged
-                    to the audit trail</strong> and does not change that completing the module
-                    is a billing precondition.
-                  </p>
-                  <label className="form-label">Reason for override (no patient identifiers)</label>
-                  <textarea
-                    className="form-input"
-                    rows={2}
-                    value={overrideReason}
-                    autoComplete="off"
-                    onChange={(e) => setOverrideReason(e.target.value)}
-                    placeholder="e.g. Module completed 2026-07-20, OCP record pending upload"
-                  />
-                  <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.6rem" }}>
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      style={{ background: "var(--danger)", borderColor: "var(--danger)" }}
-                      // Same clinical-viewer attestation gate as the primary
-                      // submit — the break-glass path must not be weaker.
-                      disabled={isSubmitting || !completionFactsReady || !clinicalReady || overrideReason.trim().length < 4}
-                      onClick={() => runSubmit(overrideReason.trim())}
-                    >
-                      {isSubmitting ? "Saving..." : "Override & sign assessment"}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      disabled={isSubmitting}
-                      onClick={() => { setOrientationBlock(false); setOverrideReason(""); }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>

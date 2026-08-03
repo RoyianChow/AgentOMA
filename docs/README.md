@@ -37,10 +37,11 @@ provenance only.
 |---|---|
 | [`tasks/autonomous-pharmacy/README.md`](tasks/autonomous-pharmacy/README.md) | Start here for the role-based task contracts, current allowed work, dependency order, evidence expectations, and promotion boundaries. The task files describe proposed work, not implemented status. |
 | [`task-01/README.md`](task-01/README.md) | Task 01 G1 approval, local synthetic sandbox implementation, controls, runbook, and completed evidence manifest. |
-| [`p0/task-02/current-state-and-gap-analysis.md`](p0/task-02/current-state-and-gap-analysis.md) | Task 02's bounded P0 assessment-readiness review, proven protected defects, gated migration status, and safe next actions. |
+| [`p0/task-02/current-state-and-gap-analysis.md`](p0/task-02/current-state-and-gap-analysis.md) | Task 02's bounded P0 readiness review, scoped defect remediation, gated database status, and safe next actions. |
 | [`p0/task-02/evidence-index.md`](p0/task-02/evidence-index.md) | Task 02 control-by-control evidence map, exact executed commands, and explicit statuses for gated deliverables. |
 | [`p0/task-02/production-handoff.md`](p0/task-02/production-handoff.md) | Task 02's non-promotable stopping point and ordered requirements for safe resumption. |
-| [`p0/task-02/final-report.md`](p0/task-02/final-report.md) | Required final Task 02 status block: overall FAIL, Docker/live NOT RUN, and production promotion blocked. |
+| [`p0/task-02/final-report.md`](p0/task-02/final-report.md) | Task 02 status: from-zero Docker suite PASS; predecessor/restart, live, recovery, Task 11, and promotion remain blocked. |
+| [`p0/task-02/lead-remediation-authorization-2026-08-02.md`](p0/task-02/lead-remediation-authorization-2026-08-02.md) | Royian Chowdhury's narrow authorization for atomic assessment audit persistence and removal of the orientation override. |
 
 ## Agent instructions
 

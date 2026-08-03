@@ -56,8 +56,6 @@ export type SensitiveAssessmentResetters = {
       | "unresolved",
   ) => void;
   setPatientSelfReportLocation: (value: string) => void;
-  setOrientationBlock: (value: boolean) => void;
-  setOverrideReason: (value: string) => void;
   setError: (value: string | null) => void;
 };
 
@@ -97,7 +95,5 @@ export function resetSensitiveAssessmentState(
   setters.setVerificationConsultation("");
   setters.setPatientSelfReportLocation("");
 
-  setters.setOrientationBlock(false);
-  setters.setOverrideReason("");
   setters.setError(null);
 }

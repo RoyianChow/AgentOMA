@@ -1,13 +1,12 @@
 # Completed work
 
-**Verified through:** 2026-07-30
+**Verified through:** 2026-08-02
 
-**Quality snapshot:** the current tree is TypeScript- and ESLint-clean, passes
-95/95 database-free tests, and completes a production build with `/check`
-statically generated. The last complete database-backed run on 2026-07-25
-passed 135/135 tests, including a fresh Docker Postgres migration replay through
-`0017`. Supabase is live through `0017`; repository migration `0018` is pending
-deployment and a new full database-suite run.
+**Quality snapshot:** exact candidate `dcaab91…` is TypeScript- and ESLint-clean,
+passes 123/123 database-free tests, completes a production build, and passed
+211/211 real-PostgreSQL tests twice. Fresh Docker replay installed all 19
+migrations through `0018`. Supabase remains live through `0017`; `0018` is not
+authorized or applied live.
 
 This is the implementation record requested for the project. It describes capabilities present in the repository, not planned work. Remaining items are in [`NEXT_STEPS.md`](NEXT_STEPS.md).
 
@@ -106,7 +105,9 @@ This is the implementation record requested for the project. It describes capabi
 - Added pharmacist profile fields for OCP number, As-of-Right status, orientation completion, and intern/student supervision.
 - Protected `/pharmacist/*`; `src/proxy.ts` provides navigation UX only, while each server action independently verifies session, role, and pharmacy scope.
 - Removed all `MOCK_PHARMACY_ID` usage and derives pharmacy/prescriber identity from the session.
-- Added orientation gating and tests, including supervisor handling for interns/students. An audited admin override currently exists and is explicitly listed as a pre-production decision in [`NEXT_STEPS.md`](NEXT_STEPS.md).
+- Added orientation gating and tests, including supervisor handling for
+  interns/students. The 2026-08-02 G3 decision makes this a hard server gate:
+  no role, including pharmacy admin, can override a missing orientation record.
 
 ## Portal, audit, and settings
 
@@ -219,11 +220,13 @@ This is the implementation record requested for the project. It describes capabi
   errors.
 - Added pure and real-Postgres coverage for the schemas, workflow gates,
   evidence persistence, immutability, tenant isolation, and failure atomicity.
-- The application code and `0018_clever_mister_fear` migration are merged, but
-  this capability is not live until `0018` is reviewed, migrated, and verified.
+- The application code and `0018_clever_mister_fear` migration are merged and
+  fresh-Docker verified, but this capability is not live until predecessor,
+  recovery, G1-L, apply, and post-apply verification gates pass.
   Task 02's bounded Workstream F now includes the sidecar in server-only export
   schema v3, manifest artifact hashing, audit record view, and assessment PDF.
-  Database-backed verification remains gated and not run.
+  Persisted evidence/export database cases pass; S27 canonical reconstruction
+  remains blocked.
 
 ## Task 02 bounded production-readiness work
 
@@ -237,17 +240,43 @@ This is the implementation record requested for the project. It describes capabi
   raw export-audit exception logging with the payload-free failure record.
 - Restricted destructive test PostgreSQL to loopback and the exact disposable
   database endpoint; pure negative tests fail closed for every other URL.
-- The bounded code is TypeScript/lint/build clean and the pure suite is
-  110/110. Task 02 is **not complete or production-ready**: Docker/live phases
-  were not authorized, S27 is unresolved, and static review proved protected
-  audit-atomicity and orientation-gate defects.
+- Under scoped lead authorization, moved the required assessment-created audit
+  into the completion transaction and removed the admin orientation bypass from
+  the strict server boundary and client workspace. Added static/pure tombstones
+  and a real-PostgreSQL required-audit failure-injection test.
+- Exact candidate `dcaab91…` is TypeScript/lint/build clean, passes 123 pure
+  tests, and passed the complete 211-test PostgreSQL suite twice. Required-audit
+  rollback, isolation, immutability, concurrency, red-flag zero-claim,
+  referral separation, reference-derived persistence, and export evidence are
+  proven. Task 02 remains **blocked and not production-ready** because
+  predecessor/restart-persistence, S27, Task 11, recovery, live, and promotion
+  controls remain unresolved.
+- Under a separate implementation-only authorization, added a fail-closed
+  predecessor-upgrade/restart harness: isolated loopback PostgreSQL 16,
+  internal network, named disposable volume, exact G1-D/candidate/hash checks,
+  Drizzle-through-0017 migration view, synthetic predecessor rows, unmodified
+  0018 application, preservation/catalog/grant checks, restart verification,
+   and exact finally-block teardown. Its database-free contract passes. The
+   first authorized runtime attempt on `dd503a14…` failed closed at the initial
+   database identity probe before migration or fixture writes, and teardown
+   passed. The evidence is preserved; a remediated clean candidate requires a
+   fresh exact-candidate G1-D.
+- Under a fresh exact local G1-D from Royian Chowdhury, the remediated candidate
+  `5b576b7b…` ran once and failed closed with `DATABASE_CONNECTIVITY_DENIED`
+  before database migration or synthetic fixture writes. Its evidence is
+  preserved, its exact Docker resources were removed, and it cannot be rerun.
+  No live, PHI, external, billing, or protected-surface action occurred.
+- Added a test-only, bounded readiness diagnostic for the next candidate. It
+  distinguishes loopback TCP denial from PostgreSQL protocol denial without
+  sending SQL before the TCP probe or retaining raw errors. The pure suite,
+  TypeScript, lint, and production build pass; its Docker execution remains
+  **NOT RUN** until a fresh exact G1-D exists.
 
 ## Verification and regression coverage
 
 - Vitest runs pure unit tests and real-Postgres integration tests.
 - Docker Postgres uses port 5433, is guarded against non-local database URLs, and rebuilds the migration chain from zero.
 - Tests cover claim derivation combinations, refusal paths, LTC behaviour, remote-virtual tiers, retention, one-per-day, concurrent mutex enforcement, claim persistence/supersession, follow-up completion/supersession/concurrency/export, invitations/auth data, audit grants/triggers, and red-flag zero-claim behaviour.
-- TypeScript, ESLint, and the production build are clean for the current tree.
-  The last fully recorded database-backed suite has 135 passing tests through
-  `0017`; 110 database-free tests currently run independently through
-  `npm run test:pure`.
+- TypeScript, ESLint, and production build are clean for the exact candidate.
+  The recorded suites are 123 database-free tests and 211 complete tests
+  through migration `0018`, with zero skipped/focused tests.

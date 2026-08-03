@@ -1,5 +1,18 @@
 # Task 02 migration, verification, and recovery runbook
 
+> The permitted database-free diagnosis is now implemented and pure-tested. It
+> reports `LOOPBACK_TCP_DENIED` before a PostgreSQL client exists, or
+> `DATABASE_PROTOCOL_DENIED` only after the exact loopback TCP probe succeeds.
+> It does not authorize execution; the resulting candidate still needs a fresh
+> exact G1-D.
+
+> **Current predecessor-harness status:** candidate `5b576b7b…` already used its
+> exact local G1-D and failed closed with `DATABASE_CONNECTIVITY_DENIED` before
+> migration or fixture writes; teardown passed. Do not run the named-volume
+> command for either failed candidate. It is available only after a separately
+> authorized database-free diagnosis, a new clean candidate, and a fresh exact
+> G1-D.
+
 This is an operator runbook, not approval. **Do not execute a mutating command
 unless the gate record names the exact candidate commit, migration hash and
 environment.** `db:push`, manual SQL editors, migration-history edits, live
@@ -14,6 +27,9 @@ synthetic writes, and ambiguous retries are prohibited.
 - Reviewed chain digest:
   `ac7202c197b876b143b7b83ec04cbe65f6b5116f53674ff95bf73e05aaade4bb`
 - Configured live command ID: `npm:db:migrate`
+- Predecessor harness command ID: `npm:test:db:upgrade`
+- Harness implementation authority:
+  `lead-predecessor-harness-implementation-authorization-2026-08-02.md`
 
 Recompute these from the frozen candidate. A mismatch invalidates approval and
 stops the run.
@@ -63,22 +79,62 @@ version, candidate SHA, migration/chain hashes, and safe catalog/count results.
 Never persist raw SQL errors, connection URLs, fixture row contents, or clinical
 payloads.
 
-After the test, restart PostgreSQL and run read-only catalog/invariant checks.
-Confirm the trigger remains enabled and migration head/hash is unchanged.
+After the test, run read-only catalog/invariant checks before teardown. This
+tmpfs-backed from-zero environment **cannot provide restart-persistence proof**:
 
-### Predecessor-upgrade run
+- restarting the container clears its required tmpfs database; and
+- PostgreSQL is PID 1 in `postgres:16-alpine`, so `pg_ctl restart` stops the
+  container before PostgreSQL can restart.
 
-The current generic Vitest setup always rebuilds from zero. It is not an
-independent predecessor-upgrade proof. Until a reviewed local-only runner can:
+Both behaviors were observed and retained in
+`evidence/runs/dcaab91f9adba7457a85214d51d1614c8560f404/restart-persistence.json`.
+Do not weaken this service's tmpfs, silently add a volume, or relabel reload as
+restart. A separate persistence-capable harness is now implemented as described
+below, but has not been executed and requires a new exact-candidate G1-D.
 
-1. migrate an empty disposable instance through 0017;
-2. seed unmistakably synthetic pre-migration patient/assessment rows;
-3. capture safe counts/catalog fingerprint;
-4. apply the unmodified repository 0018 once through Drizzle; and
-5. compare preserved counts, new objects, grants and zero evidence rows,
+### Predecessor-upgrade and restart-persistence run
 
-report predecessor upgrade as **NOT RUN**, not PASS. Do not simulate it by
-editing 0018 or manually changing `__drizzle_migrations`.
+The separately authorized implementation is:
+
+- Compose file: `docker-compose.task-02-upgrade.yml`
+- Runner: `tools/task-02/run-predecessor-upgrade-harness.ts`
+- Database: PostgreSQL 16 at `127.0.0.1:5434`, synthetic-only
+- Resources: `agentoma-task02-upgrade-db`,
+  `agentoma-task02-upgrade-network`, `agentoma-task02-upgrade-data`
+- Storage/network: one disposable named volume and an internal-only network
+- Evidence: `evidence/runs/<candidate>/predecessor-upgrade-run.json`
+
+It does not weaken or reuse the tmpfs service. It creates an OS-temporary,
+byte-identical Drizzle migration view containing `0000` through `0017`, then
+uses the same `drizzle-orm/postgres-js/migrator` used by the repository test
+setup. After synthetic predecessor rows are inserted, the runner points that
+same migrator at the unmodified repository folder; Drizzle applies `0018` once
+from the recorded predecessor. It never inserts into or edits
+`drizzle.__drizzle_migrations` itself.
+
+Execution requires the exact JSON G1-D record documented in
+[`g1-d-predecessor-upgrade-approval-contract.md`](g1-d-predecessor-upgrade-approval-contract.md).
+The old `dcaab91…` G1-D is expired and does not authorize this new harness.
+Without a matching record, the command denies before its first Docker command.
+The record also binds the exact locally installed image ID; startup uses
+`--pull never`, so the proof cannot contact an image registry.
+
+After freezing the new clean candidate and obtaining G1-D, run only:
+
+```powershell
+npm run test:db:upgrade -- --approval-file <absolute-path-to-approval.json>
+```
+
+Do not manually run Compose lifecycle commands for this service. The runner
+owns startup, migration, restart, evidence capture and teardown in one process.
+It refuses stale resources before creation, verifies the same container ID and
+an increased restart count, and removes only resources whose exact names and
+synthetic Task 02 labels prove ownership. The first approved run for
+`dd503a14…` failed closed at the initial database identity probe and tore down
+successfully; see `predecessor-upgrade-failure-dd503a14-2026-08-02.md`.
+Do not rerun that candidate. The remediation adds only bounded read-only
+loopback readiness and granular safe diagnostic codes; its new clean candidate
+requires a new exact G1-D before runtime execution.
 
 ### Docker failure and teardown
 
@@ -162,6 +218,7 @@ against live rows.
 
 Update the evidence manifest, Task 11 capability/release record, compliance and
 handoff status. Promotion requires G4 from the independent reviewers against
-the exact evidence manifest and source commit. Current protected defects in
-assessment audit atomicity and orientation override must be remediated under
-separate approval before a production-readiness claim is possible.
+the exact evidence manifest and source commit. Assessment audit atomicity and
+the orientation hard gate were remediated under the scoped 2026-08-02 lead
+approval; their real-PostgreSQL tests must pass under G1-D before any
+production-readiness claim is possible.

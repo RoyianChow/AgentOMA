@@ -5,10 +5,20 @@ export type ValidationResult<T> =
 const ONTARIO_HEALTH_CARD_PATTERN = /^\d{10}[A-Z]{0,2}$/;
 const NATIVE_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
+/**
+ * Normalization is deliberately limited to comparison/storage hygiene. It is
+ * not an eligibility decision and must never be used to invent a missing
+ * health-card value or to emit the value in logs, URLs, or client telemetry.
+ */
 export function normalizeOntarioHealthCard(value: string): string {
   return value.replace(/[\s-]+/g, "").toUpperCase();
 }
 
+/**
+ * The server boundary accepts only the public-service identifier shape the
+ * workflow supports. Payment is still decided by HNS; local validation merely
+ * prevents malformed evidence from reaching claim assembly.
+ */
 export function validateOntarioHealthCard(value: string): ValidationResult<string> {
   const normalized = normalizeOntarioHealthCard(value);
 
@@ -29,6 +39,10 @@ function utcCalendarDate(year: number, month: number, day: number): Date {
   return date;
 }
 
+/**
+ * Construct the date in UTC so a valid calendar date cannot shift across a
+ * day boundary when the browser/server timezone differs from the patient card.
+ */
 export function validateDateOfBirth(
   value: string,
   today = new Date(),

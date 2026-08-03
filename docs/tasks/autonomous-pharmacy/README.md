@@ -48,8 +48,9 @@ Task 11: review/release controls ─────┘                │
 - Task 01 repository discovery may start, but implementation is approval-gated.
 - Task 11 documentation and control design may proceed before Task 01; runnable
   synthetic checks use the Task 01 environment once it exists.
-- Task 02 may perform bounded inspection and export work now. Migration
-  execution and live writes remain separately approval-gated.
+- Task 02 may perform bounded inspection, export work, and the authorized
+  test-only predecessor-harness implementation. Running that harness still
+  requires a new exact-candidate G1-D; live writes remain separately G1-L-gated.
 - Tasks 03–10 may perform the discovery, design, contracts, and other work each
   brief explicitly permits. Runnable synthetic prototypes require Task 01.
 - No task may connect an experiment to production merely because its tests pass.
