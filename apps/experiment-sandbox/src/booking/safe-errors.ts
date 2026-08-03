@@ -139,6 +139,13 @@ export const TASK04_SAFE_ERROR_SUBSETS = Object.freeze({
     "TEMPORARILY_UNAVAILABLE",
     "FEATURE_DISABLED",
   ],
+  "queue:read": [
+    "REQUEST_INVALID",
+    "NOT_AUTHORIZED",
+    "RATE_LIMIT_REACHED",
+    "TEMPORARILY_UNAVAILABLE",
+    "FEATURE_DISABLED",
+  ],
 } as const satisfies Readonly<
   Record<string, readonly Task04SafeErrorCode[]>
 >);

@@ -152,3 +152,43 @@ export function authorizeStaffBookingConfirmation(
 
   return authorized();
 }
+
+export const staffPharmacistQueueFactsSchema = z
+  .object({
+    actorType: z.literal("synthetic_staff"),
+    actorReference: opaqueReferenceSchema,
+    sessionReference: opaqueReferenceSchema,
+    sessionActive: z.boolean(),
+    pharmacyId: sandboxPharmacyIdSchema,
+    permissions: z
+      .array(z.literal("queue:read"))
+      .max(1)
+      .refine((values) => new Set(values).size === values.length),
+  })
+  .strict();
+
+export type StaffPharmacistQueueFacts = z.infer<
+  typeof staffPharmacistQueueFactsSchema
+>;
+
+export function authorizeStaffPharmacistQueue(
+  authoritativeContext: Task04AuthoritativeTransactionContext,
+  factsInput: unknown,
+): Task04AuthorizationResult {
+  try {
+    assertTask04AuthoritativeContext(authoritativeContext);
+  } catch {
+    return denied();
+  }
+  const facts =
+    staffPharmacistQueueFactsSchema.safeParse(factsInput);
+  if (
+    !facts.success ||
+    !facts.data.sessionActive ||
+    facts.data.pharmacyId !== authoritativeContext.pharmacyId ||
+    !facts.data.permissions.includes("queue:read")
+  ) {
+    return denied();
+  }
+  return authorized();
+}

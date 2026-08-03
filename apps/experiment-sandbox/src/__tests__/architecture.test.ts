@@ -13,6 +13,10 @@ const slotReferenceSecretName =
   /TASK04_PUBLIC_SLOT_REFERENCE_SECRET|publicSlotReferenceSecret/;
 const protectedBookingBoundaryName =
   /capabilityReference|serverSessionBinding|credentialDigest|TASK04_SYNTHETIC_BOOKING_(?:CREATE|CONFIRM)_AUTHORITY|executeTask04Booking(?:Retrieve|Confirm)/;
+const protectedQueueBoundaryName =
+  /executeTask04PharmacistQueue|TASK04_SYNTHETIC_PHARMACIST_QUEUE_AUTHORITY|authorizeStaffPharmacistQueue|staffPharmacistQueueFactsSchema|publicSlotReferenceSecret|TASK04_PUBLIC_SLOT_REFERENCE_SECRET/;
+const prohibitedQueueClientDataName =
+  /(?:subjectReference|actorReference|caregiverReference|delegationGrant|syntheticContactReference|credentialDigest|confirmationDeadlineUtc|configuredCapacity|remainingCapacity)/;
 
 function importedModuleSpecifiers(source: string): string[] {
   return [
@@ -27,6 +31,18 @@ function isServerOwnedModuleSpecifier(specifier: string): boolean {
     /(?:^|\/)env\/server(?:$|[./])/.test(specifier) ||
     /(?:^|\/)db(?:\/|$)/.test(specifier) ||
     /(?:^|\/)public-slot-reference(?:$|[./])/.test(specifier)
+  );
+}
+
+function isQueueServerOwnedModuleSpecifier(
+  specifier: string,
+): boolean {
+  return (
+    isServerOwnedModuleSpecifier(specifier) ||
+    /(?:^|\/)booking\/authorization(?:$|[./])/.test(
+      specifier,
+    ) ||
+    /(?:^|\/)pharmacist-queue(?:$|[./])/.test(specifier)
   );
 }
 
@@ -159,6 +175,65 @@ describe("sandbox import and storage boundary", () => {
       "../db/booking-confirm",
     ]) {
       expect(isServerOwnedModuleSpecifier(forbiddenImport)).toBe(true);
+    }
+  });
+
+  it("keeps the pharmacist queue implementation and sensitive source records server-only", () => {
+    const queueModules = [
+      join(
+        sourceRoot,
+        "db",
+        "pharmacist-queue.ts",
+      ),
+      join(
+        sourceRoot,
+        "db",
+        "pharmacist-queue-reference.ts",
+      ),
+      join(sourceRoot, "booking", "authorization.ts"),
+    ];
+    for (const queueModule of queueModules) {
+      expect(statSync(queueModule).isFile()).toBe(true);
+      expect(
+        clientModuleDirective.test(
+          readFileSync(queueModule, "utf8"),
+        ),
+      ).toBe(false);
+    }
+
+    const clientFiles = filesUnder(sourceRoot)
+      .filter((file) => /\.(ts|tsx)$/.test(file))
+      .filter((file) =>
+        clientModuleDirective.test(readFileSync(file, "utf8")),
+      );
+    const offenders = clientFiles.flatMap((file) => {
+      const source = readFileSync(file, "utf8");
+      return [
+        ...(protectedQueueBoundaryName.test(source)
+          ? [`${relative(sourceRoot, file)}:queue-authority`]
+          : []),
+        ...(prohibitedQueueClientDataName.test(source)
+          ? [`${relative(sourceRoot, file)}:complete-source-data`]
+          : []),
+        ...importedModuleSpecifiers(source)
+          .filter(isQueueServerOwnedModuleSpecifier)
+          .map(
+            (specifier) =>
+              `${relative(sourceRoot, file)}:${specifier}`,
+          ),
+      ];
+    });
+    expect(offenders).toEqual([]);
+
+    for (const forbiddenImport of [
+      "../db/pharmacist-queue",
+      "../db/pharmacist-queue-reference",
+      "../booking/authorization",
+      "../env/server",
+    ]) {
+      expect(
+        isQueueServerOwnedModuleSpecifier(forbiddenImport),
+      ).toBe(true);
     }
   });
 
