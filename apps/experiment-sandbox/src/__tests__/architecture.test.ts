@@ -1,5 +1,17 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import {
+  existsSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+} from "node:fs";
+import {
+  dirname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+  sep,
+} from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
@@ -51,6 +63,94 @@ function filesUnder(directory: string): string[] {
     const path = join(directory, entry.name);
     return entry.isDirectory() ? filesUnder(path) : [path];
   });
+}
+
+type Task04ClientGraphFileSystem = Readonly<{
+  readSource: (file: string) => string;
+  fileExists: (file: string) => boolean;
+}>;
+
+function resolveLocalTypeScriptModule(
+  importer: string,
+  specifier: string,
+  fileSystem: Task04ClientGraphFileSystem,
+): string | undefined {
+  if (!specifier.startsWith(".")) return undefined;
+  const unresolvedPath = resolve(dirname(importer), specifier);
+  const candidates = /\.(?:ts|tsx)$/.test(specifier)
+    ? [unresolvedPath]
+    : [
+        `${unresolvedPath}.ts`,
+        `${unresolvedPath}.tsx`,
+        join(unresolvedPath, "index.ts"),
+        join(unresolvedPath, "index.tsx"),
+      ];
+  return candidates.find(fileSystem.fileExists);
+}
+
+function pathIsWithin(root: string, candidate: string): boolean {
+  const pathFromRoot = relative(resolve(root), resolve(candidate));
+  return (
+    pathFromRoot === "" ||
+    (!isAbsolute(pathFromRoot) &&
+      pathFromRoot !== ".." &&
+      !pathFromRoot.startsWith(`..${sep}`))
+  );
+}
+
+function task04QueueClientGraphViolations(
+  entryModules: readonly string[],
+  options: Readonly<{
+    sourceRoot: string;
+    fileSystem: Task04ClientGraphFileSystem;
+    isForbiddenLocalModule: (file: string) => boolean;
+  }>,
+): string[] {
+  const pending = [
+    ...entryModules.map((entryModule) => resolve(entryModule)),
+  ];
+  const visited = new Set<string>();
+  const violations: string[] = [];
+
+  while (pending.length > 0) {
+    const currentModule = pending.pop()!;
+    if (visited.has(currentModule)) continue;
+    visited.add(currentModule);
+    const source = options.fileSystem.readSource(currentModule);
+    const sourceLabel = relative(options.sourceRoot, currentModule);
+
+    if (protectedQueueBoundaryName.test(source)) {
+      violations.push(`${sourceLabel}:queue-authority`);
+    }
+    if (prohibitedQueueClientDataName.test(source)) {
+      violations.push(`${sourceLabel}:complete-source-data`);
+    }
+
+    for (const specifier of importedModuleSpecifiers(source)) {
+      const localModule = resolveLocalTypeScriptModule(
+        currentModule,
+        specifier,
+        options.fileSystem,
+      );
+      if (localModule === undefined) {
+        if (isQueueServerOwnedModuleSpecifier(specifier)) {
+          violations.push(`${sourceLabel}:${specifier}`);
+        }
+        continue;
+      }
+      if (!pathIsWithin(options.sourceRoot, localModule)) {
+        violations.push(`${sourceLabel}:production-local:${specifier}`);
+        continue;
+      }
+      if (options.isForbiddenLocalModule(localModule)) {
+        violations.push(`${sourceLabel}:forbidden-local:${specifier}`);
+        continue;
+      }
+      pending.push(localModule);
+    }
+  }
+
+  return violations.sort();
 }
 
 describe("sandbox import and storage boundary", () => {
@@ -225,6 +325,39 @@ describe("sandbox import and storage boundary", () => {
     });
     expect(offenders).toEqual([]);
 
+    const queueUiRoot = join(
+      sourceRoot,
+      "app",
+      "pharmacist-queue",
+    );
+    const queueClientEntryModules = filesUnder(queueUiRoot)
+      .filter((file) => /\.(ts|tsx)$/.test(file))
+      .filter((file) =>
+        clientModuleDirective.test(readFileSync(file, "utf8")),
+      );
+    const forbiddenQueueClientModules = new Set([
+      join(sourceRoot, "booking", "authorization.ts"),
+      join(sourceRoot, "booking", "config.ts"),
+      join(queueUiRoot, "actions.ts"),
+      join(queueUiRoot, "queue-server.ts"),
+    ]);
+    expect(
+      task04QueueClientGraphViolations(
+        queueClientEntryModules,
+        {
+          sourceRoot,
+          fileSystem: {
+            readSource: (file) => readFileSync(file, "utf8"),
+            fileExists: existsSync,
+          },
+          isForbiddenLocalModule: (file) =>
+            pathIsWithin(join(sourceRoot, "db"), file) ||
+            file === join(sourceRoot, "env", "server.ts") ||
+            forbiddenQueueClientModules.has(file),
+        },
+      ),
+    ).toEqual([]);
+
     for (const forbiddenImport of [
       "../db/pharmacist-queue",
       "../db/pharmacist-queue-reference",
@@ -235,6 +368,112 @@ describe("sandbox import and storage boundary", () => {
         isQueueServerOwnedModuleSpecifier(forbiddenImport),
       ).toBe(true);
     }
+
+    const queueClient = join(
+      queueUiRoot,
+      "queue-workspace.tsx",
+    );
+    const queueAction = join(queueUiRoot, "actions.ts");
+    const queuePage = join(queueUiRoot, "page.tsx");
+    const queueServer = join(queueUiRoot, "queue-server.ts");
+    for (const queueUiFile of [
+      queueClient,
+      queueAction,
+      queuePage,
+      queueServer,
+    ]) {
+      expect(statSync(queueUiFile).isFile()).toBe(true);
+    }
+
+    const clientSource = readFileSync(queueClient, "utf8");
+    const actionSource = readFileSync(queueAction, "utf8");
+    const pageSource = readFileSync(queuePage, "utf8");
+    const serverSource = readFileSync(queueServer, "utf8");
+    expect(clientModuleDirective.test(clientSource)).toBe(true);
+    expect(actionSource).toMatch(
+      /^\s*["']use server["'];/m,
+    );
+    expect(
+      filesUnder(queueUiRoot)
+        .filter((file) => /\.(ts|tsx)$/.test(file))
+        .filter((file) =>
+          /^\s*["']use server["'];/m.test(
+            readFileSync(file, "utf8"),
+          ),
+        ),
+    ).toEqual([queueAction]);
+    expect(pageSource).toContain(
+      'from "./actions"',
+    );
+    expect(pageSource).toContain(
+      'from "./queue-server"',
+    );
+    expect(actionSource).toContain(
+      'from "./queue-server"',
+    );
+    expect(serverSource).toContain(
+      'from "../../db/pharmacist-queue"',
+    );
+    expect(
+      importedModuleSpecifiers(clientSource),
+    ).toEqual(["react", "./queue-ui-model"]);
+    expect(clientSource).not.toMatch(
+      /(?:fetch\s*\(|XMLHttpRequest|WebSocket|EventSource|console\.)/,
+    );
+    expect(clientSource).not.toMatch(
+      /(?:localStorage|sessionStorage|indexedDB|document\.cookie)/,
+    );
+    expect(clientSource).not.toMatch(
+      /Intl\.DateTimeFormat|toLocale(?:Date|Time)?String/,
+    );
+  });
+
+  it("rejects forbidden transitive queue-client imports while allowing safe helpers", () => {
+    const fixtureRoot = resolve(
+      sourceRoot,
+      "__task04_queue_client_graph_fixture__",
+    );
+    const entryModule = join(fixtureRoot, "queue-client.tsx");
+    const safeHelper = join(fixtureRoot, "safe-helper.ts");
+    const forbiddenServer = join(fixtureRoot, "queue-server.ts");
+    const sources = new Map<string, string>([
+      [
+        entryModule,
+        '"use client"; import { safeValue } from "./safe-helper"; export const value = safeValue;',
+      ],
+      [safeHelper, 'export const safeValue = "safe";'],
+      [forbiddenServer, 'export const serverValue = "server-only";'],
+    ]);
+    const fixtureFileSystem = {
+      readSource: (file: string) => sources.get(file)!,
+      fileExists: (file: string) => sources.has(file),
+    };
+    const fixtureOptions = {
+      sourceRoot: fixtureRoot,
+      fileSystem: fixtureFileSystem,
+      isForbiddenLocalModule: (file: string) =>
+        file === forbiddenServer,
+    };
+
+    expect(
+      task04QueueClientGraphViolations(
+        [entryModule],
+        fixtureOptions,
+      ),
+    ).toEqual([]);
+
+    sources.set(
+      safeHelper,
+      'import { serverValue } from "./queue-server"; export const safeValue = serverValue;',
+    );
+    expect(
+      task04QueueClientGraphViolations(
+        [entryModule],
+        fixtureOptions,
+      ),
+    ).toEqual([
+      "safe-helper.ts:forbidden-local:./queue-server",
+    ]);
   });
 
   it("contains no production imports, browser persistence, analytics, or external URLs", () => {
