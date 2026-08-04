@@ -19,6 +19,10 @@ const OTHER_PHARMACY_ID = "SYNTH-PHARMACY-TASK04-OTHER";
 const SECRET =
   "SYNTHETIC_TASK04_SLOT_REFERENCE_UNIT_TEST_SECRET";
 const NOW = "2026-08-02T12:00:00.000Z";
+const LIFECYCLE_EXPIRES_AT = "2026-08-05T23:59:59.999Z";
+const APPROVAL_DECISION_VERSION =
+  "Task 04 synthetic sandbox scope v1";
+const SANDBOX_INSTANCE_ID = "SYNTH-TASK04-POSTGRES";
 const BINDING = Object.freeze({
   slotId: "SYNTH-SLOT-TASK04-0001",
   serviceCategoryId: "SYNTH-SERVICE-TASK04-0001",
@@ -26,11 +30,26 @@ const BINDING = Object.freeze({
 });
 const NONCE = new Uint8Array(16).fill(7);
 
-function service(pharmacyId = PHARMACY_ID) {
+function service(
+  pharmacyId = PHARMACY_ID,
+  lifecycle: Readonly<{
+    sandboxInstanceId?: string;
+    approvalDecisionVersion?: string;
+    lifecycleExpiresAtUtc?: string;
+  }> = {},
+) {
   return createTask04PublicSlotReferenceService({
     pharmacyId,
     secret: SECRET,
     ttlSeconds: 900,
+    sandboxInstanceId:
+      lifecycle.sandboxInstanceId ?? SANDBOX_INSTANCE_ID,
+    approvalDecisionVersion:
+      lifecycle.approvalDecisionVersion ??
+      APPROVAL_DECISION_VERSION,
+    lifecycleExpiresAtUtc:
+      lifecycle.lifecycleExpiresAtUtc ??
+      LIFECYCLE_EXPIRES_AT,
   });
 }
 
@@ -83,6 +102,7 @@ describe("Task 04 public slot references", () => {
     const categoryReference =
       service().issueServiceCategoryReference(
         BINDING.serviceCategoryId,
+        NOW,
       );
     expect(categoryReference).toMatch(/^[A-Za-z0-9_-]{16,160}$/);
     expect(categoryReference).not.toContain(
@@ -92,8 +112,45 @@ describe("Task 04 public slot references", () => {
       service().resolveServiceCategoryReference(
         categoryReference,
         [BINDING.serviceCategoryId],
+        NOW,
       ),
     ).toBe(BINDING.serviceCategoryId);
+  });
+
+  it("binds service-category references to lifecycle and trusted expiry", () => {
+    const categoryReference =
+      service().issueServiceCategoryReference(
+        BINDING.serviceCategoryId,
+        NOW,
+      );
+    for (const resolver of [
+      service(PHARMACY_ID, {
+        sandboxInstanceId: "SYNTH-TASK04-OTHER",
+      }),
+      service(PHARMACY_ID, {
+        approvalDecisionVersion:
+          "Task 04 synthetic sandbox scope other",
+      }),
+      service(PHARMACY_ID, {
+        lifecycleExpiresAtUtc:
+          "2026-08-04T23:59:59.999Z",
+      }),
+    ]) {
+      expect(() =>
+        resolver.resolveServiceCategoryReference(
+          categoryReference,
+          [BINDING.serviceCategoryId],
+          NOW,
+        ),
+      ).toThrow("TASK04_SLOT_REFERENCE_DENIED");
+    }
+    expect(() =>
+      service().resolveServiceCategoryReference(
+        categoryReference,
+        [BINDING.serviceCategoryId],
+        LIFECYCLE_EXPIRES_AT,
+      ),
+    ).toThrow("TASK04_SLOT_REFERENCE_DENIED");
   });
 
   it("resolves the exact bound slot using only slotReference", () => {

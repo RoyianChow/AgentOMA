@@ -20,6 +20,10 @@ import { G3_PRODUCTION_IMPORT_ALLOWLIST } from "../integrations/production-impor
 const sourceRoot = fileURLToPath(new URL("..", import.meta.url));
 const toolsRoot = fileURLToPath(new URL("../../tools", import.meta.url));
 const boundaryVerifier = join(toolsRoot, "verify-boundary.mjs");
+const authoritativeServerConfigurationModules = new Set([
+  join(sourceRoot, "booking", "config.ts"),
+  join(sourceRoot, "env", "server.ts"),
+]);
 const clientModuleDirective = /^\s*["']use client["'];/m;
 const slotReferenceSecretName =
   /TASK04_PUBLIC_SLOT_REFERENCE_SECRET|publicSlotReferenceSecret/;
@@ -29,6 +33,8 @@ const protectedQueueBoundaryName =
   /executeTask04PharmacistQueue|TASK04_SYNTHETIC_PHARMACIST_QUEUE_AUTHORITY|authorizeStaffPharmacistQueue|staffPharmacistQueueFactsSchema|publicSlotReferenceSecret|TASK04_PUBLIC_SLOT_REFERENCE_SECRET/;
 const prohibitedQueueClientDataName =
   /(?:subjectReference|actorReference|caregiverReference|delegationGrant|syntheticContactReference|credentialDigest|confirmationDeadlineUtc|configuredCapacity|remainingCapacity)/;
+const protectedCatalogBoundaryName =
+  /(?:execute|query)Task04PublicServiceCatalog|createTask04PublicSlotReferenceService|publicSlotReferenceSecret|TASK04_PUBLIC_SLOT_REFERENCE_SECRET|service_category_id|supported_modalities/;
 
 function importedModuleSpecifiers(source: string): string[] {
   return [
@@ -41,6 +47,7 @@ function importedModuleSpecifiers(source: string): string[] {
 function isServerOwnedModuleSpecifier(specifier: string): boolean {
   return (
     /(?:^|\/)env\/server(?:$|[./])/.test(specifier) ||
+    /(?:^|\/)booking\/config(?:$|[./])/.test(specifier) ||
     /(?:^|\/)db(?:\/|$)/.test(specifier) ||
     /(?:^|\/)public-slot-reference(?:$|[./])/.test(specifier)
   );
@@ -55,6 +62,19 @@ function isQueueServerOwnedModuleSpecifier(
       specifier,
     ) ||
     /(?:^|\/)pharmacist-queue(?:$|[./])/.test(specifier)
+  );
+}
+
+function isCatalogServerOwnedModuleSpecifier(
+  specifier: string,
+): boolean {
+  return (
+    isServerOwnedModuleSpecifier(specifier) ||
+    /(?:^|\/)app\/api\/service-catalog(?:\/|$)/.test(
+      specifier,
+    ) ||
+    /(?:^|\/)service-catalog(?:$|[./])/.test(specifier) &&
+      /(?:^|\/)db\//.test(specifier)
   );
 }
 
@@ -224,6 +244,8 @@ describe("sandbox import and storage boundary", () => {
     expect(clientOffenders).toEqual([]);
     for (const forbiddenImport of [
       "../env/server",
+      "../booking/config",
+      "../booking/config.ts",
       "../db/client",
       "../db/availability",
       "../db/public-slot-reference",
@@ -337,9 +359,9 @@ describe("sandbox import and storage boundary", () => {
       );
     const forbiddenQueueClientModules = new Set([
       join(sourceRoot, "booking", "authorization.ts"),
-      join(sourceRoot, "booking", "config.ts"),
       join(queueUiRoot, "actions.ts"),
       join(queueUiRoot, "queue-server.ts"),
+      ...authoritativeServerConfigurationModules,
     ]);
     expect(
       task04QueueClientGraphViolations(
@@ -362,6 +384,8 @@ describe("sandbox import and storage boundary", () => {
       "../db/pharmacist-queue",
       "../db/pharmacist-queue-reference",
       "../booking/authorization",
+      "../booking/config",
+      "../booking/config.ts",
       "../env/server",
     ]) {
       expect(
@@ -426,6 +450,220 @@ describe("sandbox import and storage boundary", () => {
     expect(clientSource).not.toMatch(
       /Intl\.DateTimeFormat|toLocale(?:Date|Time)?String/,
     );
+  });
+
+  it("keeps the public service-catalog implementation, references, and source records server-only", () => {
+    const catalogModules = [
+      join(sourceRoot, "booking", "config.ts"),
+      join(sourceRoot, "db", "service-catalog.ts"),
+      join(sourceRoot, "db", "public-slot-reference.ts"),
+      join(
+        sourceRoot,
+        "app",
+        "api",
+        "service-catalog",
+        "route.ts",
+      ),
+    ];
+    for (const catalogModule of catalogModules) {
+      expect(statSync(catalogModule).isFile()).toBe(true);
+      expect(
+        clientModuleDirective.test(
+          readFileSync(catalogModule, "utf8"),
+        ),
+      ).toBe(false);
+    }
+
+    const clientFiles = filesUnder(sourceRoot)
+      .filter((file) => /\.(ts|tsx)$/.test(file))
+      .filter((file) =>
+        clientModuleDirective.test(readFileSync(file, "utf8")),
+      );
+    const offenders = clientFiles.flatMap((file) => {
+      const source = readFileSync(file, "utf8");
+      return [
+        ...(protectedCatalogBoundaryName.test(source)
+          ? [`${relative(sourceRoot, file)}:catalog-authority`]
+          : []),
+        ...importedModuleSpecifiers(source)
+          .filter(isCatalogServerOwnedModuleSpecifier)
+          .map(
+            (specifier) =>
+              `${relative(sourceRoot, file)}:${specifier}`,
+          ),
+      ];
+    });
+    expect(offenders).toEqual([]);
+    const catalogRoute = join(
+      sourceRoot,
+      "app",
+      "api",
+      "service-catalog",
+      "route.ts",
+    );
+    expect(
+      task04QueueClientGraphViolations(clientFiles, {
+        sourceRoot,
+        fileSystem: {
+          readSource: (file) => readFileSync(file, "utf8"),
+          fileExists: existsSync,
+        },
+        isForbiddenLocalModule: (file) =>
+          pathIsWithin(join(sourceRoot, "db"), file) ||
+          authoritativeServerConfigurationModules.has(file) ||
+          file === catalogRoute,
+      }),
+    ).toEqual([]);
+
+    for (const forbiddenImport of [
+      "../db/service-catalog",
+      "../db/public-slot-reference",
+      "../booking/config",
+      "../booking/config.ts",
+      "../env/server",
+      "../app/api/service-catalog/route",
+    ]) {
+      expect(
+        isCatalogServerOwnedModuleSpecifier(forbiddenImport),
+      ).toBe(true);
+    }
+    expect(
+      isCatalogServerOwnedModuleSpecifier(
+        "../booking/service-catalog-contracts",
+      ),
+    ).toBe(false);
+  });
+
+  it("rejects direct client imports of authoritative booking configuration with or without an extension", () => {
+    const fixtureRoot = resolve(
+      sourceRoot,
+      "__task04_direct_config_import_fixture__",
+    );
+    const configurationModule = join(
+      fixtureRoot,
+      "booking",
+      "config.ts",
+    );
+    const extensionlessClient = join(
+      fixtureRoot,
+      "extensionless-client.tsx",
+    );
+    const explicitExtensionClient = join(
+      fixtureRoot,
+      "explicit-extension-client.tsx",
+    );
+    const sources = new Map<string, string>([
+      [
+        configurationModule,
+        'export const syntheticConfiguration = "server-only";',
+      ],
+      [
+        extensionlessClient,
+        '"use client"; import { syntheticConfiguration } from "./booking/config"; export const value = syntheticConfiguration;',
+      ],
+      [
+        explicitExtensionClient,
+        '"use client"; import { syntheticConfiguration } from "./booking/config.ts"; export const value = syntheticConfiguration;',
+      ],
+    ]);
+    const fixtureOptions = {
+      sourceRoot: fixtureRoot,
+      fileSystem: {
+        readSource: (file: string) => sources.get(file)!,
+        fileExists: (file: string) => sources.has(file),
+      },
+      isForbiddenLocalModule: (file: string) =>
+        file === configurationModule,
+    };
+
+    expect(
+      task04QueueClientGraphViolations(
+        [extensionlessClient],
+        fixtureOptions,
+      ),
+    ).toEqual([
+      "extensionless-client.tsx:forbidden-local:./booking/config",
+    ]);
+    expect(
+      task04QueueClientGraphViolations(
+        [explicitExtensionClient],
+        fixtureOptions,
+      ),
+    ).toEqual([
+      "explicit-extension-client.tsx:forbidden-local:./booking/config.ts",
+    ]);
+  });
+
+  it("rejects transitive client imports of authoritative booking configuration", () => {
+    const fixtureRoot = resolve(
+      sourceRoot,
+      "__task04_transitive_config_import_fixture__",
+    );
+    const configurationModule = join(
+      fixtureRoot,
+      "booking",
+      "config.ts",
+    );
+    const entryModule = join(fixtureRoot, "catalog-client.tsx");
+    const localHelper = join(fixtureRoot, "catalog-helper.ts");
+    const sources = new Map<string, string>([
+      [
+        entryModule,
+        '"use client"; import { catalogValue } from "./catalog-helper"; export const value = catalogValue;',
+      ],
+      [
+        localHelper,
+        'import { syntheticConfiguration } from "./booking/config.ts"; export const catalogValue = syntheticConfiguration;',
+      ],
+      [
+        configurationModule,
+        'export const syntheticConfiguration = "server-only";',
+      ],
+    ]);
+
+    expect(
+      task04QueueClientGraphViolations([entryModule], {
+        sourceRoot: fixtureRoot,
+        fileSystem: {
+          readSource: (file) => sources.get(file)!,
+          fileExists: (file) => sources.has(file),
+        },
+        isForbiddenLocalModule: (file) =>
+          file === configurationModule,
+      }),
+    ).toEqual([
+      "catalog-helper.ts:forbidden-local:./booking/config.ts",
+    ]);
+  });
+
+  it("accepts client import graphs containing only safe UI modules", () => {
+    const fixtureRoot = resolve(
+      sourceRoot,
+      "__task04_safe_ui_import_fixture__",
+    );
+    const entryModule = join(fixtureRoot, "catalog-client.tsx");
+    const safeUiModule = join(fixtureRoot, "catalog-ui.tsx");
+    const sources = new Map<string, string>([
+      [
+        entryModule,
+        '"use client"; import { CatalogUi } from "./catalog-ui"; export const value = CatalogUi;',
+      ],
+      [
+        safeUiModule,
+        'export const CatalogUi = "safe-ui";',
+      ],
+    ]);
+
+    expect(
+      task04QueueClientGraphViolations([entryModule], {
+        sourceRoot: fixtureRoot,
+        fileSystem: {
+          readSource: (file) => sources.get(file)!,
+          fileExists: (file) => sources.has(file),
+        },
+        isForbiddenLocalModule: () => false,
+      }),
+    ).toEqual([]);
   });
 
   it("rejects forbidden transitive queue-client imports while allowing safe helpers", () => {

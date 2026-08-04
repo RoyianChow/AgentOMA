@@ -107,6 +107,11 @@ export async function queryTask04PublicAvailability(
       secret: environment.publicSlotReferenceSecret,
       ttlSeconds:
         configuration.publicSlotReferenceTtlSeconds,
+      sandboxInstanceId: environment.instanceId,
+      approvalDecisionVersion:
+        environment.approvalDecisionVersion,
+      lifecycleExpiresAtUtc:
+        environment.expiresAt.toISOString(),
     });
   const resolvedPageSize =
     request.data.pageSize ?? context.maxPageSize;
@@ -152,6 +157,7 @@ export async function queryTask04PublicAvailability(
           serviceCandidates.map(
             (candidate) => candidate.service_category_id,
           ),
+          context.nowUtc,
         );
     } catch {
       throw new Task04KnownFailure("REQUEST_INVALID");
@@ -235,6 +241,7 @@ export async function queryTask04PublicAvailability(
       serviceCategoryRef:
         referenceService.issueServiceCategoryReference(
           row.service_category_id,
+          context.nowUtc,
         ),
       serviceCategoryLabel: row.service_category_label,
       modality: row.modality,
@@ -286,6 +293,11 @@ export async function resolveTask04PublicSlotReference(
       secret: environment.publicSlotReferenceSecret,
       ttlSeconds:
         configuration.publicSlotReferenceTtlSeconds,
+      sandboxInstanceId: environment.instanceId,
+      approvalDecisionVersion:
+        environment.approvalDecisionVersion,
+      lifecycleExpiresAtUtc:
+        environment.expiresAt.toISOString(),
     });
   const pharmacyTimezone =
     configuration.supportedDisplayTimezones[0];

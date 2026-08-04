@@ -47,6 +47,16 @@ const slotResolutionRequestSchema = z
   })
   .strict();
 
+const publicReferenceLifecycleSchema = z
+  .object({
+    sandboxInstanceId: z
+      .string()
+      .regex(/^SYNTH-[A-Z0-9-]{3,64}$/),
+    approvalDecisionVersion: z.string().min(1).max(96),
+    lifecycleExpiresAtUtc: utcInstantSchema,
+  })
+  .strict();
+
 export type Task04PublicSlotBinding = z.infer<
   typeof slotBindingSchema
 >;
@@ -122,6 +132,7 @@ function createServiceCategoryReferenceSignature(
   secret: string,
   pharmacyId: string,
   serviceCategoryId: string,
+  lifecycle: z.infer<typeof publicReferenceLifecycleSchema>,
 ): Buffer {
   return createHmac("sha256", secret)
     .update(
@@ -129,6 +140,9 @@ function createServiceCategoryReferenceSignature(
         SERVICE_CATEGORY_REFERENCE_CONTRACT,
         pharmacyId,
         serviceCategoryId,
+        lifecycle.sandboxInstanceId,
+        lifecycle.approvalDecisionVersion,
+        lifecycle.lifecycleExpiresAtUtc,
       ]),
       "utf8",
     )
@@ -200,14 +214,23 @@ export function createTask04PublicSlotReferenceService(input: {
   pharmacyId: string;
   secret: string;
   ttlSeconds: number;
+  sandboxInstanceId: string;
+  approvalDecisionVersion: string;
+  lifecycleExpiresAtUtc: string;
 }) {
   const pharmacy = sandboxPharmacyIdSchema.safeParse(input.pharmacyId);
   const secret = task04PublicSlotReferenceSecretSchema.safeParse(
     input.secret,
   );
+  const lifecycle = publicReferenceLifecycleSchema.safeParse({
+    sandboxInstanceId: input.sandboxInstanceId,
+    approvalDecisionVersion: input.approvalDecisionVersion,
+    lifecycleExpiresAtUtc: input.lifecycleExpiresAtUtc,
+  });
   if (
     !pharmacy.success ||
     !secret.success ||
+    !lifecycle.success ||
     input.ttlSeconds !==
       TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS
   ) {
@@ -215,27 +238,45 @@ export function createTask04PublicSlotReferenceService(input: {
   }
   const verifiedPharmacyId = pharmacy.data;
   const verifiedSecret = secret.data;
+  const verifiedLifecycle = lifecycle.data;
 
   function issueServiceCategoryReference(
     serviceCategoryIdInput: unknown,
+    trustedNowUtc: string,
   ): string {
     const serviceCategoryId = opaqueReferenceSchema.safeParse(
       serviceCategoryIdInput,
     );
-    if (!serviceCategoryId.success) return slotReferenceDenied();
+    const trustedNow = parseTrustedInstant(trustedNowUtc);
+    if (
+      !serviceCategoryId.success ||
+      trustedNow >=
+        Date.parse(verifiedLifecycle.lifecycleExpiresAtUtc)
+    ) {
+      return slotReferenceDenied();
+    }
     return createServiceCategoryReferenceSignature(
       verifiedSecret,
       verifiedPharmacyId,
       serviceCategoryId.data,
+      verifiedLifecycle,
     ).toString("base64url");
   }
 
   function resolveServiceCategoryReference(
     referenceInput: unknown,
     candidateIds: readonly unknown[],
+    trustedNowUtc: string,
   ): string {
     const reference = opaqueReferenceSchema.safeParse(referenceInput);
-    if (!reference.success) return slotReferenceDenied();
+    const trustedNow = parseTrustedInstant(trustedNowUtc);
+    if (
+      !reference.success ||
+      trustedNow >=
+        Date.parse(verifiedLifecycle.lifecycleExpiresAtUtc)
+    ) {
+      return slotReferenceDenied();
+    }
     let signature: Buffer;
     try {
       signature = Buffer.from(reference.data, "base64url");
@@ -257,6 +298,7 @@ export function createTask04PublicSlotReferenceService(input: {
         verifiedSecret,
         verifiedPharmacyId,
         candidate.data,
+        verifiedLifecycle,
       );
       if (task04ConstantTimeSignatureMatches(signature, expected)) {
         matches.push(candidate.data);

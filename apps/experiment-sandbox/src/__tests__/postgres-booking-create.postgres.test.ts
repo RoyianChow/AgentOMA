@@ -799,6 +799,11 @@ describe("Task 04 PostgreSQL booking:create", () => {
         pharmacyId: PHARMACY_ID,
         secret: environment.publicSlotReferenceSecret,
         ttlSeconds: environment.publicSlotReferenceTtlSeconds,
+        sandboxInstanceId: environment.instanceId,
+        approvalDecisionVersion:
+          environment.approvalDecisionVersion,
+        lifecycleExpiresAtUtc:
+          environment.expiresAt.toISOString(),
       });
     const expiredReference = referenceService.issue(
       {
@@ -846,6 +851,11 @@ describe("Task 04 PostgreSQL booking:create", () => {
         pharmacyId: OTHER_PHARMACY_ID,
         secret: environment.publicSlotReferenceSecret,
         ttlSeconds: environment.publicSlotReferenceTtlSeconds,
+        sandboxInstanceId: environment.instanceId,
+        approvalDecisionVersion:
+          environment.approvalDecisionVersion,
+        lifecycleExpiresAtUtc:
+          environment.expiresAt.toISOString(),
       }).issue(
         {
           slotId: TASK04_FOUNDATION_FIXTURES.slotId,

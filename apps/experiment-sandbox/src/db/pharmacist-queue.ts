@@ -239,6 +239,11 @@ async function resolveServiceCategoryId(
       secret: environment.publicSlotReferenceSecret,
       ttlSeconds:
         configuration.publicSlotReferenceTtlSeconds,
+      sandboxInstanceId: environment.instanceId,
+      approvalDecisionVersion:
+        environment.approvalDecisionVersion,
+      lifecycleExpiresAtUtc:
+        environment.expiresAt.toISOString(),
     });
   try {
     return referenceService.resolveServiceCategoryReference(
@@ -246,6 +251,7 @@ async function resolveServiceCategoryId(
       candidates.map(
         (candidate) => candidate.service_category_id,
       ),
+      context.nowUtc,
     );
   } catch {
     throw new Task04KnownFailure("REQUEST_INVALID");

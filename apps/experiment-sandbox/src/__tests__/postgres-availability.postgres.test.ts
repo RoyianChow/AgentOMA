@@ -854,6 +854,11 @@ describe("Task 04 PostgreSQL public availability", () => {
             secret: environment.publicSlotReferenceSecret,
             ttlSeconds:
               environment.publicSlotReferenceTtlSeconds,
+            sandboxInstanceId: environment.instanceId,
+            approvalDecisionVersion:
+              environment.approvalDecisionVersion,
+            lifecycleExpiresAtUtc:
+              environment.expiresAt.toISOString(),
           });
         const staleReference = staleIssuer.issue(
           {
