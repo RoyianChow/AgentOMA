@@ -6,6 +6,7 @@ import {
   opaqueReferenceSchema,
   type Task04BookingConfirmResponseData,
   type Task04BookingCreateResponseData,
+  type Task04BookingExpireResponseData,
 } from "../booking/contracts";
 import {
   createTask04ReceiptReference,
@@ -38,7 +39,8 @@ export type BeginTask04IdempotencyInput =
 
 export type Task04ValidatedReplayResponse =
   | Task04BookingCreateResponseData
-  | Task04BookingConfirmResponseData;
+  | Task04BookingConfirmResponseData
+  | Task04BookingExpireResponseData;
 
 export type BeginTask04IdempotencyResult =
   | { disposition: "execute"; receiptId: string }
@@ -58,9 +60,14 @@ function responseSchemaForOperation(
     supportedDisplayTimezones:
       context.supportedDisplayTimezones,
   });
-  return operation === "booking:create"
-    ? schemas.bookingCreateResponseDataSchema
-    : schemas.bookingConfirmResponseDataSchema;
+  switch (operation) {
+    case "booking:create":
+      return schemas.bookingCreateResponseDataSchema;
+    case "booking:confirm":
+      return schemas.bookingConfirmResponseDataSchema;
+    case "booking:expire":
+      return schemas.bookingExpireResponseDataSchema;
+  }
 }
 
 function validateReplayResponse(

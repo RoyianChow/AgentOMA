@@ -11,6 +11,7 @@ import {
   type SandboxPharmacyId,
   type Task04SandboxEnv,
 } from "../env/server";
+import { requireLocalActive } from "../lifecycle/state";
 import type { Task04TransactionSql } from "./transaction";
 import { readTask04DatabaseTimeUtc } from "./transaction";
 
@@ -35,7 +36,7 @@ type SandboxScopeRow = {
   max_page_size: number;
 };
 
-function approvalIsActive(
+export function task04ApprovalAndLifecycleAreActive(
   environment: Task04SandboxEnv,
   nowUtc: string,
 ): boolean {
@@ -81,10 +82,11 @@ export async function createTask04AuthoritativeTransactionContext(
   let nowUtc: string;
   try {
     nowUtc = await readTask04DatabaseTimeUtc(transaction);
+    requireLocalActive(environment, new Date(nowUtc));
   } catch {
     throw new Error("TASK04_AUTHORITATIVE_CONTEXT_DENIED");
   }
-  if (!approvalIsActive(environment, nowUtc)) {
+  if (!task04ApprovalAndLifecycleAreActive(environment, nowUtc)) {
     throw new Error("TASK04_AUTHORITATIVE_CONTEXT_DENIED");
   }
 

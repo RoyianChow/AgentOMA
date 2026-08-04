@@ -47,9 +47,47 @@ const successfulBookingConfirmAuditSchema = z
   })
   .strict();
 
+const successfulBookingExpireAuditSchema = z
+  .object({
+    operation: z.literal("booking:expire"),
+    auditId: opaqueReferenceSchema,
+    aggregateType: z.enum(["booking", "capacity_hold"]),
+    aggregateId: opaqueReferenceSchema,
+    aggregateVersion: z.number().int().positive(),
+    actorType: z.literal("synthetic_system_worker"),
+    subjectReference: opaqueReferenceSchema,
+    subjectType: syntheticSubjectTypeSchema,
+    priorState: z.enum(["pending_confirmation", "active"]),
+    resultingState: z.literal("expired"),
+    safeReasonCode: z.enum([
+      "CONFIRMATION_WINDOW_EXPIRED",
+      "HOLD_WINDOW_EXPIRED",
+    ]),
+    idempotencyRecordId: opaqueReferenceSchema,
+    outboxRecordId: opaqueReferenceSchema,
+  })
+  .strict()
+  .superRefine((value, context) => {
+    const bookingTransition =
+      value.aggregateType === "booking" &&
+      value.priorState === "pending_confirmation" &&
+      value.safeReasonCode === "CONFIRMATION_WINDOW_EXPIRED";
+    const holdTransition =
+      value.aggregateType === "capacity_hold" &&
+      value.priorState === "active" &&
+      value.safeReasonCode === "HOLD_WINDOW_EXPIRED";
+    if (!bookingTransition && !holdTransition) {
+      context.addIssue({
+        code: "custom",
+        message: "TASK04_AUDIT_INPUT_DENIED",
+      });
+    }
+  });
+
 const successfulAuditInputSchema = z.discriminatedUnion("operation", [
   successfulBookingCreateAuditSchema,
   successfulBookingConfirmAuditSchema,
+  successfulBookingExpireAuditSchema,
 ]);
 
 export type Task04AuditInput = z.infer<
@@ -71,8 +109,13 @@ export function parseTask04AuditInput(
 
 export function task04AuditActionCode(
   operation: Task04AuditInput["operation"],
-): "BOOKING_CREATE" | "BOOKING_CONFIRM" {
-  return operation === "booking:create"
-    ? "BOOKING_CREATE"
-    : "BOOKING_CONFIRM";
+): "BOOKING_CREATE" | "BOOKING_CONFIRM" | "BOOKING_EXPIRE" {
+  switch (operation) {
+    case "booking:create":
+      return "BOOKING_CREATE";
+    case "booking:confirm":
+      return "BOOKING_CONFIRM";
+    case "booking:expire":
+      return "BOOKING_EXPIRE";
+  }
 }

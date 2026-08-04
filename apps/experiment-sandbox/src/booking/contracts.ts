@@ -289,6 +289,22 @@ export function createTask04BookingSchemas(
     })
     .strict();
 
+  const bookingExpireRequestSchema = z
+    .object({
+      bookingReference: opaqueReferenceSchema,
+      expectedAggregateVersion: z.number().int().positive(),
+      idempotencyKey: idempotencyKeySchema,
+    })
+    .strict();
+
+  const bookingExpireResponseDataSchema = z
+    .object({
+      bookingReference: opaqueReferenceSchema,
+      status: z.literal("expired"),
+      holdStatus: z.literal("expired"),
+    })
+    .strict();
+
   const bookingCreateResponseSchema = z
     .object({
       success: z.literal(true),
@@ -320,6 +336,8 @@ export function createTask04BookingSchemas(
     bookingConfirmRequestSchema,
     bookingConfirmResponseDataSchema,
     bookingConfirmResponseSchema,
+    bookingExpireRequestSchema,
+    bookingExpireResponseDataSchema,
     managementCapabilitySummarySchema,
   };
 }
@@ -336,6 +354,9 @@ export type Task04BookingConfirmRequest = z.infer<
 export type Task04BookingRetrieveRequest = z.infer<
   Task04BookingSchemas["bookingRetrieveRequestSchema"]
 >;
+export type Task04BookingExpireRequest = z.infer<
+  Task04BookingSchemas["bookingExpireRequestSchema"]
+>;
 export type Task04BookingCreateResponseData = z.infer<
   Task04BookingSchemas["bookingCreateResponseDataSchema"]
 >;
@@ -344,6 +365,9 @@ export type Task04BookingConfirmResponseData = z.infer<
 >;
 export type Task04BookingRetrieveResponseData = z.infer<
   Task04BookingSchemas["bookingRetrieveResponseDataSchema"]
+>;
+export type Task04BookingExpireResponseData = z.infer<
+  Task04BookingSchemas["bookingExpireResponseDataSchema"]
 >;
 
 export function parseTask04Request<T>(

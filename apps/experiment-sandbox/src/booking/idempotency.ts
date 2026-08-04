@@ -14,6 +14,7 @@ import {
 export const TASK04_SUPPORTED_IDEMPOTENT_OPERATIONS = [
   "booking:create",
   "booking:confirm",
+  "booking:expire",
 ] as const;
 
 export type Task04SupportedIdempotentOperation =
@@ -70,16 +71,39 @@ const bookingConfirmFingerprintInputSchema = z
       value.resourceScopeReference === value.request.bookingReference,
   );
 
+const bookingExpireFingerprintInputSchema = z
+  .object({
+    operation: z.literal("booking:expire"),
+    actorReference: opaqueReferenceSchema,
+    resourceScopeReference: opaqueReferenceSchema,
+    request: z
+      .object({
+        bookingReference: opaqueReferenceSchema,
+        expectedAggregateVersion: z.number().int().positive(),
+        idempotencyKey: idempotencyKeySchema,
+      })
+      .strict(),
+  })
+  .strict()
+  .refine(
+    (value) =>
+      value.resourceScopeReference === value.request.bookingReference,
+  );
+
 export type Task04BookingCreateFingerprintInput = z.input<
   typeof bookingCreateFingerprintInputSchema
 >;
 export type Task04BookingConfirmFingerprintInput = z.input<
   typeof bookingConfirmFingerprintInputSchema
 >;
+export type Task04BookingExpireFingerprintInput = z.input<
+  typeof bookingExpireFingerprintInputSchema
+>;
 
 export type Task04SupportedIdempotencyInput =
   | Task04BookingCreateFingerprintInput
-  | Task04BookingConfirmFingerprintInput;
+  | Task04BookingConfirmFingerprintInput
+  | Task04BookingExpireFingerprintInput;
 
 export function sha256Task04Value(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
@@ -204,12 +228,37 @@ export function createTask04BookingConfirmFingerprint(
   return sha256Task04Value(JSON.stringify(projection));
 }
 
+export function createTask04BookingExpireFingerprint(
+  input: Task04BookingExpireFingerprintInput,
+): string {
+  const parsed = parseFingerprintInput(
+    bookingExpireFingerprintInputSchema,
+    input,
+  );
+  const projection = {
+    actorReference: parsed.actorReference,
+    operation: parsed.operation,
+    resourceScopeReference: parsed.resourceScopeReference,
+    safeCommandFacts: {
+      bookingReference: parsed.request.bookingReference,
+      expectedAggregateVersion:
+        parsed.request.expectedAggregateVersion,
+    },
+  };
+  return sha256Task04Value(JSON.stringify(projection));
+}
+
 export function createTask04SupportedCommandFingerprint(
   input: Task04SupportedIdempotencyInput,
 ): string {
-  return input.operation === "booking:create"
-    ? createTask04BookingCreateFingerprint(input)
-    : createTask04BookingConfirmFingerprint(input);
+  switch (input.operation) {
+    case "booking:create":
+      return createTask04BookingCreateFingerprint(input);
+    case "booking:confirm":
+      return createTask04BookingConfirmFingerprint(input);
+    case "booking:expire":
+      return createTask04BookingExpireFingerprint(input);
+  }
 }
 
 export function digestTask04IdempotencyKey(key: string): string {
