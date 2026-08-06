@@ -2,6 +2,17 @@ Task 07 — Consented Messaging, Administrative Reminders, and Secure Portal Com
 
 Owner profile: backend/communications developerSupporting reviewers: privacy, security, accessibility, clinical/professional, operationsPriority: P1 for consent, secure messaging, and synthetic delivery controls; P2 for approved production-provider integrationStatus: synthetic implementation may proceed; real recipients, live providers, production delivery, and PHI processing remain blocked pending the gates belowUpdated: 2026-07-30
 
+## Execution checkpoint — 2026-08-06
+
+Workstream A is complete at repository baseline
+`12801c7211cb6ce3286d209762d61c11b6830193`; see
+[`../../task-07/README.md`](../../task-07/README.md). The current task brief
+describes the allowed synthetic design, but no Task 07-specific scope approval
+or Task 11 Checkpoint 1 is recorded. Threat-model and contract documentation may
+continue. Runnable synthetic implementation remains blocked until those records
+exist. Real recipients, PHI, live providers, production delivery, and clinical
+or claim effects remain prohibited.
+
 Outcome
 
 Build a fail-closed communications control plane for AgentRx that:
