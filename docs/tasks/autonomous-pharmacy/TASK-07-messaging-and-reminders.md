@@ -8,7 +8,7 @@ clinical/professional, operations
 **Priority:** P1 for consent, secure messaging, and synthetic delivery controls;
 P2 for approved production-provider integration
 
-**Status:** Workstreams A–E are complete as documentation. Conceptual design may
+**Status:** Workstreams A–F are complete as documentation. Conceptual design may
 continue; runnable synthetic implementation, real recipients, live providers,
 production delivery, and PHI processing remain blocked pending the gates below.
 
@@ -28,10 +28,16 @@ state axes and their transition catalogue, idempotency/lease/concurrency and
 race determinism, scheduling and staleness rules, and the required invariants at
 design baseline `3d1b9e59abc6655cecff298f27922ee65ebb48f6`; it states duplicate
 resistance with a named residual window and claims no exactly-once delivery
-guarantee. See [`../../task-07/README.md`](../../task-07/README.md). No Task
-07-specific scope approval or Task 11 Checkpoint 1 is recorded. Further
-policy/design work may continue without applying a migration; the next
-documentation-only slice is Workstream F. Runnable synthetic implementation
+guarantee. Workstream F documents the template registry, the nine template
+classes and their blocking producer dependencies, placeholder allowlists, the
+rendering and URL boundary, and the forbidden-data leakage tests; it approves no
+template and writes no production copy. It also surfaces, without resolving, the
+conflict between this brief's illustrative **AgentRx** strings and the live
+**AgentOMA** product — brand remains an unresolved slot pending T07-D17. See
+[`../../task-07/README.md`](../../task-07/README.md). No Task 07-specific scope
+approval or Task 11 Checkpoint 1 is recorded. Further policy/design work may
+continue without applying a migration; the next documentation-only slice is
+Workstream G. Runnable synthetic implementation
 remains blocked until those records exist. Real recipients, PHI, live providers,
 production delivery, and clinical or claim effects remain prohibited.
 

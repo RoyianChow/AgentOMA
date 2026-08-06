@@ -291,7 +291,11 @@ Workstream E specifies the outbox and state machine that P04, P05, P06, P07,
 D03, D05, R02, and R05 depend on — see
 [`outbox-and-delivery-state-machine.md`](outbox-and-delivery-state-machine.md) —
 including the duplicate, crash, timeout, replay, ordering, and race threats
-T07-13 through T07-23. No threat is accepted by any of these documents, and every
+T07-13 through T07-23. Workstream F specifies the template registry, placeholder
+allowlists, URL boundary, and leakage-test contract that P03, P11, P16, D08, and
+R06 depend on, addressing the payload and template threats T07-24 through
+T07-29 and the status-wording threat T07-37 — see
+[`minimal-payload-template-catalogue.md`](minimal-payload-template-catalogue.md). No threat is accepted by any of these documents, and every
 control reference remains planned rather than proven. Runnable synthetic work remains blocked
 by the missing Task 07 scope and Task 11 Checkpoint 1. Real recipients,
 providers, PHI, credentials, network effects, production imports, production

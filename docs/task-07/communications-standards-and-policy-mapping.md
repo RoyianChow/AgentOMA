@@ -232,6 +232,13 @@ The following is only a design boundary:
   [`outbox-and-delivery-state-machine.md`](outbox-and-delivery-state-machine.md).
   It states duplicate resistance rather than exactly-once delivery, and invents
   no cadence, retry bound, lease duration, or status wording.
-- **Next safe action:** document Workstream F's minimal-payload template
-  catalogue. T07-P12 still blocks runnable synthetic code, and policy-dependent
-  values/UI copy wait for their named approvals.
+- **Workstream F:** COMPLETE as design documentation; see
+  [`minimal-payload-template-catalogue.md`](minimal-payload-template-catalogue.md).
+  It populates the "minimum safe template boundary" above with a registry
+  structure and leakage-test contract, and approves no template: T07-P04
+  (sender identity and brand), T07-P05 (CASL), and T07-P08 (copy, placeholders,
+  review workflow) remain open.
+- **Next safe action:** document Workstream G's synthetic provider adapter,
+  webhook security, and reconciliation design. T07-P12 still blocks runnable
+  synthetic code, and policy-dependent values/UI copy wait for their named
+  approvals.

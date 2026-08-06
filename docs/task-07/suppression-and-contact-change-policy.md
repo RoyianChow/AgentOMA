@@ -447,7 +447,9 @@ Workstream D is complete.
 Workstream E consumes the `suppression_term` above as part of its `DAQ`
 conjunction in
 [`outbox-and-delivery-state-machine.md`](outbox-and-delivery-state-machine.md).
-The next safe repository slice is Workstream F — the minimal-payload template
-catalogue — as documentation. Runnable synthetic implementation
+Workstream F records the opt-out acknowledgement (F-09) as conditional, with a
+do-not-send safety floor, consistent with §3.1 above. The next safe repository
+slice is Workstream G — the provider adapter, webhook security, and
+reconciliation design — as documentation. Runnable synthetic implementation
 remains **BLOCKED** pending T07-D02 and Task 11 Checkpoint 1. Pilot and
 production remain separately blocked by all applicable G1–G6 decisions.

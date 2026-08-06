@@ -417,6 +417,10 @@ consent, contact, suppression, and scheduling terms that Flow 2's dispatch
 recheck and Flow 6's revocation/supersession races evaluate. Workstream E turns
 Flows 2, 5, and 6 into an explicit state machine with a transition catalogue,
 lease and idempotency rules, and a documented residual duplicate window. The
-next safe repository slice is Workstream F's minimal-payload template catalogue. Runnable code remains blocked pending Task 07 scope approval and
+Workstream F turns Flow 3's external-payload table into a versioned registry with
+closed placeholder allowlists, a scanner-safe URL, and deterministic leakage
+tests, and adds the TB-11 template authoring/publication controls. The next safe
+repository slice is Workstream G's provider adapter, webhook security, and
+reconciliation design. Runnable code remains blocked pending Task 07 scope approval and
 Task 11 Checkpoint 1; production and pilot delivery remain separately blocked by
 the dependency register.

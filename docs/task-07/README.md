@@ -1,6 +1,6 @@
 # Task 07 — Messaging and reminders
 
-**Current phase:** Workstreams A–E complete; template-catalogue design is next
+**Current phase:** Workstreams A–F complete; provider-adapter and webhook design is next
 
 **Runtime implementation:** not started
 
@@ -19,7 +19,8 @@ Start with:
 7. [`consent-contact-and-preference-model.md`](consent-contact-and-preference-model.md)
 8. [`suppression-and-contact-change-policy.md`](suppression-and-contact-change-policy.md)
 9. [`outbox-and-delivery-state-machine.md`](outbox-and-delivery-state-machine.md)
-10. [`../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md`](../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md)
+10. [`minimal-payload-template-catalogue.md`](minimal-payload-template-catalogue.md)
+11. [`../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md`](../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md)
 
 Workstream A found no patient communications subsystem on `main`: there is no
 integrated patient identity, verified contact/communication consent,
@@ -59,8 +60,21 @@ flushing a backlog, and the eleven required invariants with their enforcing
 mechanism. It states the guarantee honestly — duplicate resistance with a named
 residual window, never exactly-once delivery.
 
-The next safe slice is documentation-only Workstream F: the minimal-payload
-template catalogue. Runnable synthetic code still waits for a versioned,
-expiring Task 07 scope, owner/reviewer metadata, risk/autonomy registration,
-kill-switch authority, and Task 11 Checkpoint 1. Production remains separately
-gated.
+Workstream F now defines the template registry: immutable versioned families
+with separated author/reviewer/publisher roles, the nine required template
+classes with their blocking producer dependencies, closed and typed placeholder
+allowlists rejected at both publication and render, server-side per-channel
+rendering with pre-dispatch length limits, a generic scanner-safe URL carrying
+no identifier or parameter, one review boundary covering subjects/preheaders/
+sender names/push fields/provider tags, and the forbidden-data list with its
+deterministic leakage tests. It approves no template and writes no production
+copy. Two things are surfaced rather than settled: the brief's sample strings
+say **AgentRx** while the product is **AgentOMA**, so brand is an unresolved
+slot; and the contact-verification template is the one external payload that
+deliberately carries a secret, so it carries its own rules.
+
+The next safe slice is documentation-only Workstream G: the synthetic provider
+adapter contract, webhook security, and reconciliation design. Runnable
+synthetic code still waits for a versioned, expiring Task 07 scope,
+owner/reviewer metadata, risk/autonomy registration, kill-switch authority, and
+Task 11 Checkpoint 1. Production remains separately gated.

@@ -1082,7 +1082,10 @@ without selecting any of the policy values listed above as unresolved.
 Workstream E now owns the final state machines this document reserved columns
 for — see
 [`outbox-and-delivery-state-machine.md`](outbox-and-delivery-state-machine.md).
-The next documentation-only slice is Workstream F: the minimal-payload template
-catalogue. Runnable synthetic implementation remains **BLOCKED**
+Workstream F populates Contracts 10–12 with a registry structure, placeholder
+allowlists, and a rendering contract in
+[`minimal-payload-template-catalogue.md`](minimal-payload-template-catalogue.md),
+approving no template. The next documentation-only slice is Workstream G: the
+synthetic provider adapter, webhook security, and reconciliation design. Runnable synthetic implementation remains **BLOCKED**
 pending G0 and Task 11 Checkpoint 1. Pilot and production remain separately
 blocked by all applicable G1–G6 decisions.
