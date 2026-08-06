@@ -300,7 +300,13 @@ Workstream G specifies the adapter, webhook, and reconciliation controls behind
 P06, P07, P14, P17, D03, R02, and R08, addressing T07-15 through T07-22 and
 T07-45 — see [`provider-adapter-contract.md`](provider-adapter-contract.md),
 [`webhook-and-reconciliation-design.md`](webhook-and-reconciliation-design.md),
-and [`vendor-review-scorecard.md`](vendor-review-scorecard.md). No threat is accepted by any of these documents, and every
+and [`vendor-review-scorecard.md`](vendor-review-scorecard.md). Workstream H
+specifies the secure-thread, queue, and authorization controls behind P08, P09,
+P11, P15, P18, D04, and R03, addressing T07-06 through T07-12 and T07-30 through
+T07-41 — see
+[`secure-portal-messaging-contract.md`](secure-portal-messaging-contract.md),
+[`reply-and-review-queue-design.md`](reply-and-review-queue-design.md), and
+[`secure-message-authorization-matrix.md`](secure-message-authorization-matrix.md). No threat is accepted by any of these documents, and every
 control reference remains planned rather than proven. Runnable synthetic work remains blocked
 by the missing Task 07 scope and Task 11 Checkpoint 1. Real recipients,
 providers, PHI, credentials, network effects, production imports, production

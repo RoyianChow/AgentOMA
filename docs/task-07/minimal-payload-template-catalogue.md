@@ -415,7 +415,7 @@ documentation.**
 Workstream G consumes this catalogue's rendered output as the only body an
 adapter may transmit — see
 [`provider-adapter-contract.md`](provider-adapter-contract.md) §5. The next safe
-repository slice is Workstream H — secure portal messaging and reply queues — as
-documentation. Runnable synthetic implementation remains **BLOCKED** pending
-T07-D02 and Task 11 Checkpoint 1. Pilot and production remain separately blocked by all applicable
+repository slice is Workstream I — appointment, follow-up, and Task 06
+integration boundaries — as documentation. Runnable synthetic implementation
+remains **BLOCKED** pending T07-D02 and Task 11 Checkpoint 1. Pilot and production remain separately blocked by all applicable
 G1–G6 decisions.

@@ -8,7 +8,7 @@ clinical/professional, operations
 **Priority:** P1 for consent, secure messaging, and synthetic delivery controls;
 P2 for approved production-provider integration
 
-**Status:** Workstreams A–G are complete as documentation. Conceptual design may
+**Status:** Workstreams A–H are complete as documentation. Conceptual design may
 continue; runnable synthetic implementation, real recipients, live providers,
 production delivery, and PHI processing remain blocked pending the gates below.
 
@@ -41,8 +41,17 @@ deterministic synthetic outcomes and their state mapping, the four-item outbound
 payload allowlist, the ordered webhook pipeline and monotonic projection, and
 the reconciliation workflow; the vendor scorecard is an instrument with named
 reviewers and non-waivable rows, and **no vendor is selected, contacted, or
-assessed**. Further policy/design work may continue without applying a
-migration; the next documentation-only slice is Workstream H. Runnable synthetic implementation
+assessed**. Workstream H documents the secure-thread eligibility checks,
+lifecycle and transitions, patient and staff experience rules, message
+integrity, the clinical boundary, queue routing and metadata limits, external-
+reply handling, and the actor-by-action authorization matrix; the prototype this
+workstream also names is **NOT BUILT**, because nine of thirteen eligibility
+checks depend on Task 05 and Task 06 contracts absent from `main`. Workstream H
+also surfaces, without resolving, the `AGENTS.md` zero-PHI scope question for
+authenticated **patient-side** surfaces — the public intake and self-check are
+unchanged, and the rescoping decision belongs to the product lead. Further
+policy/design work may continue without applying a migration; the next
+documentation-only slice is Workstream I. Runnable synthetic implementation
 remains blocked until those records exist. Real recipients, PHI, live providers,
 production delivery, and clinical or claim effects remain prohibited.
 

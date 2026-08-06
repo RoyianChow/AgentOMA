@@ -169,13 +169,15 @@ schema proposal:
 
 ## Next executable sequence
 
-1. Document Workstream H's secure portal messaging and reply queues without
-   integrating identity or professional contracts. Workstreams D through G are
-   recorded and selected no policy value or vendor; T07-D09–D22, D27, D28, and
-   D31–D39 remain open, each with a fail-closed safety floor or a named blocking
-   effect. T07-D17 additionally carries the unresolved AgentRx/AgentOMA brand
-   conflict surfaced by Workstream F, and T07-D31 remains NONE selected — the
-   Workstream G scorecard is an instrument, not an assessment.
+1. Document Workstream I's appointment, follow-up, and Task 06 integration
+   boundaries without creating a shadow booking model or a producer write path.
+   Workstreams D through H are recorded and selected no policy value, vendor, or
+   professional decision; T07-D09–D22, D27, D28, and D31–D39 remain open, each
+   with a fail-closed safety floor or a named blocking effect. T07-D17 carries
+   the unresolved AgentRx/AgentOMA brand conflict surfaced by Workstream F;
+   T07-D31 remains NONE selected — the Workstream G scorecard is an instrument,
+   not an assessment; and Workstream H surfaced the `AGENTS.md` zero-PHI scope
+   question for authenticated patient surfaces, which is a lead decision.
 2. Product lead assigns Task 07 owner/review metadata and approves a bounded,
    expiring, synthetic-only scope; Task 11 records Checkpoint 1 before code.
 3. Resolve or formally park policy decisions T07-D09–D21; do not invent them in
@@ -186,16 +188,17 @@ schema proposal:
 
 ## Current conclusion
 
-**Task 07 Workstreams A–G: PASS as design documentation.** The repository and
+**Task 07 Workstreams A–H: PASS as design documentation.** The repository and
 official-source gaps, required actors/assets/threats, trust boundaries, data
 flows, conceptual contracts, field metadata, relational constraints, the
 fail-closed consent/contact/preference/suppression behaviour, the outbox state
 machine with its idempotency, concurrency, and scheduling contract, and the
 template registry with its placeholder, rendering, URL, and leakage-test
 boundary, and the provider adapter, webhook, and reconciliation contracts with
-an unapplied vendor scorecard are documented; no risk, schema, policy value,
-template, or vendor has been accepted, and no exactly-once delivery guarantee
-has been claimed. **Task 07 runnable synthetic
+an unapplied vendor scorecard, and the secure-messaging contract, queue design,
+and authorization matrix are documented; no risk, schema, policy value,
+template, vendor, or professional decision has been accepted, no exactly-once
+delivery guarantee has been claimed, and no prototype has been built. **Task 07 runnable synthetic
 implementation: BLOCKED** pending task-specific authority and Task 11
 Checkpoint 1. **Pilot/production: BLOCKED** pending identity, consent/contact,
 producer contracts, vendor, records, privacy/security/professional/

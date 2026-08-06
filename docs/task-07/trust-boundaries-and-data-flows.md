@@ -421,7 +421,10 @@ Workstream F turns Flow 3's external-payload table into a versioned registry wit
 closed placeholder allowlists, a scanner-safe URL, and deterministic leakage
 tests, and adds the TB-11 template authoring/publication controls. Workstream G
 specifies the TB-07, TB-08, and TB-09 controls in detail — the adapter contract,
-Flow 5's receiver pipeline, and the reconciliation workflow. The next safe
-repository slice is Workstream H's secure portal messaging and reply queues. Runnable code remains blocked pending Task 07 scope approval and
+Flow 5's receiver pipeline, and the reconciliation workflow. Workstream H
+specifies Flow 4 and the TB-06 secure-content boundary in detail, including the
+per-request authorization matrix and the queue metadata limits. The next safe
+repository slice is Workstream I's appointment, follow-up, and Task 06
+integration boundaries. Runnable code remains blocked pending Task 07 scope approval and
 Task 11 Checkpoint 1; production and pilot delivery remain separately blocked by
 the dependency register.

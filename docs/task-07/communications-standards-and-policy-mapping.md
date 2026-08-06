@@ -244,6 +244,13 @@ The following is only a design boundary:
   and [`vendor-review-scorecard.md`](vendor-review-scorecard.md). The
   procurement-evidence list in section 4 above is now an instrument with named
   reviewers and non-waivable rows. Vendor: NONE selected; T07-P11 remains open.
-- **Next safe action:** document Workstream H's secure portal messaging and
-  reply queues. T07-P12 still blocks runnable synthetic code, and
+- **Workstream H:** COMPLETE as design documentation; see
+  [`secure-portal-messaging-contract.md`](secure-portal-messaging-contract.md),
+  [`reply-and-review-queue-design.md`](reply-and-review-queue-design.md), and
+  [`secure-message-authorization-matrix.md`](secure-message-authorization-matrix.md).
+  It maps sections 3 and 7 above onto a professional messaging modality. T07-P07
+  (response expectations, urgent path, escalation) remains open, and the
+  prototype is NOT BUILT pending Task 05 and Task 06.
+- **Next safe action:** document Workstream I's appointment, follow-up, and Task
+  06 integration boundaries. T07-P12 still blocks runnable synthetic code, and
   policy-dependent values/UI copy wait for their named approvals.

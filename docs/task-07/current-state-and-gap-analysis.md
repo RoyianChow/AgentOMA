@@ -375,6 +375,10 @@ production modules into the Task 01 sandbox:
   deterministic synthetic outcome catalogue, webhook pipeline, reconciliation
   workflow, and vendor scorecard are specified. No vendor is selected and no
   adapter, endpoint, or credential exists.
-- **Next safe action:** document Workstream H's secure portal messaging and
-  reply queues. Separately, approve/register a bounded Task 07 synthetic scope
-  before any runnable code.
+- **Workstream H:** COMPLETE as design documentation; the secure-thread
+  contract, queue design, and authorization matrix are specified against the
+  gaps in sections 4 and 6 above. Nine of thirteen thread-eligibility checks
+  depend on contracts absent from `main`, so the prototype is NOT BUILT.
+- **Next safe action:** document Workstream I's appointment, follow-up, and Task
+  06 integration boundaries. Separately, approve/register a bounded Task 07
+  synthetic scope before any runnable code.

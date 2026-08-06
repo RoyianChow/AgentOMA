@@ -571,7 +571,8 @@ Workstream G supplies the adapter outcomes and reconciliation workflow this
 machine consumes — see
 [`provider-adapter-contract.md`](provider-adapter-contract.md) and
 [`webhook-and-reconciliation-design.md`](webhook-and-reconciliation-design.md).
-The next safe repository slice is Workstream H — secure portal messaging and
-reply queues — as documentation. Runnable synthetic implementation remains
+The next safe repository slice is Workstream I — appointment, follow-up, and
+Task 06 integration boundaries — as documentation. Runnable synthetic
+implementation remains
 **BLOCKED** pending T07-D02 and Task 11 Checkpoint 1. Pilot and production remain
 separately blocked by all applicable G1–G6 decisions.
