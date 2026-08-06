@@ -626,7 +626,7 @@ Workstream E consumes these terms as the `DAQ` conjunction in
 [`outbox-and-delivery-state-machine.md`](outbox-and-delivery-state-machine.md).
 Workstream F supplies the approved-default template and the
 `TEMPLATE_UNAVAILABLE` denial that §4.2's language fallback depends on. The next
-safe repository slice is Workstream I — appointment, follow-up, and Task 06
-integration boundaries — as documentation. Runnable synthetic implementation
+safe repository slice is Workstream J — privacy, security, audit, and retention
+— as documentation. Runnable synthetic implementation
 remains **BLOCKED** pending T07-D02 and Task 11 Checkpoint 1. Pilot and
 production remain separately blocked by all applicable G1–G6 decisions.

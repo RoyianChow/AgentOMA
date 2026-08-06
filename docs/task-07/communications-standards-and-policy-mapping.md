@@ -251,6 +251,10 @@ The following is only a design boundary:
   It maps sections 3 and 7 above onto a professional messaging modality. T07-P07
   (response expectations, urgent path, escalation) remains open, and the
   prototype is NOT BUILT pending Task 05 and Task 06.
-- **Next safe action:** document Workstream I's appointment, follow-up, and Task
-  06 integration boundaries. T07-P12 still blocks runnable synthetic code, and
+- **Workstream I:** COMPLETE as design documentation; see
+  [`appointment-follow-up-and-task-06-integration.md`](appointment-follow-up-and-task-06-integration.md).
+  It maps section 7 above onto the producer boundary: reminder delivery is never
+  documentation of follow-up, and the professional record stays the pharmacist's.
+- **Next safe action:** document Workstream J's privacy, security, audit, and
+  retention plan. T07-P12 still blocks runnable synthetic code, and
   policy-dependent values/UI copy wait for their named approvals.

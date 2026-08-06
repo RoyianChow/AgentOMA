@@ -423,8 +423,10 @@ tests, and adds the TB-11 template authoring/publication controls. Workstream G
 specifies the TB-07, TB-08, and TB-09 controls in detail — the adapter contract,
 Flow 5's receiver pipeline, and the reconciliation workflow. Workstream H
 specifies Flow 4 and the TB-06 secure-content boundary in detail, including the
-per-request authorization matrix and the queue metadata limits. The next safe
-repository slice is Workstream I's appointment, follow-up, and Task 06
-integration boundaries. Runnable code remains blocked pending Task 07 scope approval and
+per-request authorization matrix and the queue metadata limits. Workstream I
+specifies the TB-04 producer boundary and the authoritative-ownership table
+above as an enforceable contract, including the rule that reminder delivery is
+never evidence of follow-up. The next safe repository slice is Workstream J's
+privacy, security, audit, and retention plan. Runnable code remains blocked pending Task 07 scope approval and
 Task 11 Checkpoint 1; production and pilot delivery remain separately blocked by
 the dependency register.
