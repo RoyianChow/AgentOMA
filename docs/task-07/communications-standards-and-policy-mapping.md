@@ -238,7 +238,12 @@ The following is only a design boundary:
   structure and leakage-test contract, and approves no template: T07-P04
   (sender identity and brand), T07-P05 (CASL), and T07-P08 (copy, placeholders,
   review workflow) remain open.
-- **Next safe action:** document Workstream G's synthetic provider adapter,
-  webhook security, and reconciliation design. T07-P12 still blocks runnable
-  synthetic code, and policy-dependent values/UI copy wait for their named
-  approvals.
+- **Workstream G:** COMPLETE as design documentation; see
+  [`provider-adapter-contract.md`](provider-adapter-contract.md),
+  [`webhook-and-reconciliation-design.md`](webhook-and-reconciliation-design.md),
+  and [`vendor-review-scorecard.md`](vendor-review-scorecard.md). The
+  procurement-evidence list in section 4 above is now an instrument with named
+  reviewers and non-waivable rows. Vendor: NONE selected; T07-P11 remains open.
+- **Next safe action:** document Workstream H's secure portal messaging and
+  reply queues. T07-P12 still blocks runnable synthetic code, and
+  policy-dependent values/UI copy wait for their named approvals.

@@ -169,12 +169,13 @@ schema proposal:
 
 ## Next executable sequence
 
-1. Document Workstream G's synthetic provider adapter, webhook security, and
-   reconciliation design without selecting a vendor or adding a credential.
-   Workstreams D, E, and F are recorded and selected no policy value; T07-D09–D22,
-   D27, D28, and D34–D39 remain open, each with a fail-closed safety floor or a
-   named blocking effect. T07-D17 additionally carries the unresolved
-   AgentRx/AgentOMA brand conflict surfaced by Workstream F.
+1. Document Workstream H's secure portal messaging and reply queues without
+   integrating identity or professional contracts. Workstreams D through G are
+   recorded and selected no policy value or vendor; T07-D09–D22, D27, D28, and
+   D31–D39 remain open, each with a fail-closed safety floor or a named blocking
+   effect. T07-D17 additionally carries the unresolved AgentRx/AgentOMA brand
+   conflict surfaced by Workstream F, and T07-D31 remains NONE selected — the
+   Workstream G scorecard is an instrument, not an assessment.
 2. Product lead assigns Task 07 owner/review metadata and approves a bounded,
    expiring, synthetic-only scope; Task 11 records Checkpoint 1 before code.
 3. Resolve or formally park policy decisions T07-D09–D21; do not invent them in
@@ -185,14 +186,16 @@ schema proposal:
 
 ## Current conclusion
 
-**Task 07 Workstreams A–F: PASS as design documentation.** The repository and
+**Task 07 Workstreams A–G: PASS as design documentation.** The repository and
 official-source gaps, required actors/assets/threats, trust boundaries, data
 flows, conceptual contracts, field metadata, relational constraints, the
 fail-closed consent/contact/preference/suppression behaviour, the outbox state
 machine with its idempotency, concurrency, and scheduling contract, and the
 template registry with its placeholder, rendering, URL, and leakage-test
-boundary are documented; no risk, schema, policy value, or template has been
-accepted, and no exactly-once delivery guarantee has been claimed. **Task 07 runnable synthetic
+boundary, and the provider adapter, webhook, and reconciliation contracts with
+an unapplied vendor scorecard are documented; no risk, schema, policy value,
+template, or vendor has been accepted, and no exactly-once delivery guarantee
+has been claimed. **Task 07 runnable synthetic
 implementation: BLOCKED** pending task-specific authority and Task 11
 Checkpoint 1. **Pilot/production: BLOCKED** pending identity, consent/contact,
 producer contracts, vendor, records, privacy/security/professional/

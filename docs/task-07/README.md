@@ -1,6 +1,6 @@
 # Task 07 — Messaging and reminders
 
-**Current phase:** Workstreams A–F complete; provider-adapter and webhook design is next
+**Current phase:** Workstreams A–G complete; secure portal messaging design is next
 
 **Runtime implementation:** not started
 
@@ -20,7 +20,10 @@ Start with:
 8. [`suppression-and-contact-change-policy.md`](suppression-and-contact-change-policy.md)
 9. [`outbox-and-delivery-state-machine.md`](outbox-and-delivery-state-machine.md)
 10. [`minimal-payload-template-catalogue.md`](minimal-payload-template-catalogue.md)
-11. [`../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md`](../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md)
+11. [`provider-adapter-contract.md`](provider-adapter-contract.md)
+12. [`webhook-and-reconciliation-design.md`](webhook-and-reconciliation-design.md)
+13. [`vendor-review-scorecard.md`](vendor-review-scorecard.md)
+14. [`../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md`](../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md)
 
 Workstream A found no patient communications subsystem on `main`: there is no
 integrated patient identity, verified contact/communication consent,
@@ -73,8 +76,19 @@ say **AgentRx** while the product is **AgentOMA**, so brand is an unresolved
 slot; and the contact-verification template is the one external payload that
 deliberately carries a secret, so it carries its own rules.
 
-The next safe slice is documentation-only Workstream G: the synthetic provider
-adapter contract, webhook security, and reconciliation design. Runnable
-synthetic code still waits for a versioned, expiring Task 07 scope,
-owner/reviewer metadata, risk/autonomy registration, kill-switch authority, and
-Task 11 Checkpoint 1. Production remains separately gated.
+Workstream G now defines the provider boundary: six adapter operations with
+closed inputs and safe-code outputs, a capability declaration that makes an
+adapter's limits enforceable (without idempotency support, retry after an
+unknown outcome is denied entirely), the eighteen deterministic synthetic
+outcomes mapped onto dispatch/delivery/reconciliation state, a four-item
+outbound payload allowlist with tracking and enrichment off by default, an
+ordered webhook pipeline where nothing is parsed before it is authenticated, a
+monotonic projection that never regresses, and a reconciliation workflow in
+which `RECONCILED_UNRESOLVED` stays a legitimate final answer. The vendor
+scorecard is an empty instrument: no provider is selected, contacted, or
+assessed, and its non-waivable rows have no exception path.
+
+The next safe slice is documentation-only Workstream H: secure portal messaging
+and reply queues. Runnable synthetic code still waits for a versioned, expiring
+Task 07 scope, owner/reviewer metadata, risk/autonomy registration, kill-switch
+authority, and Task 11 Checkpoint 1. Production remains separately gated.

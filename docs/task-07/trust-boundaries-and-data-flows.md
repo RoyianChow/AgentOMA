@@ -419,8 +419,9 @@ Flows 2, 5, and 6 into an explicit state machine with a transition catalogue,
 lease and idempotency rules, and a documented residual duplicate window. The
 Workstream F turns Flow 3's external-payload table into a versioned registry with
 closed placeholder allowlists, a scanner-safe URL, and deterministic leakage
-tests, and adds the TB-11 template authoring/publication controls. The next safe
-repository slice is Workstream G's provider adapter, webhook security, and
-reconciliation design. Runnable code remains blocked pending Task 07 scope approval and
+tests, and adds the TB-11 template authoring/publication controls. Workstream G
+specifies the TB-07, TB-08, and TB-09 controls in detail — the adapter contract,
+Flow 5's receiver pipeline, and the reconciliation workflow. The next safe
+repository slice is Workstream H's secure portal messaging and reply queues. Runnable code remains blocked pending Task 07 scope approval and
 Task 11 Checkpoint 1; production and pilot delivery remain separately blocked by
 the dependency register.

@@ -1085,7 +1085,9 @@ for — see
 Workstream F populates Contracts 10–12 with a registry structure, placeholder
 allowlists, and a rendering contract in
 [`minimal-payload-template-catalogue.md`](minimal-payload-template-catalogue.md),
-approving no template. The next documentation-only slice is Workstream G: the
-synthetic provider adapter, webhook security, and reconciliation design. Runnable synthetic implementation remains **BLOCKED**
+approving no template. Workstream G populates Contracts 15–17 and 19 with the
+adapter contract, webhook pipeline, and reconciliation workflow, selecting no
+vendor. The next documentation-only slice is Workstream H: secure portal
+messaging and reply queues. Runnable synthetic implementation remains **BLOCKED**
 pending G0 and Task 11 Checkpoint 1. Pilot and production remain separately
 blocked by all applicable G1–G6 decisions.

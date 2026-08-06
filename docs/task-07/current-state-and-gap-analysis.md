@@ -371,6 +371,10 @@ production modules into the Task 01 sandbox:
   placeholder allowlists, rendering contract, URL boundary, and forbidden-data
   leakage tests are specified. No template is approved and no production copy
   was written.
-- **Next safe action:** document Workstream G's synthetic provider adapter,
-  webhook security, and reconciliation design. Separately, approve/register a
-  bounded Task 07 synthetic scope before any runnable code.
+- **Workstream G:** COMPLETE as design documentation; the adapter contract,
+  deterministic synthetic outcome catalogue, webhook pipeline, reconciliation
+  workflow, and vendor scorecard are specified. No vendor is selected and no
+  adapter, endpoint, or credential exists.
+- **Next safe action:** document Workstream H's secure portal messaging and
+  reply queues. Separately, approve/register a bounded Task 07 synthetic scope
+  before any runnable code.

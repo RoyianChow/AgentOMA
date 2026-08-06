@@ -8,7 +8,7 @@ clinical/professional, operations
 **Priority:** P1 for consent, secure messaging, and synthetic delivery controls;
 P2 for approved production-provider integration
 
-**Status:** Workstreams A–F are complete as documentation. Conceptual design may
+**Status:** Workstreams A–G are complete as documentation. Conceptual design may
 continue; runnable synthetic implementation, real recipients, live providers,
 production delivery, and PHI processing remain blocked pending the gates below.
 
@@ -35,9 +35,14 @@ template and writes no production copy. It also surfaces, without resolving, the
 conflict between this brief's illustrative **AgentRx** strings and the live
 **AgentOMA** product — brand remains an unresolved slot pending T07-D17. See
 [`../../task-07/README.md`](../../task-07/README.md). No Task 07-specific scope
-approval or Task 11 Checkpoint 1 is recorded. Further policy/design work may
-continue without applying a migration; the next documentation-only slice is
-Workstream G. Runnable synthetic implementation
+approval or Task 11 Checkpoint 1 is recorded. Workstream G documents the six
+adapter operations, the enforceable capability declaration, the eighteen
+deterministic synthetic outcomes and their state mapping, the four-item outbound
+payload allowlist, the ordered webhook pipeline and monotonic projection, and
+the reconciliation workflow; the vendor scorecard is an instrument with named
+reviewers and non-waivable rows, and **no vendor is selected, contacted, or
+assessed**. Further policy/design work may continue without applying a
+migration; the next documentation-only slice is Workstream H. Runnable synthetic implementation
 remains blocked until those records exist. Real recipients, PHI, live providers,
 production delivery, and clinical or claim effects remain prohibited.
 
