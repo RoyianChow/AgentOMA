@@ -221,6 +221,13 @@ The following is only a design boundary:
   [`trust-boundaries-and-data-flows.md`](trust-boundaries-and-data-flows.md).
 - **Workstream C:** COMPLETE as conceptual documentation; see
   [`communication-contracts-and-schema-proposal.md`](communication-contracts-and-schema-proposal.md).
-- **Next safe action:** model Workstream D's fail-closed consent, contact,
-  preference and suppression behavior. T07-P12 still blocks runnable synthetic
-  code, and policy-dependent values/UI copy wait for their named approvals.
+- **Workstream D:** COMPLETE as design documentation; see
+  [`consent-contact-and-preference-model.md`](consent-contact-and-preference-model.md)
+  and
+  [`suppression-and-contact-change-policy.md`](suppression-and-contact-change-policy.md).
+  Every policy decision in this document's T07-P01–P12 table remains open; the
+  Workstream D model states the fail-closed safety floor that applies until each
+  is approved, and selects none of them.
+- **Next safe action:** document Workstream E's transactional outbox and
+  orthogonal state machine. T07-P12 still blocks runnable synthetic code, and
+  policy-dependent values/UI copy wait for their named approvals.

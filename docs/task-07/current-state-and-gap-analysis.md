@@ -360,6 +360,10 @@ production modules into the Task 01 sandbox:
   added.
 - **Workstream C:** COMPLETE as conceptual documentation; all requested
   contracts and field-level schema metadata are defined without a migration.
-- **Next safe action:** produce Workstream D's consent/contact/preference/
-  suppression model. Separately, approve/register a bounded Task 07 synthetic
-  scope before any runnable code.
+- **Workstream D:** COMPLETE as design documentation; consent, contact
+  verification, quiet hours/timezone, language/accessibility, suppression, and
+  contact-change behaviour are specified fail-closed with no policy value
+  selected.
+- **Next safe action:** document Workstream E's transactional outbox and
+  orthogonal state machine. Separately, approve/register a bounded Task 07
+  synthetic scope before any runnable code.

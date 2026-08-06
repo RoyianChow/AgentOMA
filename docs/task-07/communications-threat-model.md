@@ -280,8 +280,15 @@ can still fail when events race:
 ## Current disposition
 
 **Workstream B threat modelling: complete as design documentation.** Workstream C
-now maps the controls into conceptual server-only contracts and field metadata.
-No threat is accepted by either document. Runnable synthetic work remains blocked
+maps the controls into conceptual server-only contracts and field metadata, and
+Workstream D specifies the fail-closed consent, contact, quiet-hours,
+preference, suppression, and contact-change behaviour that P01–P05, P12, P16,
+D06, R01, and R03 depend on — see
+[`consent-contact-and-preference-model.md`](consent-contact-and-preference-model.md)
+and
+[`suppression-and-contact-change-policy.md`](suppression-and-contact-change-policy.md).
+No threat is accepted by any of these documents, and every control reference
+remains planned rather than proven. Runnable synthetic work remains blocked
 by the missing Task 07 scope and Task 11 Checkpoint 1. Real recipients,
 providers, PHI, credentials, network effects, production imports, production
 migrations, and production delivery remain unauthorized.

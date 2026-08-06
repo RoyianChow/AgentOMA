@@ -33,7 +33,7 @@ fail closed.
 | Stage | Status | Reason |
 |---|---|---|
 | Workstream A documentation | `READY` | Current state, official-source mapping, and this dependency register are recorded without runtime changes. |
-| Task 07 synthetic design (threat model/contracts) | `READY` | Documentation-only analysis can continue with synthetic examples and no runtime effect. |
+| Task 07 synthetic design (threat model/contracts/behaviour model) | `READY` | Documentation-only analysis can continue with synthetic examples and no runtime effect. |
 | Task 07 runnable synthetic prototype | `BLOCKED` | No versioned Task 07 scope approval, owner/backup, risk/autonomy registration, expiry, kill-switch authority, or Task 11 Checkpoint 1 exists. Task 01 G1 explicitly excludes later capabilities. |
 | Integrated pilot with synthetic recipients | `BLOCKED` | Task 04/05/06 contracts are not integrated on `main`; Task 07 tests/evidence do not exist. |
 | Pilot with real recipients/PHI | `BLOCKED` | Consent/contact policy, patient identity, vendor, PIA/TRA, privacy/security/professional/accessibility/operations/legal approvals, and Task 11 promotion evidence are absent. |
@@ -169,8 +169,11 @@ schema proposal:
 
 ## Next executable sequence
 
-1. Produce Workstream D's consent/contact/preference/suppression model without
-   selecting unresolved policy values or implementing a provider.
+1. Document Workstream E's transactional outbox and orthogonal state machine
+   without selecting unresolved policy values or implementing a provider.
+   Workstream D's consent/contact/preference/suppression model is recorded and
+   selected no policy value; T07-D09–D16, D19, D21, D22, D27, and D28 remain
+   open with a fail-closed safety floor stated for each.
 2. Product lead assigns Task 07 owner/review metadata and approves a bounded,
    expiring, synthetic-only scope; Task 11 records Checkpoint 1 before code.
 3. Resolve or formally park policy decisions T07-D09–D21; do not invent them in
@@ -181,10 +184,11 @@ schema proposal:
 
 ## Current conclusion
 
-**Task 07 Workstreams A–C: PASS as design documentation.** The repository and
+**Task 07 Workstreams A–D: PASS as design documentation.** The repository and
 official-source gaps, required actors/assets/threats, trust boundaries, data
-flows, conceptual contracts, field metadata, and relational constraints are
-documented; no risk or schema has been accepted. **Task 07 runnable synthetic
+flows, conceptual contracts, field metadata, relational constraints, and the
+fail-closed consent/contact/preference/suppression behaviour are documented; no
+risk, schema, or policy value has been accepted. **Task 07 runnable synthetic
 implementation: BLOCKED** pending task-specific authority and Task 11
 Checkpoint 1. **Pilot/production: BLOCKED** pending identity, consent/contact,
 producer contracts, vendor, records, privacy/security/professional/
