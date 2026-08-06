@@ -216,5 +216,9 @@ The following is only a design boundary:
 - **Vendor/contract/PIA/TRA/residency evidence:** NOT SELECTED / NOT VERIFIED.
 - **Real PHI or contact data used:** NO.
 - **External delivery:** NO.
-- **Next safe action:** resolve T07-P12, then create the threat model and data
-  flows; policy-dependent schema/UI work waits for the corresponding decisions.
+- **Workstream B:** COMPLETE as design documentation; see
+  [`communications-threat-model.md`](communications-threat-model.md) and
+  [`trust-boundaries-and-data-flows.md`](trust-boundaries-and-data-flows.md).
+- **Next safe action:** produce conceptual Workstream C contracts without a
+  migration. T07-P12 still blocks runnable synthetic code, and
+  policy-dependent schema/UI decisions wait for their named approvals.

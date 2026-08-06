@@ -169,10 +169,11 @@ schema proposal:
 
 ## Next executable sequence
 
-1. Product lead assigns Task 07 owner/review metadata and approves a bounded,
-   expiring, synthetic-only scope; Task 11 records Checkpoint 1.
-2. Complete Workstream B threat model, trust boundaries, data flows, and abuse
-   cases without code.
+1. Produce Workstream C's conceptual server-only contracts and schema proposal
+   without applying a migration. Preserve every unresolved policy as an
+   explicit input or denied/unknown state.
+2. Product lead assigns Task 07 owner/review metadata and approves a bounded,
+   expiring, synthetic-only scope; Task 11 records Checkpoint 1 before code.
 3. Resolve or formally park policy decisions T07-D09–D21; do not invent them in
    schemas/UI copy.
 4. Define versioned producer/consumer contracts with Task 04, 05, and 06 owners.
@@ -181,9 +182,10 @@ schema proposal:
 
 ## Current conclusion
 
-**Task 07 Workstream A: PASS.** The repository and official-source gaps are
-documented. **Task 07 runnable synthetic implementation: BLOCKED** pending
-task-specific authority and Task 11 Checkpoint 1. **Pilot/production: BLOCKED**
-pending identity, consent/contact, producer contracts, vendor, records,
-privacy/security/professional/accessibility/legal/operations approvals, and
-exact-candidate release evidence.
+**Task 07 Workstreams A–B: PASS as design documentation.** The repository and
+official-source gaps, required actors/assets/threats, trust boundaries, and data
+flows are documented; no risk has been accepted. **Task 07 runnable synthetic
+implementation: BLOCKED** pending task-specific authority and Task 11
+Checkpoint 1. **Pilot/production: BLOCKED** pending identity, consent/contact,
+producer contracts, vendor, records, privacy/security/professional/
+accessibility/legal/operations approvals, and exact-candidate release evidence.

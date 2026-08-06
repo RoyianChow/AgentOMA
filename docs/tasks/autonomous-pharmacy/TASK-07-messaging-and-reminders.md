@@ -1,17 +1,30 @@
 Task 07 — Consented Messaging, Administrative Reminders, and Secure Portal Communication
 
-Owner profile: backend/communications developerSupporting reviewers: privacy, security, accessibility, clinical/professional, operationsPriority: P1 for consent, secure messaging, and synthetic delivery controls; P2 for approved production-provider integrationStatus: synthetic implementation may proceed; real recipients, live providers, production delivery, and PHI processing remain blocked pending the gates belowUpdated: 2026-07-30
+**Owner profile:** backend/communications developer
+
+**Supporting reviewers:** privacy, security, accessibility,
+clinical/professional, operations
+
+**Priority:** P1 for consent, secure messaging, and synthetic delivery controls;
+P2 for approved production-provider integration
+
+**Status:** Workstreams A–B are complete as documentation. Conceptual design may
+continue; runnable synthetic implementation, real recipients, live providers,
+production delivery, and PHI processing remain blocked pending the gates below.
+
+**Updated:** 2026-08-06
 
 ## Execution checkpoint — 2026-08-06
 
-Workstream A is complete at repository baseline
-`12801c7211cb6ce3286d209762d61c11b6830193`; see
-[`../../task-07/README.md`](../../task-07/README.md). The current task brief
-describes the allowed synthetic design, but no Task 07-specific scope approval
-or Task 11 Checkpoint 1 is recorded. Threat-model and contract documentation may
-continue. Runnable synthetic implementation remains blocked until those records
-exist. Real recipients, PHI, live providers, production delivery, and clinical
-or claim effects remain prohibited.
+Workstream A assessed repository baseline
+`12801c7211cb6ce3286d209762d61c11b6830193`. Workstream B now documents the
+required threat model and trust-boundary data flows; see
+[`../../task-07/README.md`](../../task-07/README.md). No Task 07-specific scope
+approval or Task 11 Checkpoint 1 is recorded. Conceptual contract and
+schema-proposal work may continue without applying a migration. Runnable
+synthetic implementation remains blocked until those records exist. Real
+recipients, PHI, live providers, production delivery, and clinical or claim
+effects remain prohibited.
 
 Outcome
 

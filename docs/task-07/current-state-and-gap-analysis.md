@@ -356,5 +356,8 @@ production modules into the Task 01 sandbox:
 - **Real PHI/contact data used:** NO.
 - **External messages sent:** NO.
 - **Production schema/auth/vendor changed:** NO.
-- **Next safe action:** approve and register a bounded Task 07 synthetic scope,
-  then produce Workstream B's threat model and data flows before schema/code.
+- **Workstream B:** COMPLETE as design documentation; no runtime effect was
+  added.
+- **Next safe action:** produce Workstream C's conceptual server-only contracts
+  and schema proposal without a migration. Separately, approve/register a
+  bounded Task 07 synthetic scope before any runnable code.
