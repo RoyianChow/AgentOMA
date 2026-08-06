@@ -1072,7 +1072,24 @@ The following remain deliberately unresolved:
 ## Current disposition
 
 **Workstream C: complete as conceptual documentation.** The schema is not
-approved for implementation. The next documentation-only slice is Workstream D:
-consent, contact verification, preferences and suppression. Runnable synthetic
-implementation remains **BLOCKED** pending G0 and Task 11 Checkpoint 1. Pilot and
-production remain separately blocked by all applicable G1–G6 decisions.
+approved for implementation. Workstream D now specifies the behaviour over these
+contracts — consent, contact verification, preferences, quiet hours, and
+suppression — in
+[`consent-contact-and-preference-model.md`](consent-contact-and-preference-model.md)
+and
+[`suppression-and-contact-change-policy.md`](suppression-and-contact-change-policy.md),
+without selecting any of the policy values listed above as unresolved.
+Workstream E now owns the final state machines this document reserved columns
+for — see
+[`outbox-and-delivery-state-machine.md`](outbox-and-delivery-state-machine.md).
+Workstream F populates Contracts 10–12 with a registry structure, placeholder
+allowlists, and a rendering contract in
+[`minimal-payload-template-catalogue.md`](minimal-payload-template-catalogue.md),
+approving no template. Workstream G populates Contracts 15–17 and 19 with the
+adapter contract, webhook pipeline, and reconciliation workflow, selecting no
+vendor. Workstream H populates Contracts 20–25 with the secure-thread contract,
+queue design, and authorization matrix, building no prototype. The next
+documentation-only slice is Workstream I: appointment, follow-up, and Task 06
+integration boundaries. Runnable synthetic implementation remains **BLOCKED**
+pending G0 and Task 11 Checkpoint 1. Pilot and production remain separately
+blocked by all applicable G1–G6 decisions.

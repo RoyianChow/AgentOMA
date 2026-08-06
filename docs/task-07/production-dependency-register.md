@@ -33,7 +33,7 @@ fail closed.
 | Stage | Status | Reason |
 |---|---|---|
 | Workstream A documentation | `READY` | Current state, official-source mapping, and this dependency register are recorded without runtime changes. |
-| Task 07 synthetic design (threat model/contracts) | `READY` | Documentation-only analysis can continue with synthetic examples and no runtime effect. |
+| Task 07 synthetic design (threat model/contracts/behaviour model) | `READY` | Documentation-only analysis can continue with synthetic examples and no runtime effect. |
 | Task 07 runnable synthetic prototype | `BLOCKED` | No versioned Task 07 scope approval, owner/backup, risk/autonomy registration, expiry, kill-switch authority, or Task 11 Checkpoint 1 exists. Task 01 G1 explicitly excludes later capabilities. |
 | Integrated pilot with synthetic recipients | `BLOCKED` | Task 04/05/06 contracts are not integrated on `main`; Task 07 tests/evidence do not exist. |
 | Pilot with real recipients/PHI | `BLOCKED` | Consent/contact policy, patient identity, vendor, PIA/TRA, privacy/security/professional/accessibility/operations/legal approvals, and Task 11 promotion evidence are absent. |
@@ -169,8 +169,15 @@ schema proposal:
 
 ## Next executable sequence
 
-1. Produce Workstream D's consent/contact/preference/suppression model without
-   selecting unresolved policy values or implementing a provider.
+1. Document Workstream I's appointment, follow-up, and Task 06 integration
+   boundaries without creating a shadow booking model or a producer write path.
+   Workstreams D through H are recorded and selected no policy value, vendor, or
+   professional decision; T07-D09–D22, D27, D28, and D31–D39 remain open, each
+   with a fail-closed safety floor or a named blocking effect. T07-D17 carries
+   the unresolved AgentRx/AgentOMA brand conflict surfaced by Workstream F;
+   T07-D31 remains NONE selected — the Workstream G scorecard is an instrument,
+   not an assessment; and Workstream H surfaced the `AGENTS.md` zero-PHI scope
+   question for authenticated patient surfaces, which is a lead decision.
 2. Product lead assigns Task 07 owner/review metadata and approves a bounded,
    expiring, synthetic-only scope; Task 11 records Checkpoint 1 before code.
 3. Resolve or formally park policy decisions T07-D09–D21; do not invent them in
@@ -181,10 +188,17 @@ schema proposal:
 
 ## Current conclusion
 
-**Task 07 Workstreams A–C: PASS as design documentation.** The repository and
+**Task 07 Workstreams A–H: PASS as design documentation.** The repository and
 official-source gaps, required actors/assets/threats, trust boundaries, data
-flows, conceptual contracts, field metadata, and relational constraints are
-documented; no risk or schema has been accepted. **Task 07 runnable synthetic
+flows, conceptual contracts, field metadata, relational constraints, the
+fail-closed consent/contact/preference/suppression behaviour, the outbox state
+machine with its idempotency, concurrency, and scheduling contract, and the
+template registry with its placeholder, rendering, URL, and leakage-test
+boundary, and the provider adapter, webhook, and reconciliation contracts with
+an unapplied vendor scorecard, and the secure-messaging contract, queue design,
+and authorization matrix are documented; no risk, schema, policy value,
+template, vendor, or professional decision has been accepted, no exactly-once
+delivery guarantee has been claimed, and no prototype has been built. **Task 07 runnable synthetic
 implementation: BLOCKED** pending task-specific authority and Task 11
 Checkpoint 1. **Pilot/production: BLOCKED** pending identity, consent/contact,
 producer contracts, vendor, records, privacy/security/professional/

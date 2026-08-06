@@ -221,6 +221,36 @@ The following is only a design boundary:
   [`trust-boundaries-and-data-flows.md`](trust-boundaries-and-data-flows.md).
 - **Workstream C:** COMPLETE as conceptual documentation; see
   [`communication-contracts-and-schema-proposal.md`](communication-contracts-and-schema-proposal.md).
-- **Next safe action:** model Workstream D's fail-closed consent, contact,
-  preference and suppression behavior. T07-P12 still blocks runnable synthetic
-  code, and policy-dependent values/UI copy wait for their named approvals.
+- **Workstream D:** COMPLETE as design documentation; see
+  [`consent-contact-and-preference-model.md`](consent-contact-and-preference-model.md)
+  and
+  [`suppression-and-contact-change-policy.md`](suppression-and-contact-change-policy.md).
+  Every policy decision in this document's T07-P01–P12 table remains open; the
+  Workstream D model states the fail-closed safety floor that applies until each
+  is approved, and selects none of them.
+- **Workstream E:** COMPLETE as design documentation; see
+  [`outbox-and-delivery-state-machine.md`](outbox-and-delivery-state-machine.md).
+  It states duplicate resistance rather than exactly-once delivery, and invents
+  no cadence, retry bound, lease duration, or status wording.
+- **Workstream F:** COMPLETE as design documentation; see
+  [`minimal-payload-template-catalogue.md`](minimal-payload-template-catalogue.md).
+  It populates the "minimum safe template boundary" above with a registry
+  structure and leakage-test contract, and approves no template: T07-P04
+  (sender identity and brand), T07-P05 (CASL), and T07-P08 (copy, placeholders,
+  review workflow) remain open.
+- **Workstream G:** COMPLETE as design documentation; see
+  [`provider-adapter-contract.md`](provider-adapter-contract.md),
+  [`webhook-and-reconciliation-design.md`](webhook-and-reconciliation-design.md),
+  and [`vendor-review-scorecard.md`](vendor-review-scorecard.md). The
+  procurement-evidence list in section 4 above is now an instrument with named
+  reviewers and non-waivable rows. Vendor: NONE selected; T07-P11 remains open.
+- **Workstream H:** COMPLETE as design documentation; see
+  [`secure-portal-messaging-contract.md`](secure-portal-messaging-contract.md),
+  [`reply-and-review-queue-design.md`](reply-and-review-queue-design.md), and
+  [`secure-message-authorization-matrix.md`](secure-message-authorization-matrix.md).
+  It maps sections 3 and 7 above onto a professional messaging modality. T07-P07
+  (response expectations, urgent path, escalation) remains open, and the
+  prototype is NOT BUILT pending Task 05 and Task 06.
+- **Next safe action:** document Workstream I's appointment, follow-up, and Task
+  06 integration boundaries. T07-P12 still blocks runnable synthetic code, and
+  policy-dependent values/UI copy wait for their named approvals.

@@ -182,15 +182,22 @@ function sourceFiles(folder: string): string[] {
 }
 
 describe("Task 02 predecessor-upgrade migration contract", () => {
+  // These digests are taken over the exact checkout bytes. `.gitattributes`
+  // pins `src/lib/db/migrations/**/*.sql` to `eol=lf` so those bytes are the
+  // same on Windows and Unix; without that pin the identical, unmodified
+  // migration hashes differently per platform and this lock only holds on the
+  // machine that recorded it. If these values ever need to change, the
+  // migration content changed — stop and get the lead's sign-off. Do not
+  // re-record them to match a run.
   it("locks the unmodified 0018 bytes and ordered chain", () => {
     const identity = readMigrationChainIdentity(process.cwd());
     expect(identity.migrationHead).toBe("0018_clever_mister_fear");
     expect(identity.predecessor).toBe("0017_tense_pandemic");
     expect(identity.headSha256).toBe(
-      "33bcf5ab4aa289c17100fb59af1c9527204303e54b5f7d47dcdf5a2424a07a1c",
+      "112944b4420fe78517b7de2055287af5bf070058172064f540ca9130d5a5cfc6",
     );
     expect(identity.chainDigest).toBe(
-      "ac7202c197b876b143b7b83ec04cbe65f6b5116f53674ff95bf73e05aaade4bb",
+      "7f297547efbc424b79310574e2ba2e9ef6c90663111feae56ae2ae196ce2f202",
     );
   });
 

@@ -412,8 +412,19 @@ conceptual server-only contracts, but it must not apply a production migration.
 
 **Workstream B trust-boundary/data-flow design: complete.** The design authorizes
 no runtime effect. Workstream C's conceptual server-only contracts and schema
-proposal are now documented without a migration. The next safe repository slice
-is Workstream D's consent/contact/preference/suppression design. Runnable code
-remains blocked pending Task 07 scope approval and Task 11 Checkpoint 1;
-production and pilot delivery remain separately blocked by the dependency
-register.
+proposal are now documented without a migration, and Workstream D supplies the
+consent, contact, suppression, and scheduling terms that Flow 2's dispatch
+recheck and Flow 6's revocation/supersession races evaluate. Workstream E turns
+Flows 2, 5, and 6 into an explicit state machine with a transition catalogue,
+lease and idempotency rules, and a documented residual duplicate window. The
+Workstream F turns Flow 3's external-payload table into a versioned registry with
+closed placeholder allowlists, a scanner-safe URL, and deterministic leakage
+tests, and adds the TB-11 template authoring/publication controls. Workstream G
+specifies the TB-07, TB-08, and TB-09 controls in detail — the adapter contract,
+Flow 5's receiver pipeline, and the reconciliation workflow. Workstream H
+specifies Flow 4 and the TB-06 secure-content boundary in detail, including the
+per-request authorization matrix and the queue metadata limits. The next safe
+repository slice is Workstream I's appointment, follow-up, and Task 06
+integration boundaries. Runnable code remains blocked pending Task 07 scope approval and
+Task 11 Checkpoint 1; production and pilot delivery remain separately blocked by
+the dependency register.

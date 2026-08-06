@@ -360,6 +360,25 @@ production modules into the Task 01 sandbox:
   added.
 - **Workstream C:** COMPLETE as conceptual documentation; all requested
   contracts and field-level schema metadata are defined without a migration.
-- **Next safe action:** produce Workstream D's consent/contact/preference/
-  suppression model. Separately, approve/register a bounded Task 07 synthetic
-  scope before any runnable code.
+- **Workstream D:** COMPLETE as design documentation; consent, contact
+  verification, quiet hours/timezone, language/accessibility, suppression, and
+  contact-change behaviour are specified fail-closed with no policy value
+  selected.
+- **Workstream E:** COMPLETE as design documentation; the orthogonal state axes,
+  transition catalogue, idempotency/concurrency contract, race determinism, and
+  scheduling rules are specified against the gaps recorded in section 3 above.
+- **Workstream F:** COMPLETE as design documentation; the template registry,
+  placeholder allowlists, rendering contract, URL boundary, and forbidden-data
+  leakage tests are specified. No template is approved and no production copy
+  was written.
+- **Workstream G:** COMPLETE as design documentation; the adapter contract,
+  deterministic synthetic outcome catalogue, webhook pipeline, reconciliation
+  workflow, and vendor scorecard are specified. No vendor is selected and no
+  adapter, endpoint, or credential exists.
+- **Workstream H:** COMPLETE as design documentation; the secure-thread
+  contract, queue design, and authorization matrix are specified against the
+  gaps in sections 4 and 6 above. Nine of thirteen thread-eligibility checks
+  depend on contracts absent from `main`, so the prototype is NOT BUILT.
+- **Next safe action:** document Workstream I's appointment, follow-up, and Task
+  06 integration boundaries. Separately, approve/register a bounded Task 07
+  synthetic scope before any runnable code.
