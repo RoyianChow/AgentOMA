@@ -287,8 +287,12 @@ D06, R01, and R03 depend on — see
 [`consent-contact-and-preference-model.md`](consent-contact-and-preference-model.md)
 and
 [`suppression-and-contact-change-policy.md`](suppression-and-contact-change-policy.md).
-No threat is accepted by any of these documents, and every control reference
-remains planned rather than proven. Runnable synthetic work remains blocked
+Workstream E specifies the outbox and state machine that P04, P05, P06, P07,
+D03, D05, R02, and R05 depend on — see
+[`outbox-and-delivery-state-machine.md`](outbox-and-delivery-state-machine.md) —
+including the duplicate, crash, timeout, replay, ordering, and race threats
+T07-13 through T07-23. No threat is accepted by any of these documents, and every
+control reference remains planned rather than proven. Runnable synthetic work remains blocked
 by the missing Task 07 scope and Task 11 Checkpoint 1. Real recipients,
 providers, PHI, credentials, network effects, production imports, production
 migrations, and production delivery remain unauthorized.

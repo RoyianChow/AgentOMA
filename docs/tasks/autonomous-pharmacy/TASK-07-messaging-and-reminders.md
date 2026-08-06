@@ -8,7 +8,7 @@ clinical/professional, operations
 **Priority:** P1 for consent, secure messaging, and synthetic delivery controls;
 P2 for approved production-provider integration
 
-**Status:** Workstreams A–D are complete as documentation. Conceptual design may
+**Status:** Workstreams A–E are complete as documentation. Conceptual design may
 continue; runnable synthetic implementation, real recipients, live providers,
 production delivery, and PHI processing remain blocked pending the gates below.
 
@@ -23,10 +23,15 @@ conceptual schema. Workstream D documents the fail-closed consent, contact
 verification, quiet-hours/timezone, language/accessibility, suppression, and
 contact-change behaviour over those contracts, at design baseline
 `023af56b35afba29cc2cf7081b7ee29eda3d6a73`, selecting no unresolved policy
-value; see [`../../task-07/README.md`](../../task-07/README.md). No Task
+value. Workstream E documents the transactional outbox, the four orthogonal
+state axes and their transition catalogue, idempotency/lease/concurrency and
+race determinism, scheduling and staleness rules, and the required invariants at
+design baseline `3d1b9e59abc6655cecff298f27922ee65ebb48f6`; it states duplicate
+resistance with a named residual window and claims no exactly-once delivery
+guarantee. See [`../../task-07/README.md`](../../task-07/README.md). No Task
 07-specific scope approval or Task 11 Checkpoint 1 is recorded. Further
 policy/design work may continue without applying a migration; the next
-documentation-only slice is Workstream E. Runnable synthetic implementation
+documentation-only slice is Workstream F. Runnable synthetic implementation
 remains blocked until those records exist. Real recipients, PHI, live providers,
 production delivery, and clinical or claim effects remain prohibited.
 

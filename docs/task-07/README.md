@@ -1,6 +1,6 @@
 # Task 07 — Messaging and reminders
 
-**Current phase:** Workstreams A–D complete; outbox and state-machine design is next
+**Current phase:** Workstreams A–E complete; template-catalogue design is next
 
 **Runtime implementation:** not started
 
@@ -18,7 +18,8 @@ Start with:
 6. [`communication-contracts-and-schema-proposal.md`](communication-contracts-and-schema-proposal.md)
 7. [`consent-contact-and-preference-model.md`](consent-contact-and-preference-model.md)
 8. [`suppression-and-contact-change-policy.md`](suppression-and-contact-change-policy.md)
-9. [`../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md`](../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md)
+9. [`outbox-and-delivery-state-machine.md`](outbox-and-delivery-state-machine.md)
+10. [`../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md`](../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md)
 
 Workstream A found no patient communications subsystem on `main`: there is no
 integrated patient identity, verified contact/communication consent,
@@ -48,8 +49,18 @@ the contact-change, shared/recycled-destination, and wrong-recipient contract.
 No policy value, wording, threshold, duration, or keyword list was selected;
 unresolved decisions carry a named owner and a fail-closed safety floor.
 
-The next safe slice is documentation-only Workstream E: the transactional outbox
-and orthogonal state machine. Runnable synthetic code still waits for a
-versioned, expiring Task 07 scope, owner/reviewer metadata, risk/autonomy
-registration, kill-switch authority, and Task 11 Checkpoint 1. Production
-remains separately gated.
+Workstream E now defines the transactional outbox and the state machine over it:
+four orthogonal axes (intent, dispatch, delivery, reconciliation) with legal
+combinations and a truthful presentation mapping, a full transition catalogue,
+server-derived idempotency enforced by database uniqueness, atomic leasing,
+race determinism for every window including the two irreducible ones, webhook
+idempotency and monotonic projection, scheduling that expires rather than
+flushing a backlog, and the eleven required invariants with their enforcing
+mechanism. It states the guarantee honestly — duplicate resistance with a named
+residual window, never exactly-once delivery.
+
+The next safe slice is documentation-only Workstream F: the minimal-payload
+template catalogue. Runnable synthetic code still waits for a versioned,
+expiring Task 07 scope, owner/reviewer metadata, risk/autonomy registration,
+kill-switch authority, and Task 11 Checkpoint 1. Production remains separately
+gated.

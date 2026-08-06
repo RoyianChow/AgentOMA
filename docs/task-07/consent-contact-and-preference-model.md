@@ -622,7 +622,9 @@ documentation.** The suppression and contact-change half of Workstream D is in
 - **Real PHI, contact data, recipients, providers, or external delivery:** NO.
 - **Production schema, authentication, or vendor changed:** NO.
 
-The next safe repository slice is Workstream E — the transactional outbox and
-orthogonal state machine — as documentation. Runnable synthetic implementation
+Workstream E consumes these terms as the `DAQ` conjunction in
+[`outbox-and-delivery-state-machine.md`](outbox-and-delivery-state-machine.md).
+The next safe repository slice is Workstream F — the minimal-payload template
+catalogue — as documentation. Runnable synthetic implementation
 remains **BLOCKED** pending T07-D02 and Task 11 Checkpoint 1. Pilot and
 production remain separately blocked by all applicable G1–G6 decisions.

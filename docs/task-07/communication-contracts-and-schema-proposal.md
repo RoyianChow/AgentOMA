@@ -1078,8 +1078,11 @@ suppression — in
 [`consent-contact-and-preference-model.md`](consent-contact-and-preference-model.md)
 and
 [`suppression-and-contact-change-policy.md`](suppression-and-contact-change-policy.md),
-without selecting any of the policy values listed above as unresolved. The next
-documentation-only slice is Workstream E: the transactional outbox and
-orthogonal state machine. Runnable synthetic implementation remains **BLOCKED**
+without selecting any of the policy values listed above as unresolved.
+Workstream E now owns the final state machines this document reserved columns
+for — see
+[`outbox-and-delivery-state-machine.md`](outbox-and-delivery-state-machine.md).
+The next documentation-only slice is Workstream F: the minimal-payload template
+catalogue. Runnable synthetic implementation remains **BLOCKED**
 pending G0 and Task 11 Checkpoint 1. Pilot and production remain separately
 blocked by all applicable G1–G6 decisions.

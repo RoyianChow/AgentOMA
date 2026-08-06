@@ -228,6 +228,10 @@ The following is only a design boundary:
   Every policy decision in this document's T07-P01–P12 table remains open; the
   Workstream D model states the fail-closed safety floor that applies until each
   is approved, and selects none of them.
-- **Next safe action:** document Workstream E's transactional outbox and
-  orthogonal state machine. T07-P12 still blocks runnable synthetic code, and
-  policy-dependent values/UI copy wait for their named approvals.
+- **Workstream E:** COMPLETE as design documentation; see
+  [`outbox-and-delivery-state-machine.md`](outbox-and-delivery-state-machine.md).
+  It states duplicate resistance rather than exactly-once delivery, and invents
+  no cadence, retry bound, lease duration, or status wording.
+- **Next safe action:** document Workstream F's minimal-payload template
+  catalogue. T07-P12 still blocks runnable synthetic code, and policy-dependent
+  values/UI copy wait for their named approvals.

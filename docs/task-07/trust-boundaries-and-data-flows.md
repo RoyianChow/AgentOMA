@@ -414,8 +414,9 @@ conceptual server-only contracts, but it must not apply a production migration.
 no runtime effect. Workstream C's conceptual server-only contracts and schema
 proposal are now documented without a migration, and Workstream D supplies the
 consent, contact, suppression, and scheduling terms that Flow 2's dispatch
-recheck and Flow 6's revocation/supersession races evaluate. The next safe
-repository slice is Workstream E's transactional outbox and orthogonal state
-machine. Runnable code remains blocked pending Task 07 scope approval and
+recheck and Flow 6's revocation/supersession races evaluate. Workstream E turns
+Flows 2, 5, and 6 into an explicit state machine with a transition catalogue,
+lease and idempotency rules, and a documented residual duplicate window. The
+next safe repository slice is Workstream F's minimal-payload template catalogue. Runnable code remains blocked pending Task 07 scope approval and
 Task 11 Checkpoint 1; production and pilot delivery remain separately blocked by
 the dependency register.

@@ -364,6 +364,9 @@ production modules into the Task 01 sandbox:
   verification, quiet hours/timezone, language/accessibility, suppression, and
   contact-change behaviour are specified fail-closed with no policy value
   selected.
-- **Next safe action:** document Workstream E's transactional outbox and
-  orthogonal state machine. Separately, approve/register a bounded Task 07
-  synthetic scope before any runnable code.
+- **Workstream E:** COMPLETE as design documentation; the orthogonal state axes,
+  transition catalogue, idempotency/concurrency contract, race determinism, and
+  scheduling rules are specified against the gaps recorded in section 3 above.
+- **Next safe action:** document Workstream F's minimal-payload template
+  catalogue. Separately, approve/register a bounded Task 07 synthetic scope
+  before any runnable code.
