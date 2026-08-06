@@ -411,8 +411,9 @@ conceptual server-only contracts, but it must not apply a production migration.
 ## Current disposition
 
 **Workstream B trust-boundary/data-flow design: complete.** The design authorizes
-no runtime effect. The next safe repository slice is Workstream C's conceptual
-server-only domain contracts and schema proposal, provided it remains
-documentation-only and applies no production migration. Runnable code remains
-blocked pending Task 07 scope approval and Task 11 Checkpoint 1; production and
-pilot delivery remain separately blocked by the dependency register.
+no runtime effect. Workstream C's conceptual server-only contracts and schema
+proposal are now documented without a migration. The next safe repository slice
+is Workstream D's consent/contact/preference/suppression design. Runnable code
+remains blocked pending Task 07 scope approval and Task 11 Checkpoint 1;
+production and pilot delivery remain separately blocked by the dependency
+register.

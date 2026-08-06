@@ -279,8 +279,9 @@ can still fail when events race:
 
 ## Current disposition
 
-**Workstream B threat modelling: complete as design documentation.** No threat is
-accepted by this document. Runnable synthetic work remains blocked by the missing
-Task 07 scope and Task 11 Checkpoint 1. Real recipients, providers, PHI,
-credentials, network effects, production imports, production migrations, and
-production delivery remain unauthorized.
+**Workstream B threat modelling: complete as design documentation.** Workstream C
+now maps the controls into conceptual server-only contracts and field metadata.
+No threat is accepted by either document. Runnable synthetic work remains blocked
+by the missing Task 07 scope and Task 11 Checkpoint 1. Real recipients,
+providers, PHI, credentials, network effects, production imports, production
+migrations, and production delivery remain unauthorized.

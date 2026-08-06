@@ -8,7 +8,7 @@ clinical/professional, operations
 **Priority:** P1 for consent, secure messaging, and synthetic delivery controls;
 P2 for approved production-provider integration
 
-**Status:** Workstreams A–B are complete as documentation. Conceptual design may
+**Status:** Workstreams A–C are complete as documentation. Conceptual design may
 continue; runnable synthetic implementation, real recipients, live providers,
 production delivery, and PHI processing remain blocked pending the gates below.
 
@@ -17,14 +17,14 @@ production delivery, and PHI processing remain blocked pending the gates below.
 ## Execution checkpoint — 2026-08-06
 
 Workstream A assessed repository baseline
-`12801c7211cb6ce3286d209762d61c11b6830193`. Workstream B now documents the
-required threat model and trust-boundary data flows; see
+`12801c7211cb6ce3286d209762d61c11b6830193`. Workstreams B and C now document the
+required threat model, trust-boundary data flows, server-only contracts and
+conceptual schema; see
 [`../../task-07/README.md`](../../task-07/README.md). No Task 07-specific scope
-approval or Task 11 Checkpoint 1 is recorded. Conceptual contract and
-schema-proposal work may continue without applying a migration. Runnable
-synthetic implementation remains blocked until those records exist. Real
-recipients, PHI, live providers, production delivery, and clinical or claim
-effects remain prohibited.
+approval or Task 11 Checkpoint 1 is recorded. Further policy/design work may
+continue without applying a migration. Runnable synthetic implementation remains
+blocked until those records exist. Real recipients, PHI, live providers,
+production delivery, and clinical or claim effects remain prohibited.
 
 Outcome
 

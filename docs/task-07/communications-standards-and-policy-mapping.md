@@ -219,6 +219,8 @@ The following is only a design boundary:
 - **Workstream B:** COMPLETE as design documentation; see
   [`communications-threat-model.md`](communications-threat-model.md) and
   [`trust-boundaries-and-data-flows.md`](trust-boundaries-and-data-flows.md).
-- **Next safe action:** produce conceptual Workstream C contracts without a
-  migration. T07-P12 still blocks runnable synthetic code, and
-  policy-dependent schema/UI decisions wait for their named approvals.
+- **Workstream C:** COMPLETE as conceptual documentation; see
+  [`communication-contracts-and-schema-proposal.md`](communication-contracts-and-schema-proposal.md).
+- **Next safe action:** model Workstream D's fail-closed consent, contact,
+  preference and suppression behavior. T07-P12 still blocks runnable synthetic
+  code, and policy-dependent values/UI copy wait for their named approvals.

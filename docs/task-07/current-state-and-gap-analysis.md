@@ -358,6 +358,8 @@ production modules into the Task 01 sandbox:
 - **Production schema/auth/vendor changed:** NO.
 - **Workstream B:** COMPLETE as design documentation; no runtime effect was
   added.
-- **Next safe action:** produce Workstream C's conceptual server-only contracts
-  and schema proposal without a migration. Separately, approve/register a
-  bounded Task 07 synthetic scope before any runnable code.
+- **Workstream C:** COMPLETE as conceptual documentation; all requested
+  contracts and field-level schema metadata are defined without a migration.
+- **Next safe action:** produce Workstream D's consent/contact/preference/
+  suppression model. Separately, approve/register a bounded Task 07 synthetic
+  scope before any runnable code.
