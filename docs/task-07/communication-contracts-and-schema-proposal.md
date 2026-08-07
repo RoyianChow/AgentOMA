@@ -1089,7 +1089,7 @@ approving no template. Workstream G populates Contracts 15–17 and 19 with the
 adapter contract, webhook pipeline, and reconciliation workflow, selecting no
 vendor. Workstream H populates Contracts 20–25 with the secure-thread contract,
 queue design, and authorization matrix, building no prototype. The next
-documentation-only slice is Workstream I: appointment, follow-up, and Task 06
-integration boundaries. Runnable synthetic implementation remains **BLOCKED**
+documentation-only slice is Workstream J: privacy, security, audit, and
+retention. Runnable synthetic implementation remains **BLOCKED**
 pending G0 and Task 11 Checkpoint 1. Pilot and production remain separately
 blocked by all applicable G1–G6 decisions.

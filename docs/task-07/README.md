@@ -1,6 +1,6 @@
 # Task 07 — Messaging and reminders
 
-**Current phase:** Workstreams A–H complete; producer-integration design is next
+**Current phase:** Workstreams A–I complete; privacy/audit/retention design is next
 
 **Runtime implementation:** not started
 
@@ -26,7 +26,8 @@ Start with:
 14. [`secure-portal-messaging-contract.md`](secure-portal-messaging-contract.md)
 15. [`reply-and-review-queue-design.md`](reply-and-review-queue-design.md)
 16. [`secure-message-authorization-matrix.md`](secure-message-authorization-matrix.md)
-17. [`../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md`](../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md)
+17. [`appointment-follow-up-and-task-06-integration.md`](appointment-follow-up-and-task-06-integration.md)
+18. [`../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md`](../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md)
 
 Workstream A found no patient communications subsystem on `main`: there is no
 integrated patient identity, verified contact/communication consent,
@@ -108,8 +109,19 @@ invariant 2 (zero-PHI intake) predates authenticated **patient-side** surfaces,
 and this workstream introduces one by design. The public intake and self-check
 are unchanged; the rescoping decision is the lead's.
 
-The next safe slice is documentation-only Workstream I: appointment, follow-up,
-and Task 06 integration boundaries. Runnable synthetic code still waits for a
-versioned, expiring Task 07 scope, owner/reviewer metadata, risk/autonomy
-registration, kill-switch authority, and Task 11 Checkpoint 1. Production
-remains separately gated.
+Workstream I now defines the producer boundaries. Task 07 is strictly a
+consumer: it reads committed, versioned source events and never creates,
+confirms, cancels, completes, or closes anything in the producing domain.
+Appointment purpose is excluded structurally rather than filtered, no inbound
+path can confirm or alter an appointment, the production follow-up notification
+feature stays disabled by remaining unbuilt (verified against the repository,
+not assumed), and **reminder delivery is never evidence that follow-up
+occurred** — the professional duty is discharged by contact and documentation,
+not by a message leaving a queue. Every prohibition is enforced by absent
+database grants rather than by convention.
+
+The next safe slice is documentation-only Workstream J: privacy, security,
+audit, and retention. Runnable synthetic code still waits for a versioned,
+expiring Task 07 scope, owner/reviewer metadata, risk/autonomy registration,
+kill-switch authority, and Task 11 Checkpoint 1. Production remains separately
+gated.

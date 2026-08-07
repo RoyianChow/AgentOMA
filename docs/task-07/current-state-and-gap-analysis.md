@@ -379,6 +379,11 @@ production modules into the Task 01 sandbox:
   contract, queue design, and authorization matrix are specified against the
   gaps in sections 4 and 6 above. Nine of thirteen thread-eligibility checks
   depend on contracts absent from `main`, so the prototype is NOT BUILT.
-- **Next safe action:** document Workstream I's appointment, follow-up, and Task
-  06 integration boundaries. Separately, approve/register a bounded Task 07
-  synthetic scope before any runnable code.
+- **Workstream I:** COMPLETE as design documentation; the producer boundaries
+  for appointments, follow-ups, and Task 06 are specified. Section 1's finding
+  that the follow-up feature sends nothing was re-verified at that document's
+  baseline against `src/lib/follow-ups.ts` and an absence of any provider SDK or
+  outbound call in `src/`.
+- **Next safe action:** document Workstream J's privacy, security, audit, and
+  retention plan. Separately, approve/register a bounded Task 07 synthetic scope
+  before any runnable code.

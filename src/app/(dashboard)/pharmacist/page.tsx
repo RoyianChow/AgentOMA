@@ -9,6 +9,7 @@ import {
 import { requirePortalPage } from "@/lib/auth-guard";
 import { AILMENT_LABELS, type AilmentId } from "@/config/triage";
 import { listFollowUps, type FollowUpWorkItem } from "@/lib/follow-ups";
+import { rxIntakeGate } from "@/lib/rx-intake/gate";
 import DashboardRefresher from "./DashboardRefresher";
 import SignOutButton from "./SignOutButton";
 import styles from "./Dashboard.module.css";
@@ -118,6 +119,7 @@ export default async function PharmacistDashboard() {
     canManageFollowUps ? listFollowUps(actor, 50) : Promise.resolve([]),
   ]);
   const openFollowUps = followUps.filter((item) => item.isOpen).slice(0, 6);
+  const rxIntakeEnabled = rxIntakeGate().enabled;
 
   return (
     <div className={`${styles.page} animate-fade-in`}>
@@ -210,6 +212,13 @@ export default async function PharmacistDashboard() {
               {actor.role === "pharmacy_admin" && (
                 <Link href="/pharmacist/governance" className="btn btn-secondary">
                   Record Governance
+                </Link>
+              )}
+              {/* Off unless explicitly enabled. A synthetic experiment should
+                  not advertise itself on the daily worklist by default. */}
+              {rxIntakeEnabled && canManageFollowUps && (
+                <Link href="/pharmacist/rx-intake" className="btn btn-secondary">
+                  Rx Intake (synthetic)
                 </Link>
               )}
             </div>

@@ -8,7 +8,7 @@ clinical/professional, operations
 **Priority:** P1 for consent, secure messaging, and synthetic delivery controls;
 P2 for approved production-provider integration
 
-**Status:** Workstreams A–H are complete as documentation. Conceptual design may
+**Status:** Workstreams A–I are complete as documentation. Conceptual design may
 continue; runnable synthetic implementation, real recipients, live providers,
 production delivery, and PHI processing remain blocked pending the gates below.
 
@@ -49,9 +49,17 @@ workstream also names is **NOT BUILT**, because nine of thirteen eligibility
 checks depend on Task 05 and Task 06 contracts absent from `main`. Workstream H
 also surfaces, without resolving, the `AGENTS.md` zero-PHI scope question for
 authenticated **patient-side** surfaces — the public intake and self-check are
-unchanged, and the rescoping decision belongs to the product lead. Further
-policy/design work may continue without applying a migration; the next
-documentation-only slice is Workstream I. Runnable synthetic implementation
+unchanged, and the rescoping decision belongs to the product lead. Workstream I
+documents the producer boundaries for appointments, follow-ups, and Task 06:
+Task 07 consumes committed versioned events and holds no write path into any
+producing domain, appointment purpose is excluded structurally rather than
+filtered, no inbound path can confirm or alter an appointment, the production
+follow-up notification feature stays disabled by remaining unbuilt, and
+**reminder delivery is never evidence that follow-up occurred**. It also records
+that the Task 04 review/expiry date of 2026-08-05 has passed and needs renewal
+before any appointment-reminder work. Further policy/design work may continue
+without applying a migration; the next documentation-only slice is Workstream J.
+Runnable synthetic implementation
 remains blocked until those records exist. Real recipients, PHI, live providers,
 production delivery, and clinical or claim effects remain prohibited.
 
