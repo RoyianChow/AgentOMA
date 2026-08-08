@@ -150,3 +150,32 @@ this record are authorized through 2026-08-05. The capability must fail closed
 after expiry unless a new review extends it. Production data, credentials,
 systems, deployment, imports, hosted access, and external effects remain
 prohibited.
+
+## Coordinator confirmation of bounded synthetic configuration
+
+- **Coordinator:** Royian Chowdhury
+- **Confirmation date:** 2026-08-02
+- **Confirmation method:** Project Discord response
+
+The coordinator confirmed these local synthetic-only implementation choices:
+
+- pending booking holds last 15 minutes;
+- the server-owned public location label is
+  `Synthetic Pharmacy Location`;
+- public slot references are opaque, short-lived, and server-generated rather
+  than exposing database identifiers;
+- the maximum request size is 16 KiB; and
+- the maximum public-availability search window is 31 inclusive calendar days.
+
+The corresponding synthetic configuration values are:
+
+```text
+TASK04_PENDING_HOLD_MINUTES=15
+TASK04_PUBLIC_LOCATION_LABEL="Synthetic Pharmacy Location"
+TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS=900
+TASK04_MAX_REQUEST_BYTES=16384
+TASK04_MAX_AVAILABILITY_WINDOW_DAYS=31
+```
+
+These choices are bounded technical settings for the approved local synthetic
+sandbox only. They do not establish, approve, or imply production policy.
