@@ -102,3 +102,32 @@ No parent-scope `AGENTS.md` exists beyond the repo root.
 
 - Whether the eventual production identity model for Task 06 waits for Task 05 to fully ship, or whether a narrower interim patient-identity mechanism is acceptable for a virtual-care pilot specifically — this is a product/security decision, not inferred here.
 - Whether `apps/experiment-sandbox/`'s current G1 scope (Task 01) is broad enough to cover a WebRTC-shaped synthetic prototype (peer connections, media permission prompts even in a stub) or whether that needs its own sandbox-scope decision, analogous to `docs/task-04/decisions/synthetic-sandbox-scope-approval-2026-08-02.md`. Flagging this explicitly for Royian before Workstream L (synthetic prototype) begins.
+
+## 13. Addendum — 2026-08-06, after re-syncing with `main`
+
+§2's dependency-status table was accurate as of the original baseline (`12801c7`) but `main`
+has since advanced (`feat/task-06-virtual-care` merged forward to `063847c`, incorporating
+`main` through `07385ba`). Two corrections, not silently edited into §2 above so the original
+discovery record stays intact:
+
+- **Task 04 (booking/waitlist) now has real runtime code on `main`** — booking infrastructure,
+  public availability/creation/retrieval, a pharmacist queue (backend + UI), an expiry worker,
+  and synthetic delegation fixtures (PR #42). §2's "no appointment/booking code... anywhere in
+  `src/`" is now out of date. `VirtualVisit.appointmentRef` (Workstream D) remains nullable/
+  optional in this task's design regardless — that was a defensive choice, not one that
+  depended on Task 04 being unbuilt — but a deeper Task 04 integration is now *possible* in a
+  way it wasn't at original discovery time. Not pursued in this task without a separate
+  decision, since Task 06's own scope doesn't require it.
+- **Task 07 (messaging) is now fully documented on `main`** (17 files under `docs/task-07/`,
+  merged via PR #41), including `docs/task-07/appointment-follow-up-and-task-06-integration.md`
+  — Task 07's own Workstream I, which defines *its* consumer relationship to Task 06 in detail:
+  strict read-only consumption of suitability/consent, participant authorization rechecked
+  before every message, no external receipt ever satisfies a Task 06 fact, and no Task 07 event
+  may bypass a Task 06 gate. This is the authoritative source for Task 06's secure-messaging
+  workstream (I, not yet written) rather than something this task needs to invent from scratch.
+  Task 07's own document reports its Task 06 integration as `BLOCKED — no contract on main`
+  (true at *its* baseline) — this task's Workstream D contracts (`SecureMessageThread`,
+  `SecureMessage`) are the contract Task 07 is waiting on.
+
+No other §2 entries changed: Task 05 still does not exist on `main`, Task 01/02/11 status is
+unchanged from the original discovery.
