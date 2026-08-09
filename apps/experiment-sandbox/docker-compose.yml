@@ -1,0 +1,26 @@
+services:
+  task04-sandbox-db:
+    image: postgres:16.14-alpine
+    container_name: agentoma-task04-synthetic-postgres
+    environment:
+      POSTGRES_DB: task04_synthetic_db
+      POSTGRES_USER: task04_synthetic_owner
+      POSTGRES_PASSWORD: task04_synthetic_owner_password
+      POSTGRES_INITDB_ARGS: "--no-sync"
+    command: >
+      postgres -c fsync=off -c synchronous_commit=off -c full_page_writes=off
+    ports:
+      - "127.0.0.1:55404:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    volumes:
+      - ./src/db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U task04_synthetic_owner -d task04_synthetic_db",
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 30
