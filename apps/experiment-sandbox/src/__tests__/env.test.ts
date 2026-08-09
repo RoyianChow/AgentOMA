@@ -3,11 +3,25 @@ import { describe, expect, it, vi } from "vitest";
 import {
   SANDBOX_G1_DECISION_ID,
   SANDBOX_ORIGIN,
+  TASK04_APPROVAL_DECISION_VERSION,
+  TASK04_APPROVED_THROUGH_DATE_UTC,
+  TASK04_DEFAULT_MAX_ACCESSIBILITY_SELECTIONS,
+  TASK04_DEFAULT_MAX_PAGE_SIZE,
+  TASK04_DEFAULT_MAX_SLOT_CAPACITY,
+  TASK04_MAX_AVAILABILITY_WINDOW_DAYS,
+  TASK04_MAX_REQUEST_BYTES,
+  TASK04_PENDING_HOLD_MINUTES,
+  TASK04_PUBLIC_LOCATION_LABEL,
+  TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS,
+  TASK04_SANDBOX_EXPIRES_AT,
+  TASK04_SANDBOX_PHARMACY_ID,
+  TASK04_SANDBOX_POSTGRES_URL,
   parseSandboxEnv,
+  parseTask04SandboxEnv,
 } from "../env/server";
 
 const builtAt = new Date("2026-07-31T00:00:00.000Z");
-const expiresAt = new Date("2026-08-07T00:00:00.000Z");
+const expiresAt = new Date(TASK04_SANDBOX_EXPIRES_AT);
 
 function validEnv(): Record<string, string> {
   return {
@@ -18,6 +32,27 @@ function validEnv(): Record<string, string> {
     SANDBOX_ORIGIN: SANDBOX_ORIGIN,
     SANDBOX_G1_DECISION_ID: SANDBOX_G1_DECISION_ID,
     SANDBOX_DISABLED: "false",
+    TASK04_APPROVAL_DECISION_VERSION,
+    TASK04_SANDBOX_PHARMACY_ID,
+    TASK04_SANDBOX_POSTGRES_URL: TASK04_SANDBOX_POSTGRES_URL,
+    TASK04_MAX_SLOT_CAPACITY: String(TASK04_DEFAULT_MAX_SLOT_CAPACITY),
+    TASK04_MAX_ACCESSIBILITY_SELECTIONS: String(
+      TASK04_DEFAULT_MAX_ACCESSIBILITY_SELECTIONS,
+    ),
+    TASK04_MAX_PAGE_SIZE: String(TASK04_DEFAULT_MAX_PAGE_SIZE),
+    TASK04_PENDING_HOLD_MINUTES: String(
+      TASK04_PENDING_HOLD_MINUTES,
+    ),
+    TASK04_PUBLIC_LOCATION_LABEL,
+    TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS: String(
+      TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS,
+    ),
+    TASK04_MAX_REQUEST_BYTES: String(TASK04_MAX_REQUEST_BYTES),
+    TASK04_MAX_AVAILABILITY_WINDOW_DAYS: String(
+      TASK04_MAX_AVAILABILITY_WINDOW_DAYS,
+    ),
+    TASK04_PUBLIC_SLOT_REFERENCE_SECRET:
+      "SYNTHETIC_TASK04_ENV_TEST_SLOT_REFERENCE_SECRET",
   };
 }
 
@@ -62,6 +97,265 @@ describe("sandbox environment contract", () => {
         `SANDBOX_CONFIG_DENIED:PROHIBITED_VARIABLE:${key}`,
       );
     }
+  });
+
+  it("normalizes the Task 04 pharmacy scope and keeps it server-owned", () => {
+    const input = validEnv();
+    input.TASK04_SANDBOX_PHARMACY_ID = "synth-pharmacy-task04-local";
+    const env = parseTask04SandboxEnv(
+      input,
+      new Date("2026-08-01T00:00:00.000Z"),
+    );
+
+    expect(env.pharmacyId).toBe("SYNTH-PHARMACY-TASK04-LOCAL");
+    expect(env.postgresUrl).toBe(TASK04_SANDBOX_POSTGRES_URL);
+  });
+
+  it.each([
+    ["day before approval ends", "2026-08-04T23:59:59.999Z"],
+    ["approved final UTC date", "2026-08-05T23:59:59.999Z"],
+  ])("accepts Task 04 configuration on the %s", (_label, now) => {
+    const env = parseTask04SandboxEnv(validEnv(), new Date(now));
+    expect(env.approvalDecisionVersion).toBe(
+      TASK04_APPROVAL_DECISION_VERSION,
+    );
+    expect(TASK04_APPROVED_THROUGH_DATE_UTC).toBe("2026-08-05");
+  });
+
+  it("fails closed on the first UTC date after Task 04 approval", () => {
+    expect(() =>
+      parseTask04SandboxEnv(
+        validEnv(),
+        new Date("2026-08-06T00:00:00.000Z"),
+      ),
+    ).toThrow("SANDBOX_CONFIG_DENIED:TASK04_APPROVAL_EXPIRED");
+  });
+
+  it("fails closed when the configured sandbox expires inside the approval window", () => {
+    const expired = validEnv();
+    expired.SANDBOX_EXPIRES_AT = "2026-08-04T00:00:00.000Z";
+
+    expect(() =>
+      parseTask04SandboxEnv(
+        expired,
+        new Date("2026-08-04T00:00:00.001Z"),
+      ),
+    ).toThrow("SANDBOX_CONFIG_DENIED:EXPIRED");
+  });
+
+  it("rejects an expiry or approval identity outside the fixed approval", () => {
+    const lateExpiry = validEnv();
+    lateExpiry.SANDBOX_EXPIRES_AT = "2026-08-06T00:00:00.000Z";
+    expect(() =>
+      parseTask04SandboxEnv(
+        lateExpiry,
+        new Date("2026-08-04T00:00:00.000Z"),
+      ),
+    ).toThrow("SANDBOX_CONFIG_DENIED:TASK04_APPROVAL_WINDOW_EXCEEDED");
+
+    const wrongDecision = validEnv();
+    wrongDecision.TASK04_APPROVAL_DECISION_VERSION = "unapproved";
+    expect(() =>
+      parseTask04SandboxEnv(
+        wrongDecision,
+        new Date("2026-08-04T00:00:00.000Z"),
+      ),
+    ).toThrow("SANDBOX_CONFIG_DENIED:TASK04_MISSING_OR_MALFORMED_VARIABLE");
+  });
+
+  it.each([
+    undefined,
+    "",
+    "PHARMACY-TASK04-LOCAL",
+    "SYNTH-PHARMACY-",
+    "SYNTH-PHARMACY-TASK04 LOCAL",
+    `SYNTH-PHARMACY-${"A".repeat(82)}`,
+  ])("fails closed for missing or malformed Task 04 pharmacy scope %s", (value) => {
+    const input: Record<string, string | undefined> = {
+      ...validEnv(),
+      TASK04_SANDBOX_PHARMACY_ID: value,
+    };
+    expect(() =>
+      parseTask04SandboxEnv(input, new Date("2026-08-01T00:00:00.000Z")),
+    ).toThrow("SANDBOX_CONFIG_DENIED:TASK04_MISSING_OR_MALFORMED_VARIABLE");
+  });
+
+  it("rejects any non-approved Task 04 PostgreSQL destination", () => {
+    const input = validEnv();
+    input.TASK04_SANDBOX_POSTGRES_URL =
+      "postgresql://task04_synthetic_user:task04_synthetic_password@localhost:55404/task04_synthetic_db";
+    expect(() =>
+      parseTask04SandboxEnv(input, new Date("2026-08-01T00:00:00.000Z")),
+    ).toThrow("SANDBOX_CONFIG_DENIED:TASK04_MISSING_OR_MALFORMED_VARIABLE");
+  });
+
+  it("requires every synthetic setting and validates configured limits", () => {
+    for (const key of [
+      "TASK04_MAX_SLOT_CAPACITY",
+      "TASK04_MAX_ACCESSIBILITY_SELECTIONS",
+      "TASK04_MAX_PAGE_SIZE",
+      "TASK04_PENDING_HOLD_MINUTES",
+      "TASK04_PUBLIC_LOCATION_LABEL",
+      "TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS",
+      "TASK04_MAX_REQUEST_BYTES",
+      "TASK04_MAX_AVAILABILITY_WINDOW_DAYS",
+      "TASK04_PUBLIC_SLOT_REFERENCE_SECRET",
+    ]) {
+      const missing = validEnv();
+      delete missing[key];
+      expect(() =>
+        parseTask04SandboxEnv(
+          missing,
+          new Date("2026-08-04T00:00:00.000Z"),
+        ),
+      ).toThrow(
+        "SANDBOX_CONFIG_DENIED:TASK04_MISSING_OR_MALFORMED_VARIABLE",
+      );
+    }
+    const boundary = validEnv();
+    boundary.TASK04_MAX_SLOT_CAPACITY = "1";
+    boundary.TASK04_MAX_ACCESSIBILITY_SELECTIONS = "1";
+    boundary.TASK04_MAX_PAGE_SIZE = "1";
+    const parsedBoundary = parseTask04SandboxEnv(
+      boundary,
+      new Date("2026-08-04T00:00:00.000Z"),
+    );
+    expect(parsedBoundary.maxSlotCapacity).toBe(1);
+    expect(parsedBoundary.maxAccessibilitySelections).toBe(1);
+    expect(parsedBoundary.maxPageSize).toBe(1);
+
+    for (const invalid of ["0", "-1", "1.5", "not-a-number"]) {
+      for (const key of [
+        "TASK04_MAX_SLOT_CAPACITY",
+        "TASK04_MAX_ACCESSIBILITY_SELECTIONS",
+        "TASK04_MAX_PAGE_SIZE",
+      ]) {
+        expect(() =>
+          parseTask04SandboxEnv(
+            { ...validEnv(), [key]: invalid },
+            new Date("2026-08-04T00:00:00.000Z"),
+          ),
+        ).toThrow(
+          "SANDBOX_CONFIG_DENIED:TASK04_MISSING_OR_MALFORMED_VARIABLE",
+        );
+      }
+    }
+  });
+
+  it("accepts only the coordinator-approved synthetic values", () => {
+    const parsed = parseTask04SandboxEnv(
+      validEnv(),
+      new Date("2026-08-04T00:00:00.000Z"),
+    );
+    expect(parsed).toMatchObject({
+      pendingHoldMinutes: 15,
+      publicLocationLabel: "Synthetic Pharmacy Location",
+      publicSlotReferenceTtlSeconds: 900,
+      maxRequestBytes: 16_384,
+      maxAvailabilityWindowDays: 31,
+      supportedDisplayTimezones: ["America/Toronto"],
+    });
+
+    for (const [key, value] of [
+      ["TASK04_PENDING_HOLD_MINUTES", "14"],
+      ["TASK04_PUBLIC_LOCATION_LABEL", ""],
+      ["TASK04_PUBLIC_LOCATION_LABEL", "X".repeat(81)],
+      ["TASK04_PUBLIC_SLOT_REFERENCE_TTL_SECONDS", "899"],
+      ["TASK04_MAX_REQUEST_BYTES", "16383"],
+      ["TASK04_MAX_AVAILABILITY_WINDOW_DAYS", "30"],
+      ["TASK04_PUBLIC_SLOT_REFERENCE_SECRET", "too-short"],
+    ]) {
+      expect(() =>
+        parseTask04SandboxEnv(
+          { ...validEnv(), [key]: value },
+          new Date("2026-08-04T00:00:00.000Z"),
+        ),
+      ).toThrow(
+        "SANDBOX_CONFIG_DENIED:TASK04_MISSING_OR_MALFORMED_VARIABLE",
+      );
+    }
+  });
+
+  it("never prints or reflects the slot-reference secret", () => {
+    const secret = "SYNTHETIC_SLOT_REFERENCE_SECRET_MUST_NOT_APPEAR";
+    const input = {
+      ...validEnv(),
+      TASK04_PUBLIC_SLOT_REFERENCE_SECRET: secret,
+      TASK04_MAX_REQUEST_BYTES: "invalid",
+    };
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    let failure: unknown;
+    try {
+      parseTask04SandboxEnv(
+        input,
+        new Date("2026-08-04T00:00:00.000Z"),
+      );
+    } catch (error) {
+      failure = error;
+    }
+    expect((failure as Error).message).toBe(
+      "SANDBOX_CONFIG_DENIED:TASK04_MISSING_OR_MALFORMED_VARIABLE",
+    );
+    expect((failure as Error).message).not.toContain(secret);
+    expect(consoleError).not.toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it("keeps the synthetic availability cache optional and bounded", () => {
+    expect(
+      parseTask04SandboxEnv(
+        validEnv(),
+        new Date("2026-08-04T00:00:00.000Z"),
+      ).availabilityCacheTtlSeconds,
+    ).toBeUndefined();
+    expect(
+      parseTask04SandboxEnv(
+        {
+          ...validEnv(),
+          TASK04_SYNTHETIC_AVAILABILITY_CACHE_TTL_SECONDS: "60",
+        },
+        new Date("2026-08-04T00:00:00.000Z"),
+      ).availabilityCacheTtlSeconds,
+    ).toBe(60);
+    for (const invalid of ["0", "61", "1.5", "invalid"]) {
+      expect(() =>
+        parseTask04SandboxEnv(
+          {
+            ...validEnv(),
+            TASK04_SYNTHETIC_AVAILABILITY_CACHE_TTL_SECONDS:
+              invalid,
+          },
+          new Date("2026-08-04T00:00:00.000Z"),
+        ),
+      ).toThrow(
+        "SANDBOX_CONFIG_DENIED:TASK04_MISSING_OR_MALFORMED_VARIABLE",
+      );
+    }
+  });
+
+  it.each([
+    "PHARMACY_ID",
+    "DATABASE_URL",
+    "DIRECT_URL",
+    "POSTGRES_URL",
+    "POSTGRES_PRISMA_URL",
+    "POSTGRES_URL_NON_POOLING",
+    "SUPABASE_URL",
+    "SUPABASE_DB_URL",
+    "DOCKER_HOST",
+    "DOCKER_CONTEXT",
+    "DOCKER_TLS",
+    "DOCKER_TLS_VERIFY",
+    "DOCKER_CERT_PATH",
+  ])("rejects conflicting parent environment key %s", (key) => {
+    expect(() =>
+      parseTask04SandboxEnv(
+        { ...validEnv(), [key]: "prohibited-sentinel" },
+        new Date("2026-08-04T00:00:00.000Z"),
+      ),
+    ).toThrow(`SANDBOX_CONFIG_DENIED:PROHIBITED_VARIABLE:${key}`);
   });
 
   it("accepts AZURE_EXTENSION_DIR as a local, non-secret CI runner path", () => {
