@@ -35,6 +35,8 @@ const prohibitedQueueClientDataName =
   /(?:subjectReference|actorReference|caregiverReference|delegationGrant|syntheticContactReference|credentialDigest|confirmationDeadlineUtc|configuredCapacity|remainingCapacity)/;
 const protectedCatalogBoundaryName =
   /(?:execute|query)Task04PublicServiceCatalog|createTask04PublicSlotReferenceService|publicSlotReferenceSecret|TASK04_PUBLIC_SLOT_REFERENCE_SECRET|service_category_id|supported_modalities/;
+const protectedPublicBookingBoundaryName =
+  /(?:executeTask04BookingCreate|queryTask04PublicAvailability|loadTask04SandboxEnv|createTask04PublicSlotReferenceService|idempotencyKey|syntheticContactReference|managementCapability|capabilityReference|credentialDigest|bookingReference|receiptId)/;
 
 function importedModuleSpecifiers(source: string): string[] {
   return [
@@ -115,6 +117,22 @@ function pathIsWithin(root: string, candidate: string): boolean {
     (!isAbsolute(pathFromRoot) &&
       pathFromRoot !== ".." &&
       !pathFromRoot.startsWith(`..${sep}`))
+  );
+}
+
+function isPublicBookingServerOwnedModuleSpecifier(
+  specifier: string,
+): boolean {
+  return (
+    isCatalogServerOwnedModuleSpecifier(specifier) ||
+    /(?:^|\/)booking\/authorization(?:$|[./])/.test(
+      specifier,
+    ) ||
+    /(?:^|\/)book-server(?:$|[./])/.test(specifier) ||
+    /^(?:\.\/)?page(?:$|[.])/.test(specifier) ||
+    /(?:^|\/)app\/book\/(?:book-server|page)(?:$|[./])/.test(
+      specifier,
+    )
   );
 }
 
@@ -532,6 +550,155 @@ describe("sandbox import and storage boundary", () => {
         "../booking/service-catalog-contracts",
       ),
     ).toBe(false);
+  });
+
+  it("keeps the public booking client graph inside the minimized UI and server-action boundary", () => {
+    const publicBookingRoot = join(sourceRoot, "app", "book");
+    const publicBookingClientEntries = filesUnder(publicBookingRoot)
+      .filter((file) => /\.(ts|tsx)$/.test(file))
+      .filter((file) =>
+        clientModuleDirective.test(readFileSync(file, "utf8")),
+      );
+    const publicBookingServerModules = new Set([
+      join(publicBookingRoot, "book-server.ts"),
+      join(publicBookingRoot, "page.tsx"),
+      join(sourceRoot, "booking", "authorization.ts"),
+      ...authoritativeServerConfigurationModules,
+    ]);
+    expect(
+      task04QueueClientGraphViolations(
+        publicBookingClientEntries,
+        {
+          sourceRoot,
+          fileSystem: {
+            readSource: (file) => readFileSync(file, "utf8"),
+            fileExists: existsSync,
+          },
+          isForbiddenLocalModule: (file) =>
+            pathIsWithin(join(sourceRoot, "db"), file) ||
+            publicBookingServerModules.has(file),
+        },
+      ),
+    ).toEqual([]);
+
+    const clientOffenders = publicBookingClientEntries.flatMap(
+      (file) => {
+        const source = readFileSync(file, "utf8");
+        return [
+          ...(protectedPublicBookingBoundaryName.test(source)
+            ? [
+                `${relative(sourceRoot, file)}:booking-authority`,
+              ]
+            : []),
+          ...importedModuleSpecifiers(source)
+            .filter(isPublicBookingServerOwnedModuleSpecifier)
+            .map(
+              (specifier) =>
+                `${relative(sourceRoot, file)}:${specifier}`,
+            ),
+        ];
+      },
+    );
+    expect(clientOffenders).toEqual([]);
+
+    for (const forbiddenImport of [
+      "../../db/service-catalog",
+      "../../db/availability",
+      "../../db/booking-create",
+      "../../db/public-slot-reference",
+      "../../booking/authorization",
+      "../../booking/config",
+      "../../env/server",
+      "./book-server",
+      "./page",
+    ]) {
+      expect(
+        isPublicBookingServerOwnedModuleSpecifier(
+          forbiddenImport,
+        ),
+      ).toBe(true);
+    }
+
+    const clientSource = publicBookingClientEntries
+      .map((file) => readFileSync(file, "utf8"))
+      .join("\n");
+    expect(clientSource).not.toMatch(
+      /Intl\.DateTimeFormat|toLocale(?:Date|Time)?String/,
+    );
+    expect(clientSource).not.toMatch(
+      /(?:localStorage|sessionStorage|indexedDB|document\.cookie|console\.)/,
+    );
+  });
+
+  it("rejects direct and transitive public-booking client imports of server implementation modules", () => {
+    const fixtureRoot = resolve(
+      sourceRoot,
+      "__task04_public_booking_graph_fixture__",
+    );
+    const directClient = join(fixtureRoot, "direct-client.tsx");
+    const transitiveClient = join(
+      fixtureRoot,
+      "transitive-client.tsx",
+    );
+    const localHelper = join(fixtureRoot, "booking-helper.ts");
+    const serverModule = join(fixtureRoot, "book-server.ts");
+    const safeClient = join(fixtureRoot, "safe-client.tsx");
+    const safeUi = join(fixtureRoot, "book-ui-model.ts");
+    const sources = new Map<string, string>([
+      [
+        directClient,
+        '"use client"; import { execute } from "./book-server"; export const value = execute;',
+      ],
+      [
+        transitiveClient,
+        '"use client"; import { helper } from "./booking-helper"; export const value = helper;',
+      ],
+      [
+        localHelper,
+        'export { execute as helper } from "./book-server.ts";',
+      ],
+      [
+        serverModule,
+        'export const execute = "server-only";',
+      ],
+      [
+        safeClient,
+        '"use client"; import { safeValue } from "./book-ui-model"; export const value = safeValue;',
+      ],
+      [safeUi, 'export const safeValue = "safe-ui";'],
+    ]);
+    const fixtureOptions = {
+      sourceRoot: fixtureRoot,
+      fileSystem: {
+        readSource: (file: string) => sources.get(file)!,
+        fileExists: (file: string) => sources.has(file),
+      },
+      isForbiddenLocalModule: (file: string) =>
+        file === serverModule,
+    };
+
+    expect(
+      task04QueueClientGraphViolations(
+        [directClient],
+        fixtureOptions,
+      ),
+    ).toEqual([
+      "direct-client.tsx:forbidden-local:./book-server",
+    ]);
+    expect(
+      task04QueueClientGraphViolations(
+        [transitiveClient],
+        fixtureOptions,
+      ),
+    ).toEqual([
+      "booking-helper.ts:forbidden-local:./book-server.ts",
+    ]);
+    expect(
+      task04QueueClientGraphViolations(
+        [safeClient],
+        fixtureOptions,
+      ),
+    ).toEqual([]);
   });
 
   it("rejects direct client imports of authoritative booking configuration with or without an extension", () => {
