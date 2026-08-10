@@ -59,7 +59,23 @@ export type SensitiveAssessmentResetters = {
   setError: (value: string | null) => void;
 };
 
-/** Reset every patient/encounter-specific value held by the browser form. */
+/**
+ * Reset every patient/encounter-specific value held by the browser form.
+ *
+ * Must run after persistence, cancellation, intake switching, session expiry
+ * and sign-out. Intake switching is the one most easily missed and the most
+ * damaging: without it the previous patient's identity stays in component state
+ * while the next patient's assessment is being entered, and whatever is left
+ * behind can be persisted against the wrong person.
+ *
+ * Note that fields do not all reset to empty. Fields the pharmacist must choose
+ * deliberately — identity, viewer attestation, eligibility answers — reset to
+ * "" so that "not yet answered" stays distinguishable from a real answer, and
+ * the completion gates keep failing closed until they are filled in. Fields
+ * with a genuine neutral default reset to it instead. Neither may ever be left
+ * holding the last encounter's value, which is the whole point of resetting
+ * rather than only clearing what looks sensitive.
+ */
 export function resetSensitiveAssessmentState(
   setters: SensitiveAssessmentResetters,
 ): void {

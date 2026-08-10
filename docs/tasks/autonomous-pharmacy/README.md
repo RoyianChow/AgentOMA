@@ -9,6 +9,10 @@ This folder is the execution map for the autonomous-pharmacy program. Each
 scope, dependencies, stop conditions, evidence, and review gates. A task file
 describes work to do; it does **not** prove that the work is implemented.
 
+Before selecting a task, read the [current implementation status](CURRENT-IMPLEMENTATION-STATUS.md).
+It compares the task contracts with the repository and records what is
+complete, partial, blocked, or still unstarted.
+
 ## Start an assigned task
 
 1. Read [`../../../AGENTS.md`](../../../AGENTS.md). It is the only canonical
