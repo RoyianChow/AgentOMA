@@ -1,5 +1,16 @@
 Task 01 — Enforce the Experimental Sandbox
 
+## Next-sprint checkpoint — 2026-08-10
+
+**Repository state:** `PASS` for the recorded local synthetic candidate; G2 is
+not requested and G3 remains empty.
+**Sprint slice:** reconcile the stale Task 01 README with the evidence manifest
+and final report, then preserve the boundary, artifact, evidence-integrity, and
+production-invariance checks for any sandbox change.
+**Exit:** documentation agrees with evidence and any new candidate has complete
+red/green and root verification. No hosted preview or production import is in
+scope. See [`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md).
+
 Version: 3 · supersedes Task 01 v2 · 2026-07-30Owner profile: platform/security developerRequired reviewers: product lead and security/privacy reviewerPriority: P0 foundation — blocks every later experimental capabilityStatus: repository discovery may start; implementation is approval-gatedProduction authorization: none
 
 Mission

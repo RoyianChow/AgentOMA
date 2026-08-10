@@ -70,6 +70,15 @@ function responseSchemaForOperation(
   }
 }
 
+/**
+ * Re-validates a stored snapshot on the way OUT, not just on the way in.
+ *
+ * A snapshot was written by an earlier deployment and is replayed by this one.
+ * Trusting it because it was once valid would let a response that no longer
+ * satisfies the current contract reach a caller. A snapshot that fails to parse
+ * is reported as a generic unavailability rather than repaired or partially
+ * returned — a half-understood past result is not a safe answer.
+ */
 function validateReplayResponse(
   context: Task04AuthoritativeTransactionContext,
   operation: Task04SupportedIdempotentOperation,
@@ -85,6 +94,27 @@ function validateReplayResponse(
   return parsed.data;
 }
 
+/**
+ * Claims the right to run a command exactly once, or reports what the previous
+ * attempt did.
+ *
+ * The claim is an INSERT ... ON CONFLICT DO NOTHING rather than a "look up the
+ * key, then insert if absent" pair. Two concurrent duplicates that both looked
+ * first would both find nothing and both proceed; here the unique index decides
+ * a single winner inside the database. A returned row means this caller owns
+ * the command, and only then does any booking or capacity work happen.
+ *
+ * The loser re-reads the row FOR UPDATE so it queues behind the winner instead
+ * of racing it to a verdict, then splits three ways:
+ *
+ *   - a different request digest under the same key is a CONFLICT. The key
+ *     identifies one specific command; honouring a second, different body under
+ *     it would hand back a result that belongs to another request.
+ *   - anything not yet completed is reported as still in progress. An
+ *     in-flight or failed attempt has no result to replay, and inventing one
+ *     would report work as done that may never have committed.
+ *   - only a completed row replays its stored response.
+ */
 export async function beginTask04IdempotentCommand(
   transaction: Task04TransactionSql,
   context: Task04AuthoritativeTransactionContext,
@@ -173,6 +203,19 @@ export async function beginTask04IdempotentCommand(
   };
 }
 
+/**
+ * Records the result that future replays will return.
+ *
+ * The UPDATE requires state = 'in_progress', so completion can only ever move a
+ * record forward once. A second completion — a retry, or two paths both
+ * believing they own the command — matches no row and raises rather than
+ * silently overwriting the stored result with a different one.
+ *
+ * This runs inside the caller's transaction, so the snapshot and the booking,
+ * capacity, audit and outbox rows it describes commit together or not at all.
+ * A snapshot that survived a rolled-back command would promise a booking that
+ * does not exist.
+ */
 export async function completeTask04IdempotentCommand(
   transaction: Task04TransactionSql,
   context: Task04AuthoritativeTransactionContext,

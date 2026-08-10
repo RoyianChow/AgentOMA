@@ -51,6 +51,14 @@ const TASK04_BOOKING_MANAGEMENT_ACTIONS = [
   "booking:view",
 ] as const;
 
+// Who the booking is for is decided by the server, not by the request body.
+//
+// Taking actor, subject or delegation from the caller would let one person book
+// as another simply by naming them. Until the identity work in Task 05 exists,
+// this prototype pins them to fixed synthetic references — which also keeps the
+// surface strictly administrative: there is no field here, and none in the
+// request schema, that could carry a symptom, health number or reason for the
+// visit.
 export const TASK04_SYNTHETIC_BOOKING_CREATE_AUTHORITY =
   Object.freeze({
     actorType: "synthetic_delegate" as const,
@@ -117,6 +125,12 @@ export type Task04BookingCreateEvidence = Readonly<{
   outbox: Task04OutboxEventInput;
 }>;
 
+// Identifiers are random and opaque, never sequential and never a database key.
+// A guessable or countable reference would let a caller enumerate other
+// people's bookings, and a leaked primary key would tie a public value to
+// internal storage. The prefix is for human recognition in logs only and
+// carries no authority — possessing a reference never authorizes anything on
+// its own.
 function createOpaqueReference(prefix: string): string {
   return `${prefix}-${randomBytes(18).toString("base64url")}`;
 }
@@ -256,6 +270,23 @@ export function buildTask04BookingCreateEvidence(
   return Object.freeze({ responseData, audit, outbox });
 }
 
+/**
+ * Takes the row lock and re-checks every condition while holding it.
+ *
+ * Whatever availability showed the caller is advisory by the time it gets here:
+ * the slot may have been cancelled, its service deactivated, its modality
+ * withdrawn, or the start time may now be in the past. Validating before the
+ * lock would read state that another transaction can still change; the checks
+ * below run after FOR UPDATE, so what is verified is what gets booked.
+ *
+ * The lock covers slot AND service because the decision depends on both — a
+ * service deactivated concurrently would otherwise slip past a slot-only lock.
+ *
+ * Every failure collapses to one SLOT_NO_LONGER_AVAILABLE. Distinguishing
+ * "cancelled" from "service withdrawn" from "capacity gone" would tell an
+ * unauthenticated caller about pharmacy operations they have no business
+ * seeing, and none of the distinctions change what they can do next.
+ */
 async function lockAndRevalidateBookingSlot(
   transaction: Task04TransactionSql,
   pharmacyId: string,
@@ -304,6 +335,27 @@ async function lockAndRevalidateBookingSlot(
   return row;
 }
 
+/**
+ * Takes one unit of capacity, or fails.
+ *
+ * Capacity is not a number that gets counted and compared. Each unit of a
+ * slot's capacity exists as its own row, and taking capacity means claiming one
+ * of those rows. That is what makes overbooking unrepresentable rather than
+ * merely unlikely: the classic "count bookings, compare to limit, insert" shape
+ * is a read-then-write, and two concurrent callers both read the same count
+ * before either writes.
+ *
+ * Here concurrency is settled by the row lock. FOR UPDATE on the first free
+ * unit means a second caller blocks and then re-evaluates against the state the
+ * first one left, so it sees the unit taken instead of re-deriving a stale
+ * total. Ordering by unit_sequence keeps that deterministic and reproducible in
+ * tests rather than dependent on scan order.
+ *
+ * "No free unit" is deliberately the same SLOT_NO_LONGER_AVAILABLE the caller
+ * would get for a withdrawn slot — a full slot and an unavailable one are the
+ * same fact to whoever is booking, and telling them apart would leak how busy
+ * the pharmacy is.
+ */
 async function acquireCapacityUnit(
   transaction: Task04TransactionSql,
   pharmacyId: string,
@@ -359,6 +411,17 @@ async function executeBookingCreateTransaction(
     );
   }
 
+  // The public reference is resolved twice on purpose, once to find the row to
+  // lock and once after the lock is held.
+  //
+  // The first resolution happens against unlocked state, so between it and the
+  // lock the reference could stop pointing where it did — it is short-lived and
+  // server-issued, and expiry or reissue is exactly the kind of thing that can
+  // land in that window. Locking a row identified by a since-changed reference
+  // would book a slot the caller never chose.
+  //
+  // Re-resolving under the lock and requiring the same slot closes that gap: it
+  // confirms the row now held is still the one the reference denotes.
   const initialResolution =
     await resolveTask04PublicSlotReference(
       transaction,
@@ -389,6 +452,15 @@ async function executeBookingCreateTransaction(
     slot.slot_id,
   );
 
+  // Whether staff must confirm is the SLOT's property, read from the row just
+  // locked — never anything the request asked for. A caller cannot elect to
+  // skip confirmation for a service that requires it.
+  //
+  // The deadline is computed by the database from transaction_timestamp()
+  // rather than in application code, so it is anchored to the same trusted
+  // clock every expiry check later uses. A deadline derived from process time
+  // would drift against the worker that enforces it, and a booking could expire
+  // early or outlive its hold.
   const status = slot.requires_staff_confirmation
     ? "pending_confirmation"
     : "confirmed";
@@ -462,6 +534,21 @@ async function executeBookingCreateTransaction(
     )
   `;
 
+  // Capacity is attached one of two ways, and never both — the schema's
+  // num_nonnulls(booking_id, capacity_hold_id) <= 1 check makes a unit that is
+  // simultaneously held and booked impossible to store.
+  //
+  //   pending_confirmation -> a hold owns the unit until staff confirm or it
+  //                           expires, so the seat is genuinely reserved rather
+  //                           than optimistically assumed;
+  //   confirmed            -> the booking owns the unit outright.
+  //
+  // Both writes re-assert booking_id IS NULL AND capacity_hold_id IS NULL in
+  // the WHERE clause and require exactly one row back. The unit was already
+  // locked above, so this cannot normally fail — which is the point: if it ever
+  // does, something claimed the unit through a path that bypassed the lock, and
+  // refusing loudly is better than overwriting another caller's claim and
+  // double-booking the seat.
   if (
     status === "pending_confirmation" &&
     holdId !== undefined &&
@@ -665,6 +752,21 @@ async function executeBookingCreateTransaction(
   );
 }
 
+/**
+ * Translates internal failures into the vocabulary the caller is allowed to
+ * hear, before mapTask04SafeError picks the message.
+ *
+ * An expired approval or a denied context is reported as FEATURE_DISABLED
+ * rather than as an error: a booking surface that is switched off should look
+ * switched off, not broken, and the reason it is off is nobody's business
+ * outside the pharmacy.
+ *
+ * Serialization and deadlock failures become TEMPORARILY_UNAVAILABLE because
+ * the transaction rolled back cleanly — nothing was written, and trying again
+ * is genuinely the right advice. Everything else is left alone to be mapped
+ * generically; guessing at an unrecognised failure risks telling a caller their
+ * booking failed when it may have committed.
+ */
 function normalizeBookingCreateFailure(
   failure: unknown,
 ): unknown {

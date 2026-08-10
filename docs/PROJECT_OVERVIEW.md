@@ -1,24 +1,22 @@
 # AgentOMA project overview
 
-**Status snapshot:** 2026-08-02
+**Status snapshot:** 2026-08-10
 
 **Current stage:** authenticated pilot foundation; **not production-ready**
 
-**Verification at this snapshot:** exact candidate
-`dcaab91f9adba7457a85214d51d1614c8560f404` is TypeScript- and ESLint-clean,
-passes 123 database-free tests, completes a production build, and passed the
-complete 211-test real-PostgreSQL suite twice with zero skipped/focused tests.
-Fresh Docker replay installed all 19 migrations through `0018`; audit-failure
-atomicity, tenant isolation, immutability, concurrency, red-flag zero-claim,
-completed-referral separation, reference-derived persistence, and evidence
-export cases passed. Supabase remains live only through `0017`; `0018` is not
-authorized or applied live. The separate predecessor-upgrade/restart harness
-has now had two exact-candidate G1-D runs. Both failed closed before migration
-or fixture writes (`DATABASE_IDENTITY_DENIED` on `dd503a14…`, then
-`DATABASE_CONNECTIVITY_DENIED` on `5b576b7b…`); both teardown checks passed.
-Task 02 remains blocked on execution of the completed safe diagnostic under a
-new exact-candidate proof, S27 export reconstruction, independent Task 11 review,
-recovery, G1-L, live parity, and G4.
+**Verification at this snapshot:** observed repository baseline
+`58fee60035988300909a158f3c91501faca89fa7` on `task7` is TypeScript- and
+ESLint-clean and passes 305/305 pure tests. This documentation pass did not
+rerun Docker. The last recorded complete real-PostgreSQL evidence remains the
+211-test exact candidate `dcaab91f9adba7457a85214d51d1614c8560f404`, with
+fresh replay through `0018`, atomic audit rollback, isolation, immutability,
+concurrency, red-flag zero-claim, referral separation, reference-derived
+persistence, and evidence export. Supabase remains live only through `0017`;
+`0018` is not authorized or applied live. Later predecessor/restart candidates
+`3a271a7d…` and `4e479514…` failed closed with `LOOPBACK_TCP_DENIED` before
+migration or synthetic fixture writes. Task 02 remains blocked on a new exact
+candidate and G1-D, successful predecessor/restart proof, S27, independent Task
+11 review, recovery, G1-L, live parity, and G4.
 
 AgentOMA supports Ontario pharmacy minor-ailment services. The Ministry of Health Executive Officer Notice effective July 1, 2026 is the source of truth for covered ailment groups, claim maximums, fees, PINs, and billing rules. See [`COMPLIANCE.md`](COMPLIANCE.md) for traceability and [`NEXT_STEPS.md`](NEXT_STEPS.md) for the remaining go-live work.
 
@@ -143,11 +141,12 @@ under S27.
 
 ## Autonomous pharmacy program (planned)
 
-The repository contains detailed work contracts for a longer-term,
+The repository contains fourteen detailed work contracts for a longer-term,
 pharmacist-supervised autonomous-pharmacy program. They cover sandbox isolation,
 P0 readiness, a command centre, booking, patient identity and portal access,
-virtual care, communications, fulfilment, interoperability, bounded AI, and
-release controls.
+virtual care, communications, fulfilment, interoperability, bounded AI, release
+controls, operational resilience, human factors/pilot readiness, and regulatory
+change governance.
 
 One bounded experiment now exists in code: **AI-RX-06**, a deterministic
 prescription-document parser at `/pharmacist/rx-intake`, disabled by default and
@@ -165,6 +164,12 @@ implemented. Start at the
 current dependency order and the work each task permits. All runnable
 experimental capabilities require the Task 01 synthetic boundary; promotion
 requires Task 11 evidence and the task's named human approvals.
+
+The maintained
+[`current implementation status`](tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md)
+compares all fourteen contracts with the repository. The
+[`2026-08-10 sprint plan`](tasks/autonomous-pharmacy/NEXT-SPRINT-PLAN-2026-08-10.md)
+orders bounded work but grants no implementation or production authority.
 
 The task briefs use **AgentRx** as their program/system label. The implemented
 repository remains **AgentOMA** until the product lead resolves the naming
@@ -295,15 +300,15 @@ idempotent.
 
 ## What is complete and what is not
 
-Implemented work is recorded in [`COMPLETED_WORK.md`](COMPLETED_WORK.md). The
-first G1-D run of the `0017 → 0018`/restart harness failed closed before any
-migration or fixture write; its evidence and teardown are preserved. The
-highest-priority Task 02 step is completing the database-free harness
-remediation, then obtaining a new exact-candidate G1-D for one rerun. That is
-followed by the S27 canonical export/reconstruction decision. After those,
-independent Task 11 review and recovery evidence are required before any exact
-G1-L request. Remaining product blockers also include LTC billing guidance and
-the first isolated restore drill. See
+Implemented work is recorded in [`COMPLETED_WORK.md`](COMPLETED_WORK.md).
+Task 02 remains the production-critical blocker: freeze a new clean candidate,
+obtain a new exact and expiring G1-D, pass the single predecessor/restart
+harness, resolve S27, and obtain independent Task 11 and recovery evidence
+before any G1-L request. The autonomous programme also has active governance
+blocks: Task 04's synthetic approval expired, and Task 11 merge/promotion still
+needs independent review. Tasks 12–14 are design contracts only. Remaining
+product blockers include LTC billing guidance and the first isolated restore
+drill. See
 [`NEXT_STEPS.md`](NEXT_STEPS.md) for an ordered plan and
 [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) for decisions that must come from a
 pharmacist or ODB.

@@ -1,5 +1,18 @@
 Task 11 — Cross-Cutting Quality, Security, Privacy, and Release Control Plane
 
+## Next-sprint checkpoint — 2026-08-10
+
+**Repository state:** synthetic implementation is approved, but merge and
+promotion remain `BLOCKED` pending exact-candidate independent review. The CI
+workflow described by the gap analysis is not in this checkout.
+**Sprint slice:** reconcile the other developer's branch/PR, required-check
+contract, capability/control catalogue, evidence schema, aggregate gate, and
+branch-protection evidence.
+**Exit:** independent quality/security/privacy/operations/accessibility review
+is bound to the exact candidate. Task 11 records approvals and never grants or
+self-approves them. See
+[`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md).
+
 ## Governance approval — 2026-08-02
 
 Royian Chowdhury has authorized implementation of Task 11's local, synthetic
@@ -606,7 +619,8 @@ Do not infer that a control exists because a dependency is installed or aconfigu
 
 Capability inventory
 
-Register every independently releasable capability from Tasks 01–10 and anyexisting repository behavior. At minimum record:
+Register every independently releasable capability from Tasks 01–10, Tasks 12
+and 13, and any existing repository behavior. At minimum record:
 
 Capability ID and name.
 
@@ -6774,7 +6788,19 @@ Task 01 synthetic environment: READY | BLOCKED | NOT VERIFIEDRepository instruct
 
 Task 02 test-plan review: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLETask 03 test-plan review: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLETask 04 test-plan review: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLETask 05 test-plan review: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLETask 06 test-plan review: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLETask 07 test-plan review: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLETask 08 test-plan review: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLETask 09 test-plan review: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLETask 10 test-plan review: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLE
 
+Task 12 test-plan review: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLE
+
+Task 13 test-plan review: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLE
+
+Task 14 test-plan review: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLE
+
 Task 02 promotion evidence: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLETask 03 promotion evidence: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLETask 04 promotion evidence: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLETask 05 promotion evidence: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLETask 06 promotion evidence: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLETask 07 promotion evidence: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLETask 08 promotion evidence: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLETask 09 promotion evidence: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLETask 10 promotion evidence: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLE
+
+Task 12 promotion evidence: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLE
+
+Task 13 promotion evidence: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLE
+
+Task 14 promotion evidence: APPROVED | BLOCKED | NOT VERIFIED | NOT APPLICABLE
 
 Capabilities registered: COUNTCapabilities missing owner: NONE | COUNTCapabilities missing risk tier: NONE | COUNTCapabilities missing autonomy level: NONE | COUNTExperimental capabilities missing expiry: NONE | COUNTExperimental capabilities missing kill switch: NONE | COUNTProduction candidates missing evidence: NONE | COUNTProduction candidates missing approvals: NONE | COUNTOpen blocking findings: NONE | COUNTOpen security findings: NONE | COUNTOpen accessibility findings: NONE | COUNTActive exceptions: NONE | COUNTExpired exceptions: NONE | COUNTExpired approvals/evidence: NONE | COUNTNon-waivable exceptions: NONE | FAIL
 

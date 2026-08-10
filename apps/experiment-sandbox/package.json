@@ -13,6 +13,7 @@
     "db:up": "docker compose -f docker-compose.yml up -d --wait task04-sandbox-db",
     "db:down": "docker compose -f docker-compose.yml down -v",
     "test:postgres": "tsx tools/run-postgres-tests.ts",
+    "verify-environment": "vitest run --config vitest.environment.config.ts --configLoader native --pool threads --maxWorkers 1",
     "verify-boundary": "node tools/verify-boundary.mjs",
     "verify-artifact": "node tools/verify-artifact.mjs",
     "verify-evidence": "node tools/verify-evidence.mjs",

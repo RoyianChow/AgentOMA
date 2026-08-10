@@ -345,6 +345,16 @@ async function lockAndValidateHold(
     ORDER BY id
     FOR UPDATE
   `;
+  // An already-expired hold is refused even though it is still marked active.
+  //
+  // The expiry worker may not have reached it yet, but the deadline is what
+  // decides — not whether a background job has caught up. Confirming against a
+  // lapsed hold would let staff reinstate a seat the patient had already lost,
+  // and would race the worker for the same capacity unit.
+  //
+  // The hold's expiry must also equal the booking's deadline exactly, for the
+  // same reason the expiry worker requires it: if the two records disagree,
+  // neither is trustworthy enough to move capacity on.
   const hold = rows[0];
   if (
     !hold ||
@@ -452,6 +462,21 @@ async function executeBookingConfirmTransaction(
     hold,
   );
 
+  // The capacity handover is three writes in one transaction:
+  //
+  //   booking -> confirmed
+  //   hold    -> consumed
+  //   unit    -> hold detached, booking attached
+  //
+  // They commit together or not at all, and the unit is never released before
+  // being re-attached. Doing it as a release followed by a claim would leave a
+  // moment where the seat looks free, and a concurrent booking could take the
+  // seat this patient is in the middle of having confirmed.
+  //
+  // Each write re-asserts the exact revision it validated (state plus
+  // aggregate_version, and for the unit, that it is still held by THIS hold).
+  // Anything else means the row moved after validation, so the confirmation is
+  // refused as an invalid transition rather than forced through.
   const nextBookingVersion = booking.aggregate_version + 1;
   const updatedBookings = await transaction<{ id: string }[]>`
     UPDATE task04_synthetic.booking

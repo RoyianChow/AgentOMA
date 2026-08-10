@@ -76,7 +76,8 @@ differ. Notably: middleware is **`src/proxy.ts`**, not `middleware.ts`. Check
 ## Maintenance rule
 
 **`AGENTS.md` is the only agent doc with content.** `CLAUDE.md`, `GEMINI.md`,
-`.cursor/rules/oma.mdc`, and `.github/copilot-instructions.md` are thin pointers to this file —
+`.cursor/rules/oma.mdc`, `.github/copilot-instructions.md`, and `soul.md` are
+thin pointers to this file —
 they must never contain a copy of these rules. (Codex reads `AGENTS.md` natively and needs no
 pointer file.)
 

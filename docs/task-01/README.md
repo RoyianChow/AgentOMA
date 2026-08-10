@@ -1,9 +1,9 @@
 # Task 01 experimental sandbox
 
-**Current phase:** Local implementation and evidence (P2–P8)
-**Overall status:** G1 granted; synthetic-only workspace implemented
+**Current phase:** Local synthetic boundary maintenance
+**Overall status:** PASS for the recorded evidence candidate
 **Production authorization:** none
-**G2 hosted preview:** NOT GRANTED
+**G2 hosted preview:** NOT REQUESTED; SBX-14 is NOT APPLICABLE
 **G3 production-import allowlist:** empty
 
 Start with:
@@ -16,10 +16,12 @@ Start with:
 6. [`runbook.md`](runbook.md)
 7. [`evidence/evidence-manifest.json`](evidence/evidence-manifest.json)
 
-The production baseline was captured at commit
-`7737ef26f09fec858d23337885ca7d31e9ccbc64` with a clean worktree. TypeScript,
-lint, 95 pure tests, and the production build passed. The Docker-backed suite
-was not run because Docker was unavailable on the capture machine.
+The authoritative status is the
+[`evidence manifest`](evidence/evidence-manifest.json) and
+[`final report`](evidence/final-report.md). The report records candidate
+`db880c926f169b14ab73892a7c2a02627c22c067`, tested implementation
+`225be71f99b9859aea8a9b088ea6a66ebcdd46cb`, and reviewed evidence commit
+`abb72ec5dced5327b6351009270e72b1199046c8`.
 
 G1 was granted by Royian Chowdhury as Product Lead and Security/Privacy
 Reviewer on 2026-07-31. The implementation is a separate
@@ -30,14 +32,17 @@ identity, denied adapters and network transport, marked sample artifacts,
 private/no-store headers, architecture scans, production invariance checks, and
 isolated tests.
 
-The checked-in evidence manifest is `BLOCKED` after candidate verification. The
-latest implementation commit is
-`0fc7c17deeac16cf99b7ae2780c6a833bd5e9cc7`; it adds server-owned queued-action
-tickets bound to a persisted lifecycle epoch. SBX-17 is evidence integrity and
-SBX-18 owns lifecycle races, including stale queued-action cancellation. Both
-now have standalone red/green evidence. Final reviewer sign-offs and branch
-protection are now recorded, but the remaining controls still lack the
-complete red-run set and the repository-bound root database test evidence. See
-[`evidence/final-report.md`](evidence/final-report.md).
+The manifest validates 17 applicable controls as PASS. SBX-14 is
+`NOT_APPLICABLE` only because G2 was not requested and no hosted origin exists.
+SBX-17 covers evidence integrity; SBX-18 covers lifecycle races and stale
+queued-action cancellation. Required red/green artifacts, root test evidence,
+final scans, branch-protection evidence, and final sign-offs are recorded in
+the evidence tree.
+
+That PASS does not transfer to later sandbox changes. Any changed source,
+dependency, configuration, lifecycle control, evidence schema, build output,
+or production baseline requires the affected verification and evidence to run
+again against the new exact candidate.
+
 This task does not authorize production deployment, production data, production
 credentials, live integrations, hosted access, or any G3 import.

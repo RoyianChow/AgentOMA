@@ -1,13 +1,15 @@
 # Task 04 — Current-State and Gap Analysis
 
-**Status:** Draft documented; review/correction in progress; runtime not implemented
-**Branch:** `task-04-booking-waitlist`
+**Status:** Partial synthetic runtime; `BLOCKED_MISSING_RENEWAL_APPROVAL`
+**Observed branch:** `task7`
+**Observed candidate:** `58fee60035988300909a158f3c91501faca89fa7`
 **Environment:** Task 01 local synthetic sandbox
 **Production authorization:** None
-**Synthetic scope:** Approved on 2026-08-02 through 2026-08-05
-**Task 11 Checkpoint 1:** `APPROVED_TO_IMPLEMENT_SYNTHETIC`
+**Synthetic scope:** The 2026-08-02 implementation scope expired on 2026-08-05
+**Task 11 Checkpoint 1:** historical approval recorded; current renewal and
+exact-candidate independent review are incomplete
 **Risk/autonomy:** `R3`; `A3_BOUNDED_AUTOMATION`
-**Expiry/review due:** 2026-08-05
+**Current renewal:** not granted
 **Governance roles:** Accountable owner, backup owner, and Operations/SRE
 reviewer: Royian Chowdhury (consolidated, non-independent)
 
@@ -17,7 +19,10 @@ Production, G2 hosted preview, G3 production imports, live or production-derived
 data, cloud databases, external effects, and production deployment remain
 prohibited. The accountable owner, backup owner, and Operations/SRE reviewer
 are Royian Chowdhury; these are consolidated, non-independent roles. The
-approval expires and is due for review on 2026-08-05.
+approval expired on 2026-08-05. The waitlist policy sub-decision recorded on
+2026-08-10 does not renew implementation. No further runtime, migration,
+Docker, evidence-promotion, or merge work is authorized until the completed v3
+renewal and independent reviews are committed.
 
 ## Canonical planning references
 
@@ -82,7 +87,7 @@ The approved synthetic workspace exists at:
 
 `apps/experiment-sandbox/`
 
-It currently provides:
+It currently provides the Task 01 controls plus a partial Task 04 runtime:
 
 - A separate Next.js application.
 - Deterministic synthetic fixtures.
@@ -92,9 +97,16 @@ It currently provides:
 - Security headers.
 - Production-import and browser-storage boundary tests.
 - Isolated TypeScript, lint, Vitest, and architecture checks.
+- A loopback-only PostgreSQL schema with capacity-hold constraints.
+- Public availability and service-catalog services.
+- Booking create, retrieve, confirm, and expiry operations.
+- Transactional synthetic audit/outbox records.
+- Synthetic delegation fixtures and server-owned authorization context.
+- A server-rendered pharmacist queue backend and UI.
+- Idempotency, public-reference, and failure-path tests for implemented slices.
 
-No Task 04-specific routes, components, fixtures, services, or tests were found
-during inspection of the sandbox source tree.
+The public `/book` UI, cancellation, rescheduling, waitlist runtime, promotion
+worker, and their complete race/accessibility/recovery evidence are not present.
 
 ### Persistence and database state
 
@@ -122,19 +134,19 @@ select runtime scope.
 
 | Area | Current state | Required Task 04 state | Status |
 |---|---|---|---|
-| Public availability | Draft documented; review/correction in progress; runtime not implemented | Synthetic slot discovery with coarse availability | Implementation pending |
-| Public availability cache | Strict named synthetic server-cache contract documented; runtime not implemented | Short-lived server projection cache with no-store HTTP response and transactional revalidation | Implementation pending |
-| Booking workflow | Draft documented; review/correction in progress; runtime not implemented | Create, retrieve, cancel, and reschedule | Implementation pending |
-| Waitlist workflow | Draft documented; review/correction in progress; runtime not implemented | Join, leave, offer, accept, and expire | Implementation pending |
-| Domain model | Draft documented; review/correction in progress; runtime not implemented | Booking, slot, capacity, waitlist, credential, event, and audit concepts | Review pending |
-| State machines | Draft documented; review/correction in progress; runtime not implemented | Complete transition contracts | Review pending |
-| Database capacity | Approved synthetic design; runtime not implemented | PostgreSQL-enforced capacity and transactions | Implementation pending |
-| Idempotency | Draft documented; review/correction in progress; runtime not implemented | Retry-safe commands and stored outcomes | Implementation pending |
-| Concurrency tests | Draft documented; review/correction in progress; runtime not implemented | Independent PostgreSQL connections and race barriers | Implementation pending |
-| Zod boundaries | Draft documented; review/correction in progress; runtime not implemented | Strict schemas for every command and response | Review pending |
-| Delegated access | Draft synthetic contract documented; runtime not implemented | Synthetic grants; production integration remains blocked by Task 05 | Implementation pending |
-| Domain events | Draft documented; review/correction in progress; runtime not implemented | Transactional outbox with `dispatch_status: not_dispatched` and no delivery | Implementation pending |
-| Pharmacist queue | Draft documented; review/correction in progress; runtime not implemented | Server-rendered minimum-necessary synthetic queue | Implementation pending |
+| Public availability | Implemented and tested in the synthetic sandbox | Synthetic slot discovery with coarse availability | Partial PASS; final evidence pending |
+| Public availability cache | Server cache implementation exists | Short-lived server projection cache with no-store HTTP response and transactional revalidation | Implemented; final evidence pending |
+| Booking workflow | Create, retrieve, confirm, and expiry exist; public `/book`, cancel, and reschedule do not | Create, retrieve, cancel, and reschedule | Partial; renewal blocked |
+| Waitlist workflow | Policy approved; runtime absent | Join, leave, offer, accept, and expire | Blocked on renewal |
+| Domain model | Booking, slot, capacity, hold, credential, event, and audit schema exists; waitlist execution remains incomplete | Complete domain model | Partial |
+| State machines | Contracts documented; implemented booking subset only | Complete transition contracts | Partial |
+| Database capacity | Loopback PostgreSQL constraints and transaction helpers exist | PostgreSQL-enforced capacity and transactions | Implemented for current booking subset; broader race evidence pending |
+| Idempotency | Implemented for current booking commands | Retry-safe commands and stored outcomes | Partial; cancel/reschedule/waitlist absent |
+| Concurrency tests | PostgreSQL tests exist for implemented booking slices | Independent PostgreSQL connections and race barriers | Partial; waitlist and remaining races absent |
+| Zod boundaries | Availability, catalog, booking, queue, and safe-error contracts exist | Strict schemas for every command and response | Partial |
+| Delegated access | Deterministic synthetic grant fixtures exist | Synthetic grants; production integration remains blocked by Task 05 | Synthetic fixture slice implemented |
+| Domain events | Synthetic transactional audit/outbox infrastructure exists; external dispatch remains stubbed | Transactional outbox with `dispatch_status: not_dispatched` and no delivery | Partial |
+| Pharmacist queue | Server-rendered synthetic queue backend and UI exist | Server-rendered minimum-necessary synthetic queue | Implemented; final evidence pending |
 | Accessibility | Draft evidence plan documented; runtime evidence not produced | Keyboard, screen-reader, mobile, zoom, reflow, and contrast evidence | Evidence pending |
 | Timezone and DST | Draft documented; runtime not implemented | UTC storage and explicit Ontario timezone/DST handling | Implementation pending |
 | Abuse prevention | Draft documented; review/correction in progress; runtime not implemented | Enumeration, flooding, replay, and rate-limit controls | Implementation pending |
