@@ -1,15 +1,15 @@
 # Autonomous Pharmacy — Current Implementation Status
 
-**Purpose:** Start here before working on Tasks 01–11. This is a verified
+**Purpose:** Start here before working on Tasks 01–14. This is a verified
 implementation handoff, not a task specification, approval, or production
 release decision.
 
-**Snapshot date:** 2026-08-10  
-**Observed branch:** `task7`  
-**Observed HEAD:** `d2099aaf394f6cf8b5cf4ff1f80a19cdc367e3cb`  
-**Worktree:** dirty; preserve the existing changes and do not use this state as
-a release candidate. The dirty changes include Task 04 booking work and P0-C
-boundary work, plus an untracked worklog.
+**Snapshot date:** 2026-08-10
+**Observed branch:** `task7`
+**Observed HEAD:** `58fee60035988300909a158f3c91501faca89fa7`
+**Worktree at capture:** clean before the next-sprint documentation update
+**Sprint plan:**
+[`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md)
 
 ## Read before changing anything
 
@@ -18,7 +18,9 @@ boundary work, plus an untracked worklog.
 3. [`COMPLIANCE.md`](../../COMPLIANCE.md) — Ontario rule mapping.
 4. [`OPEN_QUESTIONS.md`](../../OPEN_QUESTIONS.md) — unresolved human decisions.
 5. [`NEXT_STEPS.md`](../../NEXT_STEPS.md) — P0 and release blockers.
-6. The complete brief for the assigned task in this directory.
+6. [`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md) — the
+   current sequencing checkpoint, not an approval.
+7. The complete brief for the assigned task in this directory.
 
 Task briefs describe requirements; they do not prove implementation or grant
 production authorization. Use committed code, tests, evidence, and decision
@@ -63,10 +65,10 @@ manifest records 17 applicable controls as PASS and SBX-14 as
 `NOT_APPLICABLE` because G2 was not requested. G3 production-import allowlist
 is empty. No hosted preview or production capability is authorized.
 
-The [Task 01 README](../../task-01/README.md) is stale and contradicts the
+The [Task 01 README](../../task-01/README.md) is reconciled with the
 [evidence manifest](../../task-01/evidence/evidence-manifest.json) and
-[final report](../../task-01/evidence/final-report.md). Do not copy its older
-BLOCKED/candidate wording into new work.
+[final report](../../task-01/evidence/final-report.md). Later sandbox changes
+must produce evidence for their own exact candidate; they do not inherit PASS.
 
 ### Task 02 — P0 production readiness
 
@@ -263,6 +265,47 @@ independent quality/security/privacy/operations/accessibility review, protected
 branch verification, and exact-candidate release evidence. Task 11 records
 approvals; it cannot grant or self-approve them.
 
+### Task 12 — Operational resilience, downtime, and recovery
+
+**Status: NOT RUN / DESIGN ONLY.** No dedicated service-health model, downtime
+state machine, payload-free observability contract, operator-control surface,
+or cross-capability backup/restore evidence package exists.
+
+The next authorized slice is repository discovery, dependency mapping,
+operational-state design, observability allowlists, and a synthetic recovery
+test plan. Runtime, Docker drills, monitoring vendors, production access,
+backups, alert delivery, or configuration changes require a separate exact
+Task 12 approval and Task 11 Checkpoint 1. Task 02 retains ownership of its P0
+migration and live-recovery gates.
+
+### Task 13 — Human factors, training, and controlled pilot readiness
+
+**Status: NOT RUN / DESIGN ONLY.** No cross-capability human-factors hazard
+register, safety case, role-based training framework, synthetic simulation
+catalogue, usability study plan, or controlled-pilot readiness record exists.
+
+The next authorized slice is role/task analysis, hazard discovery, competency
+framework design, synthetic scenario planning, and study/pilot gate design.
+No participant study, recording, production account, real patient, PHI, live
+workflow, clinical/billing change, or pilot is authorized. Runnable studies
+require a separate exact Task 13 approval and Task 11 Checkpoint 1.
+
+### Task 14 — Regulatory change and clinical knowledge governance
+
+**Status: NOT RUN / DESIGN ONLY.** The repository has protected clinical and
+billing sources, versioned reference rows, regulatory PDFs, and compliance
+mapping, but no dedicated recurring source register, change-intake process,
+impact traceability, effective-date transition contract, or stale-source and
+rollback evidence package.
+
+The next authorized slice is source-register and provenance design, change-
+intake and interpretation templates, an impact matrix, an approval/separation-
+of-duties model, effective-date and historical-reconstruction planning, and a
+Task 11 evidence profile. No protected source, rule, migration, derivation,
+consent text, or production behavior may change under this design slice.
+Runnable tooling requires a separate exact Task 14 approval and Task 11
+Checkpoint 1.
+
 ## Protected surfaces and stop conditions
 
 Do not modify these without explicit lead sign-off and the assigned brief’s
@@ -291,25 +334,23 @@ Never:
 
 ## Documentation maintenance
 
-The following documents need a coordinated refresh before the next release
-candidate:
+The Task 01 README, Task 04 gap analysis, root/docs indexes,
+`PROJECT_OVERVIEW.md`, `COMPLETED_WORK.md`, `NEXT_STEPS.md`, `COMPLIANCE.md`,
+`OPEN_QUESTIONS.md`, and `SESSION_HANDOFF.md` were refreshed in the 2026-08-10
+documentation pass. The following records still need task-owner updates before
+the next release candidate:
 
-- [Task 01 README](../../task-01/README.md): reconcile its old BLOCKED status
-  with the PASS manifest and final report.
-- [Task 04 gap analysis](../../task-04/current-state-and-gap-analysis.md):
-  replace the design-only state with the partial runtime inventory above.
 - [Task 02 evidence index](../../p0/task-02/evidence-index.md), final report,
   and session handoff: add the later `3a271a7d` and `4e479514` fail-closed
   predecessor runs.
-- [PROJECT_OVERVIEW.md](../../PROJECT_OVERVIEW.md),
-  [COMPLETED_WORK.md](../../COMPLETED_WORK.md), and
-  [NEXT_STEPS.md](../../NEXT_STEPS.md): refresh their August 2 snapshot after
-  the current Task 04/Task 07 work is settled.
 - Add a dedicated Task 03 status/evidence record when Task 03 begins.
+- Reconcile any external Task 06 and Task 11 branch/PR evidence before marking
+  those capabilities implemented in the maintained product docs.
 
 ## Safe next order
 
-1. Preserve the dirty worktree and do not create a candidate from it.
+1. Keep Task 02 and Task 11 as the release-critical lanes; do not widen
+   production scope while either remains blocked.
 2. **BLOCKED:** obtain a superseding Task 04 approval with the renewal fields
    above before the other developer continues.
 3. After renewal, freeze a clean candidate, finish and test Task 04 inside the
@@ -317,8 +358,9 @@ candidate:
 4. Update the Task 02 evidence records and obtain a new exact G1-D when ready.
 5. Complete independent Task 11 review and merge its approved CI/control work.
 6. Start Task 03 discovery/design as the next unowned capability.
-7. Begin Tasks 05, 06, 08, 09, and remaining Task 10 work only under their
-   exact synthetic approvals and Task 01/Task 11 gates.
+7. Begin Tasks 05, 06, 08, 09, remaining Task 10 work, any Task 12 runtime,
+   any Task 13 study, and any Task 14 tooling only under exact approvals and
+   Task 01/Task 11 gates.
 
 **This file is a status aid, not an authorization.** Every agent must verify
 the current commit, worktree, approvals, evidence, and task-specific stop

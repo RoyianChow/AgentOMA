@@ -15,7 +15,10 @@ provenance only.
 | [`COMPLETED_WORK.md`](COMPLETED_WORK.md) | Capabilities implemented and verified in the current tree. |
 | [`NEXT_STEPS.md`](NEXT_STEPS.md) | Prioritized production blockers and remaining engineering work. |
 | [`SESSION_HANDOFF.md`](SESSION_HANDOFF.md) | Current operational checkpoint, live database evidence, and next operator actions. |
+| [`CODEBASE_COMMENTARY.md`](CODEBASE_COMMENTARY.md) | High-value trust-boundary commentary and maintenance map; current task status remains in the status file below. |
 | [`tasks/autonomous-pharmacy/README.md`](tasks/autonomous-pharmacy/README.md) | Execution index for the autonomous-pharmacy task contracts, including current gates and dependencies. |
+| [`tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md`](tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md) | Verified comparison of Tasks 01–14 with the current repository. |
+| [`tasks/autonomous-pharmacy/NEXT-SPRINT-PLAN-2026-08-10.md`](tasks/autonomous-pharmacy/NEXT-SPRINT-PLAN-2026-08-10.md) | Current work sequencing and exit criteria; grants no implementation authority. |
 
 ## Compliance, decisions, and operations
 
@@ -42,14 +45,18 @@ provenance only.
 | [`p0/task-02/production-handoff.md`](p0/task-02/production-handoff.md) | Task 02's non-promotable stopping point and ordered requirements for safe resumption. |
 | [`p0/task-02/final-report.md`](p0/task-02/final-report.md) | Task 02 status: from-zero Docker suite PASS; predecessor/restart, live, recovery, Task 11, and promotion remain blocked. |
 | [`p0/task-02/lead-remediation-authorization-2026-08-02.md`](p0/task-02/lead-remediation-authorization-2026-08-02.md) | Royian Chowdhury's narrow authorization for atomic assessment audit persistence and removal of the orientation override. |
+| [`tasks/autonomous-pharmacy/TASK-12-operational-resilience.md`](tasks/autonomous-pharmacy/TASK-12-operational-resilience.md) | Design contract for downtime, payload-free observability, recovery, and resilience evidence. |
+| [`tasks/autonomous-pharmacy/TASK-13-human-factors-pilot-readiness.md`](tasks/autonomous-pharmacy/TASK-13-human-factors-pilot-readiness.md) | Design contract for human factors, training, synthetic study evidence, and controlled-pilot gates. |
+| [`tasks/autonomous-pharmacy/TASK-14-regulatory-change-governance.md`](tasks/autonomous-pharmacy/TASK-14-regulatory-change-governance.md) | Design contract for source provenance, regulatory impact, effective dates, approvals, and rollback. |
 
 ## Agent instructions
 
 [`../AGENTS.md`](../AGENTS.md) is the only canonical agent-instruction file.
 [`../CLAUDE.md`](../CLAUDE.md), [`../GEMINI.md`](../GEMINI.md),
 [`../.cursor/rules/oma.mdc`](../.cursor/rules/oma.mdc), and
-[`../.github/copilot-instructions.md`](../.github/copilot-instructions.md) are
-tool-specific pointers and must not duplicate repository rules.
+[`../.github/copilot-instructions.md`](../.github/copilot-instructions.md), and
+[`../soul.md`](../soul.md) are pointer files and must not duplicate repository
+rules.
 
 ## Historical material
 

@@ -1,5 +1,16 @@
 Task 02 — Close the P0 Assessment Production-Readiness Gap
 
+## Next-sprint checkpoint — 2026-08-10
+
+**Repository state:** `BLOCKED`; do not promote or apply migration `0018`.
+**Sprint slice:** freeze a new exact candidate, obtain an unexpired G1-D,
+complete the predecessor/restart proof, resolve S27 export reconstruction, and
+obtain exact-candidate Task 11 review.
+**Exit:** sanitized evidence is bound to the candidate and hashes, or the task
+remains explicitly `BLOCKED`. Live work still requires recovery proof, G1-L,
+post-apply verification, and G4. See
+[`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md).
+
 Version: 3.0Supersedes: Task 02 v2Date: 2026-07-30Owner profile: Senior backend/database engineer, with independent QA/security reviewPriority: P0Status: Ready for ungated inspection and bounded export work; migration execution and live writes remain approval-gatedSystem: AgentRxPrimary capability: Defensible assessment completion, immutable billability evidence, and guarded claim-draft creation
 
 Mission

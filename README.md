@@ -2,7 +2,7 @@
 
 AgentOMA is a Next.js platform for Ontario pharmacies to conduct publicly funded minor-ailment assessments. It deliberately separates a zero-PHI patient kiosk from an authenticated pharmacist portal that handles clinical and billing records.
 
-> This is an authenticated pilot build, not a production-ready clinical service. The P0-C eligibility/history gates are merged but their `0018` migration still needs reviewed deployment; LTC billing, the orientation override, and the first restore drill remain open. Start with the status documents below.
+> This is an authenticated pilot build, not a production-ready clinical service. The P0-C eligibility/history gates are merged but their `0018` migration still needs reviewed deployment; LTC billing, Task 11 independent release review, and the first restore drill remain open. Start with the status documents below.
 
 Visitors can explore the workflow safely at `/demo`. The guided tour uses
 synthetic, in-memory content only; it does not sign into the portal, write to
@@ -16,12 +16,14 @@ the database, derive billing codes, or submit anything to HNS.
 | [`docs/PROJECT_OVERVIEW.md`](docs/PROJECT_OVERVIEW.md) | Current architecture, routes, data, and security model |
 | [`docs/COMPLETED_WORK.md`](docs/COMPLETED_WORK.md) | What has been implemented and verified |
 | [`docs/NEXT_STEPS.md`](docs/NEXT_STEPS.md) | Prioritized work remaining before a pilot or go-live |
+| [`docs/tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md`](docs/tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md) | Verified autonomous-program status and active blockers |
+| [`docs/tasks/autonomous-pharmacy/NEXT-SPRINT-PLAN-2026-08-10.md`](docs/tasks/autonomous-pharmacy/NEXT-SPRINT-PLAN-2026-08-10.md) | Current sequencing checkpoint; not an approval |
 | [`docs/COMPLIANCE.md`](docs/COMPLIANCE.md) | Implementation status mapped to the EO Notice |
 | [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md) | Regulatory and clinical decisions awaiting human review |
 | [`docs/SELF_CHECK.md`](docs/SELF_CHECK.md) | Public `/check` boundaries, implementation map, and production gate |
 | [`docs/EXPERIMENTAL_SANDBOX.md`](docs/EXPERIMENTAL_SANDBOX.md) | Synthetic-only experimentation boundary; not a regulatory waiver |
 | [`docs/AUTONOMOUS_PHARMACY_ROADMAP.md`](docs/AUTONOMOUS_PHARMACY_ROADMAP.md) | Staged roadmap toward pharmacist-supervised online pharmacy automation |
-| [`docs/tasks/autonomous-pharmacy/README.md`](docs/tasks/autonomous-pharmacy/README.md) | Execution index, dependencies, and gates for the autonomous-pharmacy developer tasks |
+| [`docs/tasks/autonomous-pharmacy/README.md`](docs/tasks/autonomous-pharmacy/README.md) | Execution index, dependencies, and gates for Tasks 01–14 |
 | [`docs/SESSION_HANDOFF.md`](docs/SESSION_HANDOFF.md) | Current live migration state and operator handoff |
 | [`docs/RESTORE_DRILL.md`](docs/RESTORE_DRILL.md) | Canadian-region backup/restore drill procedure |
 | [`AGENTS.md`](AGENTS.md) | Canonical safety and engineering instructions for AI agents |
