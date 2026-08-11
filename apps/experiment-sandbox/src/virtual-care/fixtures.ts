@@ -610,10 +610,18 @@ const FIXTURES = Object.freeze({
   }),
 
   assessment_guard_failure: baseWorld("assessment_guard_failure", {
+    workflowState: "ended",
+    endedAtUtc: ENDED_AT_UTC,
+    pharmacistCompletionActorRef: PHARMACIST_ACTOR,
+    pharmacistCompletionAtUtc: ENDED_AT_UTC,
+    suitability: { state: "REASSESSMENT_REQUIRED", modality: "video", reasonCode: "connection_degraded_mid_visit" },
     assessmentGuard: { attempted: true, allowed: false, denialReason: "suitability_not_current" },
   }),
 
   claim_guard_failure: baseWorld("claim_guard_failure", {
+    workflowState: "in_progress",
+    pharmacistCompletionActorRef: PHARMACIST_ACTOR,
+    pharmacistCompletionAtUtc: MID_VISIT_UTC,
     assessmentGuard: { attempted: true, allowed: true, denialReason: null },
     claimGuard: { attempted: true, allowed: false, denialReason: "visit_not_completed" },
   }),
