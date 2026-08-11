@@ -62,6 +62,8 @@ export type VirtualCareSceneSnapshot = {
   serviceAvailability: VirtualCareWorld["serviceAvailability"];
   participantCount: number;
   admittedParticipantRoles: readonly string[];
+  technologyReadiness: VirtualCareWorld["technologyReadiness"];
+  joinDenialReason: string | null;
 };
 
 function safeSceneSnapshot(world: VirtualCareWorld): VirtualCareSceneSnapshot {
@@ -92,6 +94,8 @@ function safeSceneSnapshot(world: VirtualCareWorld): VirtualCareSceneSnapshot {
     admittedParticipantRoles: world.participants
       .filter((p) => p.authorizationState === "admitted")
       .map((p) => p.role),
+    technologyReadiness: world.technologyReadiness,
+    joinDenialReason: world.joinDenialReason,
   };
 }
 
@@ -139,4 +143,35 @@ export function virtualCareTechnicalEventInvariantHolds(scenarioInput: unknown):
 
 export function listVirtualCareScenarios(): readonly string[] {
   return virtualCareScenarioSchema.options;
+}
+
+export type VirtualCareQueueRow = {
+  scenario: string;
+  label: string;
+  visitId: string;
+  workflowState: string;
+  connectionState: string;
+  requestedModality: string;
+  approvedModality: string | null;
+};
+
+/**
+ * A row-per-scenario summary for the synthetic pharmacist waiting-room
+ * queue (Workstream L "Required interfaces"). Every scenario is a
+ * separate synthetic visit, so this queue shows all of them at once.
+ */
+export function listVirtualCareQueueRows(): readonly VirtualCareQueueRow[] {
+  return virtualCareScenarioSchema.options.map((scenario) => {
+    const world = virtualCareFixture(scenario);
+    if (!world) throw new Error("TASK06_VIRTUAL_CARE_FIXTURE_MISSING");
+    return {
+      scenario: world.scenario,
+      label: world.label,
+      visitId: world.visitId,
+      workflowState: world.workflowState,
+      connectionState: world.connectionState,
+      requestedModality: world.requestedModality,
+      approvedModality: world.approvedModality,
+    };
+  });
 }

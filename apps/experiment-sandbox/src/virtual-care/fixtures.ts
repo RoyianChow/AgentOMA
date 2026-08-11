@@ -37,6 +37,15 @@ const DELEGATE_ACTOR = "SYNTH-DELEGATE-006-0001";
 const SUPPORT_ACTOR = "SYNTH-SUPPORT-006-0001";
 const INTERPRETER_ACTOR = "SYNTH-INTERPRETER-006-0001";
 
+/** Single source of truth for the synthetic actor refs a UI persona selector may present. */
+export const VIRTUAL_CARE_SYNTHETIC_ACTOR_REFS = Object.freeze({
+  patient: PATIENT_SUBJECT,
+  pharmacist: PHARMACIST_ACTOR,
+  delegate: DELEGATE_ACTOR,
+  support_person: SUPPORT_ACTOR,
+  interpreter: INTERPRETER_ACTOR,
+} as const);
+
 function slugId(scenario: VirtualCareScenario): string {
   return `SYNTH-VISIT-006-${scenario.toUpperCase().replaceAll("_", "-")}`;
 }

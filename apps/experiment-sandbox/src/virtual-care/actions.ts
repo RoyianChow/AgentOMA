@@ -2,7 +2,9 @@
 
 import {
   evaluateVirtualCareScene,
+  listVirtualCareQueueRows,
   listVirtualCareScenarios,
+  type VirtualCareQueueRow,
   type VirtualCareSceneResult,
 } from "./visit-server";
 
@@ -25,4 +27,8 @@ export async function runVirtualCareSceneAction(
 
 export async function listVirtualCareScenariosAction(): Promise<readonly string[]> {
   return listVirtualCareScenarios();
+}
+
+export async function listVirtualCareQueueRowsAction(): Promise<readonly VirtualCareQueueRow[]> {
+  return listVirtualCareQueueRows();
 }
