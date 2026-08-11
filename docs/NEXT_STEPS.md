@@ -1,32 +1,27 @@
 # Next steps
 
-**Prioritized:** 2026-08-02
+**Prioritized:** 2026-08-10
 
 **Release posture:** do not treat the current build as production-ready until
 the P0 items are resolved, deployed, and re-verified.
 
-**Latest Task 02 runtime update:** the remediated exact candidate
-`5b576b7ba8be6917c133590aee5e1fa0d33368d4` received an expiring local G1-D
-from Royian Chowdhury and ran once on 2026-08-02. It failed closed with
-`DATABASE_CONNECTIVITY_DENIED` before any database migration or synthetic
-fixture write; exact-resource teardown passed. Preserve
-`docs/p0/task-02/evidence/runs/5b576b7ba8be6917c133590aee5e1fa0d33368d4/predecessor-upgrade-run.json`.
-Do not rerun that candidate or manually operate its Compose service.
-
-The permitted database-free diagnostic is now implemented: it distinguishes an
-unreachable loopback TCP endpoint from PostgreSQL protocol readiness without
-logging raw errors. It has not been run against Docker because its source bytes
-need a fresh exact G1-D. See
-`docs/p0/task-02/predecessor-upgrade-connectivity-diagnostic-2026-08-02.md`.
+**Latest Task 02 runtime update:** exact candidates `3a271a7d…` and
+`4e479514…` failed closed with `LOOPBACK_TCP_DENIED` before migration or
+synthetic fixture writes. Their evidence is preserved under
+`docs/p0/task-02/evidence/runs/`; do not rerun either candidate. Freeze a new
+clean candidate and obtain a new exact, expiring G1-D before using the single
+approved predecessor/restart command. The full current programme status is in
+[`tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md`](tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md).
 
 ## P0 — clinical and compliance blockers
 
 1. **Remediate then rerun the gated predecessor/restart proof.** Exact candidate
-   `dcaab91…` passed the full 211-test from-zero PostgreSQL suite twice. The
-   later `dd503a14…` predecessor/restart run failed closed at its first database
-   identity probe, before migration or fixture writes, and teardown passed.
-   Preserve that evidence; do not rerun its non-overwriting evidence path.
-   Freeze the remediated clean SHA, grant a new expiring G1-D using
+   `dcaab91…` passed the full 211-test from-zero PostgreSQL suite twice. Every
+   later predecessor/restart run remains preserved as fail-closed evidence;
+   the newest recorded candidates, `3a271a7d…` and `4e479514…`, stopped at
+   `LOOPBACK_TCP_DENIED` before migration or synthetic fixture writes. Do not
+   rerun an evidence-bound candidate. Freeze a new clean SHA, grant a new
+   expiring G1-D using
    `docs/p0/task-02/g1-d-predecessor-upgrade-approval-contract.md`, then run its
    single orchestrated command. Do not manually operate Compose, weaken tmpfs,
    or edit migration/history.
@@ -134,20 +129,33 @@ need a fresh exact G1-D. See
 This program does not displace the P0 deployment and policy blockers above.
 Its updated task briefs are implementation contracts, not completed features.
 
-1. Start Task 01 repository discovery and Task 11 control/evidence design in
-   parallel. Obtain the approvals in Task 01 before creating its separate npm
-   workspace and runnable synthetic build.
-2. Allow Task 02's bounded inspection and export work while keeping migration
-   execution and live writes behind their explicit approval gate. Reconcile its
-   work with the outstanding `0018` operator steps above rather than creating a
-   second deployment path.
-3. Permit Tasks 03–10 to perform only the discovery, design, contracts, and
-   synthetic work authorized in each brief. No runnable prototype shares the
-   production app, database, authentication, credentials, or integrations.
-4. Route task plans and evidence through Task 11, but keep approval authority
-   with the named product, pharmacist, privacy, security, accessibility, and
-   regulatory reviewers. Task 11 records evidence; it does not self-approve.
-5. Resolve the AgentRx/AgentOMA naming question and add the referenced reviewed
+1. Preserve Task 01's recorded local synthetic PASS. G2 was not requested and
+   G3 remains empty; any changed sandbox candidate needs fresh boundary,
+   artifact, evidence, and production-invariance proof.
+2. Keep Task 02 and Task 11 as the release-critical lanes. Task 02 must follow
+   the G1-D → predecessor/restart → S27 → independent Task 11 → recovery →
+   G1-L → live parity → G4 sequence above. Task 11 must receive independent
+   review before merge or promotion.
+3. Keep Task 04 blocked until a superseding versioned approval records the
+   exact candidate and configuration hashes, owners, future expiry/review
+   dates, capability decisions, and independent Security/Privacy,
+   Operations/SRE, Quality/Test, and Task 11 reviews. Its approved waitlist
+   policy alone authorizes no implementation.
+4. Continue Task 07 with Workstream J privacy/security/audit/retention design
+   only. No real recipient, provider, PHI, message delivery, or runtime is
+   authorized.
+5. Start Task 03 discovery/design as the next unowned product capability. Do
+   not introduce clinical ranking, triage, billing inference, or client-side
+   source queue records.
+6. Reconcile reported external Task 06 and Task 11 branches before duplicate
+   work. Tasks 05, 08, and 09 remain discovery/contract work; `/api/fhir`
+   stays disabled. Task 10 expansion remains blocked pending disposition of
+   AI-RX-06's production-tree placement.
+7. Tasks 12, 13, and 14 are design-only: operational resilience, human factors
+   and controlled-pilot readiness, and regulatory change governance. Runtime
+   drills, participant studies, automated source tooling, or production
+   activation require exact task approval plus Task 11 Checkpoint 1.
+8. Resolve the AgentRx/AgentOMA naming question and add the referenced reviewed
    deep-research artifact if future work materially depends on it; see
    [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md).
 
@@ -156,8 +164,9 @@ The current dependency map and per-task allowed-work status live in the
 
 ## P2 — engineering maturity
 
-1. Add CI that runs TypeScript, ESLint, pure tests, and a fresh-Postgres
-   migration/integration suite on every pull request.
+1. Reconcile and independently review Task 11's reported CI/control-plane
+   branch, then require TypeScript, ESLint, pure tests, and fresh-Postgres
+   migration/integration checks on protected pull requests.
 2. Add Canadian-region verification, role/password provisioning, migration
    recovery, and privacy-incident runbooks. Backup/restore and reviewed
    destruction already have foundations.

@@ -1,5 +1,17 @@
 Task 10 — Bounded AI Assistance and Synthetic Model Evaluation
 
+## Next-sprint checkpoint — 2026-08-10
+
+**Repository state:** expansion `BLOCKED`; AI-RX-06 is a partial deterministic
+synthetic experiment located on a production pharmacist route rather than the
+isolated sandbox. It is not one of the five chartered candidates.
+**Sprint slice:** obtain a lead disposition—retire it or rebuild it inside
+`apps/experiment-sandbox/`—and freeze candidate-specific evaluation and review
+requirements.
+**Exit:** no PHI, model/network call, tools, database authority, autonomous
+effect, or production-route expansion. See
+[`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md).
+
 Owner profile: applied-AI developerRequired evaluator: practising pharmacistSupporting reviewers: privacy, security, accessibility, clinical safety, operations, legal/procurement, and quality assurancePriority: P2 researchStatus: synthetic evaluation only; PHI, production inference, user-visible recommendations, autonomous actions, and clinical or financial effects remain blockedUpdated: 2026-07-30
 
 Outcome

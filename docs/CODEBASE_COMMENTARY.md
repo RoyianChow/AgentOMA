@@ -1,8 +1,8 @@
 # Codebase commentary and current-state map
 
-**Snapshot:** 2026-08-02
-**Branch:** `feat/moh-compliance-migration`
-**Current revision:** run `git rev-parse HEAD` after checkout
+**Snapshot reconciled:** 2026-08-10
+**Observed branch:** `task7`
+**Observed baseline:** `58fee60035988300909a158f3c91501faca89fa7`
 
 ## Why this file exists
 
@@ -19,20 +19,18 @@ It is not a second compliance source of truth. Regulatory rules remain in
 ## Current status
 
 The application is an authenticated pilot foundation, not a production-ready
-pharmacy service. The recorded exact candidate
-`dcaab91f9adba7457a85214d51d1614c8560f404` passed the TypeScript, lint, build,
-123 database-free tests, and the 211-test real-PostgreSQL suite twice. That
-candidate's database evidence covered audit-failure rollback, constraints,
-concurrency, tenant isolation, red-flag zero-claim behaviour, referral
-separation, and persisted evidence/export cases.
+pharmacy service. Exact candidate `dcaab91f9adba7457a85214d51d1614c8560f404`
+remains the last complete database-tested candidate: 211 real-PostgreSQL tests
+passed twice through migration `0018`. The later documentation baseline
+`58fee600…` is TypeScript- and ESLint-clean and passes 305 pure tests; Docker
+was not rerun for the documentation-only update.
 
-The current HEAD adds a database-free, fail-closed connectivity diagnostic for
-the Task 02 predecessor-upgrade harness. It has not itself been used to claim a
-new G1-D result. The two recorded predecessor/restart attempts failed closed
-before migration or fixture writes (`DATABASE_IDENTITY_DENIED`, then
-`DATABASE_CONNECTIVITY_DENIED`), and their exact-resource teardown passed.
-Migration `0018` is present in the repository and verified from zero in Docker,
-but remains unapplied to live Supabase, which is still at `0017`.
+Migration `0018` remains unapplied to live Supabase, which is documented at
+`0017`. The newest preserved predecessor/restart candidates, `3a271a7d…` and
+`4e479514…`, failed closed with `LOOPBACK_TCP_DENIED` before migration or
+synthetic fixture writes. Use the maintained
+[`current implementation status`](tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md)
+instead of this commentary file for evolving task status.
 
 ## Route and data-flow map
 
@@ -126,9 +124,8 @@ approval/evidence. Changes there need their own lead-approved scope.
 
 ## Next work, in dependency order
 
-- Remediate the Task 02 database-free diagnostic path, freeze a new exact
-  candidate, obtain a fresh expiring G1-D, and run the single orchestrated
-  predecessor/restart proof with Docker available.
+- Freeze a new exact Task 02 candidate, obtain a fresh expiring G1-D, and run
+  the single orchestrated predecessor/restart proof with Docker available.
 - Resolve S27 canonical export/reconstruction semantics before changing export
   hashes or calling the evidence complete.
 - Obtain independent Task 11 review, recovery evidence, G1-L, live `0018`
@@ -137,6 +134,12 @@ approval/evidence. Changes there need their own lead-approved scope.
   current conservative claim-drafting refusal remains intentional.
 - Keep `/api/fhir` disabled until its authorization and pharmacist-reviewed
   mapping requirements are satisfied. Do not expand it as part of housekeeping.
+- Keep Task 04 blocked until its expired synthetic scope is renewed with
+  independent review; reconcile external Task 06 and Task 11 work before
+  duplicate implementation.
+- Treat Tasks 12–14 as design-only until each has exact approval and Task 11
+  Checkpoint 1. Their briefs do not authorize runtime, studies, clinical or
+  billing changes, automated interpretation, or production activation.
 
 ## Verification note
 

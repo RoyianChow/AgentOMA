@@ -114,6 +114,19 @@ export type Task04BookingExpiryWorkerResult =
   | Task04BookingExpiryWorkerSuccess
   | Task04SafeError;
 
+/**
+ * Not a failure — the normal outcome when a candidate is no longer expirable.
+ *
+ * Candidates are chosen in one transaction and expired in another, so between
+ * the two a booking can be confirmed, cancelled or rescheduled by someone else.
+ * Every validation below therefore re-checks the candidate under its lock and
+ * skips rather than forcing the transition: expiring a booking that was
+ * confirmed a moment ago would cancel a real appointment and hand its seat to
+ * someone else.
+ *
+ * Skipping is silent and per-candidate; the batch continues, and the next run
+ * simply will not see this one.
+ */
 class Task04ExpiryCandidateSkipped extends Error {
   constructor() {
     super("TASK04_EXPIRY_CANDIDATE_SKIPPED");
@@ -135,6 +148,20 @@ function schemasForContext(
   });
 }
 
+/**
+ * Derives the idempotency key from the candidate itself rather than generating
+ * a random one.
+ *
+ * The worker is expected to run repeatedly, and may overlap with another run or
+ * a retry after a crash. A random key each time would make every attempt a
+ * fresh command, so the same booking could be expired twice and its capacity
+ * released twice. Deriving the key from the booking reference means a duplicate
+ * attempt collapses into a replay instead.
+ *
+ * Including aggregate_version is what keeps that from being too aggressive: if
+ * the booking has legitimately moved on since, the key differs, so a genuinely
+ * different transition is never mistaken for a duplicate of an earlier one.
+ */
 function deterministicExpiryIdempotencyKey(
   candidate: ExpiryCandidate,
 ): string {
@@ -297,6 +324,13 @@ async function selectExpiryCandidates(
           AND hold.purpose = 'pending_booking'
           AND hold.state = 'active'
           AND hold.expires_at_utc <= ${context.nowUtc}
+        -- Oldest deadline first, so a backlog drains in the order seats were
+        -- actually given up rather than in whatever order the scan returns.
+        --
+        -- COLLATE "C" forces plain byte ordering for the tie-break. Without it
+        -- the order would follow the database's locale, so the same data could
+        -- be batched differently on another machine and a concurrency test
+        -- would stop being reproducible.
         ORDER BY
           hold.expires_at_utc,
           booking.id COLLATE "C"
@@ -340,6 +374,16 @@ async function lockAndValidateBooking(
   return booking;
 }
 
+/**
+ * Locks the hold and requires it to agree with the booking it belongs to.
+ *
+ * The last condition is the important one: the hold's expiry must equal the
+ * booking's confirmation deadline exactly. Those two are written together at
+ * creation, so disagreement means something has since moved one without the
+ * other. Rather than pick whichever is more convenient, the candidate is
+ * skipped — releasing capacity on the strength of a deadline the booking does
+ * not share could free the seat of a booking that is still inside its window.
+ */
 async function lockAndValidateHold(
   transaction: Task04TransactionSql,
   context: Task04AuthoritativeTransactionContext,
@@ -423,6 +467,16 @@ async function expireCandidate(
 
       // Deterministic mutation lock order:
       // idempotency -> booking -> hold -> capacity unit.
+      //
+      // This exact order is also what the create and confirm paths take. Two
+      // transactions that grab the same rows in opposite orders deadlock, so
+      // the ordering is a shared contract rather than a local preference — a
+      // new command that touches these tables must follow it too.
+      //
+      // Claiming the idempotency record FIRST matters as much as the order of
+      // the rest: it is what makes a concurrent duplicate of this expiry queue
+      // up and then replay, instead of proceeding to lock the same booking and
+      // race for the transition.
       const idempotency = await beginTask04IdempotentCommand(
         transaction,
         context,
@@ -454,6 +508,12 @@ async function expireCandidate(
       const nextBookingVersion = booking.aggregate_version + 1;
       const nextHoldVersion = hold.aggregate_version + 1;
 
+      // Both state and aggregate_version are re-asserted in the WHERE clause,
+      // so the write only lands on the exact revision that was validated. The
+      // row is already locked, so this is defence in depth — but it is the
+      // guard that makes the transition safe if a future path reaches these
+      // rows without taking the same lock, and matching no row skips the
+      // candidate rather than overwriting a newer state.
       const updatedBookings = await transaction<{ id: string }[]>`
         UPDATE task04_synthetic.booking
         SET state = 'expired',

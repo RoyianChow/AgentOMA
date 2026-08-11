@@ -133,8 +133,9 @@ UTI sections. It does not authorize future clinical-content changes.
 The billing derivation, version-2 clinical/consent record, authentication
 foundation, audit immutability, and P0-D virtual/LTC fact capture are live. The
 P0-C eligibility, existing-prescription, and claim-history boundary is merged
-and tested in application code, but migration `0018` is not yet live; the last
-fully verified live and fresh-Docker chain is `0017`. All LTC claim drafting
+and tested in application code, but migration `0018` is not yet live. The live
+chain remains `0017`; separate fresh-Docker evidence reaches `0018`. All LTC
+claim drafting
 remains parked. The product is **not yet ready for full production** until
 `0018` is deployed and verified and the P0-C retrieval projection plus the
 transactional assessment-created audit are verified against that schema. The

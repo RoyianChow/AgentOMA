@@ -15,6 +15,21 @@ import { requireLocalActive } from "../lifecycle/state";
 import type { Task04TransactionSql } from "./transaction";
 import { readTask04DatabaseTimeUtc } from "./transaction";
 
+// Every authorization decision in Task 04 takes a context carrying the pharmacy
+// scope and the trusted clock. A plain object would make that trivially
+// forgeable — any caller could pass { pharmacyId, nowUtc } shaped values and be
+// believed.
+//
+// Registering each context here on creation makes the type unforgeable in
+// practice: only an object this module built appears in the map, so a
+// look-alike fails assertTask04AuthoritativeContext no matter how correct its
+// fields look. The value stored is the transaction the context was created
+// for, which is what lets the stricter assertion below also reject a context
+// that is real but belongs to a DIFFERENT transaction.
+//
+// A WeakMap rather than a Set or an id field: entries disappear with the
+// context, so nothing accumulates per request and no identifier has to be
+// invented, compared, or kept secret.
 const recognizedContexts = new WeakMap<
   object,
   Task04TransactionSql
@@ -36,6 +51,18 @@ type SandboxScopeRow = {
   max_page_size: number;
 };
 
+/**
+ * The approval gate, evaluated against trusted time.
+ *
+ * Note the two independent expiry comparisons. The configured expiry can be
+ * shortened by an operator, but TASK04_SANDBOX_EXPIRES_AT is compiled in from
+ * the decision record, so the approval window can never be extended by changing
+ * configuration — only by a code change that a reviewer sees. Whichever is
+ * earlier wins.
+ *
+ * Every clause is required rather than merely preferred, so an environment that
+ * is half-configured is inactive rather than partially trusted.
+ */
 export function task04ApprovalAndLifecycleAreActive(
   environment: Task04SandboxEnv,
   nowUtc: string,
@@ -90,6 +117,15 @@ export async function createTask04AuthoritativeTransactionContext(
     throw new Error("TASK04_AUTHORITATIVE_CONTEXT_DENIED");
   }
 
+  // The scope row is read back and cross-checked rather than assumed. The
+  // database, not configuration, is the authority on which pharmacy this data
+  // belongs to and what the bounds are.
+  //
+  // Requiring exactly one row is the single-pharmacy invariant enforced here as
+  // well as in the schema: a second row would mean tenancy had become a choice,
+  // so it fails closed instead of picking one. Every configured bound must also
+  // agree with the stored bound, because a command validating against limits
+  // the stored data was never written under is a silent boundary change.
   const rows = await transaction<SandboxScopeRow[]>`
     SELECT
       pharmacy_id,
@@ -139,6 +175,16 @@ export function assertTask04AuthoritativeContext(
   }
 }
 
+/**
+ * The stricter assertion: this context must be genuine AND belong to this
+ * transaction.
+ *
+ * Use it for anything that WRITES. A context proves the approval gate passed at
+ * the moment it was built, inside one transaction; reusing it against a
+ * different transaction would carry that proof somewhere it was never
+ * established, letting work commit under a scope and clock that were checked
+ * elsewhere.
+ */
 export function assertTask04AuthoritativeTransactionContext(
   transaction: Task04TransactionSql,
   context: Task04AuthoritativeTransactionContext,

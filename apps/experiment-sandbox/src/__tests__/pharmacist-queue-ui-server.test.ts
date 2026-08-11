@@ -1,6 +1,6 @@
 import { TextDecoder } from "node:util";
 import { renderToStaticMarkup } from "react-dom/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createTask04PharmacistQueueSchemas } from "../booking/pharmacist-queue-contracts";
 
@@ -26,6 +26,15 @@ vi.mock("../db/pharmacist-queue", () => ({
   executeTask04PharmacistQueue: testDoubles.executeQueue,
 }));
 
+vi.mock("../env/server", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../env/server")>();
+  const { withControlledTask04Environment } = await import(
+    "./helpers/controlled-environment"
+  );
+  return withControlledTask04Environment(actual);
+});
+
 import { executeTask04QueueUiRequest } from "../app/pharmacist-queue/queue-server";
 import PharmacistQueuePage from "../app/pharmacist-queue/page";
 
@@ -33,6 +42,26 @@ const utf8Decoder = new TextDecoder("utf-8", { fatal: true });
 const QUEUE_REFERENCE =
   "SYNTH-QUEUE-ITEM-REFERENCE-SERVER-TEST-0001";
 const CURSOR = "SYNTH-QUEUE-CURSOR-SERVER-TEST-0001";
+
+// These cases exercise the UI server boundary, not the lifecycle gate, but they
+// reach loadTask04SandboxEnv() through the adapter — which resolves the sandbox
+// lifecycle from the wall clock and rejects any prohibited variable present in
+// the surrounding shell. Both are made deterministic here so the cases answer
+// "is the code correct?" rather than "what machine and what day is this?":
+//
+//   - the clock is pinned to a fixed instant inside the approved Task 04 window
+//     (TASK04_SANDBOX_BUILT_AT 2026-08-01T00:00:00.000Z through
+//     TASK04_APPROVED_THROUGH_DATE_UTC 2026-08-05), which the synthetic-fixture
+//     rule requires regardless; and
+//   - the environment comes from applyControlledTask04Environment(), restored
+//     after every case.
+//
+// Neither relaxes a runtime control. Fail-closed behaviour past the approved
+// window is asserted by the final case below rather than left to the calendar,
+// and a contaminated real environment is reported by the separate
+// `npm run sandbox:verify-environment` command.
+const TASK04_APPROVED_WINDOW_INSTANT = "2026-08-04T12:00:00.000Z";
+const TASK04_AFTER_APPROVAL_INSTANT = "2026-08-06T00:00:00.000Z";
 
 function backendSuccess() {
   return {
@@ -77,10 +106,18 @@ function queueSchemas() {
 
 describe("Task 04 pharmacist queue UI server boundary", () => {
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(
+      new Date(TASK04_APPROVED_WINDOW_INSTANT),
+    );
     vi.clearAllMocks();
     testDoubles.executeQueue.mockResolvedValue(
       backendSuccess(),
     );
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("passes the initial and filtered request to the existing backend and closes the connection", async () => {
@@ -296,6 +333,32 @@ describe("Task 04 pharmacist queue UI server boundary", () => {
     });
     expect(JSON.stringify(closeFailure)).not.toContain(
       "SYNTHETIC_CLOSE_DETAIL",
+    );
+  });
+
+  it("fails closed past the approved Task 04 window without reaching the queue adapter or leaking the lifecycle reason", async () => {
+    vi.setSystemTime(
+      new Date(TASK04_AFTER_APPROVAL_INSTANT),
+    );
+
+    const result = await executeTask04QueueUiRequest({
+      sort: "start_time_asc",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: {
+        code: "TEMPORARILY_UNAVAILABLE",
+        message: "This service is temporarily unavailable.",
+      },
+    });
+    expect(testDoubles.createSql).not.toHaveBeenCalled();
+    expect(testDoubles.executeQueue).not.toHaveBeenCalled();
+    expect(JSON.stringify(result)).not.toContain(
+      "SANDBOX_CONFIG_DENIED",
+    );
+    expect(JSON.stringify(result)).not.toContain(
+      "TASK04_APPROVAL_EXPIRED",
     );
   });
 });

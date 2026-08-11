@@ -1,11 +1,14 @@
 # Completed work
 
-**Verified through:** 2026-08-02
+**Implementation evidence verified through:** 2026-08-02
 
-**Quality snapshot:** exact candidate `dcaab91…` is TypeScript- and ESLint-clean,
-passes 123/123 database-free tests, completes a production build, and passed
-211/211 real-PostgreSQL tests twice. Fresh Docker replay installed all 19
-migrations through `0018`. Supabase remains live through `0017`; `0018` is not
+**Documentation/status reconciled:** 2026-08-10
+
+**Quality snapshot:** exact database candidate `dcaab91…` passed 211/211
+real-PostgreSQL tests twice and replayed all 19 migrations through `0018`.
+The 2026-08-10 documentation baseline `58fee600…` is TypeScript- and
+ESLint-clean and passes 305/305 pure tests; Docker was not rerun for the
+documentation-only update. Supabase remains live through `0017`; `0018` is not
 authorized or applied live.
 
 This is the implementation record requested for the project. It describes capabilities present in the repository, not planned work. Remaining items are in [`NEXT_STEPS.md`](NEXT_STEPS.md).
@@ -266,17 +269,39 @@ This is the implementation record requested for the project. It describes capabi
   before database migration or synthetic fixture writes. Its evidence is
   preserved, its exact Docker resources were removed, and it cannot be rerun.
   No live, PHI, external, billing, or protected-surface action occurred.
+- Later exact candidates `3a271a7d…` and `4e479514…` also failed closed with
+  `LOOPBACK_TCP_DENIED` before migration or synthetic fixture writes. Their
+  evidence is preserved under `docs/p0/task-02/evidence/runs/`; neither
+  candidate is reusable for a future G1-D run.
 - Added a test-only, bounded readiness diagnostic for the next candidate. It
   distinguishes loopback TCP denial from PostgreSQL protocol denial without
   sending SQL before the TCP probe or retaining raw errors. The pure suite,
   TypeScript, lint, and production build pass; its Docker execution remains
   **NOT RUN** until a fresh exact G1-D exists.
 
+## Autonomous-program documentation and governance
+
+- Reconciled the Task 01 README with its final local synthetic evidence: 17
+  applicable controls PASS, while SBX-14 is not applicable because G2 was not
+  requested and no hosted preview exists. G3 remains empty.
+- Added a maintained implementation-status comparison and a 2026-08-10 sprint
+  plan so task contracts are not mistaken for implemented capabilities or
+  production authorization.
+- Added design-only Task 12 for operational resilience, Task 13 for human
+  factors and controlled-pilot readiness, and Task 14 for regulatory source,
+  effective-date, approval, and rollback governance.
+- Updated the task index, roadmap, and Task 11 review template to cover all
+  fourteen tasks. These documents grant no runtime, study, clinical, billing,
+  migration, or production authority.
+
 ## Verification and regression coverage
 
 - Vitest runs pure unit tests and real-Postgres integration tests.
 - Docker Postgres uses port 5433, is guarded against non-local database URLs, and rebuilds the migration chain from zero.
 - Tests cover claim derivation combinations, refusal paths, LTC behaviour, remote-virtual tiers, retention, one-per-day, concurrent mutex enforcement, claim persistence/supersession, follow-up completion/supersession/concurrency/export, invitations/auth data, audit grants/triggers, and red-flag zero-claim behaviour.
-- TypeScript, ESLint, and production build are clean for the exact candidate.
-  The recorded suites are 123 database-free tests and 211 complete tests
-  through migration `0018`, with zero skipped/focused tests.
+- TypeScript, ESLint, and production build are clean for the recorded database
+  candidate. Its suites were 123 database-free tests and 211 complete tests
+  through migration `0018`, with zero skipped/focused tests. The later
+  documentation baseline passes 305 pure tests plus TypeScript and ESLint; its
+  production build and Docker suite were not rerun because no runtime files
+  changed.

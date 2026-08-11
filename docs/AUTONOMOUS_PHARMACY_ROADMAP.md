@@ -29,10 +29,10 @@ The current execution order is:
 3. **Task 02** closes the existing P0 production-readiness gaps. Bounded
    inspection/export work may proceed, while migrations and live writes remain
    separately approval-gated.
-4. **Tasks 03–10** proceed only to the stage their own briefs permit. Runnable
-   prototypes require Task 01; production promotion requires Task 11 evidence
-   plus every task-specific privacy, security, clinical, vendor, and regulatory
-   approval.
+4. **Tasks 03–10 and 12–14** proceed only to the stage their own briefs
+   permit. Runnable prototypes and studies require Task 01; production
+   promotion requires Task 11 evidence plus every task-specific privacy,
+   security, clinical, vendor, and regulatory approval.
 
 Use the [task execution index](tasks/autonomous-pharmacy/README.md) for the
 current dependency map, allowed work, and handoff requirements. The task briefs
@@ -203,6 +203,68 @@ evidence, access controls, prompt/output retention rules, human factors testing,
 continuous monitoring, incident response, and a kill switch. Start in silent
 mode and compare against pharmacist decisions before showing recommendations.
 
+## Phase 7 — operational resilience and continuity
+
+- Model healthy, degraded, stale, disabled, unavailable, recovering, and
+  unknown operational states without hiding uncertainty.
+- Keep logs, metrics, traces, alerts, dashboards, URLs, and evidence free of
+  PHI, credentials, tokens, identifiers, and payloads.
+- Add role-scoped, server-reverified kill switches and recovery controls that
+  stop new bounded effects without rewriting finalized records.
+- Prove restart, idempotency, rollback, backup, restore, integrity, and exact
+  teardown using fresh loopback-only PostgreSQL and authored-synthetic data.
+- Define pharmacist downtime workflows that preserve professional judgment and
+  never infer clinical, dispensing, billing, or claim finality.
+- Record RTO, RPO, availability targets, incident severity, response times,
+  escalation, backup retention, and production restore authority only after
+  named owners and independent reviewers approve them.
+
+Task 12 owns the recurring operational contracts and drills. Task 02 retains
+its immediate P0 migration/live-recovery gates; Task 11 validates evidence and
+cannot grant the underlying approval.
+
+## Phase 8 — human factors and controlled pilot readiness
+
+- Map each role's intended tasks, prohibited actions, authority, information
+  needs, interruptions, high-consequence errors, and safe recovery paths.
+- Build a human-factors hazard register and safety case covering critical
+  clinical/billing distinctions without changing their authoritative rules.
+- Define role-based product training and competency observation while keeping
+  OCP orientation and professional authorization separate.
+- Test only authored-synthetic scenarios across mobile, keyboard, screen reader,
+  zoom/reflow, reduced motion, one-handed use, interruption, low connectivity,
+  downtime, and recovery conditions.
+- Create an exact, expiring controlled-pilot approval gate with named owners,
+  training prerequisites, support, kill switches, stop rules, rollback, and
+  post-pilot review.
+- Do not run a participant study, record a session, use real PHI, or begin a
+  pilot without separate explicit approval.
+
+Task 13 proves whether humans can use the approved workflows safely. It cannot
+grant professional competence, change clinical/billing logic, or authorize a
+pilot; Task 11 validates its evidence and cannot provide substantive approval.
+
+## Phase 9 — regulatory change and clinical knowledge governance
+
+- Maintain a versioned register of authoritative Ministry, OCP, Ontario Health,
+  privacy, accessibility, and approved vendor sources with provenance, hashes,
+  effective dates, supersession, ownership, and review triggers.
+- Separate source publication, human interpretation, implementation decision,
+  verification, and release authorization into independently reviewable steps.
+- Map every approved change to affected data, code, UI, tests, documentation,
+  training, operations, external contracts, and historical reconstruction.
+- Support future-effective, current, superseded, withdrawn, and unknown states
+  without rewriting historical clinical, claim, audit, or evidence records.
+- Fail closed on missing, contradictory, stale, unreviewed, or hash-mismatched
+  authority; no agent, crawler, model, or CI job interprets or activates a rule.
+- Prove exact-candidate cutover, rollback, forward-fix, and reconstruction with
+  safe synthetic evidence before any separately approved production change.
+
+Task 14 owns the recurring change-control contract. It does not authorize edits
+to protected clinical, billing, migration, audit, authentication, LTC, or
+orientation surfaces. Their accountable owners and independent reviewers retain
+that authority; Task 11 validates evidence and cannot grant approval.
+
 ## Candidate backlog
 
 | Idea | First autonomy level | Main prerequisite |
@@ -220,6 +282,9 @@ mode and compare against pharmacist decisions before showing recommendations.
 | Dispensing-software handoff | L2 | Vendor contract, idempotency, audit, reconciliation |
 | HNS claim submission | L2 maximum | Ministry/vendor approval and pharmacist final submission |
 | Quality/privacy anomaly detection | L1 | Governed aggregate data, validated thresholds, investigation workflow |
+| Operational resilience and recovery drills | L3 | Payload-free observability, approved downtime policy, synthetic restore evidence, Task 11 controls |
+| Human-factors validation and controlled pilot | L1 | Approved synthetic scenarios, pharmacist/accessibility review, training framework, Task 11 evidence |
+| Regulatory source and effective-date change control | L1 | Authoritative-source provenance, named interpretation owners, protected-surface approval, historical reconstruction, Task 11 evidence |
 
 ## Release gate for every capability
 

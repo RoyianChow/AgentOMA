@@ -15,6 +15,20 @@ import {
 } from "../booking/contracts";
 import { task04PublicSlotReferenceSecretSchema } from "../env/server";
 
+// Public slot references are SIGNED rather than stored.
+//
+// The alternative — mint a random token and keep a lookup row — needs a table
+// that grows with every availability view and has to be swept. Here the
+// reference carries its own binding and expiry, and the server's secret is what
+// makes it trustworthy: nothing is written when one is issued, and nothing has
+// to be cleaned up when one lapses.
+//
+// It also means no database identifier is ever exposed. What the caller holds
+// is opaque, self-describing to the server only, and useless anywhere else.
+//
+// The version byte is what allows the format to change later: an old reference
+// stays recognisable and can be rejected precisely, instead of being
+// misinterpreted as a malformed reference of the current shape.
 const SLOT_REFERENCE_VERSION = 1;
 const SLOT_REFERENCE_NONCE_BYTES = 16;
 const SLOT_REFERENCE_EXPIRY_BYTES = 8;
@@ -91,6 +105,29 @@ function parseTrustedInstant(value: string): number {
   return Date.parse(parsed.data);
 }
 
+/**
+ * Builds the exact bytes that get signed. Every field here is one a caller
+ * must not be able to change after issue.
+ *
+ * An ARRAY, not an object: array serialization has a fixed field order, so one
+ * set of values produces exactly one string. Object key order is not guaranteed
+ * to be stable, and a signature over an ambiguously serialized payload can be
+ * verified against a different reading of the same bytes.
+ *
+ * The contract string is a domain separator. Slot references, service-category
+ * references and availability cursors are all signed with the same secret, so
+ * without it a value minted as one could be presented as another.
+ *
+ * pharmacyId is included even though the app serves a single pharmacy: it means
+ * a reference is cryptographically bound to its tenant rather than only being
+ * checked against one, which keeps the invariant true by construction if a
+ * second pharmacy ever exists.
+ *
+ * The expiry is INSIDE the signed payload rather than carried beside it, so a
+ * caller cannot extend the lifetime of a reference they already hold. The nonce
+ * makes two references for the same slot and deadline differ, so they cannot be
+ * correlated or guessed from one another.
+ */
 function canonicalSignatureInput(
   pharmacyId: string,
   binding: Task04PublicSlotBinding,
@@ -168,6 +205,19 @@ function createAvailabilityCursorSignature(
     .digest();
 }
 
+/**
+ * Compares signatures in constant time.
+ *
+ * A plain === or Buffer.equals returns as soon as two bytes differ, so how long
+ * the comparison takes reveals how many leading bytes were right. Repeated
+ * often enough that leak lets a signature be reconstructed a byte at a time
+ * without ever knowing the secret.
+ *
+ * The length check is deliberately kept OUTSIDE the constant-time comparison —
+ * timingSafeEqual throws on mismatched lengths, and length is not the secret
+ * here: the format is fixed and public, so a wrong-length reference is already
+ * known-invalid to anyone who can read this file.
+ */
 export function task04ConstantTimeSignatureMatches(
   candidate: Uint8Array,
   expected: Uint8Array,

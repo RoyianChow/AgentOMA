@@ -1,5 +1,18 @@
 # Task 04 — Complete the Online Booking and Waitlist Prototype
 
+## Next-sprint checkpoint — 2026-08-10
+
+**Repository state:** `BLOCKED_MISSING_RENEWAL_APPROVAL`. Candidate
+`58fee60035988300909a158f3c91501faca89fa7` was clean when captured, but the
+completed v3 renewal and independent signatures are not committed.
+**Sprint slice:** finish that exact renewal package. The waitlist policy is
+approved only as a policy sub-decision.
+**Exit:** implementation may resume only after exact scope, hashes, future
+dates, owners, independent reviews, and Task 11 Checkpoint 1 are recorded. No
+code, migration, Docker, evidence promotion, or merge is authorized by this
+checkpoint. See
+[`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md).
+
 ## Role
 
 Act as a senior full-stack engineer with strong PostgreSQL concurrency, privacy-by-design, identity, accessibility, and healthcare workflow experience.
