@@ -332,6 +332,8 @@ const vendorWebhookReceiptSchema = z
 const secureMessageSchema = z
   .object({
     authorRole: z.enum(["patient", "pharmacist"]),
+    /** Opaque pointer to encrypted content — this table never carries plaintext. */
+    bodyEncryptedRef: opaqueRefSchema,
     receivedAtUtc: utcInstantSchema,
     correctionOfMessageId: opaqueRefSchema.nullable(),
   })

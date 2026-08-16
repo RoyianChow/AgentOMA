@@ -48,7 +48,7 @@ describe("privacy and leakage — source-level enforcement", () => {
     expect(queryStringConstructions).toEqual([]);
   });
 
-  it("never reads process.env outside the sanctioned server validator", () => {
+  it("never reads the raw environment outside the sanctioned server validator", () => {
     const offenders = sourceFiles
       .filter((file) => !file.endsWith(join("env", "server.ts")))
       .filter((file) => /process\.env/.test(readFileSync(file, "utf8")));

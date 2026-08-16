@@ -202,8 +202,18 @@ const FIXTURES = Object.freeze({
     messageThread: {
       state: "open",
       messages: [
-        { authorRole: "patient", receivedAtUtc: STARTED_AT_UTC, correctionOfMessageId: null },
-        { authorRole: "pharmacist", receivedAtUtc: MID_VISIT_UTC, correctionOfMessageId: null },
+        {
+          authorRole: "patient",
+          bodyEncryptedRef: "SYNTH-MESSAGE-BODY-006-0001",
+          receivedAtUtc: STARTED_AT_UTC,
+          correctionOfMessageId: null,
+        },
+        {
+          authorRole: "pharmacist",
+          bodyEncryptedRef: "SYNTH-MESSAGE-BODY-006-0002",
+          receivedAtUtc: MID_VISIT_UTC,
+          correctionOfMessageId: null,
+        },
       ],
     },
   }),

@@ -164,8 +164,8 @@ export function evaluateInteractionStart(
   const joinResult = evaluateJoin(world, requestInput);
   if (!joinResult.allowed) return joinResult;
 
-  if (world.consent.state !== "granted") return denied("consent_not_granted");
   if (world.consent.withdrawnAtUtc !== null) return denied("consent_withdrawn");
+  if (world.consent.state !== "granted") return denied("consent_not_granted");
   if (world.approvedModality !== null && world.consent.modality !== world.approvedModality) {
     return denied("consent_wrong_modality");
   }
@@ -259,9 +259,9 @@ export function evaluateSecureMessageSend(
 
   if (!world.messageThread) return denied("no_thread");
   if (world.messageThread.state !== "open") return denied("thread_not_open");
+  if (world.consent.withdrawnAtUtc !== null) return denied("consent_withdrawn");
   if (world.consent.modality !== "secure_messaging") return denied("consent_wrong_modality");
   if (world.consent.state !== "granted") return denied("consent_not_granted");
-  if (world.consent.withdrawnAtUtc !== null) return denied("consent_withdrawn");
   if (world.identityLocation.crossJurisdictionalBlocked) return denied("cross_jurisdictional_block");
   return ALLOWED;
 }
