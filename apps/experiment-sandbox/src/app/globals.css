@@ -191,4 +191,33 @@ p, li { line-height: 1.6; }
   .booking-page .booking-service-control { grid-column: auto; }
   .booking-page .booking-form-actions, .booking-page .booking-form-actions button { width: 100%; }
 }
+.scenario-index { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.scenario-index li { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+.scenario-index li span { flex: 1 1 auto; min-width: 0; font-weight: 700; }
+.scenario-index li a { min-height: 44px; display: inline-flex; align-items: center; }
+
+.scene { display: grid; gap: 22px; margin-top: 20px; }
+.scene-header h2 { margin: 0; font-size: 1.4rem; }
+.scene-sub { margin: 6px 0 0; color: var(--muted); }
+.scene-section { border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; background: var(--card); }
+.scene-section h3 { margin: 0 0 12px; font-size: 1.05rem; }
+.scene-section ul { margin: 0; padding-left: 1.2em; }
+
+.role-selector { display: flex; flex-wrap: wrap; gap: 14px; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin: 0; }
+.role-selector legend { padding: 0 6px; font-weight: 700; }
+.role-option { display: flex; align-items: center; gap: 8px; min-height: 56px; }
+.role-option input { width: 20px; height: 20px; margin: 0; }
+
+.guard-badge { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; padding: 10px 14px; border-radius: 10px; }
+.guard-badge .guard-name { font-weight: 700; }
+.guard-allow { background: var(--green-soft); }
+.guard-deny { background: var(--red-soft); }
+
+.denied-banner { display: grid; gap: 4px; border-left: 5px solid var(--red); background: var(--red-soft); padding: 14px 16px; border-radius: 6px; }
+
+.tech-check-list { display: grid; gap: 8px; margin: 0 0 14px; padding: 0; list-style: none; }
+.tech-check { display: flex; justify-content: space-between; gap: 12px; padding: 8px 12px; border-radius: 8px; background: #f8faf9; }
+.tech-check.tech-fail { background: var(--red-soft); }
+.tech-check.tech-degraded { background: var(--amber-soft); }
+
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; } }
