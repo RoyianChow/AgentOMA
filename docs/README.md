@@ -67,6 +67,7 @@ rules.
 | [`archive/oma-pilot-plan.md`](archive/oma-pilot-plan.md) | Superseded pilot plan retained for decision provenance. |
 | [`worklogs/audit-clickable-task-4.md`](worklogs/audit-clickable-task-4.md) | Historical implementation evidence for the audit-record navigation slice. |
 | [`worklogs/p1-7-usability-a11y-375px.md`](worklogs/p1-7-usability-a11y-375px.md) | 2026-07-28 375px usability evidence for `/check`, `/assessment`, and `/sign-in`, including open findings and untested authenticated routes. |
+| [`worklogs/worklog-2026-08-10.md`](worklogs/worklog-2026-08-10.md) | High-level summary of the August 10 synthetic booking, policy, privacy, and documentation work. |
 
 Never copy the PIN table or clinical rules into documentation. Billing values
 belong in `src/config/ailment-reference.ts` and the seeded reference tables;
