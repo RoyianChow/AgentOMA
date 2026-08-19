@@ -75,6 +75,11 @@ This is the implementation record requested for the project. It describes capabi
   tombstone test. See [`CLINICAL_APPROVAL.md`](CLINICAL_APPROVAL.md).
 - Removed the production-only 404 after sign-off; `/check` is now publicly
   available under the same zero-identifying-data and no-persistence boundary.
+- Prepared `/check` for beta feedback with a branded mobile shell,
+  plain-language expectations, step progress, heading focus management, live
+  selection counts, visible keyboard focus, and an always-visible action dock
+  on long safety screens. Added source-level regressions for those affordances
+  without changing the approved triage artifact.
 
 ## Claim assembly and money rules
 
