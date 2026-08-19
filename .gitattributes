@@ -1,0 +1,10 @@
+# Task 02 evidence hashes are byte-level records. Keep their checkout bytes
+# stable across Windows and Unix so the documented SHA-256 values remain valid.
+docs/p0/task-02/evidence/**/*.json text eol=lf
+
+# The migration chain is locked by SHA-256 over the exact checkout bytes
+# (`readMigrationChainIdentity` hashes the file as it sits on disk). Without a
+# pinned line ending the same unmodified migration hashes differently on Windows
+# and Unix, so the lock would pass only on the machine that recorded it. Keep
+# these LF everywhere.
+src/lib/db/migrations/**/*.sql text eol=lf

@@ -15,10 +15,8 @@ export default async function AssessmentPage({
   searchParams: Promise<{ session?: string }>;
 }) {
   // UX redirect only — the server actions this page's workspace calls
-  // re-verify session + role themselves. The role gates the admin
-  // orientation-override affordance (also re-checked server-side).
+  // re-verify session, role, pharmacy, and orientation themselves.
   const actor = await requirePortalPage();
-  const canOverrideOrientation = actor.role === "pharmacy_admin";
   const [feeTier] = await db
     .select({
       remoteVirtualEligible: odbFeeTier.remoteVirtualEligible,
@@ -82,7 +80,6 @@ export default async function AssessmentPage({
       <AssessmentWorkspace
         key={res.session.id}
         session={res.session}
-        canOverrideOrientation={canOverrideOrientation}
         remoteVirtualEligible={feeTier.remoteVirtualEligible}
       />
     </div>

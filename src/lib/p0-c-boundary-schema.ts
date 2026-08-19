@@ -8,6 +8,16 @@ import {
   validateOntarioHealthCard,
 } from "@/lib/patient-identity-validation";
 
+// Control characters are rejected rather than stripped, on every text field
+// that reaches storage.
+//
+// These values are later rendered into claim handoffs, audit CSV and record
+// PDFs. A newline or delimiter inside a patient name breaks a CSV row into two,
+// and a NUL can truncate a string on the way through a downstream tool — so a
+// name carrying one produces a corrupt or misleading export of someone's health
+// record. Rejecting keeps what is stored equal to what was inspected on the
+// card; silently stripping would store something the pharmacist never saw and
+// never verified.
 const requiredText = z
   .string()
   .trim()
@@ -60,8 +70,22 @@ export const patientIdentityBoundarySchema = z
     healthNumber: z.string().max(64),
     gender: z.enum(["F", "M", "U"]),
   })
+  // .strict() rejects unknown keys instead of ignoring them. A silently dropped
+  // extra field is how a client-supplied value gets to look like it was
+  // accepted, and how a renamed field starts being quietly discarded.
   .strict()
   .superRefine((value, context) => {
+    // The two identifier families cannot be validated to the same standard, and
+    // pretending otherwise is the trap here.
+    //
+    // An OHIP health number has a checksum, so a typo is genuinely detectable
+    // and worth rejecting at the boundary. ODB (MCCSS/HCCSS) identifiers carry
+    // no such check — they can only be bounded and sanity-checked for shape.
+    //
+    // So a passing ODB identifier means "plausibly formatted", NOT "verified".
+    // The pharmacist's inspection of the physical document is what establishes
+    // eligibility in that branch; this schema must not be read as having
+    // confirmed it.
     const identifier =
       value.identifierType === "ohip_health_number"
         ? ontarioHealthCardSchema.safeParse(value.healthNumber)
@@ -178,7 +202,6 @@ export const assessmentCompletionBoundarySchema = z
       .optional(),
     clinicalViewer: clinicalViewerEvidenceSchema,
     ltc: ltcFactsSchema.optional(),
-    orientationOverrideReason: z.string().max(2_000).optional(),
   })
   .strict();
 

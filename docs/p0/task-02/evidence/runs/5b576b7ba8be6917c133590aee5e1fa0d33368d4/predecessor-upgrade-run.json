@@ -1,0 +1,54 @@
+{
+  "schema_version": "1",
+  "task": "02",
+  "controls": [
+    "T02-02",
+    "T02-03",
+    "T02-04",
+    "T02-05",
+    "T02-07",
+    "T02-08"
+  ],
+  "result": "FAIL",
+  "safe_reason": "DATABASE_CONNECTIVITY_DENIED",
+  "command_id": "npm:test:db:upgrade",
+  "exit_code": 1,
+  "started_at_utc": "2026-08-02T08:53:53.559Z",
+  "completed_at_utc": "2026-08-02T08:55:25.014Z",
+  "source_commit_sha": "5b576b7ba8be6917c133590aee5e1fa0d33368d4",
+  "working_tree_at_start": "clean",
+  "migration_head": "0018_clever_mister_fear",
+  "migration_sha256": "33bcf5ab4aa289c17100fb59af1c9527204303e54b5f7d47dcdf5a2424a07a1c",
+  "migration_chain_digest": "ac7202c197b876b143b7b83ec04cbe65f6b5116f53674ff95bf73e05aaade4bb",
+  "predecessor_migration": "0017_tense_pandemic",
+  "approval_artifact_sha256": "465b09712d1d16cfae46b9745a8b2ce5ffcc8378c6dfc5fa3101c22ac78053bd",
+  "environment": {
+    "class": "disposable_local_docker",
+    "identifier": "task02-predecessor-upgrade",
+    "image": "postgres:16-alpine",
+    "image_id": "sha256:de3a4eab8fdfa507ea92aac488b916b08089e515db49b055fe71dfa271ba3a28",
+    "docker_server_version": "29.6.2",
+    "postgres_version": "NOT_VERIFIED",
+    "loopback_binding_verified": true,
+    "internal_network_verified": true,
+    "named_disposable_volume_verified": true,
+    "config_hash": "28bc1c3bc5272eb2fd66ce2328126cca1adaabc5d29d2940e73a50e87086fa04"
+  },
+  "database": null,
+  "restart": {
+    "count_before": 0,
+    "count_after": null,
+    "persisted_catalog_fingerprint": null
+  },
+  "teardown": "PASS",
+  "safety": {
+    "synthetic_only": true,
+    "real_phi_used": false,
+    "production_credentials_used": false,
+    "supabase_accessed": false,
+    "external_integrations_used": false,
+    "db_push_used": false,
+    "migration_history_manually_edited": false,
+    "existing_migration_changed": false
+  }
+}

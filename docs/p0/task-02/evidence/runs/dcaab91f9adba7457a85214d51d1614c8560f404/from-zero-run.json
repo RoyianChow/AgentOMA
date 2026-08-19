@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "recordedAtUtc": "2026-08-02T06:42:17.4670648Z",
+  "testedCandidate": "dcaab91f9adba7457a85214d51d1614c8560f404",
+  "approvalRecordCommit": "f82f0fec3bf9fe2ae42e1c9cf5ac54488e7eb5e9",
+  "approvalWindow": {
+    "issuedAtUtc": "2026-08-02T06:33:35.1659490Z",
+    "expiresAtUtc": "2026-08-02T10:33:35.1659490Z",
+    "gate": "G1-D"
+  },
+  "migration": {
+    "head": "0018_clever_mister_fear",
+    "sha256": "33bcf5ab4aa289c17100fb59af1c9527204303e54b5f7d47dcdf5a2424a07a1c",
+    "orderedChainDigest": "ac7202c197b876b143b7b83ec04cbe65f6b5116f53674ff95bf73e05aaade4bb",
+    "installedMigrationRows": 19,
+    "installedRequiredTriggerCount": 8
+  },
+  "environment": {
+    "class": "DISPOSABLE_LOCAL_DOCKER_POSTGRESQL",
+    "dockerClientVersion": "29.6.2",
+    "dockerServerVersion": "29.6.2",
+    "postgresVersion": "16.14",
+    "image": "postgres:16-alpine",
+    "imageId": "sha256:de3a4eab8fdfa507ea92aac488b916b08089e515db49b055fe71dfa271ba3a28",
+    "containerName": "agentoma-test-db",
+    "hostBinding": "127.0.0.1:5433",
+    "database": "agentoma_test",
+    "storage": "tmpfs:/var/lib/postgresql/data",
+    "preStartVerification": "PASS",
+    "runningVerification": "PASS",
+    "productionDataAccessed": false,
+    "productionCredentialsUsed": false,
+    "externalRoutesUsed": false
+  },
+  "primaryRun": {
+    "command": "npm test",
+    "startedAtUtc": "2026-08-02T06:35:10.7509638Z",
+    "endedAtUtc": "2026-08-02T06:36:04.7405376Z",
+    "exitCode": 0,
+    "testFilesPassed": 20,
+    "testFilesTotal": 20,
+    "testsPassed": 211,
+    "testsTotal": 211,
+    "skippedOrFocusedTests": 0,
+    "rawOutputSha256": "c91224532bc997ce635ff2997b40a759bec174b7ee63bffa4c79c694ba550ac5"
+  },
+  "confirmationRun": {
+    "command": "npm test",
+    "startedAtUtc": "2026-08-02T06:38:05.0798340Z",
+    "endedAtUtc": "2026-08-02T06:38:51.0933078Z",
+    "exitCode": 0,
+    "testFilesPassed": 20,
+    "testFilesTotal": 20,
+    "testsPassed": 211,
+    "testsTotal": 211,
+    "skippedOrFocusedTests": 0,
+    "rawOutputSha256": "8ed8db427d55f4debf3c32f0c1aee9189070d3c58924869d3e7a5d6c149f4a96"
+  },
+  "safeSummary": "The exact candidate migrated a fresh synthetic PostgreSQL database through 0018 and passed the complete unfiltered 20-file, 211-test suite twice. The run includes audit-failure rollback, constraints, concurrency, tenant isolation, red-flag zero-claim, completed-referral separation, immutability, and export evidence tests.",
+  "teardown": "PASS"
+}

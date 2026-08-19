@@ -1,47 +1,51 @@
 # Next steps
 
-**Prioritized:** 2026-08-02
+**Prioritized:** 2026-08-10
 
 **Release posture:** do not treat the current build as production-ready until
 the P0 items are resolved, deployed, and re-verified.
 
+**Latest Task 02 runtime update:** exact candidates `3a271a7d…` and
+`4e479514…` failed closed with `LOOPBACK_TCP_DENIED` before migration or
+synthetic fixture writes. Their evidence is preserved under
+`docs/p0/task-02/evidence/runs/`; do not rerun either candidate. Freeze a new
+clean candidate and obtain a new exact, expiring G1-D before using the single
+approved predecessor/restart command. The full current programme status is in
+[`tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md`](tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md).
+
 ## P0 — clinical and compliance blockers
 
-1. **Remediate the two Task 02 protected defects under explicit lead review.**
-   Move the required assessment-created audit into the completion transaction
-   with deterministic fault-injection coverage. Remove the admin orientation
-   override, or implement only a separately approved G3 policy. Task 02 itself
-   did not edit either protected path.
-2. **Obtain G1-D and verify P0-C migration `0018` in fresh Docker.** The identity, eligibility,
-   self/family, existing-prescription, claim-history, and clinical-viewer gates
-   are merged in the application, but the live Supabase database is still at
-   `0017`. Replay the full chain and the independent 0017→0018 upgrade, run the
-   complete database suite, and prove triggers/grants/atomicity/concurrency.
-   Never use `db:push`.
-3. **Obtain G1-L, recovery evidence, and verify the one-time live migration.**
+1. **Remediate then rerun the gated predecessor/restart proof.** Exact candidate
+   `dcaab91…` passed the full 211-test from-zero PostgreSQL suite twice. Every
+   later predecessor/restart run remains preserved as fail-closed evidence;
+   the newest recorded candidates, `3a271a7d…` and `4e479514…`, stopped at
+   `LOOPBACK_TCP_DENIED` before migration or synthetic fixture writes. Do not
+   rerun an evidence-bound candidate. Freeze a new clean SHA, grant a new
+   expiring G1-D using
+   `docs/p0/task-02/g1-d-predecessor-upgrade-approval-contract.md`, then run its
+   single orchestrated command. Do not manually operate Compose, weaken tmpfs,
+   or edit migration/history.
+2. **Resolve export-integrity stop S27.** Approve canonical repeat-export,
+   retained-manifest, and reconstruction-verification semantics before changing
+   hashes. The current bundle changes as export/audit history grows.
+3. **Obtain independent Task 11 review.** Bind the exact candidate, migration,
+   G1-D artifacts, remaining controls, and approved S27 contract.
+4. **Establish recovery evidence, obtain G1-L, and verify the one-time live migration.**
    Apply only through `npm run db:migrate` in the named change window after all
    Docker blockers are green. Verify catalog/grants and safe aggregate deltas.
-4. **Smoke-test the complete P0-C workflow.** Use a realistic synthetic case to
+5. **Smoke-test the complete P0-C workflow.** Use a realistic synthetic case to
    prove missing eligibility fails closed, unresolved prescription evidence
    blocks completion, the three history signals persist side by side, and the
    UI never promises HNS payment. Confirm a red-flag exit still writes zero
    assessment, evidence, and claim-draft rows.
-5. **Resolve all LTC minor-ailment billing.** The current conservative rule
+6. **Resolve all LTC minor-ailment billing.** The current conservative rule
    records the assessment and LTC facts but refuses claim drafting for every LTC
    resident. Confirm primary, secondary-emergency, and secondary-non-emergency
    submission/fee rules with the ODB Pharmacy Help Desk, including footnote 5
    and `LT`. Do not add `$0`, capitation, or `LT` logic until a human decision is
    documented; see [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md).
-6. **Resolve export-integrity stop S27.** Approve the canonical repeat-export,
-   retained-manifest, and reconstruction-verification contract before changing
-   hashes. The current bundle intentionally changes as export/audit history
-   grows; Task 02 did not invent a competing hash contract.
-7. **Obtain Task 11 test-plan/evidence review and G4.** Task 02 cannot approve
-   its own production promotion.
-8. **Resolve the orientation break-glass policy.** The intended rule is a hard
-   billing-eligibility gate, but a pharmacy admin can currently provide an
-   audited override reason. Remove it or obtain explicit regulatory/product
-   approval before production.
+7. **Obtain independent G4 after live verification.** Task 02 cannot approve its
+   own production promotion.
 
 ## Completed P0 implementation
 
@@ -57,8 +61,10 @@ the P0 items are resolved, deployed, and re-verified.
   and migration `0018` are merged. The server validates inspected public-service
   identity evidence, self/family and structured existing-Rx facts, and persists
   patient self-report, an exact advisory platform lookback, and clinical-viewer
-  attestation. The feature code is merged but **not production-ready** until
-  the protected defects and the Docker/live steps above are complete.
+   attestation. Candidate `dcaab91…` passed atomic-audit rollback, orientation,
+   persistence, isolation, concurrency, red-flag, referral, and export evidence
+   tests on real PostgreSQL. The feature is **not production-ready** until the
+   remaining predecessor/restart, S27, Task 11, recovery, live, and G4 gates pass.
 - **P0-D — virtual/LTC facts and fee-tier reference:** migrations `0013`–`0014`
   are live. Remote eligibility is reference-driven and all LTC drafting remains
   parked. Migration `0015` removed disposable TEST tenants and enforces one
@@ -85,7 +91,7 @@ the P0 items are resolved, deployed, and re-verified.
 4. **Verify P0-C evidence in complete retrieval.** The schema-v3 export,
    manifest projection, record view, and PDF implementation are present. Run
    their real-PostgreSQL linkage, missing-evidence, tenant, authorization, and
-   hash assertions after G1-D; do not claim them live before 0018.
+   hash assertions are green under G1-D; do not claim them live before 0018.
 5. Exercise `/pharmacist/governance` with a realistic synthetic case: complete
    export, patient and record holds, request decision, correction supersession,
    destruction dry run, second-admin refusal/approval, and restore-drill record.
@@ -103,10 +109,10 @@ the P0 items are resolved, deployed, and re-verified.
 10. Extend Zod validation to any future external integration/FHIR responses.
     Assessment, invitation, settings, and external-session boundaries are now
     covered; preserve safe, non-PHI errors as integrations are added.
-11. Review remaining best-effort audit boundaries. Governance mutations are
-    transactional and record-access failures have a secondary failure table;
-    older assessment/settings/invitation paths still need an explicit atomicity
-    decision.
+11. Review remaining best-effort audit boundaries. Assessment completion and
+    governance mutations are transactional, and record-access failures have a
+    secondary failure table; settings/invitation paths still need an explicit
+    atomicity decision.
 
 ## Completed P1 foundation
 
@@ -123,20 +129,33 @@ the P0 items are resolved, deployed, and re-verified.
 This program does not displace the P0 deployment and policy blockers above.
 Its updated task briefs are implementation contracts, not completed features.
 
-1. Start Task 01 repository discovery and Task 11 control/evidence design in
-   parallel. Obtain the approvals in Task 01 before creating its separate npm
-   workspace and runnable synthetic build.
-2. Allow Task 02's bounded inspection and export work while keeping migration
-   execution and live writes behind their explicit approval gate. Reconcile its
-   work with the outstanding `0018` operator steps above rather than creating a
-   second deployment path.
-3. Permit Tasks 03–10 to perform only the discovery, design, contracts, and
-   synthetic work authorized in each brief. No runnable prototype shares the
-   production app, database, authentication, credentials, or integrations.
-4. Route task plans and evidence through Task 11, but keep approval authority
-   with the named product, pharmacist, privacy, security, accessibility, and
-   regulatory reviewers. Task 11 records evidence; it does not self-approve.
-5. Resolve the AgentRx/AgentOMA naming question and add the referenced reviewed
+1. Preserve Task 01's recorded local synthetic PASS. G2 was not requested and
+   G3 remains empty; any changed sandbox candidate needs fresh boundary,
+   artifact, evidence, and production-invariance proof.
+2. Keep Task 02 and Task 11 as the release-critical lanes. Task 02 must follow
+   the G1-D → predecessor/restart → S27 → independent Task 11 → recovery →
+   G1-L → live parity → G4 sequence above. Task 11 must receive independent
+   review before merge or promotion.
+3. Keep Task 04 blocked until a superseding versioned approval records the
+   exact candidate and configuration hashes, owners, future expiry/review
+   dates, capability decisions, and independent Security/Privacy,
+   Operations/SRE, Quality/Test, and Task 11 reviews. Its approved waitlist
+   policy alone authorizes no implementation.
+4. Continue Task 07 with Workstream J privacy/security/audit/retention design
+   only. No real recipient, provider, PHI, message delivery, or runtime is
+   authorized.
+5. Start Task 03 discovery/design as the next unowned product capability. Do
+   not introduce clinical ranking, triage, billing inference, or client-side
+   source queue records.
+6. Reconcile reported external Task 06 and Task 11 branches before duplicate
+   work. Tasks 05, 08, and 09 remain discovery/contract work; `/api/fhir`
+   stays disabled. Task 10 expansion remains blocked pending disposition of
+   AI-RX-06's production-tree placement.
+7. Tasks 12, 13, and 14 are design-only: operational resilience, human factors
+   and controlled-pilot readiness, and regulatory change governance. Runtime
+   drills, participant studies, automated source tooling, or production
+   activation require exact task approval plus Task 11 Checkpoint 1.
+8. Resolve the AgentRx/AgentOMA naming question and add the referenced reviewed
    deep-research artifact if future work materially depends on it; see
    [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md).
 
@@ -145,8 +164,9 @@ The current dependency map and per-task allowed-work status live in the
 
 ## P2 — engineering maturity
 
-1. Add CI that runs TypeScript, ESLint, pure tests, and a fresh-Postgres
-   migration/integration suite on every pull request.
+1. Reconcile and independently review Task 11's reported CI/control-plane
+   branch, then require TypeScript, ESLint, pure tests, and fresh-Postgres
+   migration/integration checks on protected pull requests.
 2. Add Canadian-region verification, role/password provisioning, migration
    recovery, and privacy-incident runbooks. Backup/restore and reviewed
    destruction already have foundations.

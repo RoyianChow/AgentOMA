@@ -19,18 +19,21 @@ import {
 async function main() {
   const [feeTiers, groups, pins, rules, pharmacies, assessments, followUps] =
     await Promise.all([
-    db.select().from(odbFeeTier),
-    db.select().from(ailmentGroup),
-    db.select().from(pin),
-    db.select().from(claimRule),
+      db.select().from(odbFeeTier),
+      db.select().from(ailmentGroup),
+      db.select().from(pin),
+      db.select().from(claimRule),
       db
         .select({
-          id: pharmacy.id,
           odbFeeTierCode: pharmacy.odbFeeTierCode,
         })
         .from(pharmacy),
-      db.select({ id: assessment.id }).from(assessment),
-      db.select({ id: followUp.id }).from(followUp),
+      db
+        .select({ total: sql<number>`count(*)::int` })
+        .from(assessment),
+      db
+        .select({ total: sql<number>`count(*)::int` })
+        .from(followUp),
     ]);
 
   console.log("Connected to Supabase Postgres.");
@@ -41,15 +44,23 @@ async function main() {
   console.log(`  pin:           ${pins.length} rows (expected 92 after seed)`);
   console.log(`  claim_rule:    ${rules.length} rows (expected 2 after seed)`);
   console.log(`  pharmacy:      ${pharmacies.length} rows`);
-  console.log(`  assessment:    ${assessments.length} rows`);
-  console.log(`  follow_up:     ${followUps.length} rows`);
-  const pharmacyTierCounts = [
-    ...new Set(pharmacies.map((row) => row.odbFeeTierCode)),
-  ]
-    .map(
-      (code) =>
-        `${code}=${pharmacies.filter((row) => row.odbFeeTierCode === code).length}`,
+  console.log(`  assessment:    ${assessments[0]?.total ?? 0} rows`);
+  console.log(`  follow_up:     ${followUps[0]?.total ?? 0} rows`);
+  const pharmacyTierCountMap = new Map<string, number>();
+  for (const row of pharmacies) {
+    pharmacyTierCountMap.set(
+      row.odbFeeTierCode,
+      (pharmacyTierCountMap.get(row.odbFeeTierCode) ?? 0) + 1,
+    );
+  }
+  const pharmacyTierCounts = [...pharmacyTierCountMap.entries()]
+    .sort(([left], [right]) =>
+      left.localeCompare(right, "en-US", {
+        sensitivity: "variant",
+        numeric: false,
+      }),
     )
+    .map(([code, total]) => `${code}=${total}`)
     .join(", ");
   console.log(`  pharmacy tiers: ${pharmacyTierCounts}`);
 

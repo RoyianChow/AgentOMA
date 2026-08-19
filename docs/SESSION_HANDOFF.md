@@ -1,81 +1,127 @@
 # Session handoff
 
-**Updated:** 2026-08-02
+**Updated:** 2026-08-10
+**Observed branch:** `task7`
+**Observed baseline HEAD:** `58fee60035988300909a158f3c91501faca89fa7`
+**Worktree:** documentation-only updates are present; verify `git status` before
+freezing any candidate
+**Release status:** **BLOCKED — DO NOT PROMOTE**
 
-**Branch:** `feat/moh-compliance-migration`
+## Start here
 
-**Task 02 candidate:** `4f8fdd844c243f5dafcf4e78652116a9d632b222`
+1. Read [`../AGENTS.md`](../AGENTS.md).
+2. Read [`PROJECT_OVERVIEW.md`](PROJECT_OVERVIEW.md).
+3. Read the autonomous-program
+   [`current implementation status`](tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md).
+4. Use the
+   [`2026-08-10 sprint plan`](tasks/autonomous-pharmacy/NEXT-SPRINT-PLAN-2026-08-10.md)
+   for sequencing only; it grants no authority.
+5. Read the assigned task brief in full before acting.
 
-**Task 02 status:** **FAIL; DO NOT PROMOTE**
+## Product and live-data boundary
 
-## Current product state
+AgentOMA is an authenticated, single-pharmacy Ontario minor-ailments pilot,
+not a production-ready service. Public `/check` and `/assessment` collect no
+identifying data. `/pharmacist/*` requires password, TOTP, and independent
+server-side session, role, orientation, and `PHARMACY_ID` checks. `proxy.ts`
+performs optimistic navigation only and no authorization.
 
-AgentOMA remains an authenticated, single-pharmacy Ontario minor-ailments pilot.
-The public `/check` and `/assessment` flows collect no identifying data;
-`/pharmacist/*` is invitation-only with password and TOTP. The application
-creates a claim draft for hand-entry and does not submit to HNS.
+Claim drafts are persisted read-only records for hand-entry into dispensing
+software. Nothing is submitted to HNS. `/api/fhir` remains disabled with 403.
+Firebase is removed. `db:push` is banned.
 
-The repository migration chain ends at `0018_clever_mister_fear`; the last
-documented live/fresh-Docker state is still `0017_tense_pandemic`. `db:push` is
-banned. No Task 02 migration or live database command was run.
+The repository migration chain ends at `0018_clever_mister_fear`; live
+Supabase remains documented through `0017_tense_pandemic`. No live migration,
+production credential, PHI, external integration, or claim action occurred in
+this documentation pass.
 
-## Task 02 work completed
+## Verification checkpoint
 
-- Baseline, static SQL review, threat model, operational runbook, LTC and
-  orientation decision notes, release checklist, evidence index, manifest, and
-  final handoff/report are under `docs/p0/task-02/` and
-  `artifacts/p0/task-02/`.
-- Existing immutable billability evidence is now serialized without defaults or
-  derivation and included in the authorized record page, assessment PDF, and
-  complete-patient export. Export schema version is 3.
-- Evidence is missing rather than inferred when the historical sidecar is absent.
-- Patient names were removed from exported filenames; server responses remain
-  private/no-store; touched audit-failure logging is payload-free.
-- The destructive DB harness accepts only exact local test URLs, and Docker
-  Postgres is bound to loopback.
-- Candidate checks: TypeScript PASS, lint PASS, 110/110 pure tests PASS, build PASS.
+For baseline `58fee600…`, this documentation pass recorded:
 
-## Why Task 02 fails
+- `npm exec tsc -- --noEmit`: PASS;
+- `npm run lint`: PASS;
+- `npm run test:pure`: PASS, 22 files and 305 tests;
+- documentation relative-link and trailing-whitespace checks: PASS;
+- Docker/database suite: **NOT RUN** because no runtime or migration file was
+  changed.
 
-Two mandatory invariants are proven false on surfaces protected by `AGENTS.md`:
+The last recorded complete real-PostgreSQL evidence is exact candidate
+`dcaab91f9adba7457a85214d51d1614c8560f404`: 211 tests passed twice with
+fresh migration replay through `0018`, atomic audit rollback, tenant isolation,
+immutability, concurrency, red-flag zero-claim, completed-referral separation,
+reference-derived persistence, and billability-evidence export.
 
-1. The completion transaction commits assessment/evidence/claim before its
-   mandatory `assessment_created` audit write. The audit write is best-effort,
-   so T02-13 failure atomicity is false.
-2. Current code/tests permit an admin orientation override to complete a
-   billable assessment while G3 remains unresolved, so T02-18 is false.
+## Task 02 — production-critical blocker
 
-No protected fix was attempted. A general request to complete Task 02 is not the
-explicit lead sign-off required to edit completion/audit semantics.
+Migration `0018` is not live. Later exact predecessor/restart candidates
+`3a271a7d3cc941e4c8de62c630d2a75409fdc0a1` and
+`4e4795145c7acccefed5df47de3113c9e56b664e` failed closed with
+`LOOPBACK_TCP_DENIED` before migration or synthetic fixture writes. Preserve
+their evidence under `docs/p0/task-02/evidence/runs/`; neither candidate may be
+rerun.
 
-## Verification not performed
+Required order:
 
-- G1-D was not granted and Docker Desktop was not running. Full-chain replay,
-  predecessor upgrade, constraints/grants, concurrency, red-flag, referral,
-  and DB-backed export tests were not run.
-- G1-L/G4 were not granted. No live connection, backup/restore check, migration,
-  catalog query, aggregate query, or production promotion occurred.
-- Existing export hashes include changing generation/history state; S27 blocks
-  silently inventing a replacement canonical-hash contract.
-- Task 11 has parallel uncommitted work in
-  `docs/tasks/autonomous-pharmacy/TASK-11-quality-security-release.md` and
-  `docs/task-11/`. It was preserved but not treated as reviewed evidence.
+1. Freeze a new clean candidate after the current documentation changes are
+   reviewed and committed.
+2. Create a new exact, expiring G1-D approval for that SHA and environment.
+3. Run only the approved predecessor/restart harness command.
+4. Preserve passing evidence or an honest fail-closed result.
+5. Resolve S27 canonical repeat-export and historical reconstruction semantics.
+6. Obtain independent Task 11 review bound to the exact candidate and hashes.
+7. Complete recovery proof, then request G1-L for a named live change window.
+8. Apply `0018` once with `npm run db:migrate`, verify catalog, grants,
+   triggers, tenancy aggregates, and parity, then obtain independent G4.
 
-## Safe next sequence
+Do not manually operate the harness resources, edit migration history, change
+an existing migration, access Supabase during G1-D, or substitute `db:push`.
 
-1. Read `docs/p0/task-02/production-handoff.md` and `final-report.md`.
-2. Obtain explicit lead approval for the protected atomic-audit remediation and
-   resolve the orientation G3 policy.
-3. Commit those changes and re-freeze all hashes.
-4. Obtain exact, expiring G1-D approval for the new clean candidate and local
-   synthetic database; start Docker Desktop and execute the complete DB suite.
-5. Resolve the canonical export-hash/reconstruction contract and obtain Task 11
-   review.
-6. Only after those pass, establish recovery proof and request exact G1-L/G4.
+## Autonomous-program checkpoint
+
+- **Task 01:** local synthetic boundary and evidence are PASS for its recorded
+  candidate. SBX-14 is not applicable because G2 was not requested and no
+  hosted preview exists. G3 remains empty. A changed candidate needs fresh
+  evidence.
+- **Task 03:** no dedicated capability package exists; discovery/design is the
+  next unowned product slice.
+- **Task 04:** partial synthetic implementation exists, but its approval
+  expired on 2026-08-05. The waitlist policy is approved only as a policy
+  sub-decision. Runtime work remains blocked pending the complete v3 renewal
+  and independent reviews.
+- **Task 06:** external work has been reported but is not verified in this
+  checkout. Reconcile its branch/PR before duplicate work.
+- **Task 07:** documentation Workstreams A–I are complete; Workstream J
+  privacy/security/audit/retention design is next. No delivery runtime or real
+  recipient is authorized.
+- **Task 10:** AI-RX-06 is a disabled deterministic synthetic experiment in the
+  production tree; expansion is blocked pending a retire-or-rebuild decision.
+- **Task 11:** synthetic control-plane implementation was approved, but merge
+  and promotion remain blocked pending exact-candidate independent review.
+- **Tasks 12–14:** operational resilience, human factors/pilot readiness, and
+  regulatory change governance are design contracts only. No runtime drill,
+  participant study, automated interpretation, or production activation is
+  authorized.
+
+## Documentation updated in this pass
+
+- refreshed the root and docs indexes;
+- reconciled `PROJECT_OVERVIEW.md`, `COMPLETED_WORK.md`, `NEXT_STEPS.md`,
+  `COMPLIANCE.md`, and this handoff;
+- updated the autonomous task index, current-status record, sprint plan, and
+  roadmap;
+- added design-only Task 12, Task 13, and Task 14 contracts;
+- kept planned capabilities visibly separate from implemented work.
 
 ## Standing fences
 
-Do not edit approved triage/red-flag content, reference PIN data, existing
-migrations, `deriveClaimDraft`, audit integrity, the five-outcome structure, or
-zero-PHI intake without explicit lead sign-off. LTC remains parked. The 365-day
-count stays advisory, and only HNS adjudication determines payment.
+Do not edit existing migrations, migration history, triage/red-flag content,
+reference PIN/fee/maximum data, `deriveClaimDraft`, audit enforcement, LTC
+billing, authentication/orientation, the five outcomes, or the zero-PHI public
+flows without the exact required approval. Never derive regulatory values from
+memory. Never place PHI in logs, URLs, browser storage, analytics, caches, or
+unnecessary client props. The 365-day platform count is advisory; only HNS
+adjudication determines payment.
+
+Passing tests, completed task briefs, product-lead implementation approval, and
+this handoff do not authorize production deployment.

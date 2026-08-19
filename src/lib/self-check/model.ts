@@ -11,6 +11,9 @@ export interface SelfReportedAnswer {
 }
 
 interface SummaryBase {
+  // The public self-check keeps health-related answers in memory only. There
+  // is intentionally no identity, health number, demographic, or persistence
+  // field in this model.
   generatedAtIso: string;
   answers: SelfReportedAnswer[];
 }
@@ -120,13 +123,11 @@ function formatGeneratedAt(iso: string): string {
   const datePart = new Intl.DateTimeFormat("en-CA", {
     day: "numeric",
     month: "long",
-    timeZone: "UTC",
     year: "numeric",
   }).format(date);
   const timePart = new Intl.DateTimeFormat("en-CA", {
     hour: "numeric",
     minute: "2-digit",
-    timeZone: "UTC",
     timeZoneName: "short",
   }).format(date);
 

@@ -539,30 +539,15 @@ export async function createAssessment(data: AssessmentCompletionBoundary) {
     //     an intern/student) must have a recorded OCP "Mandatory Orientation
     //     for Minor Ailments Module" completion. This refuses HERE — server-
     //     side, before ANY row is written and before deriveClaimDraft is ever
-    //     called. A UI-only gate is not a gate.
-    //
-    //     BREAK-GLASS: a pharmacy ADMIN may override with a recorded reason.
-    //     This is deliberately an AUDITED override (assessment.orientation_
-    //     override), not a silent bypass — completing a billable assessment for
-    //     an un-oriented pharmacist is a compliance risk (the EO Notice treats
-    //     the module as a billing precondition), so who did it and why is kept.
-    //     Non-admins, and admins without a reason, are still refused.
-    let orientationOverride: { reason: string } | null = null;
+    //     called. No role, including pharmacy_admin, can override this billing
+    //     precondition.
     if (!prescriber.orientationCompletedAt) {
-      const reason = data.orientationOverrideReason?.trim();
-      const isAdmin = actor.role === "pharmacy_admin";
-      if (isAdmin && reason) {
-        orientationOverride = { reason };
-      } else {
-        return {
-          success: false,
-          error:
-            "The prescribing pharmacist has no recorded completion of OCP's Mandatory Orientation for Minor Ailments Module. A billable assessment cannot be completed until a pharmacy admin records it on their profile.",
-          // Signals so an admin's UI can offer the audited override.
-          orientationRequired: true as const,
-          canOverride: isAdmin,
-        };
-      }
+      return {
+        success: false,
+        error:
+          "The prescribing pharmacist has no recorded completion of OCP's Mandatory Orientation for Minor Ailments Module. A billable assessment cannot be completed until a pharmacy admin records it on their profile.",
+        orientationRequired: true as const,
+      };
     }
 
     // 0d. Tenancy: the patient must belong to the actor's pharmacy.
@@ -973,6 +958,7 @@ export async function createAssessment(data: AssessmentCompletionBoundary) {
     //    claim_draft row. deriveClaimDraft stays pure: we do the PIN lookup here
     //    and pass it in. Prescriber identity is the PROFILE's (resolved in
     //    step 0 — the supervisor's for interns/students), never caller input.
+    let followUpId: string | null = null;
     if (claim.billable) {
       if (!scheduledFollowUp?.success) {
         throw new Error("A billable assessment requires a follow-up plan.");
@@ -1014,27 +1000,37 @@ export async function createAssessment(data: AssessmentCompletionBoundary) {
         entityId: plan.id,
         source: "assessment_completion",
       });
-      return {
-        success: true as const,
-        newAssessment,
-        followUpId: plan.id,
-        claim,
-        historyEvidence: {
-          patientSelfReportStatus,
-          patientSelfReportApproximateCount,
-          platformAssessmentCount,
-          seededMaximum365: effectiveAilment.maxClaimsPer365Days,
-          maximumState: data.clinicalViewer.maximumState,
-          trailingWindowStart: trailingWindow.start,
-          trailingWindowEnd: trailingWindow.end,
-        },
-      };
+      followUpId = plan.id;
     }
+
+    // The required assessment-created event is part of the SAME transaction as
+    // the assessment, immutable evidence, claim draft, follow-up plan, and
+    // intake consumption. If this insert fails, PostgreSQL rolls every one of
+    // those writes back; a completed record can never exist without its audit.
+    await writeAuditWith(tx, {
+      pharmacyId,
+      patientId: data.patientId,
+      actorUserId: actor.userId,
+      action: claim.billable
+        ? "assessment.created.claim_drafted"
+        : "assessment.created.no_claim",
+      entityType: "assessment",
+      entityId: newAssessment.id,
+      metadata: {
+        ailmentGroupCode,
+        modality: data.modality,
+        outcome: data.outcome,
+        billable: claim.billable,
+        ...(claim.billable
+          ? { pinCode: claim.draft.pinCode }
+          : { notBillableReason: claim.reason }),
+      },
+    });
 
     return {
       success: true as const,
       newAssessment,
-      followUpId: null,
+      followUpId,
       claim,
       historyEvidence: {
         patientSelfReportStatus,
@@ -1051,57 +1047,6 @@ export async function createAssessment(data: AssessmentCompletionBoundary) {
       return { success: false, error: completion.error };
     }
     const { newAssessment, followUpId, claim, historyEvidence } = completion;
-
-    // 7. Audit (append-only). Best-effort: a failed audit write must not undo a
-    //    created assessment, but it is logged loudly. No PHI in metadata.
-    try {
-      await writeAudit({
-        pharmacyId,
-        patientId: data.patientId,
-        actorUserId: actor.userId,
-        action: claim.billable ? "assessment.created.claim_drafted" : "assessment.created.no_claim",
-        entityType: "assessment",
-        entityId: newAssessment.id,
-        metadata: {
-          ailmentGroupCode,
-          modality: data.modality,
-          outcome: data.outcome,
-          billable: claim.billable,
-          // Redundant with the dedicated assessment.orientation_override event
-          // below (both best-effort). Kept on THIS event too so a single audit
-          // write failing cannot lose the override fact + its justification.
-          ...(orientationOverride
-            ? { orientationOverridden: true, orientationOverrideReason: orientationOverride.reason }
-            : {}),
-          ...(claim.billable ? { pinCode: claim.draft.pinCode } : { notBillableReason: claim.reason }),
-        },
-      });
-    } catch {
-      console.error("AUDIT WRITE FAILED for assessment.");
-    }
-
-    // 7a. If an admin broke the glass on the orientation gate, record WHO, WHY,
-    //     and for which assessment as its own audited statement. Reason is
-    //     admin-authored justification (the UI asks them not to put patient
-    //     identifiers in it).
-    if (orientationOverride) {
-      try {
-        await writeAudit({
-          pharmacyId,
-          patientId: data.patientId,
-          actorUserId: actor.userId,
-          action: "assessment.orientation_override",
-          entityType: "assessment",
-          entityId: newAssessment.id,
-          metadata: {
-            reason: orientationOverride.reason,
-            ailmentGroupCode,
-          },
-        });
-      } catch {
-        console.error("AUDIT WRITE FAILED for orientation override.");
-      }
-    }
 
     return {
       success: true,

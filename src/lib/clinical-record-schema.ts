@@ -15,6 +15,11 @@ const optionalNarrative = z.string().trim().max(4_000).optional();
 const isoTimestamp = z.string().datetime({ offset: true });
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
+/**
+ * This is a server-boundary schema, not just a form helper. The persisted
+ * clinical record is the defensible service snapshot, so outcome-dependent
+ * requirements are checked again below after Zod has parsed the shape.
+ */
 const schema = z.object({
   consent: z.object({
     method: z.enum(CONSENT_METHODS),
@@ -77,6 +82,9 @@ export function parseClinicalRecord(
 
   const record = parsed.data;
   const isSdm = record.consent.givenBy === "substitute_decision_maker";
+  // SDM consent is only complete when the record identifies the person who
+  // gave it and their relationship to the patient; an unchecked UI control is
+  // not sufficient evidence for the persisted record.
   if (
     isSdm &&
     (!record.consent.substituteDecisionMakerName ||
@@ -88,6 +96,9 @@ export function parseClinicalRecord(
     };
   }
 
+  // Prescription and no-prescription outcomes are mutually exclusive. These
+  // cross-field checks keep a partial or contradictory record from reaching
+  // the completion transaction even if the caller bypasses the UI.
   if (outcome === "rx_issued") {
     if (!record.prescription) {
       return { success: false, error: "Complete the prescription and PCP-notification record." };

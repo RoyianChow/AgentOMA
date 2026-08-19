@@ -1,6 +1,79 @@
 Task 07 — Consented Messaging, Administrative Reminders, and Secure Portal Communication
 
-Owner profile: backend/communications developerSupporting reviewers: privacy, security, accessibility, clinical/professional, operationsPriority: P1 for consent, secure messaging, and synthetic delivery controls; P2 for approved production-provider integrationStatus: synthetic implementation may proceed; real recipients, live providers, production delivery, and PHI processing remain blocked pending the gates belowUpdated: 2026-07-30
+## Next-sprint checkpoint — 2026-08-10
+
+**Repository state:** documentation Workstreams A–I are complete; runtime is
+`NOT RUN`.
+**Sprint slice:** complete Workstream J privacy, security, audit, retention,
+incident, and deletion/hold design; then prepare the scoped Task 07 approval
+and Task 11 Checkpoint 1 package.
+**Exit:** no recipient, PHI, provider, webhook, delivery, secure-thread runtime,
+or external effect. Task 04 and Task 06 producer boundaries remain inputs, not
+authority. See
+[`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md).
+
+**Owner profile:** backend/communications developer
+
+**Supporting reviewers:** privacy, security, accessibility,
+clinical/professional, operations
+
+**Priority:** P1 for consent, secure messaging, and synthetic delivery controls;
+P2 for approved production-provider integration
+
+**Status:** Workstreams A–I are complete as documentation. Conceptual design may
+continue; runnable synthetic implementation, real recipients, live providers,
+production delivery, and PHI processing remain blocked pending the gates below.
+
+**Updated:** 2026-08-06
+
+## Execution checkpoint — 2026-08-06
+
+Workstream A assessed repository baseline
+`12801c7211cb6ce3286d209762d61c11b6830193`. Workstreams B and C document the
+required threat model, trust-boundary data flows, server-only contracts and
+conceptual schema. Workstream D documents the fail-closed consent, contact
+verification, quiet-hours/timezone, language/accessibility, suppression, and
+contact-change behaviour over those contracts, at design baseline
+`023af56b35afba29cc2cf7081b7ee29eda3d6a73`, selecting no unresolved policy
+value. Workstream E documents the transactional outbox, the four orthogonal
+state axes and their transition catalogue, idempotency/lease/concurrency and
+race determinism, scheduling and staleness rules, and the required invariants at
+design baseline `3d1b9e59abc6655cecff298f27922ee65ebb48f6`; it states duplicate
+resistance with a named residual window and claims no exactly-once delivery
+guarantee. Workstream F documents the template registry, the nine template
+classes and their blocking producer dependencies, placeholder allowlists, the
+rendering and URL boundary, and the forbidden-data leakage tests; it approves no
+template and writes no production copy. It also surfaces, without resolving, the
+conflict between this brief's illustrative **AgentRx** strings and the live
+**AgentOMA** product — brand remains an unresolved slot pending T07-D17. See
+[`../../task-07/README.md`](../../task-07/README.md). No Task 07-specific scope
+approval or Task 11 Checkpoint 1 is recorded. Workstream G documents the six
+adapter operations, the enforceable capability declaration, the eighteen
+deterministic synthetic outcomes and their state mapping, the four-item outbound
+payload allowlist, the ordered webhook pipeline and monotonic projection, and
+the reconciliation workflow; the vendor scorecard is an instrument with named
+reviewers and non-waivable rows, and **no vendor is selected, contacted, or
+assessed**. Workstream H documents the secure-thread eligibility checks,
+lifecycle and transitions, patient and staff experience rules, message
+integrity, the clinical boundary, queue routing and metadata limits, external-
+reply handling, and the actor-by-action authorization matrix; the prototype this
+workstream also names is **NOT BUILT**, because nine of thirteen eligibility
+checks depend on Task 05 and Task 06 contracts absent from `main`. Workstream H
+also surfaces, without resolving, the `AGENTS.md` zero-PHI scope question for
+authenticated **patient-side** surfaces — the public intake and self-check are
+unchanged, and the rescoping decision belongs to the product lead. Workstream I
+documents the producer boundaries for appointments, follow-ups, and Task 06:
+Task 07 consumes committed versioned events and holds no write path into any
+producing domain, appointment purpose is excluded structurally rather than
+filtered, no inbound path can confirm or alter an appointment, the production
+follow-up notification feature stays disabled by remaining unbuilt, and
+**reminder delivery is never evidence that follow-up occurred**. It also records
+that the Task 04 review/expiry date of 2026-08-05 has passed and needs renewal
+before any appointment-reminder work. Further policy/design work may continue
+without applying a migration; the next documentation-only slice is Workstream J.
+Runnable synthetic implementation
+remains blocked until those records exist. Real recipients, PHI, live providers,
+production delivery, and clinical or claim effects remain prohibited.
 
 Outcome
 

@@ -143,6 +143,15 @@ describe("P0-C assessment boundary and reductions", () => {
     ).toBe(false);
   });
 
+  it("rejects the retired orientation-override input at the strict boundary", () => {
+    expect(
+      assessmentCompletionBoundarySchema.safeParse({
+        ...valid,
+        orientationOverrideReason: "No bypass is accepted",
+      }).success,
+    ).toBe(false);
+  });
+
   it("requires document inspection and a viewer attestation", () => {
     expect(
       assessmentCompletionBoundarySchema.safeParse({

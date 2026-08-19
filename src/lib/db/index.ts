@@ -18,6 +18,9 @@ const client =
   globalForDb.__sqlClient ??
   postgres(env.DATABASE_URL, { prepare: false, ssl: "require" });
 
+// DIRECT_URL belongs to the migration runner in drizzle.config.ts. Runtime
+// requests intentionally stay on the pooled URL and never choose a database
+// connection from client input.
 if (env.NODE_ENV !== "production") {
   globalForDb.__sqlClient = client;
 }
