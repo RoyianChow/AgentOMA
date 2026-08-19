@@ -94,6 +94,11 @@ a suspected ailment; no branch contains a PIN, fee, maximum, or claim
 derivation. Report limitations appear as bottom-of-page fine print, while
 emergency and next-step guidance remains prominent.
 
+The beta experience adds plain-language onboarding, three-stage progress,
+screen-reader focus management, 56px controls, and a fixed action dock for the
+long safety screens. Results explain concrete next steps and the private PDF
+boundary without changing or copying the clinically approved decision tree.
+
 The P0-A gate was satisfied on 2026-07-26, and the route is available in
 production. See [`SELF_CHECK.md`](SELF_CHECK.md) for its approved privacy and
 product boundaries.

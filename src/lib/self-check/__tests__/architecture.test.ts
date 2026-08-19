@@ -59,6 +59,43 @@ describe("public self-check architecture", () => {
     expect(pdf).toContain("drawFinePrintFooter");
   });
 
+  it("keeps the beta flow accessible and the long safety actions discoverable", () => {
+    const flow = readFileSync(
+      join(
+        process.cwd(),
+        "src",
+        "app",
+        "(self-check)",
+        "check",
+        "SelfCheckFlow.tsx",
+      ),
+      "utf8",
+    );
+    const styles = readFileSync(
+      join(
+        process.cwd(),
+        "src",
+        "app",
+        "(self-check)",
+        "check",
+        "SelfCheckFlow.module.css",
+      ),
+      "utf8",
+    );
+
+    expect(flow).toContain('role="progressbar"');
+    expect(flow).toContain("headingRef.current?.focus()");
+    expect(flow).toContain('aria-live="polite"');
+    expect(flow).toContain("styles.dockedActions");
+    expect(styles).toMatch(
+      /\.dockedActions\s*\{[\s\S]*?position:\s*fixed/,
+    );
+    expect(styles).toMatch(
+      /\.cta,\s*\n\.back\s*\{[\s\S]*?min-height:\s*56px/,
+    );
+    expect(styles).toMatch(/\.recap\s*\{[\s\S]*?list-style:\s*disc/);
+  });
+
   it("releases the route only against the recorded P0-A-approved source", () => {
     const page = readFileSync(
       join(
