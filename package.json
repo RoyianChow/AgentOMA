@@ -13,7 +13,6 @@
     "test": "vitest run",
     "test:pure": "vitest run --config vitest.pure.config.mts --configLoader native --pool threads --maxWorkers 1",
     "test:self-check": "vitest run src/lib/self-check --config vitest.pure.config.mts --configLoader native --pool threads --maxWorkers 1",
-    "eval:rx-intake": "tsx tools/rx-intake-scorecard.ts",
     "test:watch": "vitest",
     "test:db:preflight": "tsx tools/verify-test-db-environment.ts pre-start",
     "test:db:verify": "tsx tools/verify-test-db-environment.ts running",

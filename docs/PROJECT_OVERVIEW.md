@@ -32,7 +32,6 @@ AgentOMA supports Ontario pharmacy minor-ailment services. The Ministry of Healt
 | Pharmacist portal | `/pharmacist/*` | Intake retrieval, patient identity, assessment, claim draft, follow-up, audit, settings, team | Contains PHI; authenticated, pharmacy-scoped, private/no-store, and same-origin-script only |
 | Follow-up worklist | `/pharmacist/follow-ups` | Due/overdue plans, attempts, evaluation, disposition, and immutable correction | Server-rendered; pharmacist/admin role and pharmacy scope rechecked on every mutation |
 | Record governance | `/pharmacist/governance` | Admin-only retention, export, hold, correction, destruction-review, audit-failure, and restore-drill controls | Server-rendered; complete exports use an authenticated download route |
-| Rx intake experiment | `/pharmacist/rx-intake` | Off by default. Deterministic extraction over a built-in synthetic prescription corpus, for evaluation only | Zero PHI by construction: no upload, no free text, no persistence |
 | FHIR route | `/api/fhir` | Preserved export scaffold | Disabled with `403`; not available to clients |
 
 Next.js route groups isolate layouts without changing URLs:
@@ -148,14 +147,11 @@ virtual care, communications, fulfilment, interoperability, bounded AI, release
 controls, operational resilience, human factors/pilot readiness, and regulatory
 change governance.
 
-One bounded experiment now exists in code: **AI-RX-06**, a deterministic
-prescription-document parser at `/pharmacist/rx-intake`, disabled by default and
-restricted to a built-in synthetic corpus. It contains no model, no vendor, no
-network call, and no persistence, and it is **not** one of the five chartered
-Task 10 candidates — it has no charter, no pharmacist evaluation, and no approval
-for any real document. See
+**AI-RX-06 is retired.** Its production route, modules, fixtures, evaluator,
+and feature-specific configuration were removed under Task 10A Slice A, with
+no replacement created. The preserved historical record is
 [`docs/task-10/AI-RX-06-synthetic-prescription-extraction.md`](task-10/AI-RX-06-synthetic-prescription-extraction.md)
-for its boundary and the approvals it still needs.
+and does not describe an active product surface.
 
 These task files are plans, not live surfaces. Unless a capability also appears
 in this overview and [`COMPLETED_WORK.md`](COMPLETED_WORK.md), assume it is not

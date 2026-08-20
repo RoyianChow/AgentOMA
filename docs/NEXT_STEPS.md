@@ -149,8 +149,9 @@ Its updated task briefs are implementation contracts, not completed features.
    source queue records.
 6. Reconcile reported external Task 06 and Task 11 branches before duplicate
    work. Tasks 05, 08, and 09 remain discovery/contract work; `/api/fhir`
-   stays disabled. Task 10 expansion remains blocked pending disposition of
-   AI-RX-06's production-tree placement.
+   stays disabled. AI-RX-06 is retired and Task 10 expansion remains blocked;
+   any future candidate requires a new charter, Task 01 sandbox isolation, and
+   Task 11 review.
 7. Tasks 12, 13, and 14 are design-only: operational resilience, human factors
    and controlled-pilot readiness, and regulatory change governance. Runtime
    drills, participant studies, automated source tooling, or production

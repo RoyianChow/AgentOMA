@@ -94,8 +94,9 @@ an existing migration, access Supabase during G1-D, or substitute `db:push`.
 - **Task 07:** documentation Workstreams A–I are complete; Workstream J
   privacy/security/audit/retention design is next. No delivery runtime or real
   recipient is authorized.
-- **Task 10:** AI-RX-06 is a disabled deterministic synthetic experiment in the
-  production tree; expansion is blocked pending a retire-or-rebuild decision.
+- **Task 10:** AI-RX-06 is retired, its production surface was removed, and no
+  replacement was created. Expansion remains blocked pending a separately
+  chartered, Task-01-isolated candidate and Task 11 review.
 - **Task 11:** synthetic control-plane implementation was approved, but merge
   and promotion remain blocked pending exact-candidate independent review.
 - **Tasks 12–14:** operational resilience, human factors/pilot readiness, and

@@ -59,15 +59,6 @@ export const env = createEnv({
     // regardless of its own flag or expiry — the one lever to pull in an
     // incident, with no per-capability coordination required.
     AI_KILL_SWITCH: z.stringbool().default(false),
-    // Per-capability flag for AI-RX-06 (synthetic prescription extraction).
-    RX_INTAKE_SYNTHETIC_ENABLED: z.stringbool().default(false),
-    // Hard expiry for AI-RX-06, ISO date (YYYY-MM-DD). An experiment left
-    // switched on indefinitely stops being an experiment; past this date the
-    // capability disables itself and needs a deliberate renewal.
-    RX_INTAKE_EXPIRES_ON: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, "RX_INTAKE_EXPIRES_ON must be YYYY-MM-DD")
-      .optional(),
 
     NODE_ENV: z
       .enum(["development", "test", "production"])

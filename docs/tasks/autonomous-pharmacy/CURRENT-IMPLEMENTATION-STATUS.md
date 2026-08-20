@@ -239,18 +239,14 @@ allowlists empty unless a separate exact approval is recorded.
 
 ### Task 10 — Bounded AI
 
-**Status: PARTIAL SYNTHETIC EXPERIMENT.** AI-RX-06 is a deterministic parser
-over five authored synthetic fixtures at `/pharmacist/rx-intake`. It is
-default-off, expiry-gated, kill-switch controlled, has no model/network/DB
-authority, and requires human review.
+**Status: AI-RX-06 RETIRED; TASK 10 EXPANSION BLOCKED.** Task 10A Slice A
+removed the production pharmacist route, production modules, synthetic
+fixtures and tests, evaluator tooling, navigation, and feature-specific
+configuration. No sandbox replacement or other bounded-AI runtime was created.
 
-It is not one of the five chartered Task 10 candidates and has no approval for
-real prescription documents. Before Task 10 can be considered complete, the
-candidate boundaries, evaluator approval, frozen evaluation charter,
-privacy/security review, and Task 11 evidence must exist. Also resolve the
-structural placement issue: the implementation is under `src/lib/rx-intake`
-and the production pharmacist route, while autonomous-task rules require
-experimental code to live in `apps/experiment-sandbox`.
+Any future Task 10 candidate still requires candidate boundaries, evaluator
+approval, a frozen evaluation charter, Task 01 sandbox isolation,
+privacy/security review, and Task 11 evidence before implementation.
 
 ### Task 11 — Quality, security, and release control
 

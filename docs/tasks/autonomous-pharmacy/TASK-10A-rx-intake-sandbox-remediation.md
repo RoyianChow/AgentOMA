@@ -5,13 +5,25 @@
 **Owner profile:** senior full-stack or applied-AI developer  
 **Required reviewers:** Product Lead, Security/Privacy, pharmacist evaluator,
 Accessibility, and Task 11 Quality/Test  
-**Status:** `BLOCKED_DECISION_REQUIRED`  
-**Last verified:** 2026-08-19
+**Status:** `RETIRE_APPROVED — SLICE_A_IN_PROGRESS`
+**Last verified:** 2026-08-20
 
 ## Objective
 
 Resolve the current `AI-RX-06` prescription-intake experiment without weakening
 the production/sandbox boundary.
+
+**Recorded disposition for this removal:** `RETIRE`
+
+**Approved candidate SHA:** `3da8093c16a69e1883de40bdfb22a309dd7e4099`
+
+**Approver:** Royian
+
+The authorization supplied for Slice A did not record an approval or expiry
+timestamp in this document; none is inferred here. It authorizes retirement
+only and grants no rebuild, sandbox, production, or external-effect authority.
+The verified-current-state section below is retained as the pre-retirement
+candidate snapshot that motivated removal.
 
 The current implementation is deterministic and synthetic, but it lives in the
 production application tree and creates a production route. That violates the

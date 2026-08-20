@@ -1,10 +1,20 @@
 # AI-RX-06 — synthetic prescription extraction
 
-**Status:** unchartered synthetic experiment · **not approved for any real document**
-**Route:** `/pharmacist/rx-intake` · **Default state:** off
+**Status:** **RETIRED** under Task 10A Slice A · **not approved for any real document**
+**Former route:** `/pharmacist/rx-intake` · **Current runtime:** removed
 **Added:** 2026-08-07
 
 ---
+
+## Retirement notice
+
+The production route, modules, synthetic fixtures and tests, evaluator tooling,
+navigation, and feature-specific configuration described below have been
+removed. No sandbox replacement was created. The remainder of this document is
+preserved as a historical account of the retired candidate and must not be read
+as an active product surface, current command reference, or implementation
+authority. See
+[`TASK-10A-rx-intake-sandbox-remediation.md`](../tasks/autonomous-pharmacy/TASK-10A-rx-intake-sandbox-remediation.md).
 
 ## What this is
 
