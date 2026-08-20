@@ -2,11 +2,11 @@
 
 **Implementation evidence verified through:** 2026-08-02
 
-**Documentation/status reconciled:** 2026-08-19
+**Documentation/status reconciled:** 2026-08-20
 
 **Quality snapshot:** exact database candidate `dcaab91…` passed 211/211
 real-PostgreSQL tests twice and replayed all 19 migrations through `0018`.
-The 2026-08-19 merged baseline `87bdb1b…` is TypeScript- and ESLint-clean,
+The 2026-08-20 merged baseline `1ce2c9ac…` is TypeScript- and ESLint-clean,
 passes 306/306 pure production tests, builds successfully, and passes 606
 non-Postgres sandbox tests plus boundary verification. Current production
 invariance fails closed on route shape, sandbox runtime authority is expired,

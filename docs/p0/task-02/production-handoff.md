@@ -1,13 +1,14 @@
 # Task 02 production handoff
 
-**Latest predecessor-harness result:** the second exact G1-D candidate,
-`5b576b7ba8be6917c133590aee5e1fa0d33368d4`, failed closed with
-`DATABASE_CONNECTIVITY_DENIED` before migration or fixture writes. Teardown
-passed. This requires a separately authorized database-free diagnosis, a new
-candidate, and a new exact G1-D; it does not authorize live work.
+**Latest predecessor-harness result:** exact G1-D candidate
+`4e4795145c7acccefed5df47de3113c9e56b664e` failed closed with
+`LOOPBACK_TCP_DENIED` before migration or fixture writes. Teardown passed. The
+failed evidence is preserved under the candidate-specific evidence folder.
+This requires a new clean candidate and new exact G1-D; it does not authorize
+live work or a rerun of an evidence-bound candidate.
 
 **Tested implementation candidate:** `dcaab91f9adba7457a85214d51d1614c8560f404`
-**Failed predecessor-harness candidate:** `dd503a14da24ea80a0f0e046e179f6b4b4e77b3c`
+**Latest failed predecessor-harness candidate:** `4e4795145c7acccefed5df47de3113c9e56b664e`
 **Handoff status:** **BLOCKED — DO NOT PROMOTE**
 **Live migration authorized:** **NO**
 
@@ -29,9 +30,10 @@ candidate, and a new exact G1-D; it does not authorize live work.
 
 ## Why promotion remains blocked
 
-1. The first exact G1-D predecessor run failed closed before migration or
-   fixture writes with `DATABASE_IDENTITY_DENIED`; its evidence and teardown are
-   preserved. The remediated candidate needs a new exact G1-D.
+1. Four exact predecessor candidates failed closed before completing the
+   upgrade proof: `dd503a14...`, `5b576b7b...`, `3a271a7d...`, and
+   `4e479514...`. Their evidence and teardown results are preserved. None may
+   be rerun; a new clean candidate needs a new exact G1-D.
 2. The old tmpfs/PID-1 restart attempts remain BLOCKED. The separate
    named-volume restart proof was not reached after the predecessor failure and
    cannot inherit the old evidence.

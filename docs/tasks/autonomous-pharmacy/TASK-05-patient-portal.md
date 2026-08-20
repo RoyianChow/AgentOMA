@@ -1,6 +1,6 @@
 # Task 05 — Complete the Patient Identity and Portal Synthetic Prototype
 
-## Sprint checkpoint — 2026-08-19
+## Sprint checkpoint — 2026-08-20
 
 **Repository state:** no separate patient identity/session domain or patient
 portal is merged; an unmerged local design branch exists.
@@ -11,7 +11,7 @@ contracts.
 **Exit:** every unknown policy remains `BLOCKED`; pharmacist cookies, roles,
 invitations, sessions, and TOTP are never reused. No patient runtime is
 authorized by this checkpoint. See
-[`NEXT-SPRINT-PLAN-2026-08-19.md`](NEXT-SPRINT-PLAN-2026-08-19.md).
+[`CURRENT-IMPLEMENTATION-STATUS.md`](CURRENT-IMPLEMENTATION-STATUS.md).
 
 ## Role
 

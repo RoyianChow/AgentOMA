@@ -137,7 +137,7 @@ blocked on a producer that does not exist.
 
 | # | Class code | Purpose family | Channels | Content class | Producer | Status |
 |---|---|---|---|---|---|---|
-| F-01 | `APPOINTMENT_REMINDER` | Appointment reminder | Email, SMS, Push | `GENERIC_EXTERNAL` | Task 04 appointment service | **BLOCKED** — `T07-D03`, no appointment runtime on `main` |
+| F-01 | `APPOINTMENT_REMINDER` | Appointment reminder | Email, SMS, Push | `GENERIC_EXTERNAL` | Task 04 appointment service | **BLOCKED** — `T07-D03`, synthetic booking code exists but no approved production appointment/event runtime exists |
 | F-02 | `APPOINTMENT_CHANGED` | Appointment change notice | Email, SMS, Push | `GENERIC_EXTERNAL` | Task 04 | **BLOCKED** — `T07-D03` |
 | F-03 | `APPOINTMENT_CANCELLED` | Appointment cancellation notice | Email, SMS, Push | `GENERIC_EXTERNAL` | Task 04 | **BLOCKED** — `T07-D03` |
 | F-04 | `FOLLOWUP_ITEM_AVAILABLE` | Follow-up notice | Email, SMS, Push | `GENERIC_EXTERNAL` | Existing follow-up service | **BLOCKED** for delivery — `T07-D04`; the follow-up workflow stays authoritative and this notice never closes it |

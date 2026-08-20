@@ -1,7 +1,9 @@
 # Next steps
 
-**Prioritized:** 2026-08-19  
-**Observed candidate:** `87bdb1b99840f56a34046254065071c3d5a755c1`  
+**Prioritized:** 2026-08-20
+
+**Observed candidate:** `1ce2c9ace894f5c2a745f15fa901fe2fc6acc138`
+
 **Release posture:** **BLOCKED - not production-ready**
 
 The complete task-by-task comparison is in

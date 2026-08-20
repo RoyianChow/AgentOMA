@@ -289,9 +289,9 @@ SBX-14 not applicable because G2 was not requested. The sandbox provides:
 
 Two governance points must not be blurred:
 
-1. `docs/task-01/evidence/evidence-manifest.json` is the current PASS record;
-   `docs/task-01/README.md` still contains stale blocked wording and should be
-   corrected by the Task 01 owner.
+1. `docs/task-01/evidence/evidence-manifest.json` is the historical
+   candidate-bound PASS record; `docs/task-01/README.md` now correctly warns
+   that the current candidate does not inherit that PASS.
 2. Task 01 G1 explicitly excludes any later autonomous-pharmacy capability.
    It is a capable containment environment, but it is not standing authority
    to implement Task 07. A versioned Task 07 synthetic scope, owner, expiry,
