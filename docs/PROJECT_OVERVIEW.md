@@ -1,13 +1,17 @@
 # AgentOMA project overview
 
-**Status snapshot:** 2026-08-10
+**Status snapshot:** 2026-08-19
 
 **Current stage:** authenticated pilot foundation; **not production-ready**
 
 **Verification at this snapshot:** observed repository baseline
-`58fee60035988300909a158f3c91501faca89fa7` on `task7` is TypeScript- and
-ESLint-clean and passes 305/305 pure tests. This documentation pass did not
-rerun Docker. The last recorded complete real-PostgreSQL evidence remains the
+`87bdb1b99840f56a34046254065071c3d5a755c1` on `task7` is TypeScript- and
+ESLint-clean, passes 306/306 pure production tests, builds successfully, and
+passes the sandbox's 606 non-Postgres tests plus source-boundary verification.
+The current production-invariance check fails closed with
+`SBX_INVARIANCE_DENIED:routeShape`, and the sandbox build remains blocked by
+expired/incomplete runtime authority. Real-PostgreSQL suites were not rerun in
+this merge-review pass. The last recorded complete database evidence remains the
 211-test exact candidate `dcaab91f9adba7457a85214d51d1614c8560f404`, with
 fresh replay through `0018`, atomic audit rollback, isolation, immutability,
 concurrency, red-flag zero-claim, referral separation, reference-derived
@@ -144,7 +148,7 @@ state. Its persisted-evidence database/export cases pass on the exact Docker
 candidate; canonical repeat-export and reconstruction semantics remain blocked
 under S27.
 
-## Autonomous pharmacy program (planned)
+## Autonomous pharmacy program
 
 The repository contains fourteen detailed work contracts for a longer-term,
 pharmacist-supervised autonomous-pharmacy program. They cover sandbox isolation,
@@ -153,7 +157,23 @@ virtual care, communications, fulfilment, interoperability, bounded AI, release
 controls, operational resilience, human factors/pilot readiness, and regulatory
 change governance.
 
-One bounded experiment now exists in code: **AI-RX-06**, a deterministic
+The isolated `apps/experiment-sandbox/` workspace now contains partial Task 04
+booking and Task 06 virtual-care prototypes. Task 04 includes service catalog,
+availability, booking create/retrieve/confirm/expiry, a pharmacist queue, and a
+public synthetic `/book` UI. Task 06 includes deterministic patient/pharmacist
+scenes, server-owned guards, waiting-room and failure/fallback states, and safe
+message/assessment/claim boundary demonstrations. Neither is a production
+surface: the Task 04 renewal is still a draft, the prior runtime window is
+expired, and no production data, identity, vendor, hosted preview, or external
+effect is authorized.
+
+Task 11's first CI slice is also merged. It provides stable install,
+TypeScript, ESLint, pure-test, build, fresh-migration, and database-constraint
+jobs. Secret/dependency/policy scanning, accessibility, evidence validation,
+the aggregate release gate, branch-protection verification, and independent
+review remain open.
+
+One production-tree experiment also remains: **AI-RX-06**, a deterministic
 prescription-document parser at `/pharmacist/rx-intake`, disabled by default and
 restricted to a built-in synthetic corpus. It contains no model, no vendor, no
 network call, and no persistence, and it is **not** one of the five chartered
@@ -173,7 +193,7 @@ requires Task 11 evidence and the task's named human approvals.
 The maintained
 [`current implementation status`](tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md)
 compares all fourteen contracts with the repository. The
-[`2026-08-10 sprint plan`](tasks/autonomous-pharmacy/NEXT-SPRINT-PLAN-2026-08-10.md)
+[`2026-08-19 sprint plan`](tasks/autonomous-pharmacy/NEXT-SPRINT-PLAN-2026-08-19.md)
 orders bounded work but grants no implementation or production authority.
 
 The task briefs use **AgentRx** as their program/system label. The implemented
@@ -310,8 +330,9 @@ Task 02 remains the production-critical blocker: freeze a new clean candidate,
 obtain a new exact and expiring G1-D, pass the single predecessor/restart
 harness, resolve S27, and obtain independent Task 11 and recovery evidence
 before any G1-L request. The autonomous programme also has active governance
-blocks: Task 04's synthetic approval expired, and Task 11 merge/promotion still
-needs independent review. Tasks 12–14 are design contracts only. Remaining
+blocks: the current Task 01 production-invariance check fails, Task 04's
+renewal is not granted, Task 06 lacks runnable/production approvals, and Task
+11 is only partially implemented. Tasks 12–14 are design contracts only. Remaining
 product blockers include LTC billing guidance and the first isolated restore
 drill. See
 [`NEXT_STEPS.md`](NEXT_STEPS.md) for an ordered plan and

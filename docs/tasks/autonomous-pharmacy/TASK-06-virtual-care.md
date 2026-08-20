@@ -1,15 +1,16 @@
 # Task 06 — Design and Prototype Secure Pharmacist-Led Virtual Care
 
-## Next-sprint checkpoint — 2026-08-10
+## Sprint checkpoint — 2026-08-19
 
-**Repository state:** external work has been reported but is `NOT RUN` and not
-verified in this checkout.
-**Sprint slice:** reconcile the other developer's branch/PR and decision
-records before editing; then limit work to the approved design/evidence slice.
+**Repository state:** the deterministic synthetic routes, guards, fixtures,
+tests, and documentation are merged. Non-Postgres sandbox verification passes,
+but runtime authority is expired and promotion evidence is incomplete.
+**Sprint slice:** renew exact sandbox authority, resolve Task 01 production
+invariance, then complete browser/accessibility and independent review evidence.
 **Exit:** no recording, transcription, meeting AI, external vendor, real visit,
 or vendor event that completes a professional workflow. Duplicate parallel
 implementation is out of scope. See
-[`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md).
+[`NEXT-SPRINT-PLAN-2026-08-19.md`](NEXT-SPRINT-PLAN-2026-08-19.md).
 
 ## Role
 

@@ -18,6 +18,12 @@
 
 **Renewal of that classification:** `PENDING — reviewer confirmation required`
 
+> **Merge review note (2026-08-19):** this draft is bound to candidate
+> `04a4f27bed99dd5023390fc93bfff04a77217235`. The maintained checkout is now
+> `87bdb1b99840f56a34046254065071c3d5a755c1` and includes the merged `/book`
+> UI. This draft cannot authorize the newer candidate without new hashes,
+> scope review, dates, and signatures.
+
 ## 1. Authority and source records
 
 This draft must be read with the following records on `origin/main`:

@@ -1,17 +1,18 @@
 Task 11 — Cross-Cutting Quality, Security, Privacy, and Release Control Plane
 
-## Next-sprint checkpoint — 2026-08-10
+## Sprint checkpoint — 2026-08-19
 
-**Repository state:** synthetic implementation is approved, but merge and
-promotion remain `BLOCKED` pending exact-candidate independent review. The CI
-workflow described by the gap analysis is not in this checkout.
-**Sprint slice:** reconcile the other developer's branch/PR, required-check
-contract, capability/control catalogue, evidence schema, aggregate gate, and
-branch-protection evidence.
+**Repository state:** the first seven-job CI workflow slice is merged. The
+full Task 11 control plane and promotion remain `BLOCKED` pending security and
+policy jobs, accessibility, evidence validation, aggregate gating, verified
+branch protection, and exact-candidate independent review.
+**Sprint slice:** resolve the current Task 01 production-invariance finding,
+then complete the capability/control catalogue, evidence schema, missing
+required jobs, aggregate gate, and branch-protection evidence.
 **Exit:** independent quality/security/privacy/operations/accessibility review
 is bound to the exact candidate. Task 11 records approvals and never grants or
 self-approves them. See
-[`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md).
+[`NEXT-SPRINT-PLAN-2026-08-19.md`](NEXT-SPRINT-PLAN-2026-08-19.md).
 
 ## Governance approval — 2026-08-02
 

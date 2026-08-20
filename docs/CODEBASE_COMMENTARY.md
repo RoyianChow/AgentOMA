@@ -1,8 +1,8 @@
 # Codebase commentary and current-state map
 
-**Snapshot reconciled:** 2026-08-10
+**Snapshot reconciled:** 2026-08-19
 **Observed branch:** `task7`
-**Observed baseline:** `58fee60035988300909a158f3c91501faca89fa7`
+**Observed baseline:** `87bdb1b99840f56a34046254065071c3d5a755c1`
 
 ## Why this file exists
 
@@ -21,9 +21,10 @@ It is not a second compliance source of truth. Regulatory rules remain in
 The application is an authenticated pilot foundation, not a production-ready
 pharmacy service. Exact candidate `dcaab91f9adba7457a85214d51d1614c8560f404`
 remains the last complete database-tested candidate: 211 real-PostgreSQL tests
-passed twice through migration `0018`. The later documentation baseline
-`58fee600…` is TypeScript- and ESLint-clean and passes 305 pure tests; Docker
-was not rerun for the documentation-only update.
+passed twice through migration `0018`. The current merged baseline
+`87bdb1b…` is TypeScript- and ESLint-clean, passes 306 pure production tests,
+builds successfully, and passes 606 non-Postgres sandbox tests. Docker was not
+rerun in this documentation pass.
 
 Migration `0018` remains unapplied to live Supabase, which is documented at
 `0017`. The newest preserved predecessor/restart candidates, `3a271a7d…` and
@@ -31,6 +32,11 @@ Migration `0018` remains unapplied to live Supabase, which is documented at
 synthetic fixture writes. Use the maintained
 [`current implementation status`](tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md)
 instead of this commentary file for evolving task status.
+
+The current Task 01 production-invariance check fails closed on route shape.
+Task 04's `/book` UI and Task 06's synthetic virtual-care prototype are merged,
+but sandbox runtime authority is expired and Task 04's v3 renewal is not
+granted. Task 11's first CI slice is merged; its control plane is incomplete.
 
 ## Route and data-flow map
 
@@ -134,9 +140,15 @@ approval/evidence. Changes there need their own lead-approved scope.
   current conservative claim-drafting refusal remains intentional.
 - Keep `/api/fhir` disabled until its authorization and pharmacist-reviewed
   mapping requirements are satisfied. Do not expand it as part of housekeeping.
-- Keep Task 04 blocked until its expired synthetic scope is renewed with
-  independent review; reconcile external Task 06 and Task 11 work before
-  duplicate implementation.
+- Resolve the current Task 01 route-shape production-invariance finding without
+  weakening or casually regenerating the baseline.
+- Keep Task 04 fail-closed until its v3 scope is exact, signed, unexpired, and
+  independently reviewed.
+- Treat Task 06 as a merged synthetic review prototype; renew its runtime scope
+  and complete manual accessibility, privacy/security, professional, vendor,
+  and Task 11 evidence before promotion discussion.
+- Complete Task 11's security, policy, accessibility, evidence-validation,
+  aggregate-gate, and branch-protection controls.
 - Treat Tasks 12–14 as design-only until each has exact approval and Task 11
   Checkpoint 1. Their briefs do not authorize runtime, studies, clinical or
   billing changes, automated interpretation, or production activation.

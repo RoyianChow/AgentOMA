@@ -1,367 +1,141 @@
-# Autonomous Pharmacy — Current Implementation Status
+# Autonomous Pharmacy - Current Implementation Status
 
-**Purpose:** Start here before working on Tasks 01–14. This is a verified
-implementation handoff, not a task specification, approval, or production
-release decision.
+**Purpose:** Start here before working on Tasks 01-14. This file reports what
+is present in the maintained checkout; it is not an implementation approval or
+production release decision.
 
-**Snapshot date:** 2026-08-10
-**Observed branch:** `task7`
-**Observed HEAD:** `58fee60035988300909a158f3c91501faca89fa7`
-**Worktree at capture:** clean before the next-sprint documentation update
-**Sprint plan:**
-[`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md)
+**Snapshot date:** 2026-08-19  
+**Observed branch:** `task7`  
+**Observed HEAD:** `87bdb1b99840f56a34046254065071c3d5a755c1`  
+**Worktree at capture:** clean before this documentation update  
+**Current sprint plan:**
+[`NEXT-SPRINT-PLAN-2026-08-19.md`](NEXT-SPRINT-PLAN-2026-08-19.md)
 
-## Read before changing anything
+## Verification performed for this snapshot
 
-1. [`AGENTS.md`](../../../AGENTS.md) — canonical repository rules.
-2. [`PROJECT_OVERVIEW.md`](../../PROJECT_OVERVIEW.md) — maintained product map.
-3. [`COMPLIANCE.md`](../../COMPLIANCE.md) — Ontario rule mapping.
-4. [`OPEN_QUESTIONS.md`](../../OPEN_QUESTIONS.md) — unresolved human decisions.
-5. [`NEXT_STEPS.md`](../../NEXT_STEPS.md) — P0 and release blockers.
-6. [`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md) — the
-   current sequencing checkpoint, not an approval.
-7. The complete brief for the assigned task in this directory.
+| Check | Result |
+|---|---|
+| `npm run typecheck` | PASS |
+| `npm run lint` | PASS |
+| `npm run test:pure` | PASS - 22 files, 306 tests |
+| `npm run build` | PASS - production route manifest generated |
+| `npm run sandbox:verify` | PASS - typecheck, lint, 40 files / 606 non-Postgres tests, boundary verification |
+| `npm run sandbox:verify-evidence` | PASS for the committed evidence-manifest schema and artifacts |
+| `npm run sandbox:verify-production` | **FAIL - `SBX_INVARIANCE_DENIED:routeShape`** |
+| `npm run sandbox:build` | **BLOCKED** - sandbox environment/lifecycle controls failed closed; the embedded Task 04 approval window is expired |
+| Root and sandbox real-PostgreSQL suites | NOT RUN in this documentation pass |
 
-Task briefs describe requirements; they do not prove implementation or grant
-production authorization. Use committed code, tests, evidence, and decision
-records to establish status. If a brief, status document, and code disagree,
-record the conflict and stop the affected protected workstream until the lead
-resolves it.
+The production-invariance failure is an active Task 01/Task 11 review item. Do
+not recapture the baseline from the current candidate merely to make it pass.
+Identify and approve the legitimate production-route delta, or remove the
+unauthorized delta, then regenerate evidence through the Task 01 process.
+
+## Merge review - 2026-08-19
+
+| Merge | What is now present | Status consequence |
+|---|---|---|
+| PR #46 | `/check` beta UX, tests, documentation, and the Task 02A governance brief | Public self-check remains zero-identifying-data and test-clean |
+| PR #47 | Task 04 renewal proposal and v3 review draft | Renewal remains `DRAFT - NOT GRANTED` |
+| PR #48 | Synthetic `/book` catalog, availability, booking UI, server actions, and tests | Code is merged but runtime remains blocked by expired/missing approval |
+| PR #44 | Task 06 synthetic virtual-care routes, fixtures, guards, UI, docs, and tests | Synthetic implementation is merged; production and promotion remain blocked |
+| PR #31 | First Task 11 CI workflow slice | Seven quality/database jobs now exist; the full control plane does not |
 
 ## Release posture
 
-AgentOMA is an authenticated, single-pharmacy Ontario minor-ailment pilot. It
-is **not production-ready**. No autonomous-pharmacy task grants permission to
-use production data, production credentials, live integrations, or real
-recipients.
+AgentOMA remains an authenticated, single-pharmacy pilot and is **not
+production-ready**. Live Supabase is documented through migration `0017`;
+`0018` remains unapplied and gated by Task 02. `/api/fhir` remains disabled
+with `403`. `db:push` remains banned. Experimental code stays in
+`apps/experiment-sandbox/` and must never use production data, credentials,
+accounts, services, or external effects.
 
-- Supabase Postgres is the primary store in `ca-central-1`.
-- Drizzle file migrations are the only schema path. `db:push` is banned.
-- Firebase is removed and must not return.
-- `proxy.ts` is an optimistic UX gate only; server actions re-check session,
-  role, pharmacy scope, and any required orientation gate.
-- `/api/fhir` remains disabled with `403`; do not enable it without the Task 09
-  approvals and reviewed ICD-10 mapping.
-- Experimental code belongs in `apps/experiment-sandbox/`, not in the
-  production application. The sandbox must use synthetic data, loopback-only
-  resources, and fail closed when configuration or approval is missing.
+## P0 and core product
 
-## P0 and core product status
-
-| Area | Status | What remains |
+| Area | Status | Remaining work |
 |---|---|---|
-| P0-A clinical triage | **PASS** | Current `triage.ts` approval is recorded. Do not alter clinical content without new pharmacist review. |
-| P0-B clinical record and consent | **PASS** | Version-2 structured record, consent, prescription, and PCP fields are implemented and tested. |
-| P0-C eligibility/evidence | **IMPLEMENTED / BLOCKED** | Migration `0018` is not live. Predecessor upgrade/restart proof, S27 export semantics, independent Task 11 review, recovery, G1-L, live parity, and G4 remain. |
-| P0-D virtual/LTC facts | **FACT CAPTURE COMPLETE / BILLING BLOCKED** | Virtual location, remote-demand reason, fee tier, and LTC facts exist. LTC billing remains parked pending the ODB Help Desk decision in `OPEN_QUESTIONS.md`. |
-| Follow-up tracking | **PASS** | Required plans, due/overdue worklist, attempts, supersession, audit, retention, and export coverage are implemented through migration `0017`. |
+| P0-A clinical triage | PASS | Current hash-bound clinical approval remains controlling. |
+| P0-B clinical record and consent | PASS | Maintain the version-2 record and privacy boundaries. |
+| P0-C eligibility/evidence | IMPLEMENTED / BLOCKED | Complete Task 02 predecessor/restart, S27, independent review, recovery, G1-L, live `0018`, parity, and G4. |
+| P0-D virtual/LTC fact capture | FACT CAPTURE COMPLETE / BILLING BLOCKED | LTC billing remains parked pending the recorded human decision. |
+| Follow-up tracking | PASS | Preserve required plans, immutable attempts, retention, audit, and export coverage. |
+| Public `/check` | BETA-READY IN CODE | Complete real-device/browser testing; retain zero identity, zero persistence, and no billing values. |
+| Governance remediation (Task 02A) | BRIEF ONLY | Requires exact protected-surface approval before implementation. |
 
-## Autonomous task status
+## Autonomous task matrix
 
-### Task 01 — Experimental sandbox
+| Task | Current repository state | Next authorized or required step |
+|---|---|---|
+| 01 - Sandbox | Prior evidence candidate PASS; current changed candidate has green unit/boundary checks but production invariance FAILS and runtime approval is expired | Investigate route-shape delta without weakening the verifier; renew exact scope before runtime; produce new candidate-bound evidence |
+| 02 - P0 readiness | BLOCKED - code and `0018` are merged but live deployment gates remain | Follow the exact G1-D -> predecessor/restart -> S27 -> Task 11 -> recovery -> G1-L -> live verify -> G4 sequence |
+| 03 - Command centre | NOT MERGED as a dedicated capability; a separate local branch exists | Reconcile/review that branch before duplicate work; keep the maintained checkout status `NOT RUN` |
+| 04 - Booking/waitlist | PARTIAL SYNTHETIC IMPLEMENTATION MERGED; `/book` now exists in the sandbox | Complete an exact, signed, unexpired v3 renewal and independent reviews before any runtime, migration, Docker, evidence-promotion, or further implementation |
+| 05 - Patient portal | NOT MERGED; a separate local design branch exists | Review/reconcile that branch; no production patient identity domain exists |
+| 06 - Virtual care | SYNTHETIC PROTOTYPE MERGED; routes, guards, fixtures and tests are present | Renew runnable sandbox authority; complete manual accessibility/browser evidence, Task 05 identity dependency, PIA/TRA/vendor decisions, and independent Task 11 review |
+| 07 - Messaging | DOCUMENTATION A-I COMPLETE | Workstream J privacy/security/audit/retention design; no provider or recipient runtime |
+| 08 - Fulfilment | NOT RUN | Contracts/state machines and approved synthetic tests only |
+| 09 - Interoperability | DISABLED / DESIGN ONLY | Keep `/api/fhir` at 403 and all allowlists empty |
+| 10 - Bounded AI | AI-RX-06 remains in the production tree, default-off | Record the exact retire-or-rebuild decision; do not expand the route |
+| 11 - Release control | FIRST CI SLICE MERGED | Add security policy/secret/dependency checks, accessibility, evidence validation, aggregate release gate, independent review, and verified branch-protection configuration |
+| 12 - Resilience | DESIGN ONLY | Discovery and synthetic test-plan work under its task gates |
+| 13 - Human factors | DESIGN ONLY | Hazard/training/study design; no participants or pilot without approval |
+| 14 - Regulatory change | DESIGN ONLY | Source/provenance/impact design; no automated interpretation or protected-source changes |
 
-**Technical status: PASS for the local synthetic boundary.** The evidence
-manifest records 17 applicable controls as PASS and SBX-14 as
-`NOT_APPLICABLE` because G2 was not requested. G3 production-import allowlist
-is empty. No hosted preview or production capability is authorized.
+## Task 04 detail
 
-The [Task 01 README](../../task-01/README.md) is reconciled with the
-[evidence manifest](../../task-01/evidence/evidence-manifest.json) and
-[final report](../../task-01/evidence/final-report.md). Later sandbox changes
-must produce evidence for their own exact candidate; they do not inherit PASS.
+The merged sandbox includes a loopback PostgreSQL schema, availability,
+service catalog, booking create/retrieve/confirm/expiry, synthetic audit and
+outbox contracts, delegation fixtures, pharmacist queue, and a public `/book`
+UI for catalog, availability search, selection, acknowledgements, and booking
+creation. Cancellation, rescheduling, bootstrap exchange, waitlist command
+runtime, promotion workers, and their complete PostgreSQL race evidence are
+not implemented.
 
-### Task 02 — P0 production readiness
+The current decision file
+[`task-04-synthetic-scope-renewal-v3-2026-08-19.md`](../../task-04/decisions/task-04-synthetic-scope-renewal-v3-2026-08-19.md)
+is a draft with pending scope, owners, dates, independent approvals, and Task
+11 review. Merge presence and passing tests do not grant authority.
 
-**Status: BLOCKED — DO NOT PROMOTE.** The complete from-zero Docker suite and
-pure suite have passed on the recorded candidate, but the predecessor-upgrade
-and restart proof has not passed. The latest repository evidence includes
-fail-closed runs for candidates `3a271a7d` and `4e479514`; they stopped before
-migration or fixture writes with `LOOPBACK_TCP_DENIED`.
+## Task 06 detail
 
-Remaining order:
+The sandbox now contains deterministic pharmacist/patient virtual-care scenes,
+server-owned guard evaluation, identity/location/consent/suitability checks,
+waiting-room and participant controls, disconnect/fallback behavior, secure
+message stubs, assessment/claim separation, and explicit prohibitions on
+recording, transcription, model use, vendors, and external transport. It is a
+synthetic review prototype, not a telehealth service.
 
-1. Freeze a new clean candidate.
-2. Obtain a new exact, expiring G1-D approval for that SHA.
-3. Run the single approved predecessor/restart harness.
-4. Resolve S27 canonical repeat-export and reconstruction semantics.
-5. Obtain independent Task 11 review bound to the exact candidate and hashes.
-6. Complete recovery proof and obtain G1-L.
-7. Apply `0018` once with `npm run db:migrate`, never `db:push`.
-8. Verify live catalog, grants, triggers, tenancy aggregates, and post-apply
-   parity, then obtain independent G4.
+The code passes the current non-Postgres sandbox suite, but successful runtime
+build/browser evidence is blocked by the expired sandbox lifecycle and missing
+production prerequisites. No PIA, TRA, vendor approval, patient identity
+integration, production migration, or release approval is inferred.
 
-### Task 03 — Command centre
+## Task 11 detail
 
-**Status: NOT STARTED as a dedicated capability.** No Task 03 status/evidence
-package or dedicated command-centre route/module exists. The production
-pharmacist dashboard and the Task 04 synthetic pharmacist queue are not a
-completed Task 03 command centre.
+`.github/workflows/ci.yml` now runs lockfile install, TypeScript, ESLint, pure
+tests, production build, fresh-migration tests, and database-constraint tests
+on pull requests and pushes to `main`. The workflow uses read-only repository
+permissions and cancels stale runs.
 
-Remaining work is discovery, operational work-item contracts, synthetic
-command-centre UI, server-only projections, action authorization,
-accessibility evidence, failure-state tests, and Task 11 evidence. It must not
-rank clinical urgency, diagnose, triage, establish billability, or submit
-claims.
-
-### Task 04 — Booking and waitlist
-
-**Status: PARTIAL IMPLEMENTATION; CURRENT APPROVAL EXPIRED.** The synthetic
-workspace contains more runtime than the older gap analysis records:
-
-- loopback PostgreSQL schema and capacity-hold constraints;
-- public availability and service-catalog endpoint;
-- booking create, retrieve, and confirm operations;
-- expiry worker;
-- transactional outbox and synthetic audit contracts;
-- synthetic delegation fixtures;
-- pharmacist queue backend and UI;
-- idempotency and authoritative server-context helpers.
-
-The implementation is visible under `apps/experiment-sandbox/src/booking`,
-`apps/experiment-sandbox/src/db`, and
-`apps/experiment-sandbox/src/app/pharmacist-queue`.
-
-Still missing or unproven:
-
-- public `/book` workflow;
-- booking cancellation runtime;
-- booking rescheduling runtime;
-- waitlist join/leave/offer/accept/decline/withdraw/expiry operations;
-- promotion and capacity-race completion evidence;
-- final capability/lineage/bootstrap-credential decisions and renewal metadata;
-- accessibility, mobile, timezone/DST, abuse, and recovery evidence;
-- verified Ontario booking-guidance mapping;
-- final Task 04 evidence and Task 11 review.
-
-The recorded synthetic scope expired on 2026-08-05. Do not continue or merge
-new Task 04 implementation until a superseding, versioned approval records the
-scope, expiry, review date, and remaining unresolved reschedule/cancellation
-policies. The waitlist policy is recorded separately below. Production,
-hosted preview, production imports, external messages, and cloud databases
-remain prohibited.
-
-The waitlist and promotion policy sub-decision is now recorded as approved for
-the local synthetic scope in
-[`task-04-waitlist-promotion-policy-approval-2026-08-10.md`](../../task-04/decisions/task-04-waitlist-promotion-policy-approval-2026-08-10.md).
-That record resolves the policy values but does not extend the expired
-implementation approval or authorize runtime changes.
-
-#### Renewal checkpoint — 2026-08-10
-
-The next planned step is renewal of the expired synthetic approval. The existing
-records remain limited to 2026-08-05:
-
-- `docs/task-04/decisions/synthetic-sandbox-scope-approval-2026-08-02.md`;
-- `docs/task-04/decisions/synthetic-booking-management-and-service-catalog-approval-2026-08-04.md`.
-
-No superseding renewal record was found. Current status is therefore
-`BLOCKED_MISSING_RENEWAL_APPROVAL`. The old approvals must not be inferred to
-extend themselves from the presence of code, a developer request, a passing
-test, or a product discussion.
-
-A new approval package must bind, at minimum:
-
-1. the exact clean candidate commit and worktree state;
-2. the precise local synthetic scope, including any booking capability,
-   lineage-token, bootstrap-credential, cancellation, rescheduling, waitlist,
-   and service-catalog changes;
-3. accountable owner, backup owner, Operations/SRE reviewer, and any required
-   independent reviewers;
-4. an explicit experimental expiry timestamp and Task 11 review timestamp;
-5. the remaining unresolved rescheduling decisions and renewal metadata,
-   rather than silently choosing defaults; the waitlist policy is recorded in
-   the separate decision above;
-6. the continuing prohibitions on production data, credentials, cloud
-   databases, hosted preview, production imports, and external effects; and
-7. fail-closed lifecycle, teardown, audit, outbox, capacity, and concurrency
-   evidence requirements.
-
-Until that record exists, the only safe Task 04 work is read-only inspection,
-documentation, test-plan maintenance, and preparation of a review package.
-No Task 04 implementation, migration, Docker database run, evidence PASS, or
-merge is authorized by this status file.
-
-### Task 05 — Patient portal
-
-**Status: NOT STARTED beyond existing pharmacist-side identity helpers and
-governance exports.** No separate patient identity domain, patient session,
-patient portal route, caregiver portal, or synthetic portal prototype exists.
-
-Remaining work includes identity separation, proofing/recovery design,
-delegated access, finalized-record read-only views, access/correction/consent
-contracts, privacy leakage tests, accessibility evidence, and an isolated
-synthetic prototype. Patient auth must never reuse pharmacist cookies, roles,
-sessions, invitations, or TOTP configuration.
-
-### Task 06 — Virtual care
-
-**Status: NOT STARTED.** No virtual-care route, waiting room, visit state
-machine, vendor-neutral adapter prototype, participant controls, or virtual
-care evidence package exists.
-
-Remaining work is documentation, vendor/build assessment, threat model,
-synthetic preflight and waiting-room prototype, consent/location/suitability
-gates, disconnect/fallback tests, accessibility evidence, and Task 11 review.
-No recording, transcription, meeting AI, external vendor, or real visit is
-authorized.
-
-### Task 07 — Messaging and reminders
-
-**Status: DOCUMENTATION ONLY.** Workstreams A–I are documented. Runtime
-communications, reminders, secure message threads, provider adapters, webhook
-reconciliation, and real delivery are not implemented.
-
-The sandbox outbox code currently visible is Task 04 booking infrastructure;
-it is not a Task 07 messaging implementation. The next safe documentation
-slice is Workstream J (privacy, security, audit, and retention), followed by a
-versioned Task 07 scope/owner/reviewer approval, Task 11 Checkpoint 1, and an
-isolated synthetic prototype.
-
-### Task 08 — Fulfilment and delivery
-
-**Status: NOT STARTED.** No fulfilment, pickup, delivery, courier, payment,
-inventory, or pharmacy-request runtime exists. Remaining work is contracts,
-state machines, synthetic local adapters, professional release boundaries,
-patient-choice rules, privacy tests, and evidence. The product language must
-remain “request,” not “order”; payment or courier events must never authorize
-professional release.
-
-### Task 09 — Interoperability
-
-**Status: DISABLED / DESIGN ONLY.** `/api/fhir` exists only as a preserved
-disabled scaffold returning `403`. No approved consumer, endpoint, credential,
-FHIR conformance, or clinical-map integration exists.
-
-Remaining work is standards analysis, persisted-snapshot export contracts,
-synthetic conformance, endpoint/credential governance, reviewed ICD-10 mapping,
-and Task 11 evidence. Keep every interop route disabled and keep endpoint
-allowlists empty unless a separate exact approval is recorded.
-
-### Task 10 — Bounded AI
-
-**Status: PARTIAL SYNTHETIC EXPERIMENT.** AI-RX-06 is a deterministic parser
-over five authored synthetic fixtures at `/pharmacist/rx-intake`. It is
-default-off, expiry-gated, kill-switch controlled, has no model/network/DB
-authority, and requires human review.
-
-It is not one of the five chartered Task 10 candidates and has no approval for
-real prescription documents. Before Task 10 can be considered complete, the
-candidate boundaries, evaluator approval, frozen evaluation charter,
-privacy/security review, and Task 11 evidence must exist. Also resolve the
-structural placement issue: the implementation is under `src/lib/rx-intake`
-and the production pharmacist route, while autonomous-task rules require
-experimental code to live in `apps/experiment-sandbox`.
-
-### Task 11 — Quality, security, and release control
-
-**Status: IMPLEMENTATION/REVIEW INCOMPLETE.** The Task 11 approval authorizes
-synthetic implementation, not promotion or self-approval. The CI workflow
-described by the Task 11 gap analysis is not present in the current checkout
-or `origin/main`; only the sandbox workflow is present.
-
-Remaining work includes the required CI workflow, security/privacy/accessibility
-jobs, capability register, control catalogue, evidence schema, aggregate gate,
-independent quality/security/privacy/operations/accessibility review, protected
-branch verification, and exact-candidate release evidence. Task 11 records
-approvals; it cannot grant or self-approve them.
-
-### Task 12 — Operational resilience, downtime, and recovery
-
-**Status: NOT RUN / DESIGN ONLY.** No dedicated service-health model, downtime
-state machine, payload-free observability contract, operator-control surface,
-or cross-capability backup/restore evidence package exists.
-
-The next authorized slice is repository discovery, dependency mapping,
-operational-state design, observability allowlists, and a synthetic recovery
-test plan. Runtime, Docker drills, monitoring vendors, production access,
-backups, alert delivery, or configuration changes require a separate exact
-Task 12 approval and Task 11 Checkpoint 1. Task 02 retains ownership of its P0
-migration and live-recovery gates.
-
-### Task 13 — Human factors, training, and controlled pilot readiness
-
-**Status: NOT RUN / DESIGN ONLY.** No cross-capability human-factors hazard
-register, safety case, role-based training framework, synthetic simulation
-catalogue, usability study plan, or controlled-pilot readiness record exists.
-
-The next authorized slice is role/task analysis, hazard discovery, competency
-framework design, synthetic scenario planning, and study/pilot gate design.
-No participant study, recording, production account, real patient, PHI, live
-workflow, clinical/billing change, or pilot is authorized. Runnable studies
-require a separate exact Task 13 approval and Task 11 Checkpoint 1.
-
-### Task 14 — Regulatory change and clinical knowledge governance
-
-**Status: NOT RUN / DESIGN ONLY.** The repository has protected clinical and
-billing sources, versioned reference rows, regulatory PDFs, and compliance
-mapping, but no dedicated recurring source register, change-intake process,
-impact traceability, effective-date transition contract, or stale-source and
-rollback evidence package.
-
-The next authorized slice is source-register and provenance design, change-
-intake and interpretation templates, an impact matrix, an approval/separation-
-of-duties model, effective-date and historical-reconstruction planning, and a
-Task 11 evidence profile. No protected source, rule, migration, derivation,
-consent text, or production behavior may change under this design slice.
-Runnable tooling requires a separate exact Task 14 approval and Task 11
-Checkpoint 1.
-
-## Protected surfaces and stop conditions
-
-Do not modify these without explicit lead sign-off and the assigned brief’s
-approval path:
-
-- `src/config/triage.ts` and red-flag content;
-- reference PIN/fee/claim-maximum data;
-- `src/lib/db/migrations/` or migration history;
-- `deriveClaimDraft` and billability derivation;
-- audit-log enforcement;
-- LTC billing behaviour;
-- pharmacist authentication/orientation behaviour;
-- the zero-PHI `/assessment` and `/check` boundaries.
-
-Never:
-
-- use real PHI, production credentials, or production-derived fixtures;
-- connect an experiment to Supabase, Firebase, HNS, FHIR consumers, vendors,
-  email, SMS, push, payment, courier, storage, or model providers;
-- add PHI to URLs, browser storage, logs, analytics, caches, or unnecessary
-  client props;
-- interpret a passing test, task checkbox, or product-lead implementation
-  approval as production authorization;
-- invent missing clinical, billing, retention, consent, waitlist, or
-  regulatory policy.
-
-## Documentation maintenance
-
-The Task 01 README, Task 04 gap analysis, root/docs indexes,
-`PROJECT_OVERVIEW.md`, `COMPLETED_WORK.md`, `NEXT_STEPS.md`, `COMPLIANCE.md`,
-`OPEN_QUESTIONS.md`, and `SESSION_HANDOFF.md` were refreshed in the 2026-08-10
-documentation pass. The following records still need task-owner updates before
-the next release candidate:
-
-- [Task 02 evidence index](../../p0/task-02/evidence-index.md), final report,
-  and session handoff: add the later `3a271a7d` and `4e479514` fail-closed
-  predecessor runs.
-- Add a dedicated Task 03 status/evidence record when Task 03 begins.
-- Reconcile any external Task 06 and Task 11 branch/PR evidence before marking
-  those capabilities implemented in the maintained product docs.
+It does not yet implement the full Task 11 contract: secret/dependency/policy
+scanning, automated accessibility, release-evidence validation, aggregate
+release gate, capability/control catalogues, or exact-candidate independent
+promotion review remain open.
 
 ## Safe next order
 
-1. Keep Task 02 and Task 11 as the release-critical lanes; do not widen
-   production scope while either remains blocked.
-2. **BLOCKED:** obtain a superseding Task 04 approval with the renewal fields
-   above before the other developer continues.
-3. After renewal, freeze a clean candidate, finish and test Task 04 inside the
-   isolated sandbox, then capture evidence.
-4. Update the Task 02 evidence records and obtain a new exact G1-D when ready.
-5. Complete independent Task 11 review and merge its approved CI/control work.
-6. Start Task 03 discovery/design as the next unowned capability.
-7. Begin Tasks 05, 06, 08, 09, remaining Task 10 work, any Task 12 runtime,
-   any Task 13 study, and any Task 14 tooling only under exact approvals and
-   Task 01/Task 11 gates.
+1. Resolve the current Task 01 production-invariance failure without
+   rebaselining from an unapproved candidate.
+2. Keep Task 02 and the remaining Task 11 controls as release-critical lanes.
+3. Complete Task 04 v3 renewal and independent reviews before running or
+   extending booking code.
+4. Reconcile the unmerged Task 03 and Task 05 branches before assigning new
+   work in those areas.
+5. Renew the sandbox and complete Task 06 browser/accessibility evidence only
+   under an exact approval.
+6. Record and execute the Task 10A retire-or-rebuild decision in a separate
+   reviewed change.
+7. Continue Task 07 Workstream J and design-only Tasks 08, 12, 13, and 14
+   within their stated boundaries.
 
-**This file is a status aid, not an authorization.** Every agent must verify
-the current commit, worktree, approvals, evidence, and task-specific stop
-conditions before acting.
+**This status file grants no authority.** Verify the current SHA, worktree,
+decision records, evidence, and assigned task brief before acting.

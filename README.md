@@ -2,7 +2,7 @@
 
 AgentOMA is a Next.js platform for Ontario pharmacies to conduct publicly funded minor-ailment assessments. It deliberately separates a zero-PHI patient kiosk from an authenticated pharmacist portal that handles clinical and billing records.
 
-> This is an authenticated pilot build, not a production-ready clinical service. The P0-C eligibility/history gates are merged but their `0018` migration still needs reviewed deployment; LTC billing, Task 11 independent release review, and the first restore drill remain open. Start with the status documents below.
+> This is an authenticated pilot build, not a production-ready clinical service. P0-C migration `0018` remains gated, the current sandbox production-invariance check fails closed on route shape, and Task 04/06 synthetic capabilities have no production authority. Start with the status documents below.
 
 Visitors can explore the workflow safely at `/demo`. The guided tour uses
 synthetic, in-memory content only; it does not sign into the portal, write to
@@ -17,7 +17,7 @@ the database, derive billing codes, or submit anything to HNS.
 | [`docs/COMPLETED_WORK.md`](docs/COMPLETED_WORK.md) | What has been implemented and verified |
 | [`docs/NEXT_STEPS.md`](docs/NEXT_STEPS.md) | Prioritized work remaining before a pilot or go-live |
 | [`docs/tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md`](docs/tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md) | Verified autonomous-program status and active blockers |
-| [`docs/tasks/autonomous-pharmacy/NEXT-SPRINT-PLAN-2026-08-10.md`](docs/tasks/autonomous-pharmacy/NEXT-SPRINT-PLAN-2026-08-10.md) | Current sequencing checkpoint; not an approval |
+| [`docs/tasks/autonomous-pharmacy/NEXT-SPRINT-PLAN-2026-08-19.md`](docs/tasks/autonomous-pharmacy/NEXT-SPRINT-PLAN-2026-08-19.md) | Current sequencing checkpoint; not an approval |
 | [`docs/COMPLIANCE.md`](docs/COMPLIANCE.md) | Implementation status mapped to the EO Notice |
 | [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md) | Regulatory and clinical decisions awaiting human review |
 | [`docs/SELF_CHECK.md`](docs/SELF_CHECK.md) | Public `/check` boundaries, implementation map, and production gate |
@@ -53,7 +53,7 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 Quality gates:
 
 ```powershell
-npm exec -- tsc --noEmit
+npm run typecheck
 npm run test:pure
 npm run test
 npm run lint

@@ -6,6 +6,13 @@
 **G2 hosted preview:** NOT REQUESTED; SBX-14 is NOT APPLICABLE
 **G3 production-import allowlist:** empty
 
+> **Current-candidate warning (2026-08-19):** the PASS below belongs only to
+> its recorded historical candidate. At merged HEAD
+> `87bdb1b99840f56a34046254065071c3d5a755c1`, unit/boundary checks pass but
+> `sandbox:verify-production` fails closed with
+> `SBX_INVARIANCE_DENIED:routeShape`, and runnable sandbox authority is
+> expired. Do not apply the historical PASS to the current candidate.
+
 Start with:
 
 1. [`current-state-and-gap-analysis.md`](current-state-and-gap-analysis.md)
