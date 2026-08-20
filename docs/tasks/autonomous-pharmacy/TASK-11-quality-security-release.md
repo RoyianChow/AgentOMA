@@ -1,6 +1,6 @@
 Task 11 — Cross-Cutting Quality, Security, Privacy, and Release Control Plane
 
-## Sprint checkpoint — 2026-08-19
+## Sprint checkpoint — 2026-08-20
 
 **Repository state:** the first seven-job CI workflow slice is merged. The
 full Task 11 control plane and promotion remain `BLOCKED` pending security and
@@ -12,7 +12,7 @@ required jobs, aggregate gate, and branch-protection evidence.
 **Exit:** independent quality/security/privacy/operations/accessibility review
 is bound to the exact candidate. Task 11 records approvals and never grants or
 self-approves them. See
-[`NEXT-SPRINT-PLAN-2026-08-19.md`](NEXT-SPRINT-PLAN-2026-08-19.md).
+[`CURRENT-IMPLEMENTATION-STATUS.md`](CURRENT-IMPLEMENTATION-STATUS.md).
 
 ## Governance approval — 2026-08-02
 

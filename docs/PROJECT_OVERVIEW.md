@@ -1,17 +1,17 @@
 # AgentOMA project overview
 
-**Status snapshot:** 2026-08-19
+**Status snapshot:** 2026-08-20
 
 **Current stage:** authenticated pilot foundation; **not production-ready**
 
 **Verification at this snapshot:** observed repository baseline
-`87bdb1b99840f56a34046254065071c3d5a755c1` on `task7` is TypeScript- and
+`1ce2c9ace894f5c2a745f15fa901fe2fc6acc138` on `origin/main` is TypeScript- and
 ESLint-clean, passes 306/306 pure production tests, builds successfully, and
 passes the sandbox's 606 non-Postgres tests plus source-boundary verification.
 The current production-invariance check fails closed with
 `SBX_INVARIANCE_DENIED:routeShape`, and the sandbox build remains blocked by
 expired/incomplete runtime authority. Real-PostgreSQL suites were not rerun in
-this merge-review pass. The last recorded complete database evidence remains the
+this documentation audit. The last recorded complete database evidence remains the
 211-test exact candidate `dcaab91f9adba7457a85214d51d1614c8560f404`, with
 fresh replay through `0018`, atomic audit rollback, isolation, immutability,
 concurrency, red-flag zero-claim, referral separation, reference-derived
@@ -192,9 +192,8 @@ requires Task 11 evidence and the task's named human approvals.
 
 The maintained
 [`current implementation status`](tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md)
-compares all fourteen contracts with the repository. The
-[`2026-08-19 sprint plan`](tasks/autonomous-pharmacy/NEXT-SPRINT-PLAN-2026-08-19.md)
-orders bounded work but grants no implementation or production authority.
+compares all fourteen contracts with the repository and records the current
+safe execution order. It grants no implementation or production authority.
 
 The task briefs use **AgentRx** as their program/system label. The implemented
 repository remains **AgentOMA** until the product lead resolves the naming

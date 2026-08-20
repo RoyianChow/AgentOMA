@@ -13,9 +13,11 @@ Before selecting a task, read the [current implementation status](CURRENT-IMPLEM
 It compares the task contracts with the repository and records what is
 complete, partial, blocked, or still unstarted.
 
-For the current sequencing, owners, blockers, and sprint exit criteria, read
-the [2026-08-19 sprint plan](NEXT-SPRINT-PLAN-2026-08-19.md). It schedules
-bounded work but grants no implementation or production authority.
+Current sequencing, owners, blockers, and exit criteria live in the
+[current implementation status](CURRENT-IMPLEMENTATION-STATUS.md). Keeping
+status and sequencing together prevents a dated sprint file from silently
+drifting away from the code. The status file grants no implementation or
+production authority.
 
 ## Start an assigned task
 

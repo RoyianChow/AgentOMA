@@ -17,7 +17,6 @@ the database, derive billing codes, or submit anything to HNS.
 | [`docs/COMPLETED_WORK.md`](docs/COMPLETED_WORK.md) | What has been implemented and verified |
 | [`docs/NEXT_STEPS.md`](docs/NEXT_STEPS.md) | Prioritized work remaining before a pilot or go-live |
 | [`docs/tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md`](docs/tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md) | Verified autonomous-program status and active blockers |
-| [`docs/tasks/autonomous-pharmacy/NEXT-SPRINT-PLAN-2026-08-19.md`](docs/tasks/autonomous-pharmacy/NEXT-SPRINT-PLAN-2026-08-19.md) | Current sequencing checkpoint; not an approval |
 | [`docs/COMPLIANCE.md`](docs/COMPLIANCE.md) | Implementation status mapped to the EO Notice |
 | [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md) | Regulatory and clinical decisions awaiting human review |
 | [`docs/SELF_CHECK.md`](docs/SELF_CHECK.md) | Public `/check` boundaries, implementation map, and production gate |

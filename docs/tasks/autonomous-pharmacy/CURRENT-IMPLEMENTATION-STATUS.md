@@ -4,12 +4,14 @@
 is present in the maintained checkout; it is not an implementation approval or
 production release decision.
 
-**Snapshot date:** 2026-08-19  
-**Observed branch:** `task7`  
-**Observed HEAD:** `87bdb1b99840f56a34046254065071c3d5a755c1`  
-**Worktree at capture:** clean before this documentation update  
-**Current sprint plan:**
-[`NEXT-SPRINT-PLAN-2026-08-19.md`](NEXT-SPRINT-PLAN-2026-08-19.md)
+**Snapshot date:** 2026-08-20
+
+**Observed code baseline:** `origin/main` at
+`1ce2c9ace894f5c2a745f15fa901fe2fc6acc138`
+
+**Documentation branch:** `codex/task-doc-audit-2026-08-20`
+
+**Worktree at capture:** clean before this documentation audit
 
 ## Verification performed for this snapshot
 
@@ -20,9 +22,9 @@ production release decision.
 | `npm run test:pure` | PASS - 22 files, 306 tests |
 | `npm run build` | PASS - production route manifest generated |
 | `npm run sandbox:verify` | PASS - typecheck, lint, 40 files / 606 non-Postgres tests, boundary verification |
-| `npm run sandbox:verify-evidence` | PASS for the committed evidence-manifest schema and artifacts |
+| `npm run sandbox:verify-evidence` | PASS - 18 controls accepted by the committed evidence validator |
 | `npm run sandbox:verify-production` | **FAIL - `SBX_INVARIANCE_DENIED:routeShape`** |
-| `npm run sandbox:build` | **BLOCKED** - sandbox environment/lifecycle controls failed closed; the embedded Task 04 approval window is expired |
+| `npm run sandbox:build` | NOT RUN - the embedded Task 04 approval window is expired and no new runtime authority was inferred |
 | Root and sandbox real-PostgreSQL suites | NOT RUN in this documentation pass |
 
 The production-invariance failure is an active Task 01/Task 11 review item. Do
@@ -39,6 +41,11 @@ unauthorized delta, then regenerate evidence through the Task 01 process.
 | PR #48 | Synthetic `/book` catalog, availability, booking UI, server actions, and tests | Code is merged but runtime remains blocked by expired/missing approval |
 | PR #44 | Task 06 synthetic virtual-care routes, fixtures, guards, UI, docs, and tests | Synthetic implementation is merged; production and promotion remain blocked |
 | PR #31 | First Task 11 CI workflow slice | Seven quality/database jobs now exist; the full control plane does not |
+
+PR #49 subsequently merged the 2026-08-19 documentation reconciliation only.
+No additional runtime capability was introduced after the verified
+`87bdb1b9...` code candidate; today’s checks were rerun against the resulting
+`origin/main` baseline above.
 
 ## Release posture
 
@@ -136,6 +143,23 @@ promotion review remain open.
    reviewed change.
 7. Continue Task 07 Workstream J and design-only Tasks 08, 12, 13, and 14
    within their stated boundaries.
+
+## Documentation disposition
+
+- The binding `TASK-*.md` contracts remain separate because their authority,
+  stop conditions, evidence, and reviewer requirements differ.
+- Task 02A and Task 10A remain narrow remediation briefs under their parent
+  tasks; folding them into already-large parent contracts would hide their
+  explicit approval gates.
+- Current status and sequencing now live in this file. The dated
+  `NEXT-SPRINT-PLAN-2026-08-19.md` was removed as duplicate status.
+- The stale Task 02 continuation note was consolidated into the maintained
+  production handoff.
+- Task 06’s duplicate final report was consolidated into its maintained
+  current-state report. Its production-integration handoff remains separate
+  because it serves a different future audience.
+- Signed decisions, failed and passing evidence, historical reports, and
+  regulatory provenance were retained unchanged.
 
 **This status file grants no authority.** Verify the current SHA, worktree,
 decision records, evidence, and assigned task brief before acting.

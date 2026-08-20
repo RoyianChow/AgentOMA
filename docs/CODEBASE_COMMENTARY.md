@@ -1,8 +1,8 @@
 # Codebase commentary and current-state map
 
-**Snapshot reconciled:** 2026-08-19
-**Observed branch:** `task7`
-**Observed baseline:** `87bdb1b99840f56a34046254065071c3d5a755c1`
+**Snapshot reconciled:** 2026-08-20
+**Observed branch:** `origin/main`
+**Observed baseline:** `1ce2c9ace894f5c2a745f15fa901fe2fc6acc138`
 
 ## Why this file exists
 
@@ -22,7 +22,7 @@ The application is an authenticated pilot foundation, not a production-ready
 pharmacy service. Exact candidate `dcaab91f9adba7457a85214d51d1614c8560f404`
 remains the last complete database-tested candidate: 211 real-PostgreSQL tests
 passed twice through migration `0018`. The current merged baseline
-`87bdb1b…` is TypeScript- and ESLint-clean, passes 306 pure production tests,
+`1ce2c9ac…` is TypeScript- and ESLint-clean, passes 306 pure production tests,
 builds successfully, and passes 606 non-Postgres sandbox tests. Docker was not
 rerun in this documentation pass.
 

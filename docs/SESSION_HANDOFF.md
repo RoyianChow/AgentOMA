@@ -1,8 +1,11 @@
 # Session handoff
 
-**Updated:** 2026-08-19  
-**Observed branch:** `task7`  
-**Observed baseline HEAD:** `87bdb1b99840f56a34046254065071c3d5a755c1`  
+**Updated:** 2026-08-20
+
+**Observed code baseline:** `origin/main`
+
+**Observed baseline HEAD:** `1ce2c9ace894f5c2a745f15fa901fe2fc6acc138`
+
 **Release status:** **BLOCKED - DO NOT PROMOTE**
 
 ## Start here
@@ -11,9 +14,8 @@
 2. Read [`PROJECT_OVERVIEW.md`](PROJECT_OVERVIEW.md).
 3. Read the autonomous-program
    [`current implementation status`](tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md).
-4. Use the
-   [`2026-08-19 sprint plan`](tasks/autonomous-pharmacy/NEXT-SPRINT-PLAN-2026-08-19.md)
-   for sequencing only.
+4. Use the safe execution order in the current implementation status for
+   sequencing only.
 5. Read the assigned task brief and all exact-candidate decisions in full.
 
 ## Current verified checkpoint

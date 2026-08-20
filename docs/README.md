@@ -18,7 +18,6 @@ provenance only.
 | [`CODEBASE_COMMENTARY.md`](CODEBASE_COMMENTARY.md) | High-value trust-boundary commentary and maintenance map; current task status remains in the status file below. |
 | [`tasks/autonomous-pharmacy/README.md`](tasks/autonomous-pharmacy/README.md) | Execution index for the autonomous-pharmacy task contracts, including current gates and dependencies. |
 | [`tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md`](tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md) | Verified comparison of Tasks 01–14 with the current repository. |
-| [`tasks/autonomous-pharmacy/NEXT-SPRINT-PLAN-2026-08-19.md`](tasks/autonomous-pharmacy/NEXT-SPRINT-PLAN-2026-08-19.md) | Current work sequencing and exit criteria; grants no implementation authority. |
 
 ## Compliance, decisions, and operations
 

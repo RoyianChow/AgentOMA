@@ -1,6 +1,6 @@
 Task 03 — Build the Pharmacist “Today” Command Centre
 
-## Sprint checkpoint — 2026-08-19
+## Sprint checkpoint — 2026-08-20
 
 **Repository state:** `NOT RUN` in the maintained checkout; an unmerged local
 Task 03 branch exists. The production dashboard and Task 04 queue are not Task
@@ -12,7 +12,7 @@ UI/test plan.
 **Exit:** no clinical ranking, urgency, triage, billability, or source queue
 object crosses the client boundary. Runnable work still requires an exact
 synthetic approval. See
-[`NEXT-SPRINT-PLAN-2026-08-19.md`](NEXT-SPRINT-PLAN-2026-08-19.md).
+[`CURRENT-IMPLEMENTATION-STATUS.md`](CURRENT-IMPLEMENTATION-STATUS.md).
 
 Version: 3 · supersedes the attached Task 03 draft · 2026-07-30Owner profile: frontend/product engineerRequired reviewers: pharmacist product reviewer, privacy/security reviewer,accessibility reviewer, and Task 11 release reviewerPriority: P1 product foundationStatus: repository discovery and design may start; runnable implementationrequires the approved Task 01 synthetic environmentProduction authorization: none
 

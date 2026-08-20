@@ -6,7 +6,7 @@
 **Required reviewers:** Product Lead, Security/Privacy, pharmacist evaluator,
 Accessibility, and Task 11 Quality/Test  
 **Status:** `BLOCKED_DECISION_REQUIRED`  
-**Last verified:** 2026-08-19
+**Last verified:** 2026-08-20
 
 ## Objective
 

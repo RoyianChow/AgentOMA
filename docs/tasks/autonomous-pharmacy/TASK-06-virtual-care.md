@@ -1,6 +1,6 @@
 # Task 06 — Design and Prototype Secure Pharmacist-Led Virtual Care
 
-## Sprint checkpoint — 2026-08-19
+## Sprint checkpoint — 2026-08-20
 
 **Repository state:** the deterministic synthetic routes, guards, fixtures,
 tests, and documentation are merged. Non-Postgres sandbox verification passes,
@@ -10,7 +10,7 @@ invariance, then complete browser/accessibility and independent review evidence.
 **Exit:** no recording, transcription, meeting AI, external vendor, real visit,
 or vendor event that completes a professional workflow. Duplicate parallel
 implementation is out of scope. See
-[`NEXT-SPRINT-PLAN-2026-08-19.md`](NEXT-SPRINT-PLAN-2026-08-19.md).
+[`CURRENT-IMPLEMENTATION-STATUS.md`](CURRENT-IMPLEMENTATION-STATUS.md).
 
 ## Role
 

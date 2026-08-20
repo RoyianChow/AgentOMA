@@ -1,6 +1,6 @@
 Task 01 — Enforce the Experimental Sandbox
 
-## Sprint checkpoint — 2026-08-19
+## Sprint checkpoint — 2026-08-20
 
 **Repository state:** the historical evidence candidate is `PASS`; the current
 changed candidate does not inherit it. Unit/boundary checks pass, but
@@ -10,7 +10,8 @@ renew exact scope, and produce candidate-bound boundary, artifact, evidence,
 runtime, and production-invariance results.
 **Exit:** documentation agrees with evidence and any new candidate has complete
 red/green and root verification. No hosted preview or production import is in
-scope. See [`NEXT-SPRINT-PLAN-2026-08-19.md`](NEXT-SPRINT-PLAN-2026-08-19.md).
+scope. See [`CURRENT-IMPLEMENTATION-STATUS.md`](CURRENT-IMPLEMENTATION-STATUS.md)
+for current sequencing.
 
 Version: 3 · supersedes Task 01 v2 · 2026-07-30Owner profile: platform/security developerRequired reviewers: product lead and security/privacy reviewerPriority: P0 foundation — blocks every later experimental capabilityStatus: repository discovery may start; implementation is approval-gatedProduction authorization: none
 
