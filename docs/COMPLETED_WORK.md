@@ -2,14 +2,16 @@
 
 **Implementation evidence verified through:** 2026-08-02
 
-**Documentation/status reconciled:** 2026-08-10
+**Documentation/status reconciled:** 2026-08-19
 
 **Quality snapshot:** exact database candidate `dcaab91…` passed 211/211
 real-PostgreSQL tests twice and replayed all 19 migrations through `0018`.
-The 2026-08-10 documentation baseline `58fee600…` is TypeScript- and
-ESLint-clean and passes 305/305 pure tests; Docker was not rerun for the
-documentation-only update. Supabase remains live through `0017`; `0018` is not
-authorized or applied live.
+The 2026-08-19 merged baseline `87bdb1b…` is TypeScript- and ESLint-clean,
+passes 306/306 pure production tests, builds successfully, and passes 606
+non-Postgres sandbox tests plus boundary verification. Current production
+invariance fails closed on route shape, sandbox runtime authority is expired,
+and Docker/PostgreSQL suites were not rerun in this documentation pass.
+Supabase remains live through `0017`; `0018` is not authorized or applied live.
 
 This is the implementation record requested for the project. It describes capabilities present in the repository, not planned work. Remaining items are in [`NEXT_STEPS.md`](NEXT_STEPS.md).
 
@@ -289,15 +291,39 @@ This is the implementation record requested for the project. It describes capabi
 - Reconciled the Task 01 README with its final local synthetic evidence: 17
   applicable controls PASS, while SBX-14 is not applicable because G2 was not
   requested and no hosted preview exists. G3 remains empty.
-- Added a maintained implementation-status comparison and a 2026-08-10 sprint
-  plan so task contracts are not mistaken for implemented capabilities or
-  production authorization.
+- Added a maintained implementation-status comparison and date-bound sprint
+  checkpoints so task contracts are not mistaken for implemented capabilities
+  or production authorization.
 - Added design-only Task 12 for operational resilience, Task 13 for human
   factors and controlled-pilot readiness, and Task 14 for regulatory source,
   effective-date, approval, and rollback governance.
 - Updated the task index, roadmap, and Task 11 review template to cover all
   fourteen tasks. These documents grant no runtime, study, clinical, billing,
   migration, or production authority.
+
+## Merged autonomous-program implementation - 2026-08-19
+
+- Merged the Task 04 synthetic `/book` experience for service catalogue,
+  availability, appointment selection, administrative acknowledgements, and
+  booking creation. It reuses the existing sandbox PostgreSQL booking
+  boundary and safe server projections. Cancellation, rescheduling, bootstrap
+  exchange, and waitlist command runtime remain absent.
+- Merged the Task 06 deterministic virtual-care review prototype: role-specific
+  scenes, waiting-room projection, server-owned authorization guards,
+  consent/location/suitability states, disconnect/fallback behavior, secure
+  messaging stubs, and assessment/claim separation. It has no media vendor,
+  recording, transcription, model, real identity, PHI, or external effect.
+- Merged Task 11's first CI workflow slice with stable install, TypeScript,
+  ESLint, pure-test, build, fresh-migration, and database-constraint jobs.
+  Security scanning, policy checks, accessibility, evidence validation, the
+  aggregate release gate, branch-protection evidence, and independent review
+  remain incomplete.
+- Merged the `/check` beta UX improvements and source-level accessibility/
+  privacy regressions without altering the approved triage artifact.
+- Verified the merged source with production typecheck, lint, pure tests and
+  build, plus sandbox typecheck, lint, 606 tests and boundary verification.
+  The Task 01 production-invariance route-shape failure and expired sandbox
+  lifecycle are recorded as blockers, not converted to PASS.
 
 ## Verification and regression coverage
 
@@ -307,6 +333,7 @@ This is the implementation record requested for the project. It describes capabi
 - TypeScript, ESLint, and production build are clean for the recorded database
   candidate. Its suites were 123 database-free tests and 211 complete tests
   through migration `0018`, with zero skipped/focused tests. The later
-  documentation baseline passes 305 pure tests plus TypeScript and ESLint; its
-  production build and Docker suite were not rerun because no runtime files
-  changed.
+  current merged baseline passes 306 pure production tests, the production
+  build, and 606 non-Postgres sandbox tests. The current production-invariance
+  check fails on route shape, sandbox build is blocked by fail-closed
+  environment/lifecycle controls, and Docker suites were not rerun.

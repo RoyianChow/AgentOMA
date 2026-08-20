@@ -10,6 +10,12 @@ pharmacy workflows built from this repository
 **Implementation task:**
 [`tasks/autonomous-pharmacy/TASK-01-sandbox-enforcement.md`](tasks/autonomous-pharmacy/TASK-01-sandbox-enforcement.md)
 
+**Current operational note (2026-08-19):** historical Task 01 evidence remains
+valid only for its recorded candidate. The current merged candidate fails
+production invariance on route shape and has expired runnable authority. Task
+04 `/book` and Task 06 virtual-care code are present but must remain fail
+closed until exact scope is renewed and current evidence passes.
+
 ## No legal or regulatory waiver
 
 This document does **not** authorize anyone to bypass Ontario law, OCP

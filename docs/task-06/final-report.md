@@ -1,130 +1,74 @@
-# Task 06 — Final Report
+# Task 06 - Synthetic Prototype Report
 
-Task 06 synthetic prototype status: BLOCKED
+**Reconciled:** 2026-08-19  
+**Merged candidate:** `87bdb1b99840f56a34046254065071c3d5a755c1`  
+**Implementation status:** `MERGED_SYNTHETIC`  
+**Runtime/promotion status:** `BLOCKED`  
+**Production authorization:** none
 
-Task 01 synthetic environment: BLOCKED
-Task 02 assessment integration: NOT VERIFIED
-Task 05 identity integration: BLOCKED
-Task 07 notifications: STUBBED
-Task 11 security/release gate: NOT VERIFIED
-OCP standards mapping: PASS
-Ontario Health standard mapping: PASS
-Build-versus-integrate decision: PASS
-Selected production approach: HYBRID
-Selected vendor: NONE
-Current verification evidence: NOT APPLICABLE
-Vendor review: NOT VERIFIED
-Contract review: NOT VERIFIED
-Canadian-residency evidence: NOT VERIFIED
-PIA approval: NOT VERIFIED
-TRA approval: NOT VERIFIED
-Professional review: NOT VERIFIED
-Cross-jurisdictional review: NOT VERIFIED
-Virtual-care threat model: PASS
-Identity and participant authorization: PASS
-Consent and privacy model: PASS
-Location confirmation model: PASS
-Pharmacist suitability control: PASS
-Waiting-room controls: PASS
-Disconnect and rejoin behavior: PASS
-Telephone fallback: PASS
-Secure-messaging prototype: PASS
-Assessment guard integration: PASS
-Claim boundary: PASS
-Recording disabled: PASS
-Transcription disabled: PASS
-PHI leakage tests: PASS
-Accessibility evidence: FAIL
-Low-bandwidth evidence: FAIL
-One-handed 56px evidence: FAIL
-Automated tests: FAIL
-Real PHI used: NO
-Production schema changed: NO
-Production authentication changed: NO
-Production vendor connected: NO
-Production visits enabled: NO
-External messages sent: NO
-Audio/video recorded: NO
-Claims created or submitted: NO
+## Result summary
 
-Blocking issues:
-1. `apps/experiment-sandbox`'s G1 lifecycle window (`SANDBOX_EXPIRES_AT` /
-   `TASK04_APPROVED_THROUGH_DATE_UTC`) expired 2026-08-05, six days before this work was done.
-   `npm run dev`/`build`/`start` all throw `SANDBOX_CONFIG_DENIED:EXPIRED`, so nothing in this
-   prototype — or any pre-existing sandbox route — could be demonstrated live. This is the root
-   cause of every FAIL/NOT VERIFIED line above tied to live evidence.
-2. `npm run test` cannot execute anywhere in this repository's current directory. Vitest/Vite
-   refuses to resolve module paths because the directory name contains "#" (confirmed with a
-   trivial one-line probe test; every one of the 29+ test files already in the sandbox fails
-   identically, none touched by this task). The 9 required-test files for this task are written
-   and their highest-risk assertions were independently re-verified via a throwaway `tsx`
-   harness (not committed), but they have never been run end-to-end by their intended runner.
-3. Task 05 (patient identity) does not exist in this repository at all. Every patient-side
-   identity/delegation concept in this task's design is necessarily synthetic-only as a result —
-   this is a known, pre-existing program-level gap, not something this task caused or can close.
+The repository now contains the Task 06 deterministic virtual-care review
+prototype inside the isolated experiment workspace. It provides pharmacist and
+patient scenario views, server-owned authorization/guard decisions, waiting
+room and participant controls, consent/location/suitability states,
+disconnect/fallback behavior, secure-message stubs, and assessment/claim
+separation.
 
-Unresolved vendor decisions: No vendor evaluated or selected. `build-vs-integrate-decision.md`
-recommends a hybrid production approach but names no vendor. The full vendor scorecard,
-procurement gates, PIA, TRA, Canadian-residency evidence, and subprocessor review remain
-entirely open — `vendor-assessment-scorecard.md` and `verification-and-procurement-gates.md` are
-instruments only, not completed evaluations.
+It deliberately has no media transport, vendor SDK, camera/microphone access,
+recording, transcription, model, external messaging, real identity, PHI,
+production database, or claim effect.
 
-Unresolved professional decisions: No practising Ontario pharmacist has run the
-clinical/operational validation plan (`privacy-accessibility-security-and-clinical-validation-plan.md`
-is written, not executed). Consent/privacy-notice copy throughout the prototype is structural
-placeholder text, not reviewed legal or patient-facing wording.
+## Automated evidence
 
-Unresolved privacy/legal decisions: every retention period in
-`privacy-security-and-retention-plan.md` §3 not already governed by existing repo policy is
-explicitly marked `UNRESOLVED`. The Canadian-residency requirement is treated as a
-procurement/contract/risk decision, not asserted as a PHIPA mandate. Cross-jurisdictional care
-remains hard-blocked pending a separate review this task does not grant.
+| Check | Result |
+|---|---|
+| Sandbox TypeScript | PASS |
+| Sandbox ESLint | PASS |
+| Sandbox tests | PASS - 40 files / 606 tests across the workspace |
+| Sandbox source boundary | PASS |
+| Task 06 identity/consent/suitability tests | PASS |
+| Task 06 join/participant tests | PASS |
+| Task 06 disconnect/fallback tests | PASS |
+| Task 06 secure-message boundary tests | PASS |
+| Task 06 assessment/claim separation tests | PASS |
+| Task 06 privacy/leakage tests | PASS |
+| Task 06 webhook/vendor denial tests | PASS |
+| Sandbox production build | BLOCKED by fail-closed environment/lifecycle state |
+| Production invariance | FAIL - `SBX_INVARIANCE_DENIED:routeShape` |
+| Manual browser/accessibility evidence | NOT RUN |
 
-Unresolved accessibility decisions: real 375px/desktop screenshots, a real keyboard-only
-walkthrough, a real screen-reader semantic inspection, real 200%/400% zoom captures, and a real
-low-bandwidth simulation could not be produced (blocked by Task 01's expired environment — see
-Blocking issue #1). One real, static-review-found gap (role-selector touch targets were 44px,
-not the required 56px) was identified and fixed in source, but the fix has not been re-verified
-in a live browser.
+The aggregate 606-test count includes Task 01, Task 04, and Task 06 sandbox
+tests; it is not represented as 606 Task 06 tests.
 
-Deferred production work: the full ordered list in `production-integration-handoff.md` §2 —
-Task 01 G1/G2 renewal; Task 05 reaching a stable contract; Task 02 re-verification; Task 07
-re-confirmation; vendor selection; the lead's migration sign-off; Task 11's release gate actually
-existing and being verified; PIA, TRA, professional, and cross-jurisdictional review; and
-actually running the clinical/operational validation plan. None of this task's work grants any
-step of that list.
+## Documentation package
 
-Evidence locations:
-- `docs/task-06/` — all 20 documents, indexed in `docs/task-06/README.md`.
-- `apps/experiment-sandbox/src/virtual-care/` — contracts, 54 deterministic fixtures, guards,
-  server-owned orchestration, and "use server" actions.
-- `apps/experiment-sandbox/src/app/virtual-care/` — the 13 required synthetic UI surfaces.
-- `apps/experiment-sandbox/src/virtual-care/__tests__/` — 9 required-test files (written, not
-  executed by `npm run test`; see Blocking issue #2).
-- `docs/task-06/accessibility-and-responsive-evidence.md` — static-only review, explicitly
-  marked partial.
+The merged package includes standards mapping, build-versus-integrate and
+vendor scorecards, trust boundaries/data flows, threat model, field-level
+contracts, identity/location/consent/suitability controls, waiting-room and
+participant design, device/fallback design, failure state machine, secure
+messaging boundary, assessment/claim integration boundary, privacy/security/
+retention plan, incident response, accessibility plan, and production handoff.
 
-Files changed: all commits on the local `feat/task-06-virtual-care` branch (none pushed).
-Documentation under `docs/task-06/`; synthetic prototype under
-`apps/experiment-sandbox/src/virtual-care/` and `apps/experiment-sandbox/src/app/virtual-care/`;
-one shared-style addition to `apps/experiment-sandbox/src/app/globals.css`. No file outside
-`docs/` and `apps/experiment-sandbox/` was touched.
+Those documents are design/review evidence, not legal, clinical, privacy,
+vendor, procurement, or production approval.
 
-Tests run and results:
-- `tsc --noEmit` across the whole sandbox: clean, run repeatedly throughout this work.
-- `eslint` across the whole sandbox: clean, run repeatedly throughout this work.
-- `npm run test`: does not execute — see Blocking issue #2. Zero of the 9 new test files (or any
-  pre-existing one) can currently run through this command.
-- Independent verification (not committed): a throwaway `tsx` harness re-derived and confirmed
-  10 of the suite's highest-risk hand-built assertions (consent/modality mismatches, the
-  fallback-concurrency-race case, both active-denial invariant checks, delegate/assessment-link
-  edge cases) plus a separate pass confirming every source-scan regex used in the privacy/leakage
-  suite behaves as intended. All checks passed. This is evidence the logic is correct — it is not
-  the same as the required test command passing, and this report does not conflate the two.
+## Open blockers
 
-Recommended next action: renew Task 01's G1/G2 approval window and resolve the directory-name
-path issue blocking Vitest (both decisions for their respective owners, not this task) so this
-prototype and its test suite can actually run end-to-end; then engage a practising Ontario
-pharmacist to execute `privacy-accessibility-security-and-clinical-validation-plan.md` for real.
-Do not begin production integration planning until Task 05 exists — see
-`production-integration-handoff.md` for the full ordered list.
+- Current exact sandbox authority is expired/incomplete.
+- Production-invariance route-shape failure is unresolved.
+- Manual browser, screen-reader, zoom/reflow, mobile and low-bandwidth evidence
+  is missing.
+- Task 05 patient identity/delegation is unavailable in the maintained tree.
+- Task 07 has no approved provider or real delivery runtime.
+- PIA, TRA, vendor, professional, privacy/security, accessibility, operations,
+  and independent Task 11 approvals are missing.
+- No G2 hosted preview or production integration is authorized.
+
+## Final determination
+
+The synthetic code and non-Postgres test slice are merged and green. Task 06
+is **not complete for runtime, hosted preview, production integration, or
+patient care**. Renew exact sandbox authority, resolve Task 01 invariance, run
+manual evidence, and obtain the named independent reviews before changing this
+status.

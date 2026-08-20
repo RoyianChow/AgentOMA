@@ -1,16 +1,17 @@
 # Task 05 — Complete the Patient Identity and Portal Synthetic Prototype
 
-## Next-sprint checkpoint — 2026-08-10
+## Sprint checkpoint — 2026-08-19
 
-**Repository state:** `NOT RUN`; no separate patient identity/session domain or
-patient portal exists.
-**Sprint slice:** discovery and threat-model work only—identity separation,
+**Repository state:** no separate patient identity/session domain or patient
+portal is merged; an unmerged local design branch exists.
+**Sprint slice:** reconcile that branch, then continue discovery and
+threat-model work only—identity separation,
 proofing/recovery, delegation, finalized-record read models, and PHI boundary
 contracts.
 **Exit:** every unknown policy remains `BLOCKED`; pharmacist cookies, roles,
 invitations, sessions, and TOTP are never reused. No patient runtime is
 authorized by this checkpoint. See
-[`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md).
+[`NEXT-SPRINT-PLAN-2026-08-19.md`](NEXT-SPRINT-PLAN-2026-08-19.md).
 
 ## Role
 

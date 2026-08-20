@@ -1,17 +1,18 @@
 # Task 04 — Complete the Online Booking and Waitlist Prototype
 
-## Next-sprint checkpoint — 2026-08-10
+## Sprint checkpoint — 2026-08-19
 
-**Repository state:** `BLOCKED_MISSING_RENEWAL_APPROVAL`. Candidate
-`58fee60035988300909a158f3c91501faca89fa7` was clean when captured, but the
-completed v3 renewal and independent signatures are not committed.
-**Sprint slice:** finish that exact renewal package. The waitlist policy is
-approved only as a policy sub-decision.
+**Repository state:** `PARTIAL_IMPLEMENTATION_MERGED / BLOCKED_MISSING_RENEWAL_APPROVAL`.
+The synthetic `/book` UI is now in the maintained checkout, but the v3 renewal
+remains `DRAFT - NOT GRANTED`, refers to an older candidate, and has no
+complete independent signatures.
+**Sprint slice:** freeze the new exact candidate and finish a current renewal
+package. The waitlist policy remains approved only as a policy sub-decision.
 **Exit:** implementation may resume only after exact scope, hashes, future
 dates, owners, independent reviews, and Task 11 Checkpoint 1 are recorded. No
 code, migration, Docker, evidence promotion, or merge is authorized by this
 checkpoint. See
-[`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md).
+[`NEXT-SPRINT-PLAN-2026-08-19.md`](NEXT-SPRINT-PLAN-2026-08-19.md).
 
 ## Role
 
