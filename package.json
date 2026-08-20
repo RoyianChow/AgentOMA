@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "security:raw-env-access": "tsx tools/security-policy/check-raw-env-access.mjs",
     "test": "vitest run",
     "test:pure": "vitest run --config vitest.pure.config.mts --pool threads --maxWorkers 1",
     "test:self-check": "vitest run src/lib/self-check --config vitest.pure.config.mts --pool threads --maxWorkers 1",

@@ -1,15 +1,19 @@
 name: CI
 
 # Task 11 (Cross-Cutting Quality, Security, Privacy, and Release Control Plane)
-# — Workstream C, first slice: the required-job contract for the checks this
-# repo can already run. Job IDs match Task 11's stable-job-ID table so a later
-# pass can extend this file (security-secrets, security-dependencies,
-# accessibility-automated, release-evidence-validate, release-gate) without
-# renaming anything protected-branch rules would depend on.
+# — Workstream C/E, incremental slices: the required-job contract for the
+# checks this repo can already run. Job IDs match Task 11's stable-job-ID
+# table so a later pass can extend this file (security-secrets,
+# security-dependencies, accessibility-automated, release-evidence-validate,
+# release-gate) without renaming anything protected-branch rules would
+# depend on.
+#
+# security-policy currently covers PRV-01 (raw process.env access) only —
+# see tools/security-policy/ for the checker and its reviewed allowlist.
 #
 # Deliberately NOT included yet (tracked in docs/task-11/current-state-and-gap-analysis.md):
 #   - security-secrets / security-dependencies scanning
-#   - security-policy (raw-env / forbidden-import / leakage checks)
+#   - security-policy: forbidden-import / PHI-logging-leakage checks (only PRV-01 exists so far)
 #   - accessibility-automated
 #   - release-evidence-validate / release-gate aggregate
 #   - branch-protection required-check configuration (repo admin action, not code)
@@ -108,6 +112,25 @@ jobs:
           # Build-time-only placeholder so env.ts's client-var inlining has a
           # well-formed URL. Never a real deployment target.
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+
+  security-policy:
+    name: security-policy
+    needs: quality-install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      # PRV-01: fails if any file outside the reviewed allowlist reads
+      # process.env directly instead of going through src/env.ts. AST-based
+      # (tools/security-policy/check-raw-env-access.mjs + the shared,
+      # unit-tested detector in src/lib/security-policy/raw-env-access.ts) —
+      # not a text/regex scan, which produces false positives on strings
+      # like a test asserting some file doesn't contain "process.env".
+      - run: npm run security:raw-env-access
 
   database-fresh-migrations:
     name: database-fresh-migrations
