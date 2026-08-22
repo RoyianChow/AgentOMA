@@ -4,7 +4,7 @@
 
 **Observed HEAD:** `1ce2c9ace894f5c2a745f15fa901fe2fc6acc138`
 
-**Status:** `FIRST_CI_SLICE_MERGED / CONTROL_PLANE_INCOMPLETE`  
+**Status:** `FIRST_CI_SLICE_MERGED / CONTROL_PLANE_INCOMPLETE`
 **Production release authority:** not granted
 
 ## Authorization boundary

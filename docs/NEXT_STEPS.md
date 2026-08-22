@@ -12,10 +12,11 @@ This file lists the next executable outcomes; it grants no approval.
 
 ## P0 - production blockers
 
-1. **Resolve the Task 01 production-invariance failure.** The current merged
-   candidate returns `SBX_INVARIANCE_DENIED:routeShape`. Determine the exact
-   route delta and whether it is authorized. Do not weaken the verifier or
-   regenerate its baseline from this candidate simply to obtain PASS.
+1. **Resolve the remaining Task 01 production-invariance failure.** AI-RX-06
+   has been retired and route-shape comparison now passes. The verifier stops
+   on `SBX_INVARIANCE_DENIED:productionScriptsHash`; classify and approve the
+   exact script evolution without weakening the verifier or replacing the
+   original baseline.
 2. **Finish the Task 02 predecessor/restart gate.** Freeze a new clean SHA,
    obtain an exact unexpired G1-D, and run the single approved harness. Never
    rerun an evidence-bound candidate or manually edit migration history.
@@ -112,8 +113,9 @@ Task 11 records decisions; it never grants or self-approves them.
   courier, dispensing, or claim effect.
 - Keep Task 09 interfaces disabled; `/api/fhir` remains 403 and allowlists stay
   empty.
-- Record the Task 10A AI-RX-06 retire-or-rebuild decision before changing the
-  production-tree experiment.
+- Preserve the completed AI-RX-06 retirement. Do not restore it or create a
+  replacement without a new Task 10 decision, changed-candidate Task 01
+  approval, and Task 11 review.
 - Continue Tasks 12-14 as design-only work under their briefs. No runtime
   drill, participant study, automated regulatory interpretation, or protected
   clinical/billing change is authorized.

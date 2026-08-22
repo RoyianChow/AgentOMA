@@ -24,19 +24,20 @@ At the observed HEAD:
 
 - `npm run typecheck`: PASS;
 - `npm run lint`: PASS;
-- `npm run test:pure`: PASS, 22 files / 306 tests;
+- `npm run test:pure`: PASS, 15 files / 152 tests;
 - `npm run build`: PASS;
 - `npm run sandbox:verify`: PASS, 40 files / 606 tests plus boundary check;
 - `npm run sandbox:verify-evidence`: PASS;
 - `npm run sandbox:verify-production`: **FAIL**, safe reason
-  `SBX_INVARIANCE_DENIED:routeShape`;
+  `SBX_INVARIANCE_DENIED:productionScriptsHash`; route-shape comparison passes
+  after AI-RX-06 retirement;
 - `npm run sandbox:build`: **BLOCKED** by fail-closed environment/lifecycle
   controls; and
 - real-PostgreSQL suites: NOT RUN in this pass.
 
 Do not convert the production-invariance failure to PASS by regenerating its
-baseline from this candidate. The route-shape delta requires Task 01/Task 11
-review.
+baseline from this candidate. The remaining production-script delta requires
+Task 01/Task 11 review.
 
 ## Newly merged work
 
@@ -72,12 +73,12 @@ or access live Supabase under a test-only approval.
 
 | Lane | Next action |
 |---|---|
-| Task 01 | Investigate the route-shape invariance failure; preserve the verifier and baseline |
+| Task 01 | Route-shape isolation is restored; classify the remaining `productionScriptsHash` delta without changing the original baseline |
 | Task 02 | Prepare the next exact G1-D candidate and resolve S27 |
 | Task 03 / 05 | Reconcile the existing unmerged branches before new implementation |
 | Task 04 | Complete and independently sign the v3 renewal before runtime or further code |
 | Task 06 | Obtain renewed sandbox authority and complete browser/accessibility and independent review evidence |
-| Task 10 | Record the exact AI-RX-06 retire/rebuild disposition before changing it |
+| Task 10 | AI-RX-06 is retired; preserve the removal and require a new decision for any future candidate |
 | Task 11 | Complete security, accessibility, evidence, aggregate-gate and branch-protection controls |
 
 ## Standing fences

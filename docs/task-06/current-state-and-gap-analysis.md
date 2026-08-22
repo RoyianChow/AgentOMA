@@ -4,7 +4,7 @@
 
 **Observed HEAD:** `1ce2c9ace894f5c2a745f15fa901fe2fc6acc138`
 
-**Status:** `SYNTHETIC_PROTOTYPE_MERGED / BLOCKED_FROM_RUNTIME_AND_PROMOTION`  
+**Status:** `SYNTHETIC_PROTOTYPE_MERGED / BLOCKED_FROM_RUNTIME_AND_PROMOTION`
 **Production authorization:** none
 
 ## What changed

@@ -1,12 +1,12 @@
 # Task 02A — Record Governance Integrity and UX Remediation
 
-**Parent:** [Task 02 — P0 Production Readiness](TASK-02-p0-production-readiness.md)  
-**Route:** `/pharmacist/governance`  
-**Priority:** P0 for database-role and destruction controls; P1 for workflow and UX  
-**Owner profile:** senior backend/database developer paired with a product/UI developer  
-**Required reviewers:** Product Lead, Security/Privacy, Operations/SRE, Quality/Test, and Task 11  
-**Status:** `BLOCKED_APPROVAL_REQUIRED`  
-**Audit baseline:** `625b9f6f4fde22aad3d5a87ae0712c1e7cb30c97`  
+**Parent:** [Task 02 — P0 Production Readiness](TASK-02-p0-production-readiness.md)
+**Route:** `/pharmacist/governance`
+**Priority:** P0 for database-role and destruction controls; P1 for workflow and UX
+**Owner profile:** senior backend/database developer paired with a product/UI developer
+**Required reviewers:** Product Lead, Security/Privacy, Operations/SRE, Quality/Test, and Task 11
+**Status:** `BLOCKED_APPROVAL_REQUIRED`
+**Audit baseline:** `625b9f6f4fde22aad3d5a87ae0712c1e7cb30c97`
 **Audit date:** 2026-08-19
 
 **Status reviewed:** 2026-08-20 — no Task 02A remediation implementation was
@@ -496,4 +496,3 @@ existing migration, and manual migration-history changes remain prohibited.
 
 At every slice boundary, update the handoff with the tested SHA, approvals,
 commands/results, blocked decisions, migration effects, and next safe action.
-

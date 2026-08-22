@@ -19,18 +19,18 @@ production release decision.
 |---|---|
 | `npm run typecheck` | PASS |
 | `npm run lint` | PASS |
-| `npm run test:pure` | PASS - 22 files, 306 tests |
+| `npm run test:pure` | PASS - 15 files, 152 tests |
 | `npm run build` | PASS - production route manifest generated |
 | `npm run sandbox:verify` | PASS - typecheck, lint, 40 files / 606 non-Postgres tests, boundary verification |
 | `npm run sandbox:verify-evidence` | PASS - 18 controls accepted by the committed evidence validator |
-| `npm run sandbox:verify-production` | **FAIL - `SBX_INVARIANCE_DENIED:routeShape`** |
+| `npm run sandbox:verify-production` | **FAIL - `SBX_INVARIANCE_DENIED:productionScriptsHash`; route shape passes after AI-RX-06 retirement** |
 | `npm run sandbox:build` | NOT RUN - the embedded Task 04 approval window is expired and no new runtime authority was inferred |
 | Root and sandbox real-PostgreSQL suites | NOT RUN in this documentation pass |
 
-The production-invariance failure is an active Task 01/Task 11 review item. Do
-not recapture the baseline from the current candidate merely to make it pass.
-Identify and approve the legitimate production-route delta, or remove the
-unauthorized delta, then regenerate evidence through the Task 01 process.
+The remaining production-invariance failure is an active Task 01/Task 11
+review item. Do not recapture the baseline from the current candidate merely
+to make it pass. The unauthorized route has been removed; classify the exact
+production-script evolution without changing the original baseline.
 
 ## Merge review - 2026-08-19
 
@@ -72,7 +72,7 @@ accounts, services, or external effects.
 
 | Task | Current repository state | Next authorized or required step |
 |---|---|---|
-| 01 - Sandbox | Prior evidence candidate PASS; current changed candidate has green unit/boundary checks but production invariance FAILS and runtime approval is expired | Investigate route-shape delta without weakening the verifier; renew exact scope before runtime; produce new candidate-bound evidence |
+| 01 - Sandbox | Prior evidence candidate PASS; route shape restored; current production invariance fails on `productionScriptsHash` and runtime approval is expired | Classify the exact script delta without changing the original baseline; renew exact scope before runtime; produce new candidate-bound evidence |
 | 02 - P0 readiness | BLOCKED - code and `0018` are merged but live deployment gates remain | Follow the exact G1-D -> predecessor/restart -> S27 -> Task 11 -> recovery -> G1-L -> live verify -> G4 sequence |
 | 03 - Command centre | NOT MERGED as a dedicated capability; a separate local branch exists | Reconcile/review that branch before duplicate work; keep the maintained checkout status `NOT RUN` |
 | 04 - Booking/waitlist | PARTIAL SYNTHETIC IMPLEMENTATION MERGED; `/book` now exists in the sandbox | Complete an exact, signed, unexpired v3 renewal and independent reviews before any runtime, migration, Docker, evidence-promotion, or further implementation |
@@ -81,7 +81,7 @@ accounts, services, or external effects.
 | 07 - Messaging | DOCUMENTATION A-I COMPLETE | Workstream J privacy/security/audit/retention design; no provider or recipient runtime |
 | 08 - Fulfilment | NOT RUN | Contracts/state machines and approved synthetic tests only |
 | 09 - Interoperability | DISABLED / DESIGN ONLY | Keep `/api/fhir` at 403 and all allowlists empty |
-| 10 - Bounded AI | AI-RX-06 remains in the production tree, default-off | Record the exact retire-or-rebuild decision; do not expand the route |
+| 10 - Bounded AI | AI-RX-06 `RETIRED`; production route, navigation, runtime, config, tests and scorecard removed | Preserve retirement; any future experiment requires a new Task 10 decision and belongs in the isolated sandbox |
 | 11 - Release control | FIRST CI SLICE MERGED | Add security policy/secret/dependency checks, accessibility, evidence validation, aggregate release gate, independent review, and verified branch-protection configuration |
 | 12 - Resilience | DESIGN ONLY | Discovery and synthetic test-plan work under its task gates |
 | 13 - Human factors | DESIGN ONLY | Hazard/training/study design; no participants or pilot without approval |
@@ -130,8 +130,8 @@ promotion review remain open.
 
 ## Safe next order
 
-1. Resolve the current Task 01 production-invariance failure without
-   rebaselining from an unapproved candidate.
+1. Resolve the remaining Task 01 `productionScriptsHash` failure without
+   replacing the original baseline or weakening the verifier.
 2. Keep Task 02 and the remaining Task 11 controls as release-critical lanes.
 3. Complete Task 04 v3 renewal and independent reviews before running or
    extending booking code.
@@ -139,8 +139,7 @@ promotion review remain open.
    work in those areas.
 5. Renew the sandbox and complete Task 06 browser/accessibility evidence only
    under an exact approval.
-6. Record and execute the Task 10A retire-or-rebuild decision in a separate
-   reviewed change.
+6. Preserve the completed Task 10A retirement; no replacement is authorized.
 7. Continue Task 07 Workstream J and design-only Tasks 08, 12, 13, and 14
    within their stated boundaries.
 

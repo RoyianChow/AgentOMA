@@ -4,8 +4,8 @@
 
 **Observed HEAD:** `1ce2c9ace894f5c2a745f15fa901fe2fc6acc138`
 
-**Status:** `PARTIAL_IMPLEMENTATION_MERGED / BLOCKED_MISSING_RENEWAL_APPROVAL`  
-**Risk/autonomy:** `R3` / `A3_BOUNDED_AUTOMATION`  
+**Status:** `PARTIAL_IMPLEMENTATION_MERGED / BLOCKED_MISSING_RENEWAL_APPROVAL`
+**Risk/autonomy:** `R3` / `A3_BOUNDED_AUTOMATION`
 **Production authorization:** none
 
 ## Controlling decision state

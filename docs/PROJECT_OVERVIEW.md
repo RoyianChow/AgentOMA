@@ -6,12 +6,13 @@
 
 **Verification at this snapshot:** observed repository baseline
 `1ce2c9ace894f5c2a745f15fa901fe2fc6acc138` on `origin/main` is TypeScript- and
-ESLint-clean, passes 306/306 pure production tests, builds successfully, and
+ESLint-clean, passes 152/152 pure production tests, builds successfully, and
 passes the sandbox's 606 non-Postgres tests plus source-boundary verification.
-The current production-invariance check fails closed with
-`SBX_INVARIANCE_DENIED:routeShape`, and the sandbox build remains blocked by
-expired/incomplete runtime authority. Real-PostgreSQL suites were not rerun in
-this documentation audit. The last recorded complete database evidence remains the
+The AI-RX-06 retirement removes the unauthorized production route. Production
+invariance now advances past route shape and fails closed on the separately
+reviewed `productionScriptsHash` delta, while the sandbox build remains blocked
+by expired/incomplete runtime authority. Real-PostgreSQL suites were not rerun
+in this documentation audit. The last recorded complete database evidence remains the
 211-test exact candidate `dcaab91f9adba7457a85214d51d1614c8560f404`, with
 fresh replay through `0018`, atomic audit rollback, isolation, immutability,
 concurrency, red-flag zero-claim, referral separation, reference-derived
@@ -36,7 +37,6 @@ AgentOMA supports Ontario pharmacy minor-ailment services. The Ministry of Healt
 | Pharmacist portal | `/pharmacist/*` | Intake retrieval, patient identity, assessment, claim draft, follow-up, audit, settings, team | Contains PHI; authenticated, pharmacy-scoped, private/no-store, and same-origin-script only |
 | Follow-up worklist | `/pharmacist/follow-ups` | Due/overdue plans, attempts, evaluation, disposition, and immutable correction | Server-rendered; pharmacist/admin role and pharmacy scope rechecked on every mutation |
 | Record governance | `/pharmacist/governance` | Admin-only retention, export, hold, correction, destruction-review, audit-failure, and restore-drill controls | Server-rendered; complete exports use an authenticated download route |
-| Rx intake experiment | `/pharmacist/rx-intake` | Off by default. Deterministic extraction over a built-in synthetic prescription corpus, for evaluation only | Zero PHI by construction: no upload, no free text, no persistence |
 | FHIR route | `/api/fhir` | Preserved export scaffold | Disabled with `403`; not available to clients |
 
 Next.js route groups isolate layouts without changing URLs:
@@ -173,14 +173,13 @@ jobs. Secret/dependency/policy scanning, accessibility, evidence validation,
 the aggregate release gate, branch-protection verification, and independent
 review remain open.
 
-One production-tree experiment also remains: **AI-RX-06**, a deterministic
-prescription-document parser at `/pharmacist/rx-intake`, disabled by default and
-restricted to a built-in synthetic corpus. It contains no model, no vendor, no
-network call, and no persistence, and it is **not** one of the five chartered
-Task 10 candidates — it has no charter, no pharmacist evaluation, and no approval
-for any real document. See
-[`docs/task-10/AI-RX-06-synthetic-prescription-extraction.md`](task-10/AI-RX-06-synthetic-prescription-extraction.md)
-for its boundary and the approvals it still needs.
+The unchartered AI-RX-06 prescription-extraction experiment was retired under
+the Product Lead decision recorded on 2026-08-20. Its production route,
+navigation, parser, fixture corpus, feature configuration, scorecard, and tests
+were removed without creating a replacement. The historical design record is
+retained at
+[`docs/task-10/AI-RX-06-synthetic-prescription-extraction.md`](task-10/AI-RX-06-synthetic-prescription-extraction.md),
+and the binding retirement decision is under `docs/task-10/decisions/`.
 
 These task files are plans, not live surfaces. Unless a capability also appears
 in this overview and [`COMPLETED_WORK.md`](COMPLETED_WORK.md), assume it is not
