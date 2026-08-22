@@ -247,6 +247,74 @@
   border-radius: var(--radius-sm);
 }
 
+/* Public synthetic tour entry. It is visually separate from authentication so
+   visitors cannot mistake it for a lower-security portal sign-in method. */
+.guestPanel {
+  padding: 1.25rem;
+  color: var(--text-primary);
+  background: var(--primary-light);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-lg);
+}
+
+.guestTag {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.guestTitle {
+  margin: 0 0 0.35rem;
+  color: var(--text-primary);
+  font-size: 1.05rem;
+  line-height: 1.3;
+}
+
+.guestCopy,
+.guestBoundary {
+  color: var(--text-muted, #64748b);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.guestCopy {
+  margin: 0 0 0.9rem;
+}
+
+.guestLink {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  color: #ffffff;
+  background: var(--primary);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-weight: 750;
+  text-align: center;
+  text-decoration: none;
+  transition: background 120ms ease, transform 120ms ease;
+}
+
+.guestLink:hover {
+  background: var(--primary-hover);
+}
+
+.guestLink:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--bg-secondary), 0 0 0 5px var(--primary);
+}
+
+.guestBoundary {
+  margin: 0.65rem 0 0;
+  text-align: center;
+}
+
 /* ── Footer ────────────────────────────────────────────────────────────── */
 
 .footnote {
@@ -263,5 +331,11 @@
   }
   .shell {
     padding: 1.25rem 0.9rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guestLink {
+    transition: none;
   }
 }
