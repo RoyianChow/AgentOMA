@@ -13,6 +13,11 @@
 > tests. Its promotion remains **BLOCKED** pending exact-candidate Task 11
 > review. Do not apply the historical PASS to this candidate.
 
+PR #56 merged the remediation as `e1c7973086a0223e72ac90e01c33cd85fa407b67`
+on 2026-08-22. All reported PR checks passed, but no independent PR review was
+recorded. Merge and CI success do not satisfy the required Task 11 promotion
+review.
+
 Start with:
 
 1. [`current-state-and-gap-analysis.md`](current-state-and-gap-analysis.md)

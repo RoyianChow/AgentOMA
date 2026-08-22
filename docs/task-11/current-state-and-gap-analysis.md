@@ -1,10 +1,10 @@
 # Task 11 - Current State and Gap Analysis
 
-**Reconciled:** 2026-08-20
+**Reconciled:** 2026-08-22
 
-**Observed HEAD:** `1ce2c9ace894f5c2a745f15fa901fe2fc6acc138`
+**Observed HEAD:** `e1c7973086a0223e72ac90e01c33cd85fa407b67`
 
-**Status:** `FIRST_CI_SLICE_MERGED / CONTROL_PLANE_INCOMPLETE`
+**Status:** `INCREMENTAL_CI_SLICE_MERGED / CONTROL_PLANE_INCOMPLETE`
 **Production release authority:** not granted
 
 ## Authorization boundary
@@ -16,7 +16,8 @@ control plane to approve its own work. See
 
 ## Merged CI slice
 
-PR #31 added `.github/workflows/ci.yml`. It runs on pull requests and pushes to
+PR #31 added `.github/workflows/ci.yml`, and the later Task 11 slice added the
+raw-environment policy job. It runs on pull requests and pushes to
 `main`, uses read-only repository permissions, cancels superseded runs, pins
 Node 22 through `actions/setup-node`, and uses `npm ci --ignore-scripts`.
 
@@ -28,7 +29,8 @@ Stable job IDs now present:
 4. `quality-pure-tests`;
 5. `quality-build`;
 6. `database-fresh-migrations`; and
-7. `database-constraints`.
+7. `database-constraints`; and
+8. `security-policy` (currently PRV-01 raw-environment access only).
 
 Both database jobs use the disposable loopback Docker PostgreSQL suite and run
 cleanup with `if: always()`. The two jobs currently execute the same full test
@@ -45,10 +47,10 @@ Local checks at the observed HEAD:
 | `npm run lint` | PASS |
 | `npm run test:pure` | PASS - 22 files / 306 tests |
 | `npm run build` | PASS |
-| `npm run sandbox:verify` | PASS - 40 files / 606 tests plus boundary |
+| `npm run sandbox:verify` | PASS - 40 files / 614 tests plus boundary |
 | `npm run sandbox:verify-evidence` | PASS |
-| `npm run sandbox:verify-production` | FAIL - `SBX_INVARIANCE_DENIED:routeShape` |
-| Root/database CI jobs on GitHub | NOT VERIFIED in this local documentation pass |
+| `npm run sandbox:verify-production` | PASS on Task 01 candidate `2358570a...` |
+| PR #56 GitHub checks | PASS - quality, security-policy, database, sandbox boundary/invariance, GitGuardian, SonarCloud and Vercel checks reported success |
 
 The earlier Task 02 fixture/assertion mismatch is corrected in the maintained
 tree: the version-2 record test now expects the self-report status derived from
@@ -68,11 +70,12 @@ its fixture. This does not substitute for a fresh GitHub database run.
 | Control catalogue | Stable IDs, applicability, test/evidence mapping and non-waivable classification |
 | Independent review | Quality, security, privacy, accessibility, operations and professional/legal roles as applicable |
 | Branch protection | Verify the required job IDs against repository settings; do not infer from workflow presence |
-| Production invariance | Resolve current route-shape failure without weakening or casual rebaseline |
+| Production invariance review | Review candidate `2358570a...` and its SBX-04/SBX-13 evidence; merge and green CI do not replace independent promotion review |
 
 ## Known release blockers
 
-- Task 01 production-invariance currently fails for the merged candidate.
+- Task 01 technical remediation is merged and green, but exact-candidate Task
+  11 promotion review remains unrecorded.
 - Task 02 remains blocked before live migration `0018`.
 - Task 04's v3 renewal is a draft and its prior runtime authority expired.
 - Task 06 is merged as synthetic code but lacks renewed runtime authority and
@@ -82,12 +85,13 @@ its fixture. This does not substitute for a fresh GitHub database run.
 
 ## Next slice
 
-1. Triage the production-route shape delta with Task 01.
+1. Complete Task 11 review of Task 01 candidate `2358570a...` and its changed-control evidence.
 2. Add the missing security and policy jobs without renaming existing stable
    job IDs.
 3. Add evidence-schema validation and the fail-closed aggregate release gate.
-4. Verify GitHub branch-protection required checks through an authorized repo
-   administrator and capture payload-free evidence.
+4. Configure the approved required status checks and admin enforcement for
+   `main`, then capture payload-free evidence. The GitHub API currently shows
+   one required approval but no required-check contexts and no admin enforcement.
 5. Obtain independent review bound to the exact candidate before any promotion
    status changes.
 

@@ -6,12 +6,13 @@ production release decision.
 
 **Snapshot date:** 2026-08-22
 
-**Observed implementation candidate:**
-`2358570aa9eae45b7b4403fe0a262f06c9dc36c0` on
-`codex/task-01-ci-gates`, based on
-`af2473c546b11c5097597733530be698f7b8588a`
+**Observed code baseline:** `origin/main` at
+`e1c7973086a0223e72ac90e01c33cd85fa407b67`
 
-**Documentation branch:** `codex/task-01-ci-gates`
+**Task 01 remediation implementation candidate:**
+`2358570aa9eae45b7b4403fe0a262f06c9dc36c0`
+
+**Documentation branch:** `codex/update-task-docs-2026-08-22`
 
 **Worktree at capture:** clean before this documentation audit
 
@@ -31,9 +32,11 @@ production release decision.
 
 The Task 01 CI remediation is implemented and locally verified. Separate
 SBX-04 and SBX-13 red/green evidence is bound to candidate `2358570a...`.
-Promotion remains **BLOCKED** pending changed-candidate Task 11 review. The
-historical Task 01 manifest remains unchanged and its PASS does not transfer
-to this candidate.
+PR #56 merged it as `e1c79730...`, and every reported PR check passed.
+Promotion remains **BLOCKED** pending changed-candidate Task 11 review. No PR
+review was recorded on #56, so merge is not evidence of independent review.
+The historical Task 01 manifest remains unchanged and its PASS does not
+transfer to this candidate.
 
 ## Merge review - 2026-08-19
 
@@ -43,7 +46,8 @@ to this candidate.
 | PR #47 | Task 04 renewal proposal and v3 review draft | Renewal remains `DRAFT - NOT GRANTED` |
 | PR #48 | Synthetic `/book` catalog, availability, booking UI, server actions, and tests | Code is merged but runtime remains blocked by expired/missing approval |
 | PR #44 | Task 06 synthetic virtual-care routes, fixtures, guards, UI, docs, and tests | Synthetic implementation is merged; production and promotion remain blocked |
-| PR #31 | First Task 11 CI workflow slice | Seven quality/database jobs now exist; the full control plane does not |
+| PR #31 | First Task 11 CI workflow slice | Initially established seven stable quality/database job identities; the full control plane still does not exist |
+| PR #56 | Task 01 build-phase env boundary and production-runtime-script invariance remediation | CI is green and candidate-bound SBX-04/SBX-13 evidence exists; promotion remains blocked pending Task 11 review |
 
 PR #49 subsequently merged the 2026-08-19 documentation reconciliation only.
 No additional runtime capability was introduced after the verified
@@ -75,7 +79,7 @@ accounts, services, or external effects.
 
 | Task | Current repository state | Next authorized or required step |
 |---|---|---|
-| 01 - Sandbox | Historical evidence candidate PASS; CI remediation candidate `2358570a...` passes sandbox build and production invariance with red/green SBX-04/SBX-13 evidence | Obtain exact-candidate Task 11 review before promotion; do not transfer or rewrite the historical PASS |
+| 01 - Sandbox | Historical evidence candidate PASS; remediation is merged and CI-green with candidate-bound SBX-04/SBX-13 evidence | Obtain exact-candidate Task 11 review before promotion; do not transfer or rewrite the historical PASS |
 | 02 - P0 readiness | BLOCKED - code and `0018` are merged but live deployment gates remain | Follow the exact G1-D -> predecessor/restart -> S27 -> Task 11 -> recovery -> G1-L -> live verify -> G4 sequence |
 | 03 - Command centre | NOT MERGED as a dedicated capability; a separate local branch exists | Reconcile/review that branch before duplicate work; keep the maintained checkout status `NOT RUN` |
 | 04 - Booking/waitlist | PARTIAL SYNTHETIC IMPLEMENTATION MERGED; `/book` now exists in the sandbox | Complete an exact, signed, unexpired v3 renewal and independent reviews before any runtime, migration, Docker, evidence-promotion, or further implementation |
@@ -85,7 +89,7 @@ accounts, services, or external effects.
 | 08 - Fulfilment | NOT RUN | Contracts/state machines and approved synthetic tests only |
 | 09 - Interoperability | DISABLED / DESIGN ONLY | Keep `/api/fhir` at 403 and all allowlists empty |
 | 10 - Bounded AI | AI-RX-06 `RETIRED`; production route, navigation, runtime, config, tests and scorecard removed | Preserve retirement; any future experiment requires a new Task 10 decision and belongs in the isolated sandbox |
-| 11 - Release control | FIRST CI SLICE MERGED | Add security policy/secret/dependency checks, accessibility, evidence validation, aggregate release gate, independent review, and verified branch-protection configuration |
+| 11 - Release control | INCREMENTAL CI SLICE MERGED | Complete security policy plus secret/dependency checks, accessibility, evidence validation, aggregate release gate, independent review, and required-check branch protection |
 | 12 - Resilience | DESIGN ONLY | Discovery and synthetic test-plan work under its task gates |
 | 13 - Human factors | DESIGN ONLY | Hazard/training/study design; no participants or pilot without approval |
 | 14 - Regulatory change | DESIGN ONLY | Source/provenance/impact design; no automated interpretation or protected-source changes |
@@ -122,14 +126,20 @@ integration, production migration, or release approval is inferred.
 ## Task 11 detail
 
 `.github/workflows/ci.yml` now runs lockfile install, TypeScript, ESLint, pure
-tests, production build, fresh-migration tests, and database-constraint tests
-on pull requests and pushes to `main`. The workflow uses read-only repository
-permissions and cancels stale runs.
+tests, production build, raw-environment policy, fresh-migration tests, and
+database-constraint tests on pull requests and pushes to `main`. The workflow
+uses read-only repository permissions and cancels stale runs.
 
-It does not yet implement the full Task 11 contract: secret/dependency/policy
-scanning, automated accessibility, release-evidence validation, aggregate
-release gate, capability/control catalogues, or exact-candidate independent
-promotion review remain open.
+It does not yet implement the full Task 11 contract: secret/dependency scans,
+the remaining forbidden-import and PHI/logging policy controls, automated
+accessibility, release-evidence validation, aggregate release gate,
+capability/control catalogues, and exact-candidate independent promotion
+review remain open.
+
+Repository settings were read through the GitHub API on 2026-08-22. `main`
+requires one approving review and blocks force-pushes and deletion, but it has
+no required status-check contexts and does not enforce protection for admins.
+Branch protection is therefore verified as **incomplete**, not PASS.
 
 ## Safe next order
 
