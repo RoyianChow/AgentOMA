@@ -1,0 +1,13 @@
+{
+  "control": "SBX-13",
+  "run": "red",
+  "testedSha": "2358570aa9eae45b7b4403fe0a262f06c9dc36c0",
+  "command": "npm run verify-production --workspace @agentoma/experiment-sandbox",
+  "startedAt": "2026-08-22T09:23:50.5922126Z",
+  "finishedAt": "2026-08-22T09:23:52.1444245Z",
+  "exitCode": 1,
+  "environment": "Disposable detached worktree with the candidate production build output; no credentials, PHI, external resources, or hosted preview.",
+  "safeMutation": "Changed only the production start command in the disposable worktree; the mutation was never committed.",
+  "safeReason": "SBX_INVARIANCE_DENIED:productionRuntimeScriptsHash",
+  "safeSummary": "Production invariance rejected the changed production runtime command while ignoring unrelated test, security, database, and sandbox script additions."
+}

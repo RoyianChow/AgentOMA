@@ -1,0 +1,13 @@
+{
+  "control": "SBX-13",
+  "run": "green",
+  "testedSha": "2358570aa9eae45b7b4403fe0a262f06c9dc36c0",
+  "command": "npm run sandbox:verify-production",
+  "startedAt": "2026-08-22T09:24:08.8913530Z",
+  "finishedAt": "2026-08-22T09:24:11.6511063Z",
+  "exitCode": 0,
+  "environment": "Primary candidate worktree with a fresh production build; no credentials, PHI, external resources, or hosted preview.",
+  "baselineSourceCommit": "7737ef26f09fec858d23337885ca7d31e9ccbc64",
+  "productionRuntimeScriptsHash": "6bd4bb2bbc2165ffee56a5e988b00440deef418801b467173087c78a4418df14",
+  "safeSummary": "Production invariance passed. The expected runtime-script hash was calculated from the original pre-sandbox baseline commit using the same canonicalization function."
+}

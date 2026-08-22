@@ -6,12 +6,12 @@
 **G2 hosted preview:** NOT REQUESTED; SBX-14 is NOT APPLICABLE
 **G3 production-import allowlist:** empty
 
-> **Current-candidate warning (2026-08-20):** the PASS below belongs only to
-> its recorded historical candidate. At merged HEAD
-> `1ce2c9ace894f5c2a745f15fa901fe2fc6acc138`, unit/boundary checks pass but
-> `sandbox:verify-production` fails closed with
-> `SBX_INVARIANCE_DENIED:routeShape`, and runnable sandbox authority is
-> expired. Do not apply the historical PASS to the current candidate.
+> **Current-candidate warning (2026-08-22):** the PASS below belongs only to
+> its recorded historical candidate. CI remediation candidate
+> `2358570aa9eae45b7b4403fe0a262f06c9dc36c0` passes the local sandbox build,
+> production-invariance check, and changed-control SBX-04/SBX-13 red/green
+> tests. Its promotion remains **BLOCKED** pending exact-candidate Task 11
+> review. Do not apply the historical PASS to this candidate.
 
 Start with:
 

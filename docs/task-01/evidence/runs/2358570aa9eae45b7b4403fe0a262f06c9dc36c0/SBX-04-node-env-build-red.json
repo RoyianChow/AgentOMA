@@ -1,0 +1,13 @@
+{
+  "control": "SBX-04",
+  "run": "red",
+  "testedSha": "2358570aa9eae45b7b4403fe0a262f06c9dc36c0",
+  "command": "npm run sandbox:build",
+  "startedAt": "2026-08-22T09:22:23.1125795Z",
+  "finishedAt": "2026-08-22T09:23:15.5149673Z",
+  "exitCode": 1,
+  "environment": "Disposable detached worktree; authored-synthetic loopback configuration; production credentials removed from the child process; no PHI or external resources.",
+  "safeMutation": "Removed recognition of Next.js phase-production-build during prerendering without committing the mutation.",
+  "safeReason": "SANDBOX_CONFIG_DENIED:PRODUCTION_NODE_ENV",
+  "safeSummary": "The sandbox build failed during prerendering when the final framework build-phase recognition was absent. No callback, credential, PHI, external destination, or unsafe value was logged."
+}
