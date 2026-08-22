@@ -1,17 +1,17 @@
 Task 01 — Enforce the Experimental Sandbox
 
-## Sprint checkpoint — 2026-08-20
+## Sprint checkpoint — 2026-08-22
 
-**Repository state:** the historical evidence candidate is `PASS`; the current
-changed candidate does not inherit it. Unit/boundary checks pass, but
-production invariance fails on route shape and runtime authority is expired.
-**Sprint slice:** identify the route delta, preserve the verifier/baseline,
-renew exact scope, and produce candidate-bound boundary, artifact, evidence,
-runtime, and production-invariance results.
-**Exit:** documentation agrees with evidence and any new candidate has complete
-red/green and root verification. No hosted preview or production import is in
-scope. See [`CURRENT-IMPLEMENTATION-STATUS.md`](CURRENT-IMPLEMENTATION-STATUS.md)
-for current sequencing.
+**Repository state:** the historical evidence candidate remains `PASS` only
+for its recorded SHA. PR #56 merged candidate `2358570a...` and its local and
+CI build/invariance checks pass with separate SBX-04 and SBX-13 red/green
+evidence. The historical manifest was not rewritten.
+**Sprint slice:** exact-candidate Task 11 evidence review and promotion decision.
+**Exit:** Task 11 review is recorded against the candidate and evidence, or the
+changed candidate remains `BLOCKED`. No hosted preview, G2/G3, production use,
+real data, credential, or external integration is in scope. See
+[`CURRENT-IMPLEMENTATION-STATUS.md`](CURRENT-IMPLEMENTATION-STATUS.md) for
+current sequencing.
 
 Version: 3 · supersedes Task 01 v2 · 2026-07-30Owner profile: platform/security developerRequired reviewers: product lead and security/privacy reviewerPriority: P0 foundation — blocks every later experimental capabilityStatus: repository discovery may start; implementation is approval-gatedProduction authorization: none
 

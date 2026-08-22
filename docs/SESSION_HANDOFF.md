@@ -1,10 +1,10 @@
 # Session handoff
 
-**Updated:** 2026-08-20
+**Updated:** 2026-08-22
 
 **Observed code baseline:** `origin/main`
 
-**Observed baseline HEAD:** `1ce2c9ace894f5c2a745f15fa901fe2fc6acc138`
+**Observed baseline HEAD:** `e1c7973086a0223e72ac90e01c33cd85fa407b67`
 
 **Release status:** **BLOCKED - DO NOT PROMOTE**
 
@@ -26,18 +26,18 @@ At the observed HEAD:
 - `npm run lint`: PASS;
 - `npm run test:pure`: PASS, 15 files / 152 tests;
 - `npm run build`: PASS;
-- `npm run sandbox:verify`: PASS, 40 files / 606 tests plus boundary check;
+- `npm run sandbox:verify`: PASS, 40 files / 614 tests plus boundary check;
 - `npm run sandbox:verify-evidence`: PASS;
-- `npm run sandbox:verify-production`: **FAIL**, safe reason
-  `SBX_INVARIANCE_DENIED:productionScriptsHash`; route-shape comparison passes
-  after AI-RX-06 retirement;
-- `npm run sandbox:build`: **BLOCKED** by fail-closed environment/lifecycle
-  controls; and
+- `npm run sandbox:verify-production`: PASS for Task 01 implementation
+  candidate `2358570a...`;
+- `npm run sandbox:build`: PASS with `NODE_ENV=production` limited to the
+  exact Next.js build phase; startup/runtime remains denied; and
 - real-PostgreSQL suites: NOT RUN in this pass.
 
-Do not convert the production-invariance failure to PASS by regenerating its
-baseline from this candidate. The remaining production-script delta requires
-Task 01/Task 11 review.
+PR #56 derived its production-runtime-script hash from original baseline
+`7737ef26...`, not the changed candidate. Its technical checks and red/green
+evidence pass, but promotion remains blocked pending exact-candidate Task 11
+review. No independent PR review was recorded on #56.
 
 ## Newly merged work
 
@@ -45,7 +45,8 @@ Task 01/Task 11 review.
 - Task 04's synthetic `/book` UI is merged, but its v3 renewal remains an
   unsigned draft and the previous approval expired.
 - Task 06's synthetic virtual-care prototype and documentation are merged.
-- Task 11's first seven-job CI workflow slice is merged.
+- Task 11's eight-job incremental CI workflow is merged, including the
+  raw-environment policy check.
 
 Merged code is not production authorization. Task 04 and Task 06 remain local,
 synthetic, fail-closed capabilities with no production data, credentials,
@@ -73,13 +74,13 @@ or access live Supabase under a test-only approval.
 
 | Lane | Next action |
 |---|---|
-| Task 01 | Route-shape isolation is restored; classify the remaining `productionScriptsHash` delta without changing the original baseline |
+| Task 01 | Complete Task 11 review of candidate `2358570a...` and its SBX-04/SBX-13 evidence; do not transfer the historical PASS |
 | Task 02 | Prepare the next exact G1-D candidate and resolve S27 |
 | Task 03 / 05 | Reconcile the existing unmerged branches before new implementation |
 | Task 04 | Complete and independently sign the v3 renewal before runtime or further code |
 | Task 06 | Obtain renewed sandbox authority and complete browser/accessibility and independent review evidence |
 | Task 10 | AI-RX-06 is retired; preserve the removal and require a new decision for any future candidate |
-| Task 11 | Complete security, accessibility, evidence, aggregate-gate and branch-protection controls |
+| Task 11 | Complete remaining security, accessibility, evidence and aggregate-gate controls; configure required checks and admin enforcement on `main` |
 
 ## Standing fences
 
