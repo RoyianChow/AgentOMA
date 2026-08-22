@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   assertNoSandboxFiles,
+  canonicalizeProductionRuntimeScripts,
   canonicalizeRepositoryPaths,
   hash,
 } from "../../tools/production-invariance.mjs";
@@ -37,5 +38,46 @@ describe("production required-server-files canonicalization", () => {
     expect(() => assertNoSandboxFiles(canonical)).toThrow(
       "SBX_INVARIANCE_DENIED:SANDBOX_FILE_IN_REQUIRED_SERVER_FILES",
     );
+  });
+});
+
+describe("production runtime script canonicalization", () => {
+  const originalScripts = {
+    dev: "next dev",
+    build: "next build",
+    start: "next start",
+    lint: "eslint",
+    test: "vitest run",
+    "db:migrate": "drizzle-kit migrate",
+  };
+
+  it("ignores non-runtime CI, test, database, and sandbox commands", () => {
+    const baseline = canonicalizeProductionRuntimeScripts(originalScripts);
+    const current = canonicalizeProductionRuntimeScripts({
+      ...originalScripts,
+      typecheck: "tsc --noEmit",
+      "security:raw-env-access": "tsx tools/check.ts",
+      "test:db:up": "docker compose up",
+      "sandbox:build": "npm run build --workspace sandbox",
+    });
+
+    expect(current).toEqual(baseline);
+    expect(hash(current)).toBe(hash(baseline));
+  });
+
+  it.each([
+    ["build", "next build --unsafe-change"],
+    ["start", "next start --unsafe-change"],
+    ["prebuild", "node tools/change-production-build.mjs"],
+    ["postinstall", "node tools/change-installed-runtime.mjs"],
+    ["vercel-build", "next build --hosting-override"],
+  ])("detects a production-impacting %s script", (name, command) => {
+    const baseline = canonicalizeProductionRuntimeScripts(originalScripts);
+    const mutated = canonicalizeProductionRuntimeScripts({
+      ...originalScripts,
+      [name]: command,
+    });
+
+    expect(hash(mutated)).not.toBe(hash(baseline));
   });
 });

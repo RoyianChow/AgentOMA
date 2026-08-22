@@ -206,6 +206,11 @@ function isProhibitedEnvironmentKey(key: string): boolean {
 
 export type SandboxPhase = "build" | "startup" | "test";
 
+type SandboxParseOptions = {
+  phase?: SandboxPhase;
+  allowExpired?: boolean;
+};
+
 export type SandboxEnv = {
   mode: "synthetic";
   builtAt: Date;
@@ -244,12 +249,26 @@ function isLocalPath(value: string): boolean {
   return value.startsWith("/") || /^[A-Za-z]:[\\/]/.test(value);
 }
 
-function assertEnvironmentIsAllowed(input: Record<string, string | undefined>): void {
+function assertEnvironmentIsAllowed(
+  input: Record<string, string | undefined>,
+  phase?: SandboxPhase,
+): void {
+  const isNextProductionBuild =
+    phase === "build" ||
+    input.NEXT_PHASE === "phase-production-build";
   for (const [key, value] of Object.entries(input)) {
     // npm adds npm_config_* launcher metadata to script children. It is not
     // forwarded by sandboxChildEnvironment and never configures the app.
     if (/^npm_config_/i.test(key)) continue;
-    if (key.toUpperCase() === "NODE_ENV" && value === "production") {
+    // Next.js sets NODE_ENV=production while compiling. That framework mode
+    // does not grant production deployment authority: only the trusted build
+    // call path may accept it, and every synthetic/lifecycle/credential check
+    // below still applies. Startup, tests, and unknown callers fail closed.
+    if (
+      key.toUpperCase() === "NODE_ENV" &&
+      value === "production" &&
+      !isNextProductionBuild
+    ) {
       throw createSandboxConfigDeniedError("PRODUCTION_NODE_ENV");
     }
     if (key.toUpperCase() === "AZURE_EXTENSION_DIR") {
@@ -286,9 +305,9 @@ function assertDateWindow(
 export function parseSandboxEnv(
   input: Record<string, string | undefined>,
   now = new Date(),
-  options: { allowExpired?: boolean } = {},
+  options: SandboxParseOptions = {},
 ): SandboxEnv {
-  assertEnvironmentIsAllowed(input);
+  assertEnvironmentIsAllowed(input, options.phase);
 
   const parsed = requiredSchema.safeParse(input);
   if (!parsed.success) throw createSandboxConfigDeniedError("MISSING_OR_MALFORMED_VARIABLE");
@@ -309,7 +328,7 @@ export function parseSandboxEnv(
 }
 
 export function loadSandboxEnv(
-  options: { phase?: SandboxPhase; now?: Date; allowExpired?: boolean } = {},
+  options: SandboxParseOptions & { now?: Date } = {},
 ): SandboxEnv {
   // This is the only sandbox source file permitted to read process.env.
   return parseSandboxEnv(process.env, options.now ?? new Date(), options);
@@ -318,7 +337,7 @@ export function loadSandboxEnv(
 export function parseTask04SandboxEnv(
   input: Record<string, string | undefined>,
   now = new Date(),
-  options: { allowExpired?: boolean } = {},
+  options: SandboxParseOptions = {},
 ): Task04SandboxEnv {
   const sandbox = parseSandboxEnv(input, now, {
     ...options,
@@ -378,7 +397,7 @@ export function parseTask04SandboxEnv(
 }
 
 export function loadTask04SandboxEnv(
-  options: { phase?: SandboxPhase; now?: Date; allowExpired?: boolean } = {},
+  options: SandboxParseOptions & { now?: Date } = {},
 ): Task04SandboxEnv {
   return parseTask04SandboxEnv(process.env, options.now ?? new Date(), options);
 }
@@ -455,7 +474,7 @@ export type Task04RunnerEnvironment = {
 export function loadTask04RunnerEnvironment(
   now = new Date(),
 ): Task04RunnerEnvironment {
-  assertEnvironmentIsAllowed(process.env);
+  assertEnvironmentIsAllowed(process.env, "test");
   const npmExecPath = process.env.npm_execpath;
   if (!npmExecPath || !isLocalPath(npmExecPath)) {
     throw new Error(
