@@ -1,6 +1,6 @@
 Task 09 — Production-Grade Authenticated Interoperability and Reviewed System Handoff
 
-## Next-sprint checkpoint — 2026-08-10
+## Sprint checkpoint — 2026-08-20
 
 **Repository state:** `BLOCKED` from enablement; `/api/fhir` remains a disabled
 `403` scaffold and no consumer or endpoint is approved.
@@ -9,7 +9,7 @@ consumer, consent, endpoint, credential, and acknowledgement contracts only.
 **Exit:** every interop route stays disabled, allowlists stay empty, and export
 never recomputes clinical or billing logic. No live conformance or external
 handoff is authorized. See
-[`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md).
+[`CURRENT-IMPLEMENTATION-STATUS.md`](CURRENT-IMPLEMENTATION-STATUS.md).
 
 Version: 3.0Supersedes: Task 09 v2Date: 2026-07-30System: AgentRxOwner profile: senior integration/platform engineerRequired reviewers: security/privacy reviewer, QA engineer, pharmacist reviewer, and Task 11 release authorityPriority: P2; production-blocking for any interoperability capabilityStatus: repository discovery, standards analysis, schemas, and synthetic conformance work may begin within the gates belowProduction authorization: noneRequired end state: every production interoperability route, including /api/fhir, remains fail-closed and returns the approved disabled response; no live consumer, vendor, HNS, dispensing, claim, or clinical-record effect is enabled
 

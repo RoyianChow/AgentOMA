@@ -5,30 +5,26 @@
 **Owner profile:** senior full-stack or applied-AI developer  
 **Required reviewers:** Product Lead, Security/Privacy, pharmacist evaluator,
 Accessibility, and Task 11 Quality/Test  
-**Status:** `RETIRE_APPROVED — SLICE_A_IN_PROGRESS`
+**Status:** `RETIRED / TASK01_EVIDENCE_BLOCKED`
 **Last verified:** 2026-08-20
+
+> Royian Chowdhury approved `RETIRE` for candidate
+> `a31c1143feaab6763e33e34c50b14fa5ae91c8ca`. The binding decision is recorded
+> in
+> [`../../task-10/decisions/AI-RX-06-retirement-2026-08-20.md`](../../task-10/decisions/AI-RX-06-retirement-2026-08-20.md).
+> The complete production feature surface is removed and no replacement is
+> authorized. Task 01 route shape is restored; its separate
+> `productionScriptsHash` delta remains fail-closed.
 
 ## Objective
 
-Resolve the current `AI-RX-06` prescription-intake experiment without weakening
-the production/sandbox boundary.
+The approved retirement resolved the `AI-RX-06` production-tree experiment
+without weakening the production/sandbox boundary.
 
-**Recorded disposition for this removal:** `RETIRE`
-
-**Approved candidate SHA:** `3da8093c16a69e1883de40bdfb22a309dd7e4099`
-
-**Approver:** Royian
-
-The authorization supplied for Slice A did not record an approval or expiry
-timestamp in this document; none is inferred here. It authorizes retirement
-only and grants no rebuild, sandbox, production, or external-effect authority.
-The verified-current-state section below is retained as the pre-retirement
-candidate snapshot that motivated removal.
-
-The current implementation is deterministic and synthetic, but it lives in the
-production application tree and creates a production route. That violates the
-Task 01 isolation contract even though its local tests pass. The safe choices
-are:
+Before retirement, the implementation was deterministic and synthetic, but it
+lived in the production application tree and created a production route. That
+violated the Task 01 isolation contract even though its local tests passed. The
+safe choices were:
 
 1. **Retire it:** remove the complete production surface; or
 2. **Rebuild it:** first remove the production surface, then create a separately
@@ -36,9 +32,9 @@ are:
 
 Do not repair or expand the current production route in place.
 
-## Required decision before implementation
+## Recorded decision
 
-The Product Lead must record exactly one decision:
+The Product Lead recorded the following decision:
 
 ```text
 AI-RX-06 disposition: RETIRE | REBUILD_IN_SANDBOX
@@ -53,21 +49,19 @@ Approver:
 and Task 11 Checkpoint 1 review before runnable implementation begins. Existing
 Task 01 evidence does not automatically approve a changed candidate.
 
-Until that decision exists, a developer may inspect, plan, and write review
-documents only. They must not change runtime code, routes, gates, fixtures, or
-production-invariance baselines.
+The binding record linked above selects `RETIRE`; no replacement is authorized.
 
-## Verified current state
+## Historical state before retirement
 
-### Production-isolation defect
+### Production-isolation defect (resolved)
 
-The current implementation is under production paths:
+The retired implementation was under these production paths:
 
 - `src/app/(dashboard)/pharmacist/rx-intake/`
 - `src/lib/rx-intake/`
 
-`next build` includes `/pharmacist/rx-intake`. The Task 01 production verifier
-fails with:
+Before retirement, `next build` included `/pharmacist/rx-intake` and the Task
+01 production verifier failed with:
 
 ```text
 SBX_INVARIANCE_DENIED:routeShape
@@ -364,11 +358,11 @@ fixture content, payloads, secrets, absolute runner paths, or real identifiers.
 
 ### Retirement completion
 
-- [ ] Product Lead recorded `RETIRE` against an exact candidate.
-- [ ] Production route, navigation, modules, env, and package surface are gone.
+- [x] Product Lead recorded `RETIRE` against an exact candidate.
+- [x] Production route, navigation, modules, env, and package surface are gone.
 - [ ] Original production-invariance baseline passes unchanged.
-- [ ] TypeScript, lint, pure tests, and production build pass.
-- [ ] Task 10 and current-status docs record `AI-RX-06: RETIRED`.
+- [x] TypeScript, lint, pure tests, and production build pass.
+- [x] Task 10 and current-status docs record `AI-RX-06: RETIRED`.
 
 ### Sandbox-rebuild completion
 

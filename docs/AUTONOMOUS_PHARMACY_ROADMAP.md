@@ -79,7 +79,9 @@ Before adding online autonomy:
 4. Complete the first Canadian-region restore drill.
 5. Finish authenticated mobile/accessibility testing and close the known
    emergency-screen issue.
-6. Add CI for TypeScript, lint, pure tests, and fresh-Postgres integration tests.
+6. Complete Task 11 CI beyond the merged TypeScript, lint, pure-test, build,
+   fresh-migration, and constraint jobs: add security/policy/accessibility,
+   evidence validation, aggregate gating, and verified branch protection.
 
 This phase prevents new automation from being built on an incomplete clinical
 record or an unverified migration chain.

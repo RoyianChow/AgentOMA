@@ -1,0 +1,179 @@
+name: CI
+
+# Task 11 (Cross-Cutting Quality, Security, Privacy, and Release Control Plane)
+# — Workstream C/E, incremental slices: the required-job contract for the
+# checks this repo can already run. Job IDs match Task 11's stable-job-ID
+# table so a later pass can extend this file (security-secrets,
+# security-dependencies, accessibility-automated, release-evidence-validate,
+# release-gate) without renaming anything protected-branch rules would
+# depend on.
+#
+# security-policy currently covers PRV-01 (raw process.env access) only —
+# see tools/security-policy/ for the checker and its reviewed allowlist.
+#
+# Deliberately NOT included yet (tracked in docs/task-11/current-state-and-gap-analysis.md):
+#   - security-secrets / security-dependencies scanning
+#   - security-policy: forbidden-import / PHI-logging-leakage checks (only PRV-01 exists so far)
+#   - accessibility-automated
+#   - release-evidence-validate / release-gate aggregate
+#   - branch-protection required-check configuration (repo admin action, not code)
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Least-privilege default; no job needs more than read access to the repo.
+permissions:
+  contents: read
+
+# A newer push on the same PR supersedes the old run rather than letting a
+# stale run's result be mistaken for the latest commit's.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # None of these jobs touch a live environment. SKIP_ENV_VALIDATION lets
+  # src/env.ts's build-time validation pass without real secrets — see
+  # src/env.ts:9-10. Never set this in a production build.
+  SKIP_ENV_VALIDATION: "1"
+
+jobs:
+  quality-install:
+    name: quality-install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # Fails on lockfile drift rather than silently resolving a different
+      # dependency tree than the one committed.
+      - run: npm ci --ignore-scripts
+
+  quality-typescript:
+    name: quality-typescript
+    needs: quality-install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      # npm run, not npx: runs the locally-installed, lockfile-pinned
+      # typescript binary rather than letting npx resolve/fetch a package.
+      - run: npm run typecheck
+
+  quality-eslint:
+    name: quality-eslint
+    needs: quality-install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run lint
+
+  quality-pure-tests:
+    name: quality-pure-tests
+    needs: quality-install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      # Database-free logic tests only (vitest.pure.config.mts excludes
+      # *.db.test.ts) — no network, no Docker, deterministic.
+      - run: npm run test:pure
+
+  quality-build:
+    name: quality-build
+    needs: quality-install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+        env:
+          # Build-time-only placeholder so env.ts's client-var inlining has a
+          # well-formed URL. Never a real deployment target.
+          NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+
+  security-policy:
+    name: security-policy
+    needs: quality-install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      # PRV-01: fails if any file outside the reviewed allowlist reads
+      # process.env directly instead of going through src/env.ts. AST-based
+      # (tools/security-policy/check-raw-env-access.mjs + the shared,
+      # unit-tested detector in src/lib/security-policy/raw-env-access.ts) —
+      # not a text/regex scan, which produces false positives on strings
+      # like a test asserting some file doesn't contain "process.env".
+      - run: npm run security:raw-env-access
+
+  database-fresh-migrations:
+    name: database-fresh-migrations
+    needs: quality-install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      # Same throwaway Postgres as local dev (docker-compose.yml): tmpfs
+      # storage, port 5433, fsync off. Never the live Supabase database — see
+      # docker-compose.yml and src/lib/db/test/harness.ts's assertLocalTestDb
+      # production-denial guard.
+      - run: npm run test:db:up
+      # npm run test's globalSetup (src/lib/db/test/global-setup.ts) drops the
+      # schema and replays every migration from zero before any test runs —
+      # this job and database-constraints below both ride on that run, since
+      # the repo's suite doesn't currently separate "did it migrate" from "do
+      # the constraints hold" into two commands.
+      - run: npm run test
+      - if: always()
+        run: npm run test:db:down
+
+  database-constraints:
+    name: database-constraints
+    needs: quality-install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run test:db:up
+      # Constraint-backed money rules (one-per-day, the mutex race,
+      # claim_draft/audit_log immutability triggers) are exercised by the same
+      # `npm run test` run as database-fresh-migrations. Kept as a separate
+      # required job per the Task 11 job contract so a future split of the
+      # test command doesn't require renaming a protected-branch check.
+      - run: npm run test
+      - if: always()
+        run: npm run test:db:down

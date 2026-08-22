@@ -49,17 +49,6 @@ export const env = createEnv({
       .url("CLINICAL_VIEWER_BASE_URL must be a valid URL")
       .optional(),
 
-    // --- Task 10 bounded-AI controls ----------------------------------------
-    // Every bounded capability needs its own feature flag, an expiry, and a
-    // kill switch that outranks both. These are server-only on purpose: a
-    // capability must not be enableable from the client, a query string, or a
-    // session. Default-off, so an unconfigured environment has AI disabled.
-    //
-    // The global switch. When true, EVERY bounded capability is dead
-    // regardless of its own flag or expiry — the one lever to pull in an
-    // incident, with no per-capability coordination required.
-    AI_KILL_SWITCH: z.stringbool().default(false),
-
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),

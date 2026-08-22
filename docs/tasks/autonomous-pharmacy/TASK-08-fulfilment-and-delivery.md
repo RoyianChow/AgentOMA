@@ -1,6 +1,6 @@
 Task 08 — Online Fulfilment, Pickup, and Delivery Coordination
 
-## Next-sprint checkpoint — 2026-08-10
+## Sprint checkpoint — 2026-08-20
 
 **Repository state:** `NOT RUN`; no fulfilment, pickup, delivery, payment,
 inventory, courier, or pharmacy-request runtime exists.
@@ -9,7 +9,7 @@ messaging, patient-choice, and professional-authority decisions are available.
 **Exit:** product language remains “request,” never “order”; payment, courier,
 or vendor events cannot authorize professional release or patient receipt. No
 external adapter is authorized. See
-[`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md).
+[`CURRENT-IMPLEMENTATION-STATUS.md`](CURRENT-IMPLEMENTATION-STATUS.md).
 
 Owner profile: pharmacy-operations developerSupporting reviewers: practising Ontario pharmacist, Designated Manager, pharmacy technician, privacy, security, accessibility, operations, finance, legal/procurementPriority: P2; P1 only for boundaries that protect professional responsibility, patient choice, privacy, and releaseStatus: research, contracts, deterministic synthetic workflow, and tests may proceed; real prescription processing, inventory, adjudication, payment, pickup release, courier activity, and dispensing integration remain blockedUpdated: 2026-07-30
 

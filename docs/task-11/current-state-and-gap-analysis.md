@@ -1,83 +1,96 @@
-# Task 11 — Current-State and Gap Analysis
+# Task 11 - Current State and Gap Analysis
 
-**Scope of this document:** the ungated first slice of Task 11 (Workstream C's
-required-check contract) that this repository can run today. It does not
-attempt the full Task 11 specification's capability register, control
-catalogue, or evidence-manifest schema — those remain open gaps, listed below.
+**Reconciled:** 2026-08-20
 
-**Authorization:** [`decisions/implementation-approval-2026-08-02.md`](decisions/implementation-approval-2026-08-02.md)
-— Royian Chowdhury, Product Lead, `APPROVED_TO_IMPLEMENT_SYNTHETIC`, R4 /
-`A3_BOUNDED_AUTOMATION`. Production release authority: **not granted**. This
-document's implementation stays inside that scope: no production data,
-credentials, migrations, or live-data mutation; no weakening of a required
-check to obtain a passing result.
+**Observed HEAD:** `1ce2c9ace894f5c2a745f15fa901fe2fc6acc138`
 
-**Baseline commit:** `230c0d8` (`main`, merge of PR #36)
-**Branch:** `feature/task-11-gap-analysis`
-**Working tree:** clean at capture time
-**Related PR:** [#31](https://github.com/RoyianChow/AgentOMA/pull/31) (the CI
-workflow itself) — merge state `BLOCKED_PENDING_INDEPENDENT_REVIEW` per the
-approval record above, and separately blocked on 3 open findings (§3).
+**Status:** `FIRST_CI_SLICE_MERGED / CONTROL_PLANE_INCOMPLETE`
+**Production release authority:** not granted
 
-## 1. Repository baseline
+## Authorization boundary
 
-| Item | Value |
+The recorded Task 11 decision authorizes bounded synthetic implementation. It
+does not authorize production release, waive independent review, or allow the
+control plane to approve its own work. See
+[`decisions/implementation-approval-2026-08-02.md`](decisions/implementation-approval-2026-08-02.md).
+
+## Merged CI slice
+
+PR #31 added `.github/workflows/ci.yml`. It runs on pull requests and pushes to
+`main`, uses read-only repository permissions, cancels superseded runs, pins
+Node 22 through `actions/setup-node`, and uses `npm ci --ignore-scripts`.
+
+Stable job IDs now present:
+
+1. `quality-install`;
+2. `quality-typescript`;
+3. `quality-eslint`;
+4. `quality-pure-tests`;
+5. `quality-build`;
+6. `database-fresh-migrations`; and
+7. `database-constraints`.
+
+Both database jobs use the disposable loopback Docker PostgreSQL suite and run
+cleanup with `if: always()`. The two jobs currently execute the same full test
+command under different stable required-check identities; that is deliberate
+until the migration and constraint suites are separated.
+
+## Merge-review verification
+
+Local checks at the observed HEAD:
+
+| Check | Result |
 |---|---|
-| Package manager | npm (lockfile-pinned; `npm ci` is the CI-required install path) |
-| Runtime | Node 22 |
-| Framework | Next.js 16.2, App Router |
-| Test runner | Vitest 4 (`test:pure` — no DB; `test` — full suite incl. `*.db.test.ts`) |
-| Database | PostgreSQL 16 (Docker, `docker-compose.yml`, tmpfs, port 5433) |
-| Migration tool | `drizzle-kit`; migrations at `src/lib/db/migrations/`, currently through `0018_clever_mister_fear.sql` |
-| Lint | ESLint 9 flat config |
-| Type check | `tsc --noEmit` (PR #31 adds `npm run typecheck`; on `main` today it's still invoked via `npx tsc`) |
-| CI provider | GitHub Actions — no workflow exists on `main` yet; `.github/workflows/ci.yml` is only on PR #31 |
-| Sandbox workspace | `apps/experiment-sandbox/` (Task 01), npm workspace, own CI check (`Sandbox boundary / Production invariance`) |
-| Third-party CI already present | GitGuardian (secret scanning), SonarCloud Code Analysis, Vercel preview |
+| `npm run typecheck` | PASS |
+| `npm run lint` | PASS |
+| `npm run test:pure` | PASS - 22 files / 306 tests |
+| `npm run build` | PASS |
+| `npm run sandbox:verify` | PASS - 40 files / 606 tests plus boundary |
+| `npm run sandbox:verify-evidence` | PASS |
+| `npm run sandbox:verify-production` | FAIL - `SBX_INVARIANCE_DENIED:routeShape` |
+| Root/database CI jobs on GitHub | NOT VERIFIED in this local documentation pass |
 
-## 2. What already exists
+The earlier Task 02 fixture/assertion mismatch is corrected in the maintained
+tree: the version-2 record test now expects the self-report status derived from
+its fixture. This does not substitute for a fresh GitHub database run.
 
-- **On PR #31** (not yet merged): `.github/workflows/ci.yml` — 7 jobs with
-  stable IDs matching Task 11's required-job contract: `quality-install`,
-  `quality-typescript`, `quality-eslint`, `quality-pure-tests`,
-  `quality-build`, `database-fresh-migrations`, `database-constraints`. All
-  use `npm ci --ignore-scripts` (SonarCloud-clean supply-chain hardening) and
-  `npm run typecheck` rather than `npx tsc` for the same reason.
-- `database-fresh-migrations` / `database-constraints` reuse the existing
-  isolated-Postgres pattern (`docker-compose.yml`,
-  `src/lib/db/test/global-setup.ts`, `src/lib/db/test/harness.ts`) — full
-  migration replay from zero on every run, plus a hard `assertLocalTestDb`
-  guard that refuses to run against anything that isn't the local throwaway
-  database (blocks the live Supabase project by construction).
-- GitGuardian and SonarCloud were already wired at the repo level (not part of
-  this task, but now visible as required-check-equivalents on every PR).
-- Task 01's sandbox workspace ships its own production-invariance check
-  (`apps/experiment-sandbox/tools/verify-production-invariance.mjs`),
-  independently enforcing that this repo's `package.json` production scripts,
-  dependencies, and build output match a reviewed, Royian-approved baseline
-  (`docs/task-01/evidence/baseline-production.json`, captured at commit
-  `7737ef2`).
+## Remaining Task 11 controls
 
-## 3. Gap classification
+| Gap | Required outcome |
+|---|---|
+| Secret scanning | Stable required job, safe findings and exact-candidate evidence |
+| Dependency review | Lockfile/dependency risk job with owned triage |
+| Security policy | Raw-env, forbidden-import, PHI/secret leakage and unsafe-enable checks |
+| Automated accessibility | Stable job plus manual-evidence contract where automation is insufficient |
+| Release evidence validator | Machine validation of hashes, commands, statuses, reviewers and expiry |
+| Aggregate release gate | Fail closed when any non-waivable control, approval or evidence is absent |
+| Capability register | Every production/sandbox capability, owner, risk tier, lifecycle and kill switch |
+| Control catalogue | Stable IDs, applicability, test/evidence mapping and non-waivable classification |
+| Independent review | Quality, security, privacy, accessibility, operations and professional/legal roles as applicable |
+| Branch protection | Verify the required job IDs against repository settings; do not infer from workflow presence |
+| Production invariance | Resolve current route-shape failure without weakening or casual rebaseline |
 
-| Gap | Classification | Owner | Notes |
-|---|---|---|---|
-| No CI workflow on `main` at all | `MISSING_CONTROL` | Resolved by PR #31, pending merge | Repo had zero required checks before this task |
-| No `security-secrets` / `security-dependencies` CI jobs (beyond GitGuardian, which isn't Task-11-owned) | `MISSING_CONTROL` | Task 11 implementer | Natural next slice; doesn't need branch-protection admin access |
-| No `security-policy` job (raw-`process.env`, forbidden-import, PHI/logging leakage checks per AGENTS.md) | `MISSING_CONTROL` | Task 11 implementer | Highest-value next control given this repo's PHI/billing surface |
-| No `accessibility-automated` job | `MISSING_CONTROL` | Task 11 implementer | Not yet scoped |
-| No `release-evidence-validate` / `release-gate` aggregate job | `MISSING_CONTROL` | Task 11 implementer | Depends on the control catalogue existing first |
-| No capability register / control catalogue / evidence-manifest schema | `MISSING_CONTROL` | Task 11 implementer | Full Task 11 spec's Workstream B; not started |
-| Branch protection does not yet require these CI checks | `MISSING_APPROVAL` | Royian (repo admin) | Explicitly deferred — this is a repo-admin action that changes what blocks every future PR merge, not a code change |
-| `database-fresh-migrations` / `database-constraints` fail on PR #31 on a pre-existing Task 02 test bug | `PROTECTED_CODE_DEFECT` (not owned by Task 11) | Task 02 owner | `create-assessment.db.test.ts`, `"preserves the P0-B version-2..."` — `patientSelfReportStatus` assertion doesn't match the shared fixture's derived value. Reported to Royian; CI is correctly surfacing a bug that predates this task, not causing one |
-| `Sandbox boundary / Production invariance` fails on PR #31 on `productionScriptsHash` drift | `MISSING_APPROVAL` (not a defect) | Royian | PR #31 legitimately changes `package.json` scripts (`typecheck`, `test:pure` fix). The check is correctly detecting drift from the G1-approved baseline captured before those changes. Fix is Royian recapturing/re-approving the baseline against that branch — not weakening the verifier, which the implementation-approval record explicitly forbids |
-| `retention.test.ts` "takes whichever branch is longer, at the boundary" fails (`expected 2045, got 2046`) | `TEST_MISSING` / stale fixture | Unowned | Confirmed via `git stash` to predate all of this task's changes; date-boundary test likely needs a fixed clock rather than wall-clock-relative dates |
+## Known release blockers
 
-## 4. What this document is not
+- Task 01 production-invariance currently fails for the merged candidate.
+- Task 02 remains blocked before live migration `0018`.
+- Task 04's v3 renewal is a draft and its prior runtime authority expired.
+- Task 06 is merged as synthetic code but lacks renewed runtime authority and
+  independent production prerequisites.
+- No exact-candidate aggregate release evidence exists for the current merge
+  batch.
 
-This is not the full Task 11 capability inventory (every Task 01–10
-capability, risk-tiered and autonomy-classified), not the stable control
-catalogue with per-control evidence profiles, and not the evidence-manifest
-schema. Those are real, larger gaps — tracked above as `MISSING_CONTROL` —
-and are the natural next slices once PR #31's three open findings are
-resolved.
+## Next slice
+
+1. Triage the production-route shape delta with Task 01.
+2. Add the missing security and policy jobs without renaming existing stable
+   job IDs.
+3. Add evidence-schema validation and the fail-closed aggregate release gate.
+4. Verify GitHub branch-protection required checks through an authorized repo
+   administrator and capture payload-free evidence.
+5. Obtain independent review bound to the exact candidate before any promotion
+   status changes.
+
+Green automation is necessary evidence, not authorization. Task 11 records
+human decisions and technical results; it cannot grant, infer, or self-approve
+them.

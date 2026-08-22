@@ -1,6 +1,6 @@
 # Task 14 — Regulatory Change and Clinical Knowledge Governance
 
-## Next-sprint checkpoint — 2026-08-10
+## Sprint checkpoint — 2026-08-20
 
 **Repository state:** `NOT RUN`; the repository has protected clinical and
 billing sources plus compliance documentation, but no dedicated recurring
@@ -12,7 +12,7 @@ only.
 code, migration, billing derivation, consent language, or production behaviour
 is changed or activated. Runnable tooling requires an exact Task 14 approval
 and Task 11 Checkpoint 1. See
-[`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md).
+[`CURRENT-IMPLEMENTATION-STATUS.md`](CURRENT-IMPLEMENTATION-STATUS.md).
 
 ## Role
 

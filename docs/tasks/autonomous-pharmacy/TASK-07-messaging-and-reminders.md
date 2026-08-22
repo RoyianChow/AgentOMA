@@ -1,6 +1,6 @@
 Task 07 — Consented Messaging, Administrative Reminders, and Secure Portal Communication
 
-## Next-sprint checkpoint — 2026-08-10
+## Sprint checkpoint — 2026-08-20
 
 **Repository state:** documentation Workstreams A–I are complete; runtime is
 `NOT RUN`.
@@ -10,7 +10,7 @@ and Task 11 Checkpoint 1 package.
 **Exit:** no recipient, PHI, provider, webhook, delivery, secure-thread runtime,
 or external effect. Task 04 and Task 06 producer boundaries remain inputs, not
 authority. See
-[`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md).
+[`CURRENT-IMPLEMENTATION-STATUS.md`](CURRENT-IMPLEMENTATION-STATUS.md).
 
 **Owner profile:** backend/communications developer
 

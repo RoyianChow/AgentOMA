@@ -1,17 +1,18 @@
 # Task 04 — Complete the Online Booking and Waitlist Prototype
 
-## Next-sprint checkpoint — 2026-08-10
+## Sprint checkpoint — 2026-08-20
 
-**Repository state:** `BLOCKED_MISSING_RENEWAL_APPROVAL`. Candidate
-`58fee60035988300909a158f3c91501faca89fa7` was clean when captured, but the
-completed v3 renewal and independent signatures are not committed.
-**Sprint slice:** finish that exact renewal package. The waitlist policy is
-approved only as a policy sub-decision.
+**Repository state:** `PARTIAL_IMPLEMENTATION_MERGED / BLOCKED_MISSING_RENEWAL_APPROVAL`.
+The synthetic `/book` UI is now in the maintained checkout, but the v3 renewal
+remains `DRAFT - NOT GRANTED`, refers to an older candidate, and has no
+complete independent signatures.
+**Sprint slice:** freeze the new exact candidate and finish a current renewal
+package. The waitlist policy remains approved only as a policy sub-decision.
 **Exit:** implementation may resume only after exact scope, hashes, future
 dates, owners, independent reviews, and Task 11 Checkpoint 1 are recorded. No
 code, migration, Docker, evidence promotion, or merge is authorized by this
 checkpoint. See
-[`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md).
+[`CURRENT-IMPLEMENTATION-STATUS.md`](CURRENT-IMPLEMENTATION-STATUS.md).
 
 ## Role
 
@@ -33,7 +34,12 @@ The booking experience is strictly administrative. It must never collect clinica
 
 ## Current status
 
-The synthetic prototype is reported as ready but must be treated as unverified until its implementation, tests, privacy boundaries, and concurrency guarantees satisfy this task.
+The maintained checkout contains a partial synthetic implementation: service
+catalogue, availability, booking create/retrieve/confirm/expiry, pharmacist
+queue, and `/book`. Cancellation, rescheduling, bootstrap exchange, waitlist
+commands/promotion, and complete PostgreSQL race evidence remain absent. The
+runtime is blocked because the recorded approval expired and the v3 renewal is
+still a draft.
 
 ### Governance decision — 2026-08-02
 
@@ -50,7 +56,12 @@ kill-switch operator. The experimental capability expires and is due for review
 on 2026-08-05. Production, G2 hosted-preview, G3 production-import, live-data,
 and external-effect authorization remain excluded.
 
-### Authorized now
+### Historically authorized through 2026-08-05
+
+The list below records the scope of the expired approval. It is not current
+authority. Until a new exact, signed, unexpired renewal exists, current work is
+limited to read-only inspection, documentation, decision preparation, and
+other actions explicitly permitted by the repository’s governing instructions.
 
 * Inspect and improve the existing synthetic prototype.
 * Use deterministic synthetic identities and records.
