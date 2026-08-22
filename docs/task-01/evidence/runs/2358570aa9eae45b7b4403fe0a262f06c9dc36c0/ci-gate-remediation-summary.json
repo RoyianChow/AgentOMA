@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "status": "BLOCKED",
+  "reasonCode": "TASK11_CHANGED_CANDIDATE_REVIEW_REQUIRED",
+  "testedSha": "2358570aa9eae45b7b4403fe0a262f06c9dc36c0",
+  "baseSha": "af2473c546b11c5097597733530be698f7b8588a",
+  "approvalRecord": "docs/task-01/decisions/G1-ci-gate-amendment-2026-08-22.md",
+  "approvalExpiresAtUtc": "2026-08-23T03:09:42Z",
+  "baselineSourceCommit": "7737ef26f09fec858d23337885ca7d31e9ccbc64",
+  "productionRuntimeScriptsHash": "6bd4bb2bbc2165ffee56a5e988b00440deef418801b467173087c78a4418df14",
+  "evidence": [
+    {
+      "control": "SBX-04",
+      "run": "red",
+      "path": "docs/task-01/evidence/runs/2358570aa9eae45b7b4403fe0a262f06c9dc36c0/SBX-04-node-env-build-red.json",
+      "sha256": "0c9eff068d7e7d85d930b5a4c6c076776038fa9c68b015749326f589eaf69641"
+    },
+    {
+      "control": "SBX-04",
+      "run": "green",
+      "path": "docs/task-01/evidence/runs/2358570aa9eae45b7b4403fe0a262f06c9dc36c0/SBX-04-node-env-build-green.json",
+      "sha256": "90c1bd0d32c6ab6f4bd62e6452cd0dba1cbcb186c0ebe8a4f44a4671da08f212"
+    },
+    {
+      "control": "SBX-13",
+      "run": "red",
+      "path": "docs/task-01/evidence/runs/2358570aa9eae45b7b4403fe0a262f06c9dc36c0/SBX-13-runtime-scripts-red.json",
+      "sha256": "aa1f7c50c440118ec17306974befd3b57d30dd6a98816da3c741eb483e60d173"
+    },
+    {
+      "control": "SBX-13",
+      "run": "green",
+      "path": "docs/task-01/evidence/runs/2358570aa9eae45b7b4403fe0a262f06c9dc36c0/SBX-13-runtime-scripts-green.json",
+      "sha256": "f1c78f379657ddc7edd289eaeb95203b80f4eec1687f3666c3627366e219d194"
+    }
+  ],
+  "verification": {
+    "typecheck": "PASS",
+    "lint": "PASS",
+    "productionPureTests": "PASS_152_OF_152",
+    "rawEnvironmentAccess": "PASS",
+    "productionBuild": "PASS",
+    "productionInvariance": "PASS",
+    "sandboxTests": "PASS_614_OF_614",
+    "sandboxBoundary": "PASS",
+    "sandboxBuild": "PASS",
+    "sandboxArtifact": "PASS",
+    "historicalEvidenceManifest": "PASS_UNCHANGED"
+  },
+  "promotionAuthorized": false
+}

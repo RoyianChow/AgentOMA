@@ -5,8 +5,37 @@ export const compareStrings = (left, right) =>
 
 export const compareTupleKeys = ([left], [right]) => compareStrings(left, right);
 
+// Only scripts that npm, Next.js, or the hosting platform can execute while
+// installing, building, or starting the production application belong in the
+// production-invariance hash. Test, database, security, and developer commands
+// remain governed by their own CI controls and cannot affect this hash merely
+// by being added to package.json.
+export const PRODUCTION_RUNTIME_SCRIPT_NAMES = Object.freeze([
+  "preinstall",
+  "install",
+  "postinstall",
+  "prepare",
+  "prebuild",
+  "build",
+  "postbuild",
+  "vercel-build",
+  "prestart",
+  "start",
+  "poststart",
+]);
+
 export function hash(value) {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
+}
+
+export function canonicalizeProductionRuntimeScripts(scripts) {
+  return PRODUCTION_RUNTIME_SCRIPT_NAMES
+    .flatMap((name) =>
+      typeof scripts?.[name] === "string"
+        ? [[name, scripts[name]]]
+        : [],
+    )
+    .sort(compareTupleKeys);
 }
 
 function normalizeSeparators(value) {

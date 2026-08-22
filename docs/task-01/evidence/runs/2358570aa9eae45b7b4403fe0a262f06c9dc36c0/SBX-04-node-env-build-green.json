@@ -1,0 +1,11 @@
+{
+  "control": "SBX-04",
+  "run": "green",
+  "testedSha": "2358570aa9eae45b7b4403fe0a262f06c9dc36c0",
+  "command": "npm run sandbox:build",
+  "startedAt": "2026-08-22T09:24:08.9087911Z",
+  "finishedAt": "2026-08-22T09:24:51.2039013Z",
+  "exitCode": 0,
+  "environment": "Primary candidate worktree; authored-synthetic loopback configuration; production credentials removed from the child process; no PHI or external resources.",
+  "safeSummary": "The sandbox production build completed with the explicit Next.js build phase while startup, credential, origin, lifecycle, and unsafe-variable denials remained covered by the green test suite."
+}

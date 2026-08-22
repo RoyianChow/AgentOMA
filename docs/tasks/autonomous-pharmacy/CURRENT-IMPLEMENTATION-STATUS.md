@@ -4,12 +4,14 @@
 is present in the maintained checkout; it is not an implementation approval or
 production release decision.
 
-**Snapshot date:** 2026-08-20
+**Snapshot date:** 2026-08-22
 
-**Observed code baseline:** `origin/main` at
-`1ce2c9ace894f5c2a745f15fa901fe2fc6acc138`
+**Observed implementation candidate:**
+`2358570aa9eae45b7b4403fe0a262f06c9dc36c0` on
+`codex/task-01-ci-gates`, based on
+`af2473c546b11c5097597733530be698f7b8588a`
 
-**Documentation branch:** `codex/task-doc-audit-2026-08-20`
+**Documentation branch:** `codex/task-01-ci-gates`
 
 **Worktree at capture:** clean before this documentation audit
 
@@ -21,16 +23,17 @@ production release decision.
 | `npm run lint` | PASS |
 | `npm run test:pure` | PASS - 15 files, 152 tests |
 | `npm run build` | PASS - production route manifest generated |
-| `npm run sandbox:verify` | PASS - typecheck, lint, 40 files / 606 non-Postgres tests, boundary verification |
+| `npm run sandbox:verify` | PASS - typecheck, lint, 40 files / 614 non-Postgres tests, boundary verification |
 | `npm run sandbox:verify-evidence` | PASS - 18 controls accepted by the committed evidence validator |
-| `npm run sandbox:verify-production` | **FAIL - `SBX_INVARIANCE_DENIED:productionScriptsHash`; route shape passes after AI-RX-06 retirement** |
-| `npm run sandbox:build` | NOT RUN - the embedded Task 04 approval window is expired and no new runtime authority was inferred |
+| `npm run sandbox:verify-production` | PASS - production runtime script hash is derived from original baseline `7737ef26...`; production routes, artifacts, dependencies, build and start scripts remain invariant |
+| `npm run sandbox:build` | PASS - `NODE_ENV=production` is accepted only during the exact Next.js build phase; startup/runtime remains denied |
 | Root and sandbox real-PostgreSQL suites | NOT RUN in this documentation pass |
 
-The remaining production-invariance failure is an active Task 01/Task 11
-review item. Do not recapture the baseline from the current candidate merely
-to make it pass. The unauthorized route has been removed; classify the exact
-production-script evolution without changing the original baseline.
+The Task 01 CI remediation is implemented and locally verified. Separate
+SBX-04 and SBX-13 red/green evidence is bound to candidate `2358570a...`.
+Promotion remains **BLOCKED** pending changed-candidate Task 11 review. The
+historical Task 01 manifest remains unchanged and its PASS does not transfer
+to this candidate.
 
 ## Merge review - 2026-08-19
 
@@ -72,7 +75,7 @@ accounts, services, or external effects.
 
 | Task | Current repository state | Next authorized or required step |
 |---|---|---|
-| 01 - Sandbox | Prior evidence candidate PASS; route shape restored; current production invariance fails on `productionScriptsHash` and runtime approval is expired | Classify the exact script delta without changing the original baseline; renew exact scope before runtime; produce new candidate-bound evidence |
+| 01 - Sandbox | Historical evidence candidate PASS; CI remediation candidate `2358570a...` passes sandbox build and production invariance with red/green SBX-04/SBX-13 evidence | Obtain exact-candidate Task 11 review before promotion; do not transfer or rewrite the historical PASS |
 | 02 - P0 readiness | BLOCKED - code and `0018` are merged but live deployment gates remain | Follow the exact G1-D -> predecessor/restart -> S27 -> Task 11 -> recovery -> G1-L -> live verify -> G4 sequence |
 | 03 - Command centre | NOT MERGED as a dedicated capability; a separate local branch exists | Reconcile/review that branch before duplicate work; keep the maintained checkout status `NOT RUN` |
 | 04 - Booking/waitlist | PARTIAL SYNTHETIC IMPLEMENTATION MERGED; `/book` now exists in the sandbox | Complete an exact, signed, unexpired v3 renewal and independent reviews before any runtime, migration, Docker, evidence-promotion, or further implementation |
@@ -130,8 +133,8 @@ promotion review remain open.
 
 ## Safe next order
 
-1. Resolve the remaining Task 01 `productionScriptsHash` failure without
-   replacing the original baseline or weakening the verifier.
+1. Obtain Task 11 review for Task 01 remediation candidate `2358570a...`;
+   production promotion remains blocked until that review is recorded.
 2. Keep Task 02 and the remaining Task 11 controls as release-critical lanes.
 3. Complete Task 04 v3 renewal and independent reviews before running or
    extending booking code.

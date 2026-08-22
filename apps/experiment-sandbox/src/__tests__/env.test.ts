@@ -99,6 +99,71 @@ describe("sandbox environment contract", () => {
     }
   });
 
+  it("accepts NODE_ENV=production only for the explicit Next.js build phase", () => {
+    const input = { ...validEnv(), NODE_ENV: "production" };
+    const now = new Date("2026-08-01T00:00:00.000Z");
+
+    expect(parseSandboxEnv(input, now, { phase: "build" }).mode).toBe(
+      "synthetic",
+    );
+    expect(
+      parseSandboxEnv(
+        {
+          ...input,
+          NEXT_PHASE: "phase-production-build",
+        },
+        now,
+        { phase: "startup" },
+      ).mode,
+    ).toBe("synthetic");
+    for (const phase of [undefined, "startup", "test"] as const) {
+      expect(() =>
+        parseSandboxEnv(input, now, {
+          ...(phase === undefined ? {} : { phase }),
+        }),
+      ).toThrow("SANDBOX_CONFIG_DENIED:PRODUCTION_NODE_ENV");
+    }
+    expect(() =>
+      parseSandboxEnv(
+        {
+          ...input,
+          NEXT_PHASE: "phase-production-server",
+        },
+        now,
+        { phase: "startup" },
+      ),
+    ).toThrow("SANDBOX_CONFIG_DENIED:PRODUCTION_NODE_ENV");
+  });
+
+  it("keeps production credentials denied during a production-mode build", () => {
+    const secret = "synthetic-build-secret-must-never-appear";
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    let failure: unknown;
+
+    try {
+      parseSandboxEnv(
+        {
+          ...validEnv(),
+          NODE_ENV: "production",
+          AZURE_CLIENT_SECRET: secret,
+        },
+        new Date("2026-08-01T00:00:00.000Z"),
+        { phase: "build" },
+      );
+    } catch (error) {
+      failure = error;
+    }
+
+    expect((failure as Error).message).toBe(
+      "SANDBOX_CONFIG_DENIED:PROHIBITED_VARIABLE:AZURE_CLIENT_SECRET",
+    );
+    expect((failure as Error).message).not.toContain(secret);
+    expect(consoleError).not.toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
   it("normalizes the Task 04 pharmacy scope and keeps it server-owned", () => {
     const input = validEnv();
     input.TASK04_SANDBOX_PHARMACY_ID = "synth-pharmacy-task04-local";

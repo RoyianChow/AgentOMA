@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   assertNoSandboxFiles,
+  canonicalizeProductionRuntimeScripts,
   canonicalizeRepositoryPaths,
   compareStrings,
   compareTupleKeys,
@@ -62,9 +63,9 @@ assertNoSandboxFiles(requiredServerFiles);
 const nftFiles = readJson("next-server.js.nft.json").files.map((entry) => entry.replaceAll("\\", "/")).sort(compareStrings);
 const portableNftFiles = nftFiles.filter((entry) => !isPlatformSpecificTrace(entry));
 const rootPackage = JSON.parse(readFileSync(join(repositoryRoot, "package.json"), "utf8"));
-const productionScripts = Object.entries(rootPackage.scripts)
-  .filter(([key]) => !key.startsWith("sandbox:"))
-  .sort(compareTupleKeys);
+const productionRuntimeScripts = canonicalizeProductionRuntimeScripts(
+  rootPackage.scripts,
+);
 const productionDependencies = Object.entries(rootPackage.dependencies).sort(compareTupleKeys);
 
 const current = {
@@ -78,7 +79,7 @@ const current = {
   requiredServerFileCount: requiredServerFiles.length,
   requiredServerFilesHash: hash(requiredServerFiles),
   productionDependenciesHash: hash(productionDependencies),
-  productionScriptsHash: hash(productionScripts),
+  productionRuntimeScriptsHash: hash(productionRuntimeScripts),
 };
 
 const currentRouteNames = Object.values(appPathRoutes).sort(compareStrings);
@@ -90,7 +91,7 @@ if (JSON.stringify(currentRouteNames) !== JSON.stringify(baselineRouteNames)) {
 // The captured baseline's legacy routeShapeHash used a private normalization
 // helper that is not available in the repository. The route-name comparison
 // above is the auditable invariant; appPathsHash separately covers route keys.
-const comparable = ["appPathCount", "appPathsHash", "portableRuntimeTraceFileCount", "portableRuntimeTraceFilesHash", "requiredServerFileCount", "requiredServerFilesHash", "productionDependenciesHash", "productionScriptsHash"];
+const comparable = ["appPathCount", "appPathsHash", "portableRuntimeTraceFileCount", "portableRuntimeTraceFilesHash", "requiredServerFileCount", "requiredServerFilesHash", "productionDependenciesHash", "productionRuntimeScriptsHash"];
 for (const key of comparable) {
   if (current[key] !== baseline.normalizedProduction[key]) {
     if (key === "requiredServerFilesHash") {
