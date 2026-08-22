@@ -55,6 +55,15 @@ authorization, waiting room/participants, disconnect/contingency, secure
 messaging stubs, assessment/claim separation, webhook/vendor denial, and
 privacy/leakage checks.
 
+### Historical test-report correction
+
+The retired `final-report.md` incorrectly generalized a workstation-specific
+Vitest failure into a repository-wide failure. The affected local checkout path
+contained `#`, but GitHub Actions uses a different path and successfully ran the
+complete suite. CI found four substantive defects, which were corrected in
+commit `87e6044` before the Task 06 prototype merged. The stale final report was
+removed during the 2026-08-20 documentation reconciliation and is not restored.
+
 Not verified in this pass:
 
 - successful sandbox production build or live browser run;

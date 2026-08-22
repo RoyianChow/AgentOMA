@@ -87,8 +87,10 @@ server-owned scenarios covering every required case), `guards.ts`/`visit-server.
 UI surfaces wired through those guards rather than client-side hiding, and 9 required-test suites
 plus a static, honestly-partial accessibility review. Two structural blockers were found and
 disclosed rather than routed around: the sandbox's G1 lifecycle window is expired (blocks
-`npm run dev`/build/start), and Vitest cannot resolve module paths in a directory containing `#`
-(blocks `npm run test`) — both pre-existing, both outside this task's authority to fix.
+`npm run dev`/build/start), and Vitest cannot resolve module paths locally when this workstation's
+checkout path contains `#`. The path issue does not block GitHub Actions: CI ran the complete
+suite, found four real defects, and the fixes merged in commit `87e6044`. The expired lifecycle
+still blocks live browser and accessibility evidence and remains outside this task's authority.
 
 The clinical/operational validation plan (this task's remaining named deliverable before the
 final report) is written but not run — no pharmacist has reviewed this prototype yet. The
