@@ -39,6 +39,9 @@ This is the implementation record requested for the project. It describes capabi
 
 ## Public guided demo
 
+- Added a clearly separated **Explore guest demo** entry on `/sign-in`. It
+  opens the existing synthetic tour without creating a session, assigning a
+  role, accessing patient records, or bypassing mandatory portal TOTP.
 - Added `/demo` as a public, interactive five-stage tour covering handoff,
   structured assessment, claim handoff, follow-up, and record governance.
 - Kept the tour fully synthetic and in memory. It accepts no patient input,
