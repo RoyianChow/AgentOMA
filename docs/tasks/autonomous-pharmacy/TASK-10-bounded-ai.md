@@ -1,6 +1,15 @@
 Task 10 — Bounded AI Assistance and Synthetic Model Evaluation
 
-## Next-sprint checkpoint — 2026-08-10
+## Retirement update — 2026-08-20
+
+**AI-RX-06: RETIRED.** Task 10A removed its production route, modules,
+fixtures, evaluator tooling, navigation, and feature-specific configuration.
+No sandbox replacement was created. Task 10 expansion remains `BLOCKED`; any
+future candidate requires its own charter, Task 01 sandbox isolation, and Task
+11 review. The checkpoint below is retained as historical pre-retirement
+context.
+
+## Sprint checkpoint — 2026-08-20
 
 **Repository state:** expansion `BLOCKED`; AI-RX-06 is a partial deterministic
 synthetic experiment located on a production pharmacist route rather than the
@@ -10,7 +19,7 @@ isolated sandbox. It is not one of the five chartered candidates.
 requirements.
 **Exit:** no PHI, model/network call, tools, database authority, autonomous
 effect, or production-route expansion. See
-[`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md).
+[`CURRENT-IMPLEMENTATION-STATUS.md`](CURRENT-IMPLEMENTATION-STATUS.md).
 
 Owner profile: applied-AI developerRequired evaluator: practising pharmacistSupporting reviewers: privacy, security, accessibility, clinical safety, operations, legal/procurement, and quality assurancePriority: P2 researchStatus: synthetic evaluation only; PHI, production inference, user-visible recommendations, autonomous actions, and clinical or financial effects remain blockedUpdated: 2026-07-30
 

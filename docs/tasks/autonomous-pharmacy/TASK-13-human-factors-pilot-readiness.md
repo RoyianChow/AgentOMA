@@ -1,6 +1,6 @@
 # Task 13 — Human Factors, Training, and Controlled Pilot Readiness
 
-## Next-sprint checkpoint — 2026-08-10
+## Sprint checkpoint — 2026-08-20
 
 **Repository state:** `NOT RUN`; no cross-capability human-factors safety case,
 role-based training package, synthetic simulation programme, or controlled-pilot
@@ -10,7 +10,7 @@ framework, synthetic scenario catalogue, and pilot-gate design only.
 **Exit:** no real patient, PHI, production account, live workflow, clinical
 content change, billing change, training claim, or pilot launch. Runnable
 studies require an exact Task 13 approval and Task 11 Checkpoint 1. See
-[`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md).
+[`CURRENT-IMPLEMENTATION-STATUS.md`](CURRENT-IMPLEMENTATION-STATUS.md).
 
 ## Role
 

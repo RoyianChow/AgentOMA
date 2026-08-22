@@ -1,6 +1,7 @@
 # Public self-check and pre-visit PDF
 
-**Status:** clinically approved and available in production
+**Status:** clinically approved, available in production, and beta-ready for
+guided user feedback
 
 **Route:** `/check`
 
@@ -68,6 +69,28 @@ in the report body rather than being reduced to fine print.
 | Shared frozen clinical source | `src/config/triage.ts` |
 | Approval and change control | `docs/CLINICAL_APPROVAL.md` |
 
+## Beta experience
+
+The public flow now uses a dedicated, mobile-first AgentOMA shell rather than
+site chrome. It provides:
+
+- a short plain-language introduction explaining what the self-check can and
+  cannot do;
+- a visible beta label, persistent exit, and three-stage progress indicator;
+- programmatic focus on each new question for keyboard and screen-reader users;
+- 56px answer and action targets, visible focus states, reduced-motion support,
+  and live selection counts;
+- a fixed mobile action dock on the long emergency and red-flag screens, so the
+  way forward remains visible at 375px without changing any approved question;
+- a clearer result card, practical next steps, and a plain explanation of the
+  private PDF boundary; and
+- a visible flagged-item list that is not suppressed by the marketing site's
+  global list reset.
+
+These are presentation and accessibility changes only. The flow continues to
+import the hash-approved emergency signs, narrowing tree, red flags, labels,
+and outcomes directly from `src/config/triage.ts`.
+
 ## Latest usability evidence
 
 The 2026-07-28 375×812 pass successfully generated both PDF branches. Browser
@@ -75,14 +98,19 @@ network evidence showed static asset requests and local `blob:` downloads only:
 no answer POST, server round trip, retained browser storage, or console error
 was observed.
 
-Open usability/testing items:
+The earlier below-the-fold emergency action is now addressed by a fixed,
+safe-area-aware mobile action dock. The focused test suite also forces PDF
+generation to fail and verifies that neither the health-answer payload nor the
+thrown error is written to `console.log`, `console.warn`, or `console.error`.
 
-- The emergency screen's continue action begins below the initial 375×812
-  viewport and should be made discoverable before wider pilot use.
-- A forced client-side PDF-generation failure has not yet been exercised, so
-  the no-payload error/logging path still needs explicit evidence.
-- Authenticated pharmacist routes were outside that pass because test TOTP
-  credentials were unavailable.
+Remaining beta evidence:
+
+- repeat the full pre-visit and advisory paths on physical iOS and Android
+  devices at 375px-equivalent width, including browser zoom and large text;
+- confirm the fixed action dock does not obscure content with each device's
+  browser controls and safe-area inset; and
+- repeat a keyboard and screen-reader pass for the new focus and progress
+  semantics.
 
 See [`worklogs/p1-7-usability-a11y-375px.md`](worklogs/p1-7-usability-a11y-375px.md)
 for measurements and scope.

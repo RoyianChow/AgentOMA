@@ -1,0 +1,27 @@
+{
+  "controlId": "PRV-01",
+  "description": "Files permitted to read process.env directly instead of going through src/env.ts's typed, validated config boundary. AGENTS.md: 'No new process.env outside src/env.ts.' Every entry must be reviewed, not assumed safe by convention.",
+  "entries": [
+    {
+      "file": "src/env.ts",
+      "reason": "The typed/validated env boundary itself — this is the one file allowed to read raw process.env, by definition.",
+      "allowedKeys": ["*"],
+      "owner": "repo-maintainers",
+      "reviewDate": "2027-02-17"
+    },
+    {
+      "file": "src/lib/db/test/harness.ts",
+      "reason": "Test-only database override (TEST_DATABASE_URL) for the throwaway Docker Postgres harness. Never touches production: assertLocalTestDb() refuses any non-localhost/non-test-db host and rejects anything matching a Supabase-shaped URL before this value is ever used.",
+      "allowedKeys": ["TEST_DATABASE_URL"],
+      "owner": "repo-maintainers",
+      "reviewDate": "2027-02-17"
+    },
+    {
+      "file": "apps/experiment-sandbox/src/env/server.ts",
+      "reason": "The Task 01 sandbox workspace's own typed env boundary — same role as src/env.ts, scoped to apps/experiment-sandbox. Reads a curated allowlist of OS/shell passthrough variables (Path, TEMP, HOME, CI, TERM, etc. — no secrets) for spawning a controlled child process, plus npm_execpath, which is itself validated with isLocalPath() before use.",
+      "allowedKeys": ["*"],
+      "owner": "repo-maintainers",
+      "reviewDate": "2027-02-17"
+    }
+  ]
+}

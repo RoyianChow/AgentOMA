@@ -1,6 +1,6 @@
 # Task 12 — Operational Resilience, Downtime, and Recovery
 
-## Next-sprint checkpoint — 2026-08-10
+## Sprint checkpoint — 2026-08-20
 
 **Repository state:** `NOT RUN`; no dedicated operational-resilience capability,
 service health model, downtime state machine, or cross-capability recovery
@@ -10,7 +10,7 @@ contract, downtime-state design, and recovery test plan only.
 **Exit:** no production access, live backup, monitoring vendor, alert delivery,
 automated failover, or production configuration change. Runnable synthetic
 work requires a separate exact approval and Task 11 Checkpoint 1. See
-[`NEXT-SPRINT-PLAN-2026-08-10.md`](NEXT-SPRINT-PLAN-2026-08-10.md).
+[`CURRENT-IMPLEMENTATION-STATUS.md`](CURRENT-IMPLEMENTATION-STATUS.md).
 
 ## Role
 

@@ -13,9 +13,11 @@ Before selecting a task, read the [current implementation status](CURRENT-IMPLEM
 It compares the task contracts with the repository and records what is
 complete, partial, blocked, or still unstarted.
 
-For the current sequencing, owners, blockers, and sprint exit criteria, read
-the [2026-08-10 next-sprint plan](NEXT-SPRINT-PLAN-2026-08-10.md). It schedules
-bounded work but grants no implementation or production authority.
+Current sequencing, owners, blockers, and exit criteria live in the
+[current implementation status](CURRENT-IMPLEMENTATION-STATUS.md). Keeping
+status and sequencing together prevents a dated sprint file from silently
+drifting away from the code. The status file grants no implementation or
+production authority.
 
 ## Start an assigned task
 
@@ -53,11 +55,12 @@ Task 11: review/release controls ─────┘                │
                                                        └─> explicit promotion review
 ```
 
-- Task 01's recorded local synthetic candidate and evidence are PASS. G2 was
-  not requested, G3 remains empty, and changed candidates require fresh
-  evidence rather than inheriting that PASS.
-- Task 11 synthetic implementation is approved, but merge and promotion remain
-  blocked pending exact-candidate independent review.
+- Task 01's historical local candidate and evidence are PASS. The current
+  changed candidate does not inherit that result: production invariance fails
+  on route shape and runnable sandbox authority is expired.
+- Task 11's first CI workflow slice is merged. The security, accessibility,
+  evidence-validation, aggregate-gate, branch-protection, and independent
+  review controls remain incomplete.
 - Task 02 may perform bounded inspection, export work, and the authorized
   test-only predecessor-harness implementation. Running that harness still
   requires a new exact-candidate G1-D; live writes remain separately G1-L-gated.
@@ -71,17 +74,17 @@ Task 11: review/release controls ─────┘                │
 
 | Task | Owner and outcome | Work allowed now | Key dependencies and promotion gate |
 |---|---|---|---|
-| [`01 — Sandbox enforcement`](TASK-01-sandbox-enforcement.md) | Platform/security; maintain the isolated synthetic execution boundary | Recorded local candidate and evidence PASS; reconcile stale README wording and reverify changed candidates | Bootstrap task. Separate workspace/build with no production imports, data, secrets, accounts, or integrations. G2 not requested; G3 empty. |
-| [`02 — P0 production readiness`](TASK-02-p0-production-readiness.md) | Senior backend/database; close assessment completion, evidence, export, and deployment gaps | Inspection and bounded export work; no unapproved migration execution or live writes | Reusable synthetic evidence should run under Task 01. Production promotion requires Task 11 review and all explicit P0 approvals. |
-| [`03 — Command centre`](TASK-03-command-centre-dashboard.md) | Frontend/product; prototype an accountable pharmacist work surface | Repository discovery and design | Runnable prototype needs Task 01. Production data needs Task 02. Task 11 reviews the test plan and evidence. |
-| [`04 — Booking and waitlist`](TASK-04-booking-and-waitlist.md) | Full-stack; synthetic scheduling, capacity, waitlist, and cancellation workflow | `BLOCKED_MISSING_RENEWAL_APPROVAL`; documentation and renewal-package work only | Waitlist policy is approved only as a policy sub-decision. Runtime needs the completed v3 renewal and independent review; production depends on Tasks 02, 05, 07, and 11. |
-| [`05 — Patient portal`](TASK-05-patient-portal.md) | Identity/full-stack; synthetic patient identity, delegated access, and read-only records | Threat modelling, design, and Task-01-contained prototype | Production requires approved identity proofing, finalized Task 02 retrieval, Task 04 delegation boundaries, Task 07 communications, privacy/security review, and Task 11. |
-| [`06 — Virtual care`](TASK-06-virtual-care.md) | Virtual-care integration; synthetic pharmacist-led visit workflow | Standards assessment, contracts, threat model, and Task-01-contained prototype | Production requires Task 02 assessment integration, Task 05 identity, Task 07 communication boundary, vendor/PIA/TRA approvals, and Task 11. |
+| [`01 — Sandbox enforcement`](TASK-01-sandbox-enforcement.md) | Platform/security; maintain the isolated synthetic execution boundary | Historical candidate PASS; current candidate is blocked by route-shape invariance and expired runtime authority | Bootstrap task. Separate workspace/build with no production imports, data, secrets, accounts, or integrations. G2 not requested; G3 empty. |
+| [`02 — P0 production readiness`](TASK-02-p0-production-readiness.md) ([02A governance remediation](TASK-02A-governance-integrity-and-ux.md)) | Senior backend/database; close assessment completion, evidence, export, governance, and deployment gaps | Inspection, documentation, and separately approved bounded work; no unapproved migration, audit, authorization, infrastructure, or live changes | Reusable synthetic evidence should run under Task 01. Production promotion requires Task 11 review and all explicit P0 approvals. |
+| [`03 — Command centre`](TASK-03-command-centre-dashboard.md) | Frontend/product; prototype an accountable pharmacist work surface | Reconcile the existing unmerged branch; maintained checkout remains `NOT RUN` | Runnable prototype needs Task 01. Production data needs Task 02. Task 11 reviews the test plan and evidence. |
+| [`04 — Booking and waitlist`](TASK-04-booking-and-waitlist.md) | Full-stack; synthetic scheduling, capacity, waitlist, and cancellation workflow | Partial runtime and `/book` UI are merged but fail closed; renewal-package work only | Waitlist policy is approved only as a policy sub-decision. Runtime needs the completed v3 renewal and independent review; production depends on Tasks 02, 05, 07, and 11. |
+| [`05 — Patient portal`](TASK-05-patient-portal.md) | Identity/full-stack; synthetic patient identity, delegated access, and read-only records | Reconcile the existing unmerged design branch; no maintained patient portal runtime | Production requires approved identity proofing, finalized Task 02 retrieval, Task 04 delegation boundaries, Task 07 communications, privacy/security review, and Task 11. |
+| [`06 — Virtual care`](TASK-06-virtual-care.md) | Virtual-care integration; synthetic pharmacist-led visit workflow | Synthetic routes/guards/tests are merged; runtime renewal and manual/independent evidence remain blocked | Production requires Task 02 assessment integration, Task 05 identity, Task 07 communication boundary, vendor/PIA/TRA approvals, and Task 11. |
 | [`07 — Messaging and reminders`](TASK-07-messaging-and-reminders.md) ([status](../../task-07/README.md)) | Backend/communications; consented communication contracts and synthetic delivery states | Workstreams A–I complete; privacy/audit/retention design only until Task 07 scope + Task 11 Checkpoint 1 | No real recipient, PHI, or live provider. Depends on Task 01 and producing workflows; production requires identity, consent/contact policy, vendor, privacy/security/professional/accessibility/legal/operations, incident, and Task 11 approval. |
 | [`08 — Fulfilment and delivery`](TASK-08-fulfilment-and-delivery.md) | Pharmacy operations; synthetic request, fulfilment, pickup, and delivery orchestration | Contracts, state machines, and synthetic tests only | No medication, payment, payer, courier, claim, or dispensing effect. Depends on Tasks 01, 03, 05, 07, 09, and 11 as specified in the brief. |
 | [`09 — Interoperability`](TASK-09-interoperability.md) | Integration/platform; fail-closed interfaces and synthetic conformance | Discovery, standards analysis, schemas, and synthetic conformance | Production routes, including `/api/fhir`, remain disabled. Live integration requires supplied specifications, authentication, privacy/security review, and Task 11. |
-| [`10 — Bounded AI`](TASK-10-bounded-ai.md) | Applied AI; synthetic evaluation of pharmacist-reviewed assistance | Expansion blocked pending disposition of AI-RX-06's production-tree placement | No PHI, model call, production inference, user-visible clinical recommendation, or autonomous effect. Any rebuild belongs in Task 01's sandbox and needs Task 11 review. |
-| [`11 — Quality, security, release`](TASK-11-quality-security-release.md) | QA/security; continuous controls, evidence, and release review | Synthetic implementation approved; reconcile external branch/PR; merge and promotion blocked on independent review | Reviews plans and promotion evidence for Tasks 02–10 and 12–14. It records approvals but cannot grant or self-approve them. |
+| [`10 — Bounded AI`](TASK-10-bounded-ai.md) | Applied AI; synthetic evaluation of pharmacist-reviewed assistance | AI-RX-06 retired from production; five chartered candidates remain design/evaluation work only | No PHI, model call, production inference, user-visible clinical recommendation, or autonomous effect. Any future experiment belongs in Task 01's sandbox and needs Task 11 review. |
+| [`11 — Quality, security, release`](TASK-11-quality-security-release.md) | QA/security; continuous controls, evidence, and release review | First seven-job CI slice merged; complete security, accessibility, evidence and aggregate-gate controls | Reviews plans and promotion evidence for Tasks 02–10 and 12–14. It records approvals but cannot grant or self-approve them. |
 | [`12 — Operational resilience`](TASK-12-operational-resilience.md) | Platform/reliability; downtime, payload-free observability, backup/restore, and recovery | Discovery, dependency map, state model, and test-plan design only | Runnable drills require Task 01 and an exact Task 12 approval; Task 02 retains P0 migration/live-recovery gates; Task 11 validates evidence but cannot grant approval. |
 | [`13 — Human factors and pilot readiness`](TASK-13-human-factors-pilot-readiness.md) | Human factors/product safety; training, synthetic simulations, accessibility, and controlled-pilot gates | Discovery, hazard analysis, training framework, scenario catalogue, and study/pilot design only | No participant study or pilot without exact approval; clinical/billing sources remain protected; Task 11 validates evidence but cannot grant pilot authority. |
 | [`14 — Regulatory change governance`](TASK-14-regulatory-change-governance.md) | Regulatory/change control; source provenance, impact mapping, effective dates, approvals, and rollback | Source-register, impact, transition, approval, and evidence design only | No protected clinical/billing/migration change or autonomous activation; implementation requires exact Task 14 approval and Task 11 Checkpoint 1. |
