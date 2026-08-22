@@ -6,6 +6,7 @@ import { odbFeeTier, pharmacy } from "@/lib/db/schema";
 import { and, eq, gte, isNull, lte, or } from "drizzle-orm";
 import AssessmentWorkspace from "./AssessmentWorkspace";
 import IntakeQueue from "./IntakeQueue";
+import IntakeRecovery from "./IntakeRecovery";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,26 @@ export default async function AssessmentPage({
   // UX redirect only — the server actions this page's workspace calls
   // re-verify session, role, pharmacy, and orientation themselves.
   const actor = await requirePortalPage();
+  const { session: sessionId } = await searchParams;
+  const pending = await getPendingIntakeSessions();
+
+  // Every assessment must trace back to a real, submitted intake — there is
+  // no walk-in/cold-start path. Missing and unavailable identifiers share one
+  // recovery page so the route never reveals whether a particular intake
+  // existed, expired, or was already consumed.
+  if (!sessionId) {
+    return <IntakeRecovery intakes={pending.sessions} />;
+  }
+
+  // Loading an intake goes through the guarded queue-selection action:
+  // pharmacy scope + single-use + expiry are re-checked server-side. A
+  // session that doesn't resolve (malformed / expired / already consumed /
+  // wrong pharmacy) renders the same generic recovery state.
+  const res = await getIntakeSessionById(sessionId);
+  if (!res.success) {
+    return <IntakeRecovery intakes={pending.sessions} />;
+  }
+
   const [feeTier] = await db
     .select({
       remoteVirtualEligible: odbFeeTier.remoteVirtualEligible,
@@ -44,28 +65,8 @@ export default async function AssessmentPage({
     redirect("/pharmacist/settings");
   }
 
-  const { session: sessionId } = await searchParams;
-
-  // Every assessment must trace back to a real, submitted intake — there is
-  // no walk-in/cold-start path. No session id at all means this page was
-  // reached some way other than clicking a queue row.
-  if (!sessionId) {
-    redirect("/pharmacist");
-  }
-
-  // Loading an intake goes through the same guarded action as typing the code
-  // by hand: pharmacy scope + single-use + expiry re-checked server-side. A
-  // session that doesn't resolve (expired / already consumed / wrong
-  // pharmacy) sends the pharmacist back to the queue rather than rendering a
-  // blank/cold-start workspace.
-  const res = await getIntakeSessionById(sessionId);
-  if (!res.success) {
-    redirect("/pharmacist");
-  }
-
   // Pharmacy-scoped, unconsumed, unexpired — filtered server-side in the
   // action. Holds no patient identity (the intake has none by design).
-  const pending = await getPendingIntakeSessions();
   const queue = (
     <IntakeQueue intakes={pending.sessions} currentSessionId={sessionId} />
   );

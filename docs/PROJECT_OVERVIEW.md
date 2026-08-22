@@ -109,7 +109,19 @@ product boundaries.
 
 ### Pharmacist portal
 
-An authenticated user can retrieve a handoff or start a walk-in assessment, enter identity from the health card, view platform claim history, attest to a clinical-viewer check, record informed consent, complete the structured clinical record, choose modality/outcome, and—when issuing a prescription—record patient address, medication directions, PCP notification, and the choice-of-pharmacy discussion.
+An authenticated user can retrieve a submitted handoff from the pharmacy queue,
+enter identity from the health card, view platform claim history, attest to a
+clinical-viewer check, record informed consent, complete the structured clinical
+record, choose modality/outcome, and—when issuing a prescription—record patient
+address, medication directions, PCP notification, and the choice-of-pharmacy
+discussion. There is no cold-start assessment path; every assessment must link
+to a real, submitted intake.
+
+Missing, malformed, expired, consumed, and unavailable intake links render the
+same authenticated recovery state. The page never echoes the attempted
+identifier or reveals which condition applies; it keeps the zero-identity
+waiting queue available so the pharmacist can safely continue with another
+intake or ask the patient to restart from the pharmacy QR code.
 
 The server resolves the prescriber from the authenticated session and pins every
 read/write to the server-configured `PHARMACY_ID`. It derives a read-only

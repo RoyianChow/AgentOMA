@@ -33,6 +33,10 @@ This is the implementation record requested for the project. It describes capabi
 - Kept emergency/red-flag exits terminal and separate from completed assessments.
 - Enforced the zero-PHI intake design: the patient device submits symptoms and self-reports only.
 - Added short-lived, single-use six-character handoff sessions stored in Postgres.
+- Added a non-enumerating pharmacist recovery screen for missing, malformed,
+  expired, consumed, and unavailable handoff links. It echoes no attempted
+  identifier and preserves access only to the authenticated zero-identity
+  waiting queue.
 - Kept the legacy pharmacy QR parameter for link compatibility while removing
   its tenant-selection power: the server always uses `PHARMACY_ID`, and a
   forged/malformed/absent query value resolves only to the configured pharmacy.
@@ -121,7 +125,8 @@ This is the implementation record requested for the project. It describes capabi
 
 ## Portal, audit, and settings
 
-- Built server-backed dashboard statistics, pending-intake queue, recent assessments, and walk-in assessment flow.
+- Built server-backed dashboard statistics, pending-intake queue, recent
+  assessments, and a guarded assessment flow that requires a submitted intake.
 - Moved the audit page and record detail rendering fully server-side so patient records are not sent to client components.
 - Added pharmacy-scoped audit filters, record detail, CSV export, audit PDF export, and assessment-record PDF export.
 - Added audit events for intake/patient creation, assessments, claim drafts, orientation actions, invitations, and export access.

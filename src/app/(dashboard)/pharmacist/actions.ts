@@ -59,6 +59,10 @@ import {
   type AssessmentCompletionBoundary,
   type PatientIdentityBoundary,
 } from "@/lib/p0-c-boundary-schema";
+import {
+  INTAKE_UNAVAILABLE_MESSAGE,
+  parseIntakeSessionId,
+} from "@/lib/intake-availability";
 
 // SECURITY MODEL — why every action below starts with requirePortalUser():
 // proxy.ts only performs an optimistic cookie-presence redirect for UX; a
@@ -99,7 +103,6 @@ export type PendingIntake = {
   existingRxSelfReport: string | null;
   trailLength: number;
 };
-//test
 export type IntakeSessionDTO = {
   id: string;
   code: string;
@@ -179,15 +182,19 @@ export async function getIntakeSessionById(
     // Tenancy: the lookup is scoped to the actor's pharmacy, so an id from
     // another pharmacy simply doesn't resolve.
     const actor = await requirePortalUser();
+    const parsedId = parseIntakeSessionId(id);
+    if (!parsedId) {
+      return { success: false, error: INTAKE_UNAVAILABLE_MESSAGE };
+    }
     const session = await db.query.intakeSession.findFirst({
-      where: and(eq(intakeSession.id, id), pendingPredicate(actor.pharmacyId)),
+      where: and(
+        eq(intakeSession.id, parsedId),
+        pendingPredicate(actor.pharmacyId),
+      ),
     });
 
     if (!session) {
-      return {
-        success: false,
-        error: "This intake is no longer available — it may have expired or already been completed.",
-      };
+      return { success: false, error: INTAKE_UNAVAILABLE_MESSAGE };
     }
 
     return {
@@ -208,8 +215,13 @@ export async function getIntakeSessionById(
     if (err instanceof AuthorizationError) {
       return { success: false, error: refusalMessage(err) };
     }
-    console.error("Failed to load intake session:", err);
-    return { success: false, error: "Database error" };
+    // Do not log the query, identifier, or database error object. Some drivers
+    // include bound parameters in their error representation.
+    console.error("Failed to load intake session.");
+    return {
+      success: false,
+      error: "The intake could not be loaded. Refresh the queue and try again.",
+    };
   }
 }
 
