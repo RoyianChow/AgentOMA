@@ -1,100 +1,814 @@
 .root {
-  max-width: 1120px;
+  --governance-surface: var(--bg-secondary, #ffffff);
+  --governance-surface-muted: var(--bg-tertiary, #f1f5f9);
+  --governance-text: var(--text-primary, #0f172a);
+  --governance-text-muted: var(--text-secondary, #475569);
+  --governance-border: var(--border-color, #e2e8f0);
+  --governance-action: #0f766e;
+  --governance-action-hover: #115e59;
+  --governance-action-text: #ffffff;
+  --governance-focus: #0f766e;
+  --governance-warning-bg: var(--warning-light, #fef3c7);
+  --governance-warning-text: var(--warning-text, #92400e);
+  --governance-danger-bg: var(--danger-light, #fee2e2);
+  --governance-danger-text: var(--danger-text, #991b1b);
+  --governance-danger-action: #b4232b;
+  --governance-danger-hover: #8e1b21;
+  width: min(100%, 1240px);
   margin: 0 auto;
-  padding: 2rem 1rem 4rem;
-  color: #14201b;
+  padding: 1.5rem clamp(0.75rem, 3vw, 2rem) 4rem;
+  color: var(--governance-text);
+}
+
+.skipLink {
+  position: fixed;
+  z-index: 1000;
+  top: 0.5rem;
+  left: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--governance-action);
+  color: var(--governance-action-text);
+  font-weight: 700;
+  transform: translateY(-150%);
+}
+
+.skipLink:focus {
+  transform: translateY(0);
 }
 
 .header {
-  margin-bottom: 1.5rem;
-}
-
-.header p {
-  max-width: 70ch;
-  color: #5f726a;
-}
-
-.grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.portalBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 1rem;
-  margin: 1rem 0 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--governance-border);
 }
 
-.card {
-  padding: 1rem;
-  border: 1px solid #dde4e0;
-  border-radius: 12px;
-  background: #fff;
-}
-
-.card h2,
-.card h3 {
-  margin: 0 0 0.75rem;
-}
-
-.metric {
-  font-size: 1.75rem;
+.backLink,
+.workflowNav a,
+.inlineLink {
+  color: var(--governance-action);
   font-weight: 700;
-  color: #0e5a4a;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.backLink {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.sessionActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.roleBadge,
+.stepBadge,
+.countBadge,
+.stateBadge,
+.reviewBadge,
+.irreversibleBadge {
+  display: inline-flex;
+  min-height: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+.roleBadge {
+  padding: 0.35rem 0.7rem;
+  background: var(--governance-surface-muted);
+  color: var(--governance-text-muted);
+}
+
+.titleBlock {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.titleBlock h1 {
+  margin: 0;
+  font-size: clamp(2rem, 6vw, 3.25rem);
+  line-height: 1.05;
+}
+
+.eyebrow,
+.sectionKicker,
+.dangerKicker {
+  margin: 0;
+  color: var(--governance-action);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.dangerKicker {
+  color: var(--governance-danger-text);
+}
+
+.intro {
+  max-width: 76ch;
+  margin: 0;
+  color: var(--governance-text-muted);
+  font-size: 1.02rem;
+}
+
+.statusBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  max-width: 76ch;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--governance-border);
+  border-radius: 0.75rem;
+  background: var(--governance-surface-muted);
+  color: var(--governance-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.statusDot {
+  flex: 0 0 auto;
+  width: 0.65rem;
+  height: 0.65rem;
+  margin-top: 0.3rem;
+  border-radius: 50%;
+  background: var(--governance-action);
+}
+
+.workflowNav {
+  position: sticky;
+  z-index: 10;
+  top: 0;
+  margin-bottom: 2rem;
+  padding: 0.55rem;
+  border: 1px solid var(--governance-border);
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--governance-surface) 94%, transparent);
+  box-shadow: 0 0.35rem 1.25rem rgb(15 23 42 / 8%);
+  backdrop-filter: blur(12px);
+}
+
+.workflowNav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workflowNav a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.55rem;
+  text-decoration: none;
+}
+
+.workflowNav a:hover {
+  background: var(--governance-surface-muted);
+}
+
+.content {
+  display: grid;
+  gap: 2.75rem;
+}
+
+.content:focus-visible {
+  outline: 3px solid var(--governance-focus);
+  outline-offset: 0.4rem;
+}
+
+.section {
+  min-width: 0;
+  scroll-margin-top: 5.5rem;
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.sectionHeading > div {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.sectionHeading h2 {
+  margin: 0;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+}
+
+.sectionHeading > p {
+  max-width: 52ch;
+  margin: 0;
+  color: var(--governance-text-muted);
+  font-size: 0.92rem;
+  text-align: right;
+}
+
+.metricGrid,
+.workflowGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.metricGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.metricCard,
+.actionCard,
+.recordCard {
+  min-width: 0;
+  padding: clamp(1rem, 2.5vw, 1.35rem);
+  border: 1px solid var(--governance-border);
+  border-radius: 0.9rem;
+  background: var(--governance-surface);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 5%);
+}
+
+.metricCard h3,
+.actionCard h3,
+.recordCard h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.metricValue {
+  margin: 0.85rem 0 0;
+  color: var(--governance-action);
+  font-size: clamp(2rem, 5vw, 2.65rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.metricAttention {
+  color: var(--governance-danger-text);
+}
+
+.metricLabel,
+.cardIntro,
+.recordMeta {
+  margin: 0.4rem 0 0;
+  color: var(--governance-text-muted);
+  font-size: 0.9rem;
+}
+
+.factList {
+  display: grid;
+  gap: 0.55rem;
+  margin: 1rem 0 0;
+}
+
+.factList > div,
+.compactList li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--governance-border);
+}
+
+.factList dt,
+.compactList span {
+  color: var(--governance-text-muted);
+  font-size: 0.84rem;
+}
+
+.factList dd,
+.compactList strong {
+  margin: 0;
+  color: var(--governance-text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+  text-align: right;
+}
+
+.compactList,
+.recordList,
+.failureList {
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.inlineLink {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.cardHeading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.4rem;
+}
+
+.stepBadge,
+.stateBadge,
+.countBadge {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.65rem;
+  background: var(--governance-surface-muted);
+  color: var(--governance-text-muted);
+}
+
+.countBadge {
+  min-width: 1.75rem;
+  padding-inline: 0.5rem;
+  background: var(--governance-action);
+  color: var(--governance-action-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .form {
   display: grid;
-  gap: 0.7rem;
+  gap: 0.9rem;
+  margin-top: 1.15rem;
 }
 
-.form label {
+.twoColumnForm {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.fullField,
+.wideCard {
+  grid-column: 1 / -1;
+}
+
+.field {
   display: grid;
-  gap: 0.25rem;
-  font-weight: 600;
+  min-width: 0;
+  gap: 0.35rem;
 }
 
-.form input,
+.field label,
+.confirmation {
+  color: var(--governance-text);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.form input:not([type="checkbox"]),
 .form select,
 .form textarea {
-  min-height: 44px;
-  padding: 0.65rem;
-  border: 1px solid #aab8b2;
-  border-radius: 8px;
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--governance-text-muted) 55%, transparent);
+  border-radius: 0.55rem;
+  background: var(--governance-surface);
+  color: var(--governance-text);
   font: inherit;
+  line-height: 1.35;
 }
 
 .form textarea {
-  min-height: 88px;
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.form input::placeholder,
+.form textarea::placeholder {
+  color: var(--governance-text-muted);
+  opacity: 0.8;
+}
+
+.fieldHint,
+.requiredNote {
+  color: var(--governance-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.requiredNote {
+  margin: 0;
 }
 
 .form button {
-  min-height: 44px;
-  border: 0;
-  border-radius: 8px;
-  background: #0e5a4a;
-  color: #fff;
-  font-weight: 700;
+  min-height: 46px;
+  padding: 0.7rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.55rem;
+  background: var(--governance-action);
+  color: var(--governance-action-text);
+  font: inherit;
+  font-weight: 750;
+  line-height: 1.3;
   cursor: pointer;
 }
 
-.danger button {
-  background: #97292a;
+.form button:hover {
+  background: var(--governance-action-hover);
 }
 
-.warning {
-  padding: 0.75rem;
-  border-left: 4px solid #a9701a;
-  background: #fbf0dc;
+.form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
-.list {
-  margin: 0;
-  padding-left: 1.25rem;
+.stackedCards {
+  display: grid;
+  gap: 1rem;
 }
 
-.list li + li {
-  margin-top: 0.5rem;
+.recordList {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.multiColumnList {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.recordItem {
+  min-width: 0;
+  padding: 0.85rem;
+  border: 1px solid var(--governance-border);
+  border-radius: 0.7rem;
+  background: var(--governance-surface-muted);
+}
+
+.recordHeader {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.recordHeader > :first-child {
+  min-width: 0;
+}
+
+.recordFacts {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0.8rem 0 0;
+}
+
+.recordFacts dt {
+  color: var(--governance-text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.recordFacts dd {
+  margin: 0.15rem 0 0;
+  overflow-wrap: anywhere;
+  color: var(--governance-text);
+  line-height: 1.45;
 }
 
 .code {
   overflow-wrap: anywhere;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.85rem;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8rem;
+  user-select: all;
+}
+
+.emptyState {
+  margin: 0;
+  padding: 1rem;
+  border: 1px dashed var(--governance-border);
+  border-radius: 0.65rem;
+  color: var(--governance-text-muted);
+  line-height: 1.5;
+}
+
+.dangerZone {
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border: 1px solid color-mix(in srgb, var(--governance-danger-text) 38%, transparent);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--governance-danger-bg) 38%, transparent);
+}
+
+.reviewCard {
+  border-color: color-mix(in srgb, var(--governance-warning-text) 42%, transparent);
+}
+
+.irreversibleCard {
+  border-color: color-mix(in srgb, var(--governance-danger-text) 48%, transparent);
+}
+
+.reviewBadge,
+.irreversibleBadge {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.65rem;
+}
+
+.reviewBadge {
+  background: var(--governance-warning-bg);
+  color: var(--governance-warning-text);
+}
+
+.irreversibleBadge {
+  background: var(--governance-danger-bg);
+  color: var(--governance-danger-text);
+}
+
+.warning,
+.dangerWarning {
+  margin: 0.9rem 0 0;
+  padding: 0.8rem 0.9rem;
+  border-left: 4px solid currentColor;
+  border-radius: 0.35rem;
+  line-height: 1.5;
+}
+
+.warning {
+  background: var(--governance-warning-bg);
+  color: var(--governance-warning-text);
+}
+
+.dangerWarning {
+  background: var(--governance-danger-bg);
+  color: var(--governance-danger-text);
+}
+
+.form .reviewButton {
+  background: var(--governance-warning-text);
+  color: var(--governance-surface);
+}
+
+.form .reviewButton:hover {
+  filter: brightness(0.9);
+}
+
+.form .dangerButton {
+  background: var(--governance-danger-action);
+  color: #ffffff;
+}
+
+.form .dangerButton:hover {
+  background: var(--governance-danger-hover);
+}
+
+.confirmation {
+  display: grid;
+  grid-template-columns: 1.4rem minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  padding: 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--governance-danger-text) 45%, transparent);
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, var(--governance-danger-bg) 45%, transparent);
+  cursor: pointer;
+}
+
+.confirmation input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0.1rem 0 0;
+  accent-color: var(--governance-danger-action);
+}
+
+.failurePanel {
+  padding: clamp(1rem, 2.5vw, 1.35rem);
+  border: 1px solid var(--governance-border);
+  border-radius: 0.9rem;
+  background: var(--governance-surface);
+}
+
+.failureSummary {
+  margin: 0 0 0.85rem;
+  color: var(--governance-text);
+  font-weight: 700;
+}
+
+.failureList {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.failureList li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--governance-border);
+}
+
+.failureList li:first-child {
+  padding-top: 0;
+}
+
+.failureList li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.failureList li > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.failureCode,
+.failureList time {
+  color: var(--governance-text-muted);
+  font-size: 0.82rem;
+}
+
+.failureList time {
+  flex: 0 0 auto;
+  text-align: right;
+}
+
+.root :is(a, button, input, select, textarea, summary):focus-visible {
+  outline: 3px solid var(--governance-focus);
+  outline-offset: 3px;
+}
+
+.root :is(input, select, textarea):user-invalid {
+  border-color: var(--governance-danger-text);
+  box-shadow: 0 0 0 1px var(--governance-danger-text);
+}
+
+@media (prefers-color-scheme: dark) {
+  .root {
+    --governance-action: #2dd4bf;
+    --governance-action-hover: #5eead4;
+    --governance-action-text: #042f2e;
+    --governance-focus: #5eead4;
+    --governance-danger-action: #fca5a5;
+    --governance-danger-hover: #fecaca;
+  }
+
+  .form .dangerButton {
+    color: #450a0a;
+  }
+
+  .metricCard,
+  .actionCard,
+  .recordCard,
+  .failurePanel,
+  .workflowNav {
+    box-shadow: none;
+  }
+}
+
+:global(.dark-theme) .root {
+  --governance-action: #2dd4bf;
+  --governance-action-hover: #5eead4;
+  --governance-action-text: #042f2e;
+  --governance-focus: #5eead4;
+  --governance-danger-action: #fca5a5;
+  --governance-danger-hover: #fecaca;
+}
+
+:global(.dark-theme) .root .form .dangerButton {
+  color: #450a0a;
+}
+
+@media (max-width: 1050px) {
+  .metricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .root {
+    padding-top: 1rem;
+  }
+
+  .portalBar,
+  .sectionHeading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sessionActions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .sectionHeading > p {
+    max-width: none;
+    text-align: left;
+  }
+
+  .workflowNav {
+    position: static;
+  }
+
+  .workflowNav ul {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workflowNav a {
+    width: 100%;
+  }
+
+  .metricGrid,
+  .workflowGrid,
+  .twoColumnForm,
+  .multiColumnList {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .wideCard,
+  .fullField {
+    grid-column: auto;
+  }
+
+  .failureList li {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .failureList time {
+    text-align: left;
+  }
+}
+
+@media (max-width: 420px) {
+  .root {
+    padding-inline: 0.75rem;
+  }
+
+  .sessionActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .roleBadge {
+    align-self: flex-start;
+  }
+
+  .workflowNav ul {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .metricCard,
+  .actionCard,
+  .recordCard,
+  .dangerZone,
+  .failurePanel {
+    padding: 1rem;
+  }
+
+  .cardHeading,
+  .recordHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .form button {
+    width: 100%;
+  }
+}
+
+@media (forced-colors: active) {
+  .statusDot {
+    background: CanvasText;
+  }
+
+  .roleBadge,
+  .stepBadge,
+  .countBadge,
+  .stateBadge,
+  .reviewBadge,
+  .irreversibleBadge,
+  .warning,
+  .dangerWarning,
+  .confirmation {
+    border: 1px solid CanvasText;
+  }
 }
