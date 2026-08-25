@@ -137,8 +137,10 @@ export async function logTriageExit(data: {
       reason: data.reason,
     });
     return { success: true };
-  } catch (err) {
-    console.error("Failed to log triage exit:", err);
+  } catch {
+    // Payload-free failure log: the red-flag answer and request are never
+    // emitted to the browser or server logs.
+    console.error("Failed to log triage exit.");
     return { success: false, error: "Failed to log triage exit" };
   }
 }

@@ -25,7 +25,9 @@ import styles from "./TriageFlow.module.css";
  * identity is ever needed on this screen, the whole flow has to move behind a
  * server action first.
  *
- * Nothing is persisted. The handoff at the end is a TODO seam.
+ * Symptom answers remain in memory until the final handoff. A successful
+ * handoff persists only the zero-identity intake record through the server
+ * action; no browser storage is used.
  *
  * Presentation lives entirely in TriageFlow.module.css. No site classes, no
  * inline style objects — only the dynamic progress-bar width is bound inline.
@@ -145,11 +147,9 @@ export default function TriageFlow({ claimMaximums }: Props) {
       if (res.success && res.code) {
         setIntakeCode(res.code);
       } else {
-        if (!res.success) console.error(res.error);
         setIntakeCode(null);
       }
-    } catch (err) {
-      console.error("Handoff failed:", err);
+    } catch {
       setIntakeCode(null);
     } finally {
       setIsSubmitting(false);

@@ -55,6 +55,7 @@ vi.mock("@/lib/auth-guard", () => {
 
 import { makeTestDb, resetOperationalTables, type TestDb } from "@/lib/db/test/harness";
 import type { ClinicalRecordInput } from "@/lib/clinical-record-types";
+import { INTAKE_UNAVAILABLE_MESSAGE } from "@/lib/intake-availability";
 
 const PHARMACY_ID = "00000000-0000-0000-0000-000000000000";
 let db: TestDb;
@@ -1607,7 +1608,10 @@ describe("createAssessment → claim_draft", () => {
 
     // Single-use: the same intake can no longer be loaded.
     const reload = await getIntakeSessionById(intakeId);
-    expect(reload.success).toBe(false);
+    expect(reload).toEqual({
+      success: false,
+      error: INTAKE_UNAVAILABLE_MESSAGE,
+    });
   });
 
   it("the database rejects a second pharmacy and expired intakes cannot be loaded", async () => {
@@ -1626,7 +1630,10 @@ describe("createAssessment → claim_draft", () => {
       returning id
     `);
     const expiredId = (rows as unknown as { id: string }[])[0].id;
-    expect((await getIntakeSessionById(expiredId)).success).toBe(false);
+    expect(await getIntakeSessionById(expiredId)).toEqual({
+      success: false,
+      error: INTAKE_UNAVAILABLE_MESSAGE,
+    });
     const completion = await createAssessment({
       ...baseInput(),
       intakeSessionId: expiredId,
@@ -1634,6 +1641,39 @@ describe("createAssessment → claim_draft", () => {
     expect(completion.success).toBe(false);
     expect(await countRows("assessment")).toBe(0);
     expect(await countRows("claim_draft")).toBe(0);
+  });
+
+  it("malformed, unknown, expired, and consumed intake ids share one safe response", async () => {
+    const { createAssessment, getIntakeSessionById } = await import("../actions");
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      const expiredRows = await db.execute<{ id: string }>(sql`
+        insert into intake_session (code, pharmacy_id, ailment_group_code, expires_at)
+        values ('QQTAB5', ${PHARMACY_ID}::uuid, 'RHINITIS', now() - interval '1 minute')
+        returning id
+      `);
+      const expiredId = (expiredRows as unknown as { id: string }[])[0].id;
+
+      const consumed = await createAssessment(await baseInput());
+      expect(consumed.success).toBe(true);
+
+      const unavailableIds = [
+        "not-an-intake-id",
+        "00000000-0000-4000-8000-000000000099",
+        expiredId,
+        intakeSessionId,
+      ];
+
+      for (const id of unavailableIds) {
+        expect(await getIntakeSessionById(id)).toEqual({
+          success: false,
+          error: INTAKE_UNAVAILABLE_MESSAGE,
+        });
+      }
+      expect(consoleSpy).not.toHaveBeenCalled();
+    } finally {
+      consoleSpy.mockRestore();
+    }
   });
 
   it("a red-flag exit writes ZERO claim rows (the invariant)", async () => {

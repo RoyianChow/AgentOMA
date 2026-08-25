@@ -11,7 +11,7 @@ import ClearSensitiveLink from "./ClearSensitiveLink";
  * loads the intake through the guarded getIntakeSessionById server action
  * (session + pharmacy scope + single-use + expiry re-checked SERVER-SIDE).
  * The client is never handed a blob it could replay — clicking a row is the
- * same trust path as typing the reference code by hand.
+ * same guarded trust path as every other queue selection.
  *
  * The server action already filters to this pharmacy's unconsumed, unexpired
  * sessions, so "claimed" rows never appear here; "expired" can flash only in
