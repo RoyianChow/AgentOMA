@@ -33,7 +33,7 @@ AgentOMA supports Ontario pharmacy minor-ailment services. The Ministry of Healt
 | Guided demo | `/demo` | Interactive synthetic tour of intake, assessment, claim handoff, follow-up, and governance | No inputs, persistence, auth bypass, clinical advice, or billing values |
 | Public self-check | `/check` | Clinically approved, pharmacy-agnostic symptom self-check and client-generated pre-visit/advisory PDF | Zero identifying data; nothing sent or persisted |
 | Patient intake | `/assessment` | Mobile kiosk triage and six-character handoff | Collects zero PHI by design |
-| Authentication | `/sign-in`, `/enroll-2fa`, `/accept-invitation` | Invitation-only portal access and mandatory TOTP | Authentication data only |
+| Authentication | `/sign-in`, `/enroll-2fa`, `/accept-invitation` | Invitation-only portal access and mandatory TOTP; sign-in also links to the separate synthetic `/demo` tour | Authentication data only; the demo creates no session and grants no portal access |
 | Pharmacist portal | `/pharmacist/*` | Intake retrieval, patient identity, assessment, claim draft, follow-up, audit, settings, team | Contains PHI; authenticated, pharmacy-scoped, private/no-store, and same-origin-script only |
 | Follow-up worklist | `/pharmacist/follow-ups` | Due/overdue plans, attempts, evaluation, disposition, and immutable correction | Server-rendered; pharmacist/admin role and pharmacy scope rechecked on every mutation |
 | Record governance | `/pharmacist/governance` | Admin-only retention, export, hold, correction, destruction-review, audit-failure, and restore-drill controls | Server-rendered; complete exports use an authenticated download route |
@@ -75,6 +75,10 @@ integration. It imports only `AILMENT_LABELS` and `ALL_AILMENT_IDS` from the
 approved triage module to avoid duplicating the public condition names.
 Architecture tests enforce that narrow import boundary; the real pharmacist portal remains
 invitation-only with mandatory TOTP.
+
+The sign-in page offers an **Explore guest demo** link to this tour. It is a
+navigation entry point only: it does not create a guest identity, weaken TOTP,
+or expose any `/pharmacist/*` capability.
 
 ### Patient intake
 

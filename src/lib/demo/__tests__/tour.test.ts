@@ -60,4 +60,25 @@ describe("public guided demo", () => {
     expect(source).not.toMatch(/<input|<textarea|contentEditable/);
     expect(source).not.toMatch(/\b98\d{5}\b/);
   });
+
+  it("is reachable from sign-in without creating a guest auth bypass", () => {
+    const entry = readFileSync(
+      join(
+        process.cwd(),
+        "src",
+        "app",
+        "(auth)",
+        "sign-in",
+        "GuestDemoEntry.tsx",
+      ),
+      "utf8",
+    );
+
+    expect(entry).toContain('href="/demo"');
+    expect(entry).toContain("Nothing is saved");
+    expect(entry).toContain("does not sign you in");
+    expect(entry).not.toMatch(
+      /authClient|better-auth|@\/lib\/auth|\/pharmacist|onClick|use server|use client/,
+    );
+  });
 });

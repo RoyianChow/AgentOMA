@@ -5,6 +5,7 @@ import Image from "next/image";
 
 import { authClient } from "@/lib/auth-client";
 import { enterPortalAfterAuthentication } from "@/lib/auth-navigation";
+import GuestDemoEntry from "./GuestDemoEntry";
 import styles from "./SignIn.module.css";
 
 /**
@@ -256,6 +257,8 @@ export default function SignInPage() {
             </>
           )}
         </div>
+
+        <GuestDemoEntry />
 
         <p className={styles.footnote}>
           Access is by invitation from your pharmacy admin — there is no public
