@@ -31,10 +31,10 @@ describe("findImportSpecifiers", () => {
   it("does NOT flag a module specifier appearing only inside a string literal comparison", () => {
     // Regression case: the exact false positive a naive text/regex scan
     // produces — a test asserting some OTHER file's source doesn't contain
-    // the string "experiment-sandbox".
+    // some unrelated marker string.
     const hits = findImportSpecifiers(
       "f.ts",
-      `expect(someOtherFileSource).not.toContain("experiment-sandbox");`,
+      `expect(someOtherFileSource).not.toContain("marker-string");`,
     );
     expect(hits).toEqual([]);
   });
@@ -57,12 +57,12 @@ describe("findImportSpecifiers", () => {
 
 describe("checkImportBoundary", () => {
   const productionRoot = "src";
-  const sandboxRoot = "apps/experiment-sandbox/src";
-  const sandboxPackageName = "@agentoma/experiment-sandbox";
+  const sandboxRoot = "apps/sandbox-app/src";
+  const sandboxPackageName = "@agentoma/sandbox-app";
 
   it("flags production code resolving a relative import into the sandbox root", () => {
     const filePath = "src/lib/foo.ts";
-    const hits = [{ line: 5, specifier: "../../apps/experiment-sandbox/src/bar" }];
+    const hits = [{ line: 5, specifier: "../../apps/sandbox-app/src/bar" }];
     const violations = checkImportBoundary(
       filePath,
       hits,
@@ -74,7 +74,7 @@ describe("checkImportBoundary", () => {
     expect(violations).toEqual([
       {
         line: 5,
-        specifier: "../../apps/experiment-sandbox/src/bar",
+        specifier: "../../apps/sandbox-app/src/bar",
         file: filePath,
         reason: `production code must not import from ${sandboxRoot}`,
       },
@@ -103,7 +103,7 @@ describe("checkImportBoundary", () => {
   });
 
   it("flags sandbox code importing unreviewed production code", () => {
-    const filePath = "apps/experiment-sandbox/src/thing.ts";
+    const filePath = "apps/sandbox-app/src/thing.ts";
     const hits = [{ line: 1, specifier: "../../../src/lib/db/client" }];
     const violations = checkImportBoundary(
       filePath,
@@ -153,8 +153,8 @@ describe("checkImportBoundary", () => {
 
   it("does not false-positive on a production file path that merely starts with the sandbox root as a string prefix", () => {
     // e.g. "src/lib/foo.ts" importing "../other-src-sibling/thing" must not
-    // be mistaken for crossing into "apps/experiment-sandbox/src-extra".
-    const filePath = "apps/experiment-sandbox/src/thing.ts";
+    // be mistaken for crossing into "apps/sandbox-app/src-extra".
+    const filePath = "apps/sandbox-app/src/thing.ts";
     const hits = [{ line: 1, specifier: "./sibling" }];
     const violations = checkImportBoundary(
       filePath,

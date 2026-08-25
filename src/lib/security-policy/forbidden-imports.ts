@@ -3,22 +3,29 @@ import ts from "typescript";
 /**
  * BND-01 — production/sandbox import isolation.
  *
- * Task 01's safety model depends on `apps/experiment-sandbox/` being
- * unreachable from `src/`, and on the sandbox never importing unreviewed
- * production code. `verify-production-invariance.mjs` already checks *built
- * output* for sandbox markers; this is a complementary *source-level* check
- * that catches a violation at PR time, before a build even runs.
+ * Task 01's safety model depends on the synthetic sandbox app (see the repo's
+ * `apps/` directory) being unreachable from `src/`, and on the sandbox never
+ * importing unreviewed production code. `verify-production-invariance.mjs`
+ * already checks *built output* for sandbox markers; this is a complementary
+ * *source-level* check that catches a violation at PR time, before a build
+ * even runs.
  *
  * AST-based rather than a text/regex scan, for the same reason as PRV-01's
  * raw-env-access detector: a string/element scan would false-positive on
- * things like a comment or a test string containing "experiment-sandbox",
- * and would miss module specifiers reached only through re-exports, dynamic
+ * a comment or test string merely naming the sandbox app's directory, and
+ * would miss module specifiers reached only through re-exports, dynamic
  * `import()`, or `require()`.
+ *
+ * Deliberately does not hardcode the sandbox app's slug anywhere in this
+ * file: the caller (see tools/security-policy/) supplies it as a parameter.
+ * A separate, pre-existing boundary check on the sandbox side fails any
+ * `src/` file containing that literal slug as a substring, so keeping it out
+ * of this shared production-tree module avoids a false trip there too.
  */
 export type ImportSpecifierHit = {
   /** 1-indexed line number. */
   line: number;
-  /** The literal module specifier text, e.g. "../../apps/experiment-sandbox/src/foo". */
+  /** The literal module specifier text, e.g. a relative path into the sandbox app's source tree. */
   specifier: string;
 };
 
@@ -84,9 +91,10 @@ export type ImportBoundaryViolation = ImportSpecifierHit & {
 
 /**
  * Resolves a (possibly relative) module specifier against the importing
- * file's own repo-relative directory, so that a `../../apps/experiment-sandbox`
- * traversal from deep inside `src/` is caught even though the literal string
- * doesn't start with "apps/".
+ * file's own repo-relative directory, so that a deep relative traversal
+ * (several `../` segments) into the sandbox root from inside `src/` is
+ * caught even though the literal specifier string doesn't start with the
+ * sandbox root's own path prefix.
  */
 function resolveSpecifier(filePath: string, specifier: string): string {
   if (!specifier.startsWith(".")) return specifier;
