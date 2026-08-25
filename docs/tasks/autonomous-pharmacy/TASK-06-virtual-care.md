@@ -5,8 +5,10 @@
 **Repository state:** the deterministic synthetic routes, guards, fixtures,
 tests, and documentation are merged. Non-Postgres sandbox verification passes,
 but runtime authority is expired and promotion evidence is incomplete.
-**Sprint slice:** renew exact sandbox authority, resolve Task 01 production
-invariance, then complete browser/accessibility and independent review evidence.
+**Sprint slice:** renew exact Task 06 sandbox runtime authority, then complete
+browser/accessibility and independent review evidence. Task 01's CI
+invariance defect is resolved, but its changed candidate still awaits Task 11
+promotion review and grants no Task 06 runtime authority.
 **Exit:** no recording, transcription, meeting AI, external vendor, real visit,
 or vendor event that completes a professional workflow. Duplicate parallel
 implementation is out of scope. See

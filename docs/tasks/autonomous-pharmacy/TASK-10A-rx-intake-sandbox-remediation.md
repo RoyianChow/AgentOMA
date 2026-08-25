@@ -5,16 +5,18 @@
 **Owner profile:** senior full-stack or applied-AI developer  
 **Required reviewers:** Product Lead, Security/Privacy, pharmacist evaluator,
 Accessibility, and Task 11 Quality/Test  
-**Status:** `RETIRED / TASK01_EVIDENCE_BLOCKED`
-**Last verified:** 2026-08-20
+**Status:** `RETIRED / TASK01_REVIEW_PENDING`
+**Last verified:** 2026-08-22
 
 > Royian Chowdhury approved `RETIRE` for candidate
 > `a31c1143feaab6763e33e34c50b14fa5ae91c8ca`. The binding decision is recorded
 > in
 > [`../../task-10/decisions/AI-RX-06-retirement-2026-08-20.md`](../../task-10/decisions/AI-RX-06-retirement-2026-08-20.md).
 > The complete production feature surface is removed and no replacement is
-> authorized. Task 01 route shape is restored; its separate
-> `productionScriptsHash` delta remains fail-closed.
+> authorized. Task 01 route shape is restored, and PR #56 resolved the
+> production-runtime-script comparison without changing the original
+> baseline. The changed Task 01 candidate still requires Task 11 review before
+> promotion.
 
 ## Objective
 

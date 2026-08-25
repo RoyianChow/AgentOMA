@@ -1,8 +1,8 @@
 # Next steps
 
-**Prioritized:** 2026-08-20
+**Prioritized:** 2026-08-22
 
-**Observed candidate:** `1ce2c9ace894f5c2a745f15fa901fe2fc6acc138`
+**Observed candidate:** `e1c7973086a0223e72ac90e01c33cd85fa407b67`
 
 **Release posture:** **BLOCKED - not production-ready**
 
@@ -12,11 +12,10 @@ This file lists the next executable outcomes; it grants no approval.
 
 ## P0 - production blockers
 
-1. **Resolve the remaining Task 01 production-invariance failure.** AI-RX-06
-   has been retired and route-shape comparison now passes. The verifier stops
-   on `SBX_INVARIANCE_DENIED:productionScriptsHash`; classify and approve the
-   exact script evolution without weakening the verifier or replacing the
-   original baseline.
+1. **Complete changed-candidate Task 01 review.** PR #56 resolved the build and
+   production-invariance failures and added candidate-bound SBX-04/SBX-13
+   evidence. Task 11 must now review candidate `2358570a...`; merge and green
+   CI are not promotion approval.
 2. **Finish the Task 02 predecessor/restart gate.** Freeze a new clean SHA,
    obtain an exact unexpired G1-D, and run the single approved harness. Never
    rerun an evidence-bound candidate or manually edit migration history.
@@ -73,15 +72,18 @@ external communication is permitted.
 
 ### Task 11 - release control plane
 
-The first workflow slice is merged. Complete:
+The incremental workflow slice is merged, including raw-environment policy.
+Complete:
 
 - secret and dependency scanning;
-- raw-environment, forbidden-import, and leakage policy checks;
+- forbidden-import and PHI/secret leakage policy checks;
 - automated accessibility;
 - release-evidence validation and an aggregate release gate;
 - capability/control catalogues and evidence schemas;
 - independent reviewer records; and
-- verified required-check branch protection.
+- required-check branch protection with admin enforcement. The current GitHub
+  settings require one review but have no required status checks and do not
+  enforce protection for admins.
 
 Task 11 records decisions; it never grants or self-approves them.
 
