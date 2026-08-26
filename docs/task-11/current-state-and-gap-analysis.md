@@ -1,6 +1,6 @@
 # Task 11 - Current State and Gap Analysis
 
-**Reconciled:** 2026-08-22
+**Reconciled:** 2026-08-26
 
 **Observed HEAD:** `e1c7973086a0223e72ac90e01c33cd85fa407b67`
 
@@ -30,7 +30,15 @@ Stable job IDs now present:
 5. `quality-build`;
 6. `database-fresh-migrations`; and
 7. `database-constraints`; and
-8. `security-policy` (currently PRV-01 raw-environment access only).
+8. `security-policy` (PRV-01 raw-environment and BND-01 forbidden-import
+   controls).
+
+The dependency-remediation candidate adds the stable
+`security-dependencies` job. It upgrades both Next.js workspaces to the patched
+release, removes the observed advisories, and enforces exact advisory/exception
+policy. It is not described as merged or promoted until its exact-candidate
+review is recorded. See
+[`dependency-security-policy.md`](dependency-security-policy.md).
 
 Both database jobs use the disposable loopback Docker PostgreSQL suite and run
 cleanup with `if: always()`. The two jobs currently execute the same full test
@@ -61,7 +69,7 @@ its fixture. This does not substitute for a fresh GitHub database run.
 | Gap | Required outcome |
 |---|---|
 | Secret scanning | Stable required job, safe findings and exact-candidate evidence |
-| Dependency review | Lockfile/dependency risk job with owned triage |
+| Dependency review | Candidate implemented; preserve audit evidence and obtain exact-candidate independent review before merge/promotion |
 | Security policy | Raw-env, forbidden-import, PHI/secret leakage and unsafe-enable checks |
 | Automated accessibility | Stable job plus manual-evidence contract where automation is insufficient |
 | Release evidence validator | Machine validation of hashes, commands, statuses, reviewers and expiry |
@@ -86,8 +94,9 @@ its fixture. This does not substitute for a fresh GitHub database run.
 ## Next slice
 
 1. Complete Task 11 review of Task 01 candidate `2358570a...` and its changed-control evidence.
-2. Add the missing security and policy jobs without renaming existing stable
-   job IDs.
+2. Review and merge the dependency-remediation candidate without renaming
+   existing stable job IDs, then add the remaining secret and PHI/logging
+   policy jobs.
 3. Add evidence-schema validation and the fail-closed aggregate release gate.
 4. Configure the approved required status checks and admin enforcement for
    `main`, then capture payload-free evidence. The GitHub API currently shows

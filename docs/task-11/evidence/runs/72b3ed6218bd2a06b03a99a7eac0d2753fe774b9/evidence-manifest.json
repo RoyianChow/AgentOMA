@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "testedSha": "72b3ed6218bd2a06b03a99a7eac0d2753fe774b9",
+  "recordedAtUtc": "2026-08-26T07:15:18.922Z",
+  "status": "PASS_PENDING_INDEPENDENT_REVIEW",
+  "artifacts": [
+    {
+      "path": "docs/task-11/evidence/runs/72b3ed6218bd2a06b03a99a7eac0d2753fe774b9/dependency-audit-summary.json",
+      "sha256": "a28d0fdeef76cc363cb1bcb916d97d6b692b8b0db5bdc47b54b9ef5c83914e0",
+      "result": "PASS"
+    },
+    {
+      "path": "docs/task-11/evidence/runs/72b3ed6218bd2a06b03a99a7eac0d2753fe774b9/production-invariance-amendment.json",
+      "sha256": "94ed97d93c8f49589191bef8bcb9a84502a46c055aca03b12ea84542b520802a",
+      "result": "PASS_PENDING_INDEPENDENT_REVIEW"
+    }
+  ],
+  "commands": [
+    {
+      "command": "npm run security:dependencies",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run sandbox:verify-production",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run sandbox:verify-evidence",
+      "exitCode": 0
+    }
+  ],
+  "containsPhi": false,
+  "containsSecrets": false,
+  "promotionAuthorized": false
+}

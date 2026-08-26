@@ -89,7 +89,7 @@ accounts, services, or external effects.
 | 08 - Fulfilment | NOT RUN | Contracts/state machines and approved synthetic tests only |
 | 09 - Interoperability | DISABLED / DESIGN ONLY | Keep `/api/fhir` at 403 and all allowlists empty |
 | 10 - Bounded AI | AI-RX-06 `RETIRED`; production route, navigation, runtime, config, tests and scorecard removed | Preserve retirement; any future experiment requires a new Task 10 decision and belongs in the isolated sandbox |
-| 11 - Release control | INCREMENTAL CI SLICE MERGED | Complete security policy plus secret/dependency checks, accessibility, evidence validation, aggregate release gate, independent review, and required-check branch protection |
+| 11 - Release control | INCREMENTAL CI SLICES MERGED; DEPENDENCY REMEDIATION IN REVIEW | Complete secret scanning, PHI/logging policy, accessibility, evidence validation, aggregate release gate, independent review, and required-check branch protection |
 | 12 - Resilience | DESIGN ONLY | Discovery and synthetic test-plan work under its task gates |
 | 13 - Human factors | DESIGN ONLY | Hazard/training/study design; no participants or pilot without approval |
 | 14 - Regulatory change | DESIGN ONLY | Source/provenance/impact design; no automated interpretation or protected-source changes |
@@ -130,7 +130,7 @@ tests, production build, raw-environment policy, fresh-migration tests, and
 database-constraint tests on pull requests and pushes to `main`. The workflow
 uses read-only repository permissions and cancels stale runs.
 
-It does not yet implement the full Task 11 contract: secret/dependency scans,
+It does not yet implement the full Task 11 contract: secret scanning,
 the remaining forbidden-import and PHI/logging policy controls, automated
 accessibility, release-evidence validation, aggregate release gate,
 capability/control catalogues, and exact-candidate independent promotion
