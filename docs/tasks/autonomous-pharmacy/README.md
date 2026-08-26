@@ -59,9 +59,10 @@ Task 11: review/release controls ─────┘                │
   the changed build/invariance remediation and its CI checks pass, but that
   candidate does not inherit the historical PASS and still needs exact-candidate
   Task 11 promotion review.
-- Task 11's incremental CI slices are merged, including raw-environment and
-  forbidden-import policy. Dependency remediation/scanning is in review;
-  secret scanning, remaining security policy, accessibility,
+- Task 11's incremental CI slices are merged, including raw-environment,
+  forbidden-import, and dependency-security policy. The Next.js 16.3.3
+  remediation is merged and audit-clean; repository-owned secret scanning,
+  remaining security policy, accessibility,
   evidence-validation, aggregate gating, required-check branch protection,
   and independent review remain incomplete.
 - Task 02 may perform bounded inspection, export work, and the authorized
@@ -87,7 +88,7 @@ Task 11: review/release controls ─────┘                │
 | [`08 — Fulfilment and delivery`](TASK-08-fulfilment-and-delivery.md) | Pharmacy operations; synthetic request, fulfilment, pickup, and delivery orchestration | Contracts, state machines, and synthetic tests only | No medication, payment, payer, courier, claim, or dispensing effect. Depends on Tasks 01, 03, 05, 07, 09, and 11 as specified in the brief. |
 | [`09 — Interoperability`](TASK-09-interoperability.md) | Integration/platform; fail-closed interfaces and synthetic conformance | Discovery, standards analysis, schemas, and synthetic conformance | Production routes, including `/api/fhir`, remain disabled. Live integration requires supplied specifications, authentication, privacy/security review, and Task 11. |
 | [`10 — Bounded AI`](TASK-10-bounded-ai.md) | Applied AI; synthetic evaluation of pharmacist-reviewed assistance | AI-RX-06 retired from production; five chartered candidates remain design/evaluation work only | No PHI, model call, production inference, user-visible clinical recommendation, or autonomous effect. Any future experiment belongs in Task 01's sandbox and needs Task 11 review. |
-| [`11 — Quality, security, release`](TASK-11-quality-security-release.md) | QA/security; continuous controls, evidence, and release review | Eight CI jobs merged, including raw-env policy; complete remaining security, accessibility, evidence, aggregate-gate, and required-check controls | Reviews plans and promotion evidence for Tasks 02–10 and 12–14. It records approvals but cannot grant or self-approve them. |
+| [`11 — Quality, security, release`](TASK-11-quality-security-release.md) | QA/security; continuous controls, evidence, and release review | Nine CI jobs merged, including raw-env, forbidden-import, and dependency policy; complete remaining security, accessibility, evidence, aggregate-gate, and required-check controls | Reviews plans and promotion evidence for Tasks 02–10 and 12–14. It records approvals but cannot grant or self-approve them. |
 | [`12 — Operational resilience`](TASK-12-operational-resilience.md) | Platform/reliability; downtime, payload-free observability, backup/restore, and recovery | Discovery, dependency map, state model, and test-plan design only | Runnable drills require Task 01 and an exact Task 12 approval; Task 02 retains P0 migration/live-recovery gates; Task 11 validates evidence but cannot grant approval. |
 | [`13 — Human factors and pilot readiness`](TASK-13-human-factors-pilot-readiness.md) | Human factors/product safety; training, synthetic simulations, accessibility, and controlled-pilot gates | Discovery, hazard analysis, training framework, scenario catalogue, and study/pilot design only | No participant study or pilot without exact approval; clinical/billing sources remain protected; Task 11 validates evidence but cannot grant pilot authority. |
 | [`14 — Regulatory change governance`](TASK-14-regulatory-change-governance.md) | Regulatory/change control; source provenance, impact mapping, effective dates, approvals, and rollback | Source-register, impact, transition, approval, and evidence design only | No protected clinical/billing/migration change or autonomous activation; implementation requires exact Task 14 approval and Task 11 Checkpoint 1. |

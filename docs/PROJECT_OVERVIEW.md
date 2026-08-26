@@ -1,19 +1,24 @@
 # AgentOMA project overview
 
-**Status snapshot:** 2026-08-20
+**Status snapshot:** 2026-08-26
 
 **Current stage:** authenticated pilot foundation; **not production-ready**
 
 **Verification at this snapshot:** observed repository baseline
-`1ce2c9ace894f5c2a745f15fa901fe2fc6acc138` on `origin/main` is TypeScript- and
-ESLint-clean, passes 152/152 pure production tests, builds successfully, and
-passes the sandbox's 606 non-Postgres tests plus source-boundary verification.
-The AI-RX-06 retirement removes the unauthorized production route. Production
-invariance now advances past route shape and fails closed on the separately
-reviewed `productionScriptsHash` delta, while the sandbox build remains blocked
-by expired/incomplete runtime authority. Real-PostgreSQL suites were not rerun
-in this documentation audit. The last recorded complete database evidence remains the
-211-test exact candidate `dcaab91f9adba7457a85214d51d1614c8560f404`, with
+`02b0a5cf08a56714a2d175556557a49f8813b77f` on `origin/main` is TypeScript- and
+ESLint-clean, passes 180/180 pure production tests, builds with Next.js 16.3.3,
+and passes the sandbox's 614 non-Postgres tests, source-boundary verification,
+sandbox build, evidence validation, and production-invariance check. The
+dependency gate reports zero current findings for both full and production-only
+audits. GitHub's fresh-migration and constraint jobs passed on the merged
+dependency-remediation PR. These green checks are technical evidence, not
+production authorization; exact-candidate independent Task 01/11 review is
+still missing. The current disposable Docker suite rebuilt from zero through
+`0018` and passed 269/269 tests; its preflight rejected and removed a stale
+test container before the clean run. This is current technical regression
+evidence, not candidate-bound promotion evidence. The last recorded complete
+Task 02 promotion candidate remains the 211-test exact candidate
+`dcaab91f9adba7457a85214d51d1614c8560f404`, with
 fresh replay through `0018`, atomic audit rollback, isolation, immutability,
 concurrency, red-flag zero-claim, referral separation, reference-derived
 persistence, and evidence export. Supabase remains live only through `0017`;
@@ -52,7 +57,7 @@ Next.js route groups isolate layouts without changing URLs:
 
 | Concern | Current choice |
 |---|---|
-| Framework | Next.js 16.2 App Router, React 19, strict TypeScript |
+| Framework | Next.js 16.3.3 App Router, React 19, strict TypeScript |
 | Database | Supabase Postgres in `ca-central-1` |
 | ORM and migrations | Drizzle ORM; file-based migrations only |
 | Authentication | better-auth 1.6 with Drizzle, email/password, TOTP, database sessions and rate limits |
@@ -189,11 +194,14 @@ surface: the Task 04 renewal is still a draft, the prior runtime window is
 expired, and no production data, identity, vendor, hosted preview, or external
 effect is authorized.
 
-Task 11's first CI slice is also merged. It provides stable install,
-TypeScript, ESLint, pure-test, build, fresh-migration, and database-constraint
-jobs. Secret/dependency/policy scanning, accessibility, evidence validation,
-the aggregate release gate, branch-protection verification, and independent
-review remain open.
+Task 11's incremental CI slices are also merged. They provide stable install,
+TypeScript, ESLint, pure-test, build, fresh-migration, database-constraint,
+raw-environment, forbidden-import, and dependency-security jobs. The Next.js
+security upgrade and exact dependency policy are merged and green. A
+repository-owned secret scan, PHI/logging and unsafe-enable policy, automated
+accessibility, evidence validation, the aggregate release gate, complete
+branch protection, capability/control catalogues, and independent review
+remain open.
 
 The unchartered AI-RX-06 prescription-extraction experiment was retired under
 the Product Lead decision recorded on 2026-08-20. Its production route,
@@ -350,7 +358,7 @@ Task 02 remains the production-critical blocker: freeze a new clean candidate,
 obtain a new exact and expiring G1-D, pass the single predecessor/restart
 harness, resolve S27, and obtain independent Task 11 and recovery evidence
 before any G1-L request. The autonomous programme also has active governance
-blocks: the current Task 01 production-invariance check fails, Task 04's
+blocks: current Task 01 changes still lack independent promotion review, Task 04's
 renewal is not granted, Task 06 lacks runnable/production approvals, and Task
 11 is only partially implemented. Tasks 12–14 are design contracts only. Remaining
 product blockers include LTC billing guidance and the first isolated restore

@@ -46,7 +46,7 @@ provenance only.
 | [`p0/task-02/lead-remediation-authorization-2026-08-02.md`](p0/task-02/lead-remediation-authorization-2026-08-02.md) | Royian Chowdhury's narrow authorization for atomic assessment audit persistence and removal of the orientation override. |
 | [`task-04/current-state-and-gap-analysis.md`](task-04/current-state-and-gap-analysis.md) | Current merged synthetic booking inventory, unsigned-renewal blocker, and remaining cancellation/reschedule/waitlist work. |
 | [`task-06/current-state-and-gap-analysis.md`](task-06/current-state-and-gap-analysis.md) | Current merged virtual-care prototype, test state, and runtime/promotion blockers. |
-| [`task-11/current-state-and-gap-analysis.md`](task-11/current-state-and-gap-analysis.md) | First merged CI slice and the remaining release-control-plane gaps. |
+| [`task-11/current-state-and-gap-analysis.md`](task-11/current-state-and-gap-analysis.md) | Merged quality, database, raw-env, forbidden-import, and dependency controls plus the remaining release-control-plane gaps. |
 | [`tasks/autonomous-pharmacy/TASK-12-operational-resilience.md`](tasks/autonomous-pharmacy/TASK-12-operational-resilience.md) | Design contract for downtime, payload-free observability, recovery, and resilience evidence. |
 | [`tasks/autonomous-pharmacy/TASK-13-human-factors-pilot-readiness.md`](tasks/autonomous-pharmacy/TASK-13-human-factors-pilot-readiness.md) | Design contract for human factors, training, synthetic study evidence, and controlled-pilot gates. |
 | [`tasks/autonomous-pharmacy/TASK-14-regulatory-change-governance.md`](tasks/autonomous-pharmacy/TASK-14-regulatory-change-governance.md) | Design contract for source provenance, regulatory impact, effective dates, approvals, and rollback. |

@@ -1,8 +1,8 @@
 # Next steps
 
-**Prioritized:** 2026-08-22
+**Prioritized:** 2026-08-26
 
-**Observed candidate:** `e1c7973086a0223e72ac90e01c33cd85fa407b67`
+**Observed candidate:** `02b0a5cf08a56714a2d175556557a49f8813b77f`
 
 **Release posture:** **BLOCKED - not production-ready**
 
@@ -12,10 +12,11 @@ This file lists the next executable outcomes; it grants no approval.
 
 ## P0 - production blockers
 
-1. **Complete changed-candidate Task 01 review.** PR #56 resolved the build and
-   production-invariance failures and added candidate-bound SBX-04/SBX-13
-   evidence. Task 11 must now review candidate `2358570a...`; merge and green
-   CI are not promotion approval.
+1. **Complete changed-candidate Task 01/11 review.** PR #56 resolved the build
+   and production-invariance failures, and PR #64 upgraded the framework and
+   dependency-security baseline. Both are technically green, but neither
+   inherits the historical Task 01 PASS. Bind independent review to the exact
+   implementation candidates and changed-control evidence before promotion.
 2. **Finish the Task 02 predecessor/restart gate.** Freeze a new clean SHA,
    obtain an exact unexpired G1-D, and run the single approved harness. Never
    rerun an evidence-bound candidate or manually edit migration history.
@@ -72,11 +73,11 @@ external communication is permitted.
 
 ### Task 11 - release control plane
 
-The incremental workflow slice is merged, including raw-environment policy.
-Complete:
+The incremental workflow slices are merged, including raw-environment,
+forbidden-import, and dependency-security policy. Complete:
 
-- secret and dependency scanning;
-- forbidden-import and PHI/secret leakage policy checks;
+- repository-owned secret scanning;
+- PHI/logging leakage and unsafe-production-enable policy checks;
 - automated accessibility;
 - release-evidence validation and an aggregate release gate;
 - capability/control catalogues and evidence schemas;

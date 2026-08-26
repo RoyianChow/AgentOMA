@@ -1,8 +1,8 @@
 # Task 06 - Current State and Gap Analysis
 
-**Reconciled:** 2026-08-20
+**Reconciled:** 2026-08-26
 
-**Observed HEAD:** `1ce2c9ace894f5c2a745f15fa901fe2fc6acc138`
+**Observed HEAD:** `02b0a5cf08a56714a2d175556557a49f8813b77f`
 
 **Status:** `SYNTHETIC_PROTOTYPE_MERGED / BLOCKED_FROM_RUNTIME_AND_PROMOTION`
 **Production authorization:** none
@@ -43,11 +43,11 @@ production application/database.
 
 ## Verification at the merged candidate
 
-`npm run sandbox:verify` passed again on 2026-08-20:
+`npm run sandbox:verify` passed again on 2026-08-26:
 
 - sandbox TypeScript: PASS;
 - sandbox ESLint: PASS;
-- 40 test files / 606 non-Postgres tests: PASS; and
+- 40 test files / 614 non-Postgres tests: PASS; and
 - Task 01 source-boundary verification: PASS.
 
 The Task 06 test files cover fixtures, identity/consent/suitability, joining and
@@ -66,30 +66,30 @@ removed during the 2026-08-20 documentation reconciliation and is not restored.
 
 Not verified in this pass:
 
-- successful sandbox production build or live browser run;
+- authorized live browser run;
 - manual keyboard, screen-reader, zoom/reflow, mobile and low-bandwidth
   evidence;
 - sandbox PostgreSQL tests (Task 06 currently uses no dedicated persistence);
 - hosted preview; or
 - any production integration.
 
-The current sandbox lifecycle/Task 04 approval material is expired, and
-`sandbox:build` fails closed without valid exact environment authority. The
-current production-invariance check also fails on route shape. These are
-blockers, not reasons to relax the controls.
+The sandbox build and production-invariance check now pass their technical
+gates. The sandbox lifecycle/Task 04 approval material remains expired, so
+running Task 06 or collecting browser evidence is still unauthorized. Green
+build checks are not reasons to bypass the lifecycle or review controls.
 
 ## Remaining dependencies and approvals
 
 | Dependency | Current status |
 |---|---|
-| Task 01 exact runnable sandbox authority | Expired/current candidate not fully evidenced |
+| Task 01 exact runnable sandbox authority | Technical controls pass; task-specific runnable authority is expired and independent review is missing |
 | Task 05 patient identity/delegation | Not merged into the maintained checkout |
 | Task 07 external notification boundary | Documentation only; no provider or delivery runtime |
 | Vendor selection and Ontario Health verification | No vendor selected or approved |
 | PIA / TRA | NOT VERIFIED |
 | Professional virtual-care review | NOT VERIFIED |
 | Privacy/security/operations/accessibility review | NOT VERIFIED |
-| Task 11 exact-candidate review | NOT VERIFIED; first CI slice only |
+| Task 11 exact-candidate review | NOT VERIFIED; incremental CI/security slices exist but no Task 06 promotion review is recorded |
 | G2 hosted preview | Not requested |
 | Production migration/deployment | Not authorized |
 
@@ -97,12 +97,11 @@ blockers, not reasons to relax the controls.
 
 1. Obtain an exact, unexpired sandbox decision that expressly includes the
    Task 06 synthetic routes and tests.
-2. Resolve the Task 01 production-invariance finding.
-3. Run the sandbox build and browser-based accessibility/responsive plan under
+2. Run the browser-based accessibility/responsive plan under
    that decision.
-4. Record independent privacy/security, accessibility, professional,
+3. Record independent privacy/security, accessibility, professional,
    operations and Task 11 review.
-5. Keep production integration blocked until Task 05 identity, Task 07
+4. Keep production integration blocked until Task 05 identity, Task 07
    communications, vendor/PIA/TRA, and task-specific production approvals
    exist.
 

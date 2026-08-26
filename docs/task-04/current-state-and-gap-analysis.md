@@ -1,8 +1,8 @@
 # Task 04 - Current State and Gap Analysis
 
-**Reconciled:** 2026-08-20
+**Reconciled:** 2026-08-26
 
-**Observed HEAD:** `1ce2c9ace894f5c2a745f15fa901fe2fc6acc138`
+**Observed HEAD:** `02b0a5cf08a56714a2d175556557a49f8813b77f`
 
 **Status:** `PARTIAL_IMPLEMENTATION_MERGED / BLOCKED_MISSING_RENEWAL_APPROVAL`
 **Risk/autonomy:** `R3` / `A3_BOUNDED_AUTOMATION`
@@ -65,16 +65,17 @@ prototype, not a clinical intake or appointment guarantee.
 
 ## Verification at the merged candidate
 
-- `npm run sandbox:verify`: PASS - typecheck, lint, 40 files / 606
+- `npm run sandbox:verify`: PASS - typecheck, lint, 40 files / 614
   non-Postgres tests, and sandbox boundary verification.
 - `npm run sandbox:verify-evidence`: PASS for the committed evidence manifest.
-- `npm run sandbox:verify-production`: FAIL with
-  `SBX_INVARIANCE_DENIED:routeShape`.
-- `npm run sandbox:build`: BLOCKED by fail-closed environment/lifecycle state.
+- `npm run sandbox:verify-production`: PASS for the current technical
+  invariance baseline.
+- `npm run sandbox:build`: PASS as a build check; this does not authorize the
+  expired Task 04 runtime.
 - Task 04 real-PostgreSQL suite: NOT RUN in the 2026-08-19 merge review.
 
-These results do not renew the expired authorization. The production-invariance
-failure is shared Task 01/Task 11 work and must not be rebaselined casually.
+These results do not renew the expired authorization. Current Task 01 changes
+also remain blocked from promotion pending independent Task 11 review.
 
 ## Required renewal package
 

@@ -1,8 +1,9 @@
 # Task 07 — Production Dependency Register
 
 **Prepared:** 2026-08-06
+**Cross-task status reconciled:** 2026-08-26
 
-**Repository baseline:** `12801c7211cb6ce3286d209762d61c11b6830193`
+**Observed repository baseline:** `02b0a5cf08a56714a2d175556557a49f8813b77f`
 
 **Register state:** production and pilot blocked; Workstream A documentation complete
 
@@ -35,7 +36,7 @@ fail closed.
 | Workstream A documentation | `READY` | Current state, official-source mapping, and this dependency register are recorded without runtime changes. |
 | Task 07 synthetic design (threat model/contracts/behaviour model) | `READY` | Documentation-only analysis can continue with synthetic examples and no runtime effect. |
 | Task 07 runnable synthetic prototype | `BLOCKED` | No versioned Task 07 scope approval, owner/backup, risk/autonomy registration, expiry, kill-switch authority, or Task 11 Checkpoint 1 exists. Task 01 G1 explicitly excludes later capabilities. |
-| Integrated pilot with synthetic recipients | `BLOCKED` | Task 04/05/06 contracts are not integrated on `main`; Task 07 tests/evidence do not exist. |
+| Integrated pilot with synthetic recipients | `BLOCKED` | Task 04 and 06 synthetic contracts are merged, Task 05 is not integrated, and Task 07 runtime tests/evidence do not exist. |
 | Pilot with real recipients/PHI | `BLOCKED` | Consent/contact policy, patient identity, vendor, PIA/TRA, privacy/security/professional/accessibility/operations/legal approvals, and Task 11 promotion evidence are absent. |
 | Production delivery | `BLOCKED` | All pilot gates plus exact-candidate G4/release approval, production secrets, sender identity, runbooks, monitoring, SLOs, rollback/kill rehearsals, and approved migration/deployment are absent. |
 
@@ -43,13 +44,13 @@ fail closed.
 
 | ID | Dependency | Current evidence at baseline | Status | Required resolution | Owner/approver | Blocks |
 |---|---|---|---|---|---|---|
-| T07-D01 | Task 01 containment controls | `docs/task-01/evidence/evidence-manifest.json` records PASS for its exact historical candidate; SBX-14 is not applicable because G2 was not requested. Current-candidate production invariance fails closed and runnable authority is expired. | `PARTIAL` | Record a superseding/versioned Task 07 scope addendum or separate approval that preserves Task 01 controls. Do not grant G2/G3 or external effects by implication. | Product/capability owner, security/privacy, operations, Task 11 reviewer | Runnable synthetic code |
+| T07-D01 | Task 01 containment controls | `docs/task-01/evidence/evidence-manifest.json` records PASS for its exact historical candidate; SBX-14 is not applicable because G2 was not requested. Current production invariance passes technically, but changed-candidate independent review and runnable Task 07 authority are absent. | `PARTIAL` | Record a superseding/versioned Task 07 scope addendum or separate approval that preserves Task 01 controls. Do not grant G2/G3 or external effects by implication. | Product/capability owner, security/privacy, operations, Task 11 reviewer | Runnable synthetic code |
 | T07-D02 | Task 07 Task 11 registration | No Task 07 capability registration/checkpoint/evidence profile is present on `main`. | `BLOCKED` | Record risk tier, autonomy level, capability owner, independent backup/operations roles as policy requires, expiry/review date, kill-switch operator, scope, exclusions, and Checkpoint 1 decision. | Task 07 owner + Task 11 reviewers | Runnable synthetic code |
 | T07-D03 | Task 04 appointment/event contract | The isolated sandbox now contains synthetic service-catalog, availability, booking, queue, and `/book` code. Its prior experimental approval expired on 2026-08-05, and no production appointment/event contract is integrated. | `BLOCKED` | Task 04 owner must renew exact authority and complete the approved event/runtime boundary. Task 07 consumes events; it does not create a shadow booking model. | Task 04 owner/reviewers | Appointment reminders and cancellation of stale reminders |
 | T07-D04 | Existing follow-up source | Production follow-up plans/attempts exist through migration 0017, with transactions, locks, supersession, and audit. No notification is sent. | `READY` for source analysis; `BLOCKED` for delivery | Define a versioned, minimum-necessary event/intent handoff. Keep follow-up notification disabled until consent/contact and Task 07 gates pass. Delivery/read events never close follow-up. | Follow-up owner + Task 07 + privacy/professional | Follow-up reminders |
 | T07-D05 | Task 05 patient/delegate identity | Task 05 specification exists. A local design branch was created in prior work, but no patient identity/session/authorization contract is integrated on `main`. | `BLOCKED` | Merge an approved Task 05 actor/subject/delegate/audience/assurance/revocation contract. Task 07 must not reuse pharmacist sessions. | Task 05 owner + identity/security/privacy reviewers | Secure portal, preferences, real recipient access |
 | T07-D06 | Task 06 secure-messaging contract | Task 06 synthetic contracts, guards, fixtures, and secure-message stubs are merged in the isolated sandbox. They have no real identity, vendor, recipient, PHI, or production authority. | `BLOCKED` | Task 06 still needs approved participant identity, modality, suitability, consent, response-time, urgent-use, closure, vendor, and production-transition contracts. | Task 06 owner + professional/privacy/security reviewers | PHI-bearing secure threads |
-| T07-D07 | Task 11 CI/release control plane | The first seven-job CI slice is merged, covering install, TypeScript, lint, pure tests, build, fresh migrations, and database constraints. Security/policy/accessibility/evidence/aggregate controls remain incomplete. | `PARTIAL` | Complete and independently review Task 11 controls without weakening production invariance; register Task 07 and require its evidence/approvals for promotion. | Task 11 owner + independent quality/security/repo admin | Synthetic PASS claim, pilot, production |
+| T07-D07 | Task 11 CI/release control plane | Nine CI jobs are merged, covering install, TypeScript, lint, pure tests, build, fresh migrations, database constraints, raw-env/forbidden-import policy, and dependency security. Secret, PHI/logging, accessibility, evidence, aggregate and independent-review controls remain incomplete. | `PARTIAL` | Complete and independently review Task 11 controls without weakening production invariance; register Task 07 and require its evidence/approvals for promotion. | Task 11 owner + independent quality/security/repo admin | Synthetic PASS claim, pilot, production |
 | T07-D08 | Task 02 production readiness/migration state | Project docs state live DB is at 0017 while 0018 is checked in but not live; Task 02 release gates remain unresolved. | `BLOCKED` for production changes | Do not add/apply a Task 07 production migration. Task 02 must complete its own exact-candidate/recovery/promotion path first, and any Task 07 migration needs separate approval. | Task 02 owner + DB/release reviewers | Production persistence and integration |
 
 ## B. Product and professional policy dependencies

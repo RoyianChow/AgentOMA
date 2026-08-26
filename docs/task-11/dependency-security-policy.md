@@ -1,7 +1,7 @@
 # Task 11 dependency-security policy
 
 **Reviewed:** 2026-08-26  
-**Implementation status:** candidate in review  
+**Implementation status:** merged in PR #64; technical checks pass
 **Production promotion:** blocked pending exact-candidate independent review
 
 ## What this slice changes
@@ -55,3 +55,7 @@ Exact-candidate audit output for implementation commit
 `docs/task-11/evidence/runs/72b3ed6218bd2a06b03a99a7eac0d2753fe774b9/`.
 A green scanner is technical evidence only; it does not grant release authority
 or replace the required independent Task 11 review.
+
+The implementation candidate merged into `main` as
+`02b0a5cf08a56714a2d175556557a49f8813b77f`. No independent PR review was
+recorded, so the candidate remains blocked from promotion despite green CI.
