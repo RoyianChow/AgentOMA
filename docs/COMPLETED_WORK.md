@@ -48,6 +48,11 @@ This is the implementation record requested for the project. It describes capabi
   role, accessing patient records, or bypassing mandatory portal TOTP.
 - Added `/demo` as a public, interactive five-stage tour covering handoff,
   structured assessment, claim handoff, follow-up, and record governance.
+- Reworked the page around the guided journey: a shorter action-led hero,
+  responsible actor and outcome at every stage, read-only workspace previews,
+  explicit safety boundaries, and a collapsed supporting condition list.
+- Added 56px touch targets, mobile overflow containment, visible focus states,
+  reduced-motion handling, semantic progress, and Arrow/Home/End stage controls.
 - Kept the tour fully synthetic and in memory. It accepts no patient input,
   opens no authenticated portal session, and has no database, browser-storage,
   clinical-routing, red-flag, claim-derivation, or HNS path. It reuses only the

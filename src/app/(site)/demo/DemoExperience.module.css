@@ -1,208 +1,323 @@
 .page {
   min-height: calc(100vh - 4.5rem);
-  padding: 5rem max(1.25rem, calc((100vw - 1180px) / 2)) 6rem;
+  overflow-x: clip;
+  padding: 4.5rem max(1.25rem, calc((100vw - 1180px) / 2)) 6rem;
   background:
-    radial-gradient(circle at 88% 8%, var(--primary-light), transparent 28rem),
-    var(--bg-primary);
-}
-
-.intro {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
-  gap: 3rem;
-  align-items: end;
-  margin-bottom: 3rem;
-}
-
-.introCopy {
-  max-width: 760px;
+    radial-gradient(circle at 88% 4%, var(--primary-light), transparent 27rem),
+    linear-gradient(180deg, var(--bg-primary), var(--bg-tertiary) 48%, var(--bg-primary));
 }
 
 .eyebrow,
 .screenLabel,
-.stageHeading > span,
-.finish > div > span {
+.stageResult > span {
   display: block;
   color: var(--primary);
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
 }
 
-.intro h1 {
-  max-width: 800px;
-  margin: 0.8rem 0 1rem;
-  font-size: clamp(2.35rem, 5vw, 4.75rem);
-  line-height: 1.02;
-}
-
-.introCopy > p {
-  max-width: 680px;
-  font-size: 1.08rem;
-}
-
-.boundaryCard {
-  padding: 1.4rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  background: var(--bg-secondary);
-  box-shadow: var(--shadow-md);
-}
-
-.boundaryCard > strong {
-  display: block;
-  margin-bottom: 0.9rem;
-  font-size: 0.95rem;
-}
-
-.boundaryCard ul {
+.hero {
   display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(330px, 0.85fr);
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: center;
+  min-height: min(650px, calc(100vh - 8rem));
+  padding-bottom: 4.5rem;
+}
+
+.heroCopy {
+  max-width: 760px;
+}
+
+.hero h1 {
+  max-width: 780px;
+  margin: 0.8rem 0 1.15rem;
+  font-size: clamp(2.6rem, 5.6vw, 5.4rem);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+}
+
+.heroLede {
+  max-width: 680px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: clamp(1rem, 1.8vw, 1.18rem);
+  line-height: 1.65;
+}
+
+.heroActions,
+.finishActions {
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
 }
 
-.boundaryCard li {
-  display: flex;
-  gap: 0.65rem;
-  align-items: center;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
+.heroActions {
+  margin-top: 1.7rem;
 }
 
-.boundaryCard svg {
-  width: 1.15rem;
-  height: 1.15rem;
+.primaryLink,
+.secondaryLink,
+.primaryButton,
+.secondaryButton {
+  min-height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.8rem 1.15rem;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform var(--transition-fast),
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.primaryLink,
+.primaryButton {
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+.secondaryLink,
+.secondaryButton {
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.primaryLink:hover,
+.primaryButton:hover,
+.secondaryLink:hover,
+.secondaryButton:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: white;
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.primaryLink svg,
+.primaryButton svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.primaryLink:focus-visible,
+.secondaryLink:focus-visible,
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.stageButton:focus-visible,
+.conditions summary:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.secondaryButton:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.heroFacts {
+  display: flex;
+  gap: clamp(1.25rem, 4vw, 2.5rem);
+  margin: 2rem 0 0;
+}
+
+.heroFacts div {
+  min-width: 0;
+}
+
+.heroFacts dd {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.35rem;
+  font-weight: 850;
+}
+
+.heroFacts dt {
+  margin-top: 0.1rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.heroPanel {
+  position: relative;
+  overflow: hidden;
+  padding: 1.5rem;
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border-color));
+  border-radius: 26px;
+  background: color-mix(in srgb, var(--bg-secondary) 92%, var(--primary-light));
+  box-shadow: var(--shadow-xl);
+}
+
+.heroPanel::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  content: "";
+  background: linear-gradient(90deg, var(--primary), var(--success));
+}
+
+.heroPanelTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 750;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.heroPanelTop strong {
+  color: var(--primary);
+}
+
+.miniJourney {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 1rem 0;
+  list-style: none;
+}
+
+.miniJourney li {
+  position: relative;
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  padding: 0.8rem 0;
+}
+
+.miniJourney li:not(:last-child)::after {
+  position: absolute;
+  top: 2.9rem;
+  bottom: -0.6rem;
+  left: 1rem;
+  width: 1px;
+  content: "";
+  background: var(--border-color);
+}
+
+.miniJourney li > span {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  z-index: 1;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.miniJourney strong,
+.miniJourney small {
+  display: block;
+}
+
+.miniJourney strong {
+  margin-bottom: 0.2rem;
+  color: var(--text-primary);
+}
+
+.miniJourney small {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.boundaryList {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 1rem;
+  border-radius: var(--radius-lg);
+  background: var(--bg-primary);
+  list-style: none;
+}
+
+.boundaryList li {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.boundaryList svg,
+.conditionChip svg {
+  width: 1rem;
+  height: 1rem;
   flex: 0 0 auto;
   color: var(--success);
 }
 
-/* ── How a walk-in works (3-step patient strip) ─────────────────────────── */
-.patientFlow {
-  margin-bottom: 3rem;
+.tourSection {
+  scroll-margin-top: 6rem;
+  padding: 4rem 0;
+  border-top: 1px solid var(--border-color);
 }
 
-.patientFlow > h2,
-.conditionsHead h2,
-.tourIntro h2 {
-  margin: 0.4rem 0 0;
-  font-size: clamp(1.5rem, 3vw, 2.2rem);
-}
-
-.stepGrid {
+.sectionHeading {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
-  margin: 1.25rem 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.stepCard {
-  display: flex;
-  gap: 0.9rem;
-  align-items: flex-start;
-  padding: 1.25rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  background: var(--bg-secondary);
-  box-shadow: var(--shadow-sm);
-}
-
-.stepCard strong {
-  display: block;
-  margin-bottom: 0.3rem;
-  font-size: 1.02rem;
-}
-
-.stepCard p {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  line-height: 1.45;
-}
-
-.stepNumber {
-  width: 2.1rem;
-  height: 2.1rem;
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--primary);
-  color: white;
-  font-size: 0.9rem;
-  font-weight: 800;
-}
-
-/* ── Funded conditions showcase ─────────────────────────────────────────── */
-.conditions {
-  margin-bottom: 3rem;
-  padding: 2rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  background: var(--bg-secondary);
-  box-shadow: var(--shadow-md);
-}
-
-.conditionsHead {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.75fr);
+  gap: 2rem;
   align-items: end;
   margin-bottom: 1.5rem;
 }
 
-.conditionsHead p {
+.sectionHeading h2,
+.sectionHeadingCompact h2,
+.conditions h2,
+.finish h2 {
+  margin: 0.4rem 0 0;
+  font-size: clamp(1.65rem, 3.4vw, 2.7rem);
+  letter-spacing: -0.025em;
+}
+
+.sectionHeading > p {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 0.95rem;
-  line-height: 1.5;
-}
-
-.conditionGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 0.6rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.conditionChip {
-  padding: 0.7rem 0.9rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-/* ── Tour intro heading ─────────────────────────────────────────────────── */
-.tourIntro {
-  max-width: 760px;
-  margin-bottom: 1.5rem;
-}
-
-.tourIntro p {
-  margin: 0.6rem 0 0;
-  color: var(--text-secondary);
-  font-size: 1rem;
+  line-height: 1.6;
 }
 
 .tour {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
-  min-height: 680px;
+  grid-template-columns: 250px minmax(0, 1fr);
+  min-height: 660px;
   overflow: hidden;
   border: 1px solid var(--border-color);
-  border-radius: 24px;
+  border-radius: 26px;
   background: var(--bg-secondary);
   box-shadow: var(--shadow-xl);
 }
 
 .stageRail {
-  padding: 1.5rem 1rem;
+  min-width: 0;
+  overflow: hidden;
+  padding: 1.4rem 0.9rem;
   border-right: 1px solid var(--border-color);
   background: var(--bg-tertiary);
 }
@@ -210,11 +325,12 @@
 .stageRailHeader {
   display: flex;
   justify-content: space-between;
-  padding: 0 0.5rem;
+  padding: 0 0.45rem;
   color: var(--text-secondary);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 
 .stageRailHeader strong {
@@ -222,8 +338,8 @@
 }
 
 .progressTrack {
-  height: 4px;
-  margin: 0.8rem 0.5rem 1.4rem;
+  height: 5px;
+  margin: 0.8rem 0.45rem 1.25rem;
   overflow: hidden;
   border-radius: var(--radius-full);
   background: var(--border-color);
@@ -233,7 +349,7 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--primary);
+  background: linear-gradient(90deg, var(--primary), var(--success));
   transition: width var(--transition-normal);
 }
 
@@ -247,18 +363,16 @@
 
 .stageButton {
   width: 100%;
-  min-height: 58px;
+  min-height: 64px;
   display: flex;
-  gap: 0.75rem;
+  gap: 0.7rem;
   align-items: center;
-  padding: 0.7rem;
+  padding: 0.65rem;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   background: transparent;
   color: var(--text-secondary);
   font: inherit;
-  font-size: 0.9rem;
-  font-weight: 650;
   text-align: left;
   cursor: pointer;
   transition:
@@ -281,15 +395,16 @@
 }
 
 .stageNumber {
-  width: 2rem;
-  height: 2rem;
+  width: 2.1rem;
+  height: 2.1rem;
   display: grid;
   flex: 0 0 auto;
   place-items: center;
   border-radius: 50%;
   background: var(--border-color);
   color: var(--text-secondary);
-  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
   font-weight: 800;
 }
 
@@ -298,28 +413,79 @@
   color: white;
 }
 
-.stageContent {
-  display: flex;
+.stageButtonCopy,
+.stageButtonCopy strong,
+.stageButtonCopy small {
+  display: block;
   min-width: 0;
+}
+
+.stageButtonCopy strong {
+  color: inherit;
+  font-size: 0.88rem;
+  line-height: 1.25;
+}
+
+.stageButtonCopy small {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.stageContent {
+  min-width: 0;
+  display: flex;
   flex-direction: column;
-  padding: clamp(1.5rem, 4vw, 3.5rem);
+  padding: clamp(1.4rem, 3.8vw, 3.25rem);
 }
 
 .stageHeading {
-  max-width: 760px;
+  max-width: 790px;
+}
+
+.stageMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.stageMeta span {
+  padding: 0.35rem 0.55rem;
+  border-radius: var(--radius-full);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.stageMeta span:last-child {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
 }
 
 .stageHeading h2 {
-  margin: 0.55rem 0 0.75rem;
-  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  margin: 0.75rem 0 0.7rem;
+  font-size: clamp(1.8rem, 3vw, 2.75rem);
+  letter-spacing: -0.03em;
+}
+
+.stageHeading h2:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 5px;
+  border-radius: var(--radius-sm);
 }
 
 .stageHeading p {
-  max-width: 700px;
+  max-width: 730px;
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
 }
 
 .viewport {
-  margin-top: 2rem;
+  margin-top: 1.6rem;
   overflow: hidden;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
@@ -336,7 +502,7 @@
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-tertiary);
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -354,8 +520,14 @@
   background: var(--border-color);
 }
 
+.windowStage {
+  justify-self: end;
+  color: var(--primary);
+  font-family: var(--font-mono);
+}
+
 .screen {
-  padding: clamp(1.2rem, 3vw, 2rem);
+  padding: clamp(1.1rem, 3vw, 1.8rem);
 }
 
 .screenHeader {
@@ -363,11 +535,11 @@
   gap: 1rem;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .screenHeader h3 {
-  margin-top: 0.3rem;
+  margin: 0.28rem 0 0;
 }
 
 .status {
@@ -375,7 +547,7 @@
   border-radius: var(--radius-full);
   background: var(--primary-light);
   color: var(--primary-hover);
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -383,7 +555,7 @@
 .fieldGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.8rem;
+  gap: 0.75rem;
 }
 
 .fieldCard {
@@ -391,8 +563,8 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 0.7rem;
-  padding: 1rem;
+  gap: 0.65rem;
+  padding: 0.95rem;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   background: var(--bg-secondary);
@@ -400,7 +572,7 @@
 
 .fieldCard > span {
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -408,29 +580,46 @@
 
 .fieldCard strong {
   color: var(--text-primary);
-  font-size: 0.95rem;
-  line-height: 1.35;
+  font-size: 0.92rem;
+  line-height: 1.4;
 }
 
 .fieldCard .fieldEmphasis {
   color: var(--primary);
   font-family: var(--font-mono);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+}
+
+.stageResult {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.35fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+  margin-top: 0.8rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--primary) 32%, var(--border-color));
+  border-radius: var(--radius-md);
+  background: var(--primary-light);
+}
+
+.stageResult strong {
+  font-size: 0.9rem;
+  line-height: 1.45;
 }
 
 .callout {
   display: flex;
   gap: 0.8rem;
   align-items: flex-start;
-  margin-top: 1rem;
+  margin-top: 0.8rem;
   padding: 1rem;
   border-radius: var(--radius-md);
   background: var(--warning-light);
 }
 
 .callout > span {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.55rem;
+  height: 1.55rem;
   display: grid;
   flex: 0 0 auto;
   place-items: center;
@@ -441,9 +630,23 @@
   font-weight: 800;
 }
 
+.callout strong,
 .callout p {
   color: var(--warning-text);
-  font-size: 0.85rem;
+}
+
+.callout strong {
+  display: block;
+  margin-bottom: 0.15rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.callout p {
+  margin: 0;
+  font-size: 0.83rem;
+  line-height: 1.5;
 }
 
 .stageActions {
@@ -451,55 +654,140 @@
   justify-content: space-between;
   gap: 1rem;
   margin-top: auto;
-  padding-top: 2rem;
+  padding-top: 1.6rem;
 }
 
-.primaryButton,
-.secondaryButton,
-.signInLink {
-  min-height: 50px;
+.patientFlow {
+  padding: 4rem 0 2rem;
+}
+
+.sectionHeadingCompact {
+  max-width: 680px;
+  margin-bottom: 1.4rem;
+}
+
+.stepGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stepCard {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  padding: 1.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.stepCard strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 1rem;
+}
+
+.stepCard p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.stepNumber {
+  width: 2.2rem;
+  height: 2.2rem;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.conditions {
+  margin-top: 2rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-md);
+}
+
+.conditions summary {
+  min-height: 110px;
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.4rem 1.6rem;
+  border-radius: inherit;
+  cursor: pointer;
+  list-style: none;
+}
+
+.conditions summary::-webkit-details-marker {
+  display: none;
+}
+
+.conditions summary p {
+  max-width: 720px;
+  margin: 0.5rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.summaryAction {
+  min-width: 6.5rem;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.75rem 1.2rem;
-  border-radius: var(--radius-md);
-  font: inherit;
-  font-weight: 800;
-  cursor: pointer;
-  transition:
-    transform var(--transition-fast),
-    background var(--transition-fast),
-    border-color var(--transition-fast);
-}
-
-.primaryButton,
-.signInLink {
-  border: 1px solid var(--primary);
-  background: var(--primary);
-  color: white;
-}
-
-.primaryButton:hover,
-.signInLink:hover {
-  background: var(--primary-hover);
-  color: white;
-  transform: translateY(-1px);
-}
-
-.secondaryButton {
+  padding: 0.6rem 0.8rem;
   border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-}
-
-.secondaryButton:hover:not(:disabled) {
-  border-color: var(--primary);
+  border-radius: var(--radius-full);
   color: var(--primary);
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 
-.secondaryButton:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.conditions details[open] .summaryAction {
+  background: var(--primary-light);
+}
+
+.conditions details[open] .summaryAction::before {
+  content: "Hide ";
+}
+
+.conditionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0 1.6rem 1.6rem;
+  list-style: none;
+}
+
+.conditionChip {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.35;
 }
 
 .finish {
@@ -507,43 +795,50 @@
   gap: 2rem;
   align-items: center;
   justify-content: space-between;
-  margin-top: 2.5rem;
-  padding: 2rem;
-  border: 1px solid var(--border-color);
+  margin-top: 3rem;
+  padding: clamp(1.5rem, 4vw, 2.4rem);
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border-color));
   border-radius: var(--radius-lg);
-  background: var(--bg-secondary);
+  background: linear-gradient(135deg, var(--bg-secondary), var(--primary-light));
 }
 
-.finish h2 {
-  margin: 0.35rem 0 0.45rem;
-  font-size: clamp(1.5rem, 3vw, 2.2rem);
+.finish > div:first-child {
+  max-width: 690px;
 }
 
-.signInLink {
+.finish p {
+  margin: 0.55rem 0 0;
+  color: var(--text-secondary);
+}
+
+.finishActions {
   flex: 0 0 auto;
+  justify-content: flex-end;
 }
 
-@media (max-width: 850px) {
+@media (max-width: 900px) {
   .page {
     padding-top: 3rem;
   }
 
-  .intro {
+  .hero {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    min-height: auto;
+    padding-bottom: 3rem;
+  }
+
+  .heroPanel {
+    max-width: 680px;
+  }
+
+  .sectionHeading {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    align-items: start;
   }
 
   .tour {
     grid-template-columns: 1fr;
-  }
-
-  .stepGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .conditionsHead {
-    grid-template-columns: 1fr;
-    align-items: start;
   }
 
   .stageRail {
@@ -552,31 +847,109 @@
   }
 
   .stageRail ol {
-    grid-template-columns: repeat(5, minmax(9rem, 1fr));
+    width: 100%;
+    max-width: 100%;
+    grid-template-columns: repeat(5, minmax(9.5rem, 1fr));
     overflow-x: auto;
     padding-bottom: 0.35rem;
+    scrollbar-width: thin;
+  }
+
+  .stepGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .finish {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .finishActions {
+    width: 100%;
+    justify-content: flex-start;
   }
 }
 
 @media (max-width: 600px) {
   .page {
-    padding-inline: 1rem;
+    padding: 2.5rem 1rem 4rem;
   }
 
-  .intro h1 {
-    font-size: 2.5rem;
+  .hero {
+    gap: 2rem;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.3rem, 12.5vw, 3.25rem);
+    line-height: 1.02;
+  }
+
+  .heroActions,
+  .finishActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .primaryLink,
+  .secondaryLink {
+    width: 100%;
+  }
+
+  .heroFacts {
+    justify-content: space-between;
+    gap: 0.8rem;
+  }
+
+  .heroFacts dd {
+    font-size: 1.15rem;
+  }
+
+  .heroFacts dt {
+    font-size: 0.7rem;
+  }
+
+  .heroPanel {
+    padding: 1.15rem;
+    border-radius: 20px;
+  }
+
+  .heroPanelTop {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .tourSection,
+  .patientFlow {
+    padding-block: 3rem;
+  }
+
+  .tour {
+    border-radius: 18px;
+  }
+
+  .stageRail {
+    padding: 1rem 0.75rem;
   }
 
   .stageContent {
-    padding: 1.1rem;
+    padding: 1.05rem;
   }
 
-  .fieldGrid {
+  .fieldGrid,
+  .stageResult {
     grid-template-columns: 1fr;
   }
 
-  .screenHeader,
-  .finish {
+  .windowBar {
+    grid-template-columns: 1fr auto;
+  }
+
+  .windowBar > span:nth-child(2) {
+    display: none;
+  }
+
+  .screenHeader {
     align-items: stretch;
     flex-direction: column;
   }
@@ -586,25 +959,40 @@
   }
 
   .stageActions {
+    gap: 0.65rem;
     margin-top: 0;
   }
 
   .primaryButton,
   .secondaryButton {
     flex: 1;
+    padding-inline: 0.75rem;
+    font-size: 0.82rem;
   }
 
-  .signInLink {
-    width: 100%;
+  .conditions summary {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .summaryAction {
+    align-self: flex-start;
+  }
+
+  .conditionGrid {
+    grid-template-columns: 1fr;
+    padding-inline: 1rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .progressFill,
   .stageButton,
+  .primaryLink,
+  .secondaryLink,
   .primaryButton,
-  .secondaryButton,
-  .signInLink {
+  .secondaryButton {
+    scroll-behavior: auto;
     transition: none;
   }
 }

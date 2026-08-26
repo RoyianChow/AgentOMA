@@ -24,12 +24,42 @@ describe("public guided demo", () => {
     expect(DEMO_STAGES).toHaveLength(5);
     expect(new Set(DEMO_STAGES.map((stage) => stage.id)).size).toBe(5);
     expect(DEMO_STAGES.every((stage) => stage.fields.length >= 4)).toBe(true);
+    expect(DEMO_STAGES.every((stage) => stage.actor.length > 0)).toBe(true);
+    expect(DEMO_STAGES.every((stage) => stage.result.length > 0)).toBe(true);
     expect(
       DEMO_BOUNDARY.some((item) => item.toLowerCase().includes("synthetic")),
     ).toBe(true);
     expect(
       DEMO_BOUNDARY.some((item) => item.startsWith("Nothing is saved")),
     ).toBe(true);
+  });
+
+  it("provides an accessible, mobile-ready guided walkthrough", () => {
+    const component = readFileSync(
+      join(process.cwd(), "src", "app", "(site)", "demo", "DemoExperience.tsx"),
+      "utf8",
+    );
+    const styles = readFileSync(
+      join(
+        process.cwd(),
+        "src",
+        "app",
+        "(site)",
+        "demo",
+        "DemoExperience.module.css",
+      ),
+      "utf8",
+    );
+
+    expect(component).toContain('id="guided-tour"');
+    expect(component).toContain('role="progressbar"');
+    expect(component).toContain("aria-valuenow={stageIndex + 1}");
+    expect(component).toContain("onKeyDown={handleStageKeys}");
+    expect(component).toContain("stageHeadingRef.current?.focus()");
+    expect(component).toContain("<details>");
+    expect(styles).toMatch(/min-height:\s*56px/);
+    expect(styles).toContain("@media (max-width: 600px)");
+    expect(styles).toContain("@media (prefers-reduced-motion: reduce)");
   });
 
   it("cannot persist data, bypass auth, or expose billing and clinical authority", () => {
