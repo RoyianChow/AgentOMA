@@ -5,6 +5,11 @@
   "workspaces": [
     "apps/experiment-sandbox"
   ],
+  "overrides": {
+    "@esbuild-kit/core-utils": {
+      "esbuild": "0.25.12"
+    }
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -13,6 +18,7 @@
     "typecheck": "tsc --noEmit",
     "security:raw-env-access": "tsx tools/security-policy/check-raw-env-access.mjs",
     "security:forbidden-imports": "tsx tools/security-policy/check-forbidden-imports.mjs",
+    "security:dependencies": "tsx tools/security-policy/check-dependencies.mjs",
     "test": "vitest run",
     "test:pure": "vitest run --config vitest.pure.config.mts --pool threads --maxWorkers 1",
     "test:self-check": "vitest run src/lib/self-check --config vitest.pure.config.mts --pool threads --maxWorkers 1",
@@ -59,6 +65,7 @@
     "@types/react-dom": "^19",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
+    "esbuild": "0.28.2",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
     "tailwindcss": "^4",

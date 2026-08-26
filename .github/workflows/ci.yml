@@ -4,7 +4,7 @@ name: CI
 # — Workstream C/E, incremental slices: the required-job contract for the
 # checks this repo can already run. Job IDs match Task 11's stable-job-ID
 # table so a later pass can extend this file (security-secrets,
-# security-dependencies, accessibility-automated, release-evidence-validate,
+# accessibility-automated, release-evidence-validate,
 # release-gate) without renaming anything protected-branch rules would
 # depend on.
 #
@@ -13,7 +13,7 @@ name: CI
 # for the checkers.
 #
 # Deliberately NOT included yet (tracked in docs/task-11/current-state-and-gap-analysis.md):
-#   - security-secrets / security-dependencies scanning
+#   - security-secrets scanning
 #   - security-policy: PHI-logging-leakage checks
 #   - accessibility-automated
 #   - release-evidence-validate / release-gate aggregate
@@ -140,6 +140,23 @@ jobs:
       # violation at PR time instead of at build time. No allowlist: this
       # boundary has no legitimate exception.
       - run: npm run security:forbidden-imports
+
+  security-dependencies:
+    name: security-dependencies
+    needs: quality-install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      # Advisory identities, severities, and exact exception scopes are
+      # validated by the repository checker. npm audit's aggregate count is
+      # deliberately not used as policy because one advisory can be repeated
+      # through several transitive parents and the feed changes over time.
+      - run: npm run security:dependencies
 
   database-fresh-migrations:
     name: database-fresh-migrations

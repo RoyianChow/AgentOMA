@@ -59,8 +59,9 @@ Task 11: review/release controls ─────┘                │
   the changed build/invariance remediation and its CI checks pass, but that
   candidate does not inherit the historical PASS and still needs exact-candidate
   Task 11 promotion review.
-- Task 11's incremental CI slice is merged, including raw-environment policy.
-  Secret/dependency scans, remaining security policy, accessibility,
+- Task 11's incremental CI slices are merged, including raw-environment and
+  forbidden-import policy. Dependency remediation/scanning is in review;
+  secret scanning, remaining security policy, accessibility,
   evidence-validation, aggregate gating, required-check branch protection,
   and independent review remain incomplete.
 - Task 02 may perform bounded inspection, export work, and the authorized
