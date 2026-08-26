@@ -69,12 +69,18 @@ Firebase is no longer part of the stack. PHI and operational data use Canadian-r
 `/demo` is a public, read-only product tour under the marketing layout. Five
 synthetic stages explain the zero-PHI handoff, structured pharmacist record,
 reference-derived claim boundary, follow-up obligation, and immutable
-audit/governance history. It accepts no user data and has no database, auth,
+audit/governance history. The guided workflow appears directly after a concise
+orientation, identifies the responsible actor and result at each stage, and
+supports touch, stage buttons, and arrow/Home/End keyboard navigation. The
+condition list is collapsed until requested so it does not bury the tour.
+
+The page accepts no user data and has no database, auth,
 clinical-routing, red-flag, claim-derivation, browser-storage, or HNS
 integration. It imports only `AILMENT_LABELS` and `ALL_AILMENT_IDS` from the
 approved triage module to avoid duplicating the public condition names.
-Architecture tests enforce that narrow import boundary; the real pharmacist portal remains
-invitation-only with mandatory TOTP.
+Architecture tests enforce that narrow import boundary and the walkthrough's
+accessibility hooks; the real pharmacist portal remains invitation-only with
+mandatory TOTP.
 
 The sign-in page offers an **Explore guest demo** link to this tour. It is a
 navigation entry point only: it does not create a guest identity, weaken TOTP,
