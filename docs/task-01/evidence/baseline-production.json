@@ -3,6 +3,19 @@
   "capturedDate": "2026-07-31",
   "baselineCommit": "7737ef26f09fec858d23337885ca7d31e9ccbc64",
   "dirtyWorktree": false,
+  "amendments": [
+    {
+      "id": "TASK11-DEPENDENCY-SECURITY-2026-08-26",
+      "sourceBaselineCommit": "7737ef26f09fec858d23337885ca7d31e9ccbc64",
+      "testedCandidate": "72b3ed6218bd2a06b03a99a7eac0d2753fe774b9",
+      "reason": "Approved Next.js security remediation from 16.2.10 to 16.3.3 and patched esbuild dependency graph.",
+      "routeShapeChanged": false,
+      "requiredServerFilesChanged": false,
+      "productionRuntimeScriptsChanged": false,
+      "sandboxMarkersFound": false,
+      "reviewStatus": "BLOCKED_PENDING_INDEPENDENT_TASK11_REVIEW"
+    }
+  ],
   "environment": "local",
   "runtime": {
     "node": "v24.18.0",
@@ -48,13 +61,13 @@
     "appPathCount": 25,
     "appPathsHash": "66ad3ca3b67e94e1e12b1f69343d79a9d4fb3a0746d16bcb94aa9730ef43692f",
     "routeShapeHash": "c8ec09f7f485a712590adc0137229c11a664253e10c1643fe1ad11f36ac31ff9",
-    "runtimeTraceFileCount": 625,
-    "runtimeTraceFilesHash": "4829ee34a0e676bff4ec4854933f9e986ab2ac4b35df068594f4f1a77c4dfd29",
-    "portableRuntimeTraceFileCount": 622,
-    "portableRuntimeTraceFilesHash": "2b639f3377125eabaa10fe1fd145edda5c6ce85a57be3daee2f4da4b5316d03f",
+    "runtimeTraceFileCount": 904,
+    "runtimeTraceFilesHash": "5ca8afb424f50df386ca9bcb35383aa3c52d03d8af7c317286e8846d9c8ec010",
+    "portableRuntimeTraceFileCount": 900,
+    "portableRuntimeTraceFilesHash": "694f3e62dbfc5f0593e866ed0c73433ba214980b21d095cd8f8a37ef3e34aa55",
     "requiredServerFileCount": 17,
     "requiredServerFilesHash": "1d989a40a33c6337f0fda5da5bcfc890fcdb55f06539916f32317c3ee6d3e9b8",
-    "productionDependenciesHash": "91bb6d914541815b48bb79d180774543d44f6cf914f676bbae008214c3a646a1",
+    "productionDependenciesHash": "5bc4f9498de19622737eb5e578b3e50aa22440fdf22a5ed279053ba2e6f7346b",
     "productionScriptsHash": "eb0976e856d63aaacaaf8d9eb00fd289dd8ecb060d917662816c1651e4cefb3b",
     "productionRuntimeScriptsSourceCommit": "7737ef26f09fec858d23337885ca7d31e9ccbc64",
     "productionRuntimeScriptsHash": "6bd4bb2bbc2165ffee56a5e988b00440deef418801b467173087c78a4418df14",

@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "testedSha": "72b3ed6218bd2a06b03a99a7eac0d2753fe774b9",
+  "recordedAtUtc": "2026-08-26T07:13:35.349Z",
+  "environment": "local-windows",
+  "nodeVersion": "v24.18.0",
+  "npmVersion": "11.16.0",
+  "packageLockSha256": "262d6521f4bdb66e287ff6096dd7a822672d6cbf68cfe5a3224b834fb5bb0416",
+  "commands": [
+    {
+      "command": "npm audit --json",
+      "exitCode": 0,
+      "auditReportVersion": 2,
+      "vulnerabilities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      }
+    },
+    {
+      "command": "npm audit --omit=dev --json",
+      "exitCode": 0,
+      "auditReportVersion": 2,
+      "vulnerabilities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      }
+    }
+  ],
+  "containsPhi": false,
+  "containsSecrets": false,
+  "result": "PASS"
+}

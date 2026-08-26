@@ -50,7 +50,8 @@ npm audit
 npm audit --omit=dev
 ```
 
-Exact-candidate audit output is stored under `docs/task-11/evidence/` after the
-implementation commit is frozen. A green scanner is technical evidence only;
-it does not grant release authority or replace the required independent Task 11
-review.
+Exact-candidate audit output for implementation commit
+`72b3ed6218bd2a06b03a99a7eac0d2753fe774b9` is stored under
+`docs/task-11/evidence/runs/72b3ed6218bd2a06b03a99a7eac0d2753fe774b9/`.
+A green scanner is technical evidence only; it does not grant release authority
+or replace the required independent Task 11 review.

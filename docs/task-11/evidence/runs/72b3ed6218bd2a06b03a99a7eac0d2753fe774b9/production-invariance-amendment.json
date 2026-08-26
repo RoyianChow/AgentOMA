@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "testedSha": "72b3ed6218bd2a06b03a99a7eac0d2753fe774b9",
+  "sourceBaselineSha": "7737ef26f09fec858d23337885ca7d31e9ccbc64",
+  "recordedAtUtc": "2026-08-26T07:13:35.349Z",
+  "reason": "Next.js and esbuild security dependency remediation",
+  "expectedChanges": {
+    "portableRuntimeTraceFileCount": {
+      "before": 622,
+      "after": 900
+    },
+    "portableRuntimeTraceFilesHash": {
+      "before": "2b639f3377125eabaa10fe1fd145edda5c6ce85a57be3daee2f4da4b5316d03f",
+      "after": "694f3e62dbfc5f0593e866ed0c73433ba214980b21d095cd8f8a37ef3e34aa55"
+    },
+    "productionDependenciesHash": {
+      "before": "91bb6d914541815b48bb79d180774543d44f6cf914f676bbae008214c3a646a1",
+      "after": "5bc4f9498de19622737eb5e578b3e50aa22440fdf22a5ed279053ba2e6f7346b"
+    }
+  },
+  "unchangedControls": {
+    "appPathCount": 25,
+    "appPathsHash": "66ad3ca3b67e94e1e12b1f69343d79a9d4fb3a0746d16bcb94aa9730ef43692f",
+    "routeShapeHash": "c8ec09f7f485a712590adc0137229c11a664253e10c1643fe1ad11f36ac31ff9",
+    "requiredServerFileCount": 17,
+    "requiredServerFilesHash": "1d989a40a33c6337f0fda5da5bcfc890fcdb55f06539916f32317c3ee6d3e9b8",
+    "productionRuntimeScriptsHash": "6bd4bb2bbc2165ffee56a5e988b00440deef418801b467173087c78a4418df14",
+    "sandboxMarkersFound": false
+  },
+  "reviewStatus": "BLOCKED_PENDING_INDEPENDENT_TASK11_REVIEW"
+}
