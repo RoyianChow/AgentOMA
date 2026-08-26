@@ -8,12 +8,13 @@ name: CI
 # release-gate) without renaming anything protected-branch rules would
 # depend on.
 #
-# security-policy currently covers PRV-01 (raw process.env access) only —
-# see tools/security-policy/ for the checker and its reviewed allowlist.
+# security-policy currently covers PRV-01 (raw process.env access) and
+# BND-01 (production/sandbox import isolation) — see tools/security-policy/
+# for the checkers.
 #
 # Deliberately NOT included yet (tracked in docs/task-11/current-state-and-gap-analysis.md):
 #   - security-secrets / security-dependencies scanning
-#   - security-policy: forbidden-import / PHI-logging-leakage checks (only PRV-01 exists so far)
+#   - security-policy: PHI-logging-leakage checks
 #   - accessibility-automated
 #   - release-evidence-validate / release-gate aggregate
 #   - branch-protection required-check configuration (repo admin action, not code)
@@ -131,6 +132,14 @@ jobs:
       # not a text/regex scan, which produces false positives on strings
       # like a test asserting some file doesn't contain "process.env".
       - run: npm run security:raw-env-access
+      # BND-01: fails if any src/ file imports apps/experiment-sandbox/, or
+      # any sandbox file imports unreviewed production code from src/.
+      # Source-level, AST-based (tools/security-policy/check-forbidden-imports.mjs
+      # + src/lib/security-policy/forbidden-imports.ts) — a complement to
+      # verify-production-invariance.mjs's built-output check, catching a
+      # violation at PR time instead of at build time. No allowlist: this
+      # boundary has no legitimate exception.
+      - run: npm run security:forbidden-imports
 
   database-fresh-migrations:
     name: database-fresh-migrations
