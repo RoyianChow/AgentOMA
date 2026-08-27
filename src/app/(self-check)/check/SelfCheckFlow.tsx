@@ -270,10 +270,7 @@ export default function SelfCheckFlow() {
         </noscript>
 
         {phase === "intro" && (
-          <section className={styles.screen}>
-            <span className={`${styles.eyebrow} ${styles.eyebrowGo}`}>
-              Private by design
-            </span>
+          <section className={`${styles.screen} ${styles.introScreen}`}>
             <h1 ref={headingRef} tabIndex={-1} className={styles.question}>
               Could an Ontario pharmacist help with this concern?
             </h1>
@@ -282,6 +279,25 @@ export default function SelfCheckFlow() {
               You will get next steps and, when appropriate, a private summary
               to bring to any Ontario pharmacy.
             </p>
+
+            <p className={styles.introCaution}>
+              This is not a diagnosis or prescription. If you think this is an
+              emergency, call 911 or go to an emergency department.
+            </p>
+
+            <div
+              className={`${styles.actions} ${styles.singleAction} ${styles.introActions}`}
+            >
+              <button
+                type="button"
+                className={styles.cta}
+                onClick={() => setPhase("emergency")}
+              >
+                Start self-check
+              </button>
+            </div>
+
+            <h2 className={styles.sectionTitle}>What to expect</h2>
 
             <ul className={styles.promiseList} aria-label="What to expect">
               <li>
@@ -321,28 +337,12 @@ export default function SelfCheckFlow() {
                 share.
               </p>
             </div>
-            <p className={styles.introCaution}>
-              This is not a diagnosis or prescription. If you think this is an
-              emergency, call 911 or go to an emergency department.
-            </p>
-            <div className={`${styles.actions} ${styles.singleAction}`}>
-              <button
-                type="button"
-                className={styles.cta}
-                onClick={() => setPhase("emergency")}
-              >
-                Start self-check
-              </button>
-            </div>
           </section>
         )}
 
         {phase === "emergency" && (
           <section className={`${styles.screen} ${styles.screenWithDock}`}>
             <FlowProgress phase={phase} />
-            <span className={`${styles.eyebrow} ${styles.eyebrowStop}`}>
-              Safety first
-            </span>
             <h1 ref={headingRef} tabIndex={-1} className={styles.question}>
               Are any of these happening right now?
             </h1>
@@ -410,7 +410,6 @@ export default function SelfCheckFlow() {
         {phase === "triage" && node && (
           <section className={styles.screen} key={nodeId}>
             <FlowProgress phase={phase} />
-            <span className={styles.eyebrow}>About this concern</span>
             <h1 ref={headingRef} tabIndex={-1} className={styles.question}>
               {node.title}
             </h1>
@@ -431,9 +430,7 @@ export default function SelfCheckFlow() {
                   {option.sub && (
                     <span className={styles.optSub}>{option.sub}</span>
                   )}
-                  <span className={styles.optArrow} aria-hidden="true">
-                    →
-                  </span>
+                  <span className={styles.optArrow} aria-hidden="true" />
                 </button>
               ))}
             </div>
@@ -452,9 +449,6 @@ export default function SelfCheckFlow() {
         {phase === "red_flags" && ailment && (
           <section className={`${styles.screen} ${styles.screenWithDock}`}>
             <FlowProgress phase={phase} />
-            <span className={`${styles.eyebrow} ${styles.eyebrowCaution}`}>
-              Safety questions
-            </span>
             <h1 ref={headingRef} tabIndex={-1} className={styles.question}>
               Do any of these apply?
             </h1>
@@ -524,12 +518,36 @@ export default function SelfCheckFlow() {
         )}
 
         {phase === "result" && summary && (
-          <section className={styles.screen}>
+          <section className={`${styles.screen} ${styles.resultScreen}`}>
+            <div
+              className={`${styles.resultStatus} ${
+                summary.kind === "pre_visit"
+                  ? styles.resultStatusGo
+                  : summary.reason === "emergency"
+                    ? styles.resultStatusStop
+                    : styles.resultStatusCaution
+              }`}
+            >
+              <span className={styles.resultIcon} aria-hidden="true">
+                {summary.kind === "pre_visit" ? (
+                  <svg viewBox="0 0 24 24" focusable="false">
+                    <path d="m5 12.5 4.1 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" focusable="false">
+                    <path d="M12 7v6" />
+                    <path d="M12 17h.01" />
+                  </svg>
+                )}
+              </span>
+              <span>
+                {summary.kind === "pre_visit"
+                  ? "Self-check complete"
+                  : "Advisory"}
+              </span>
+            </div>
             {summary.kind === "pre_visit" ? (
               <>
-                <span className={`${styles.eyebrow} ${styles.eyebrowGo}`}>
-                  Self-check complete
-                </span>
                 <h1
                   ref={headingRef}
                   tabIndex={-1}
@@ -581,15 +599,6 @@ export default function SelfCheckFlow() {
               </>
             ) : (
               <>
-                <span
-                  className={`${styles.eyebrow} ${
-                    summary.reason === "emergency"
-                      ? styles.eyebrowStop
-                      : styles.eyebrowCaution
-                  }`}
-                >
-                  Advisory
-                </span>
                 <h1
                   ref={headingRef}
                   tabIndex={-1}
@@ -621,7 +630,15 @@ export default function SelfCheckFlow() {
               </>
             )}
 
-            <div className={styles.pdfCard}>
+            <div
+              className={`${styles.pdfCard} ${
+                summary.kind === "pre_visit"
+                  ? styles.pdfCardGo
+                  : summary.reason === "emergency"
+                    ? styles.pdfCardStop
+                    : styles.pdfCardCaution
+              }`}
+            >
               <span className={styles.pdfIcon} aria-hidden="true">
                 PDF
               </span>
