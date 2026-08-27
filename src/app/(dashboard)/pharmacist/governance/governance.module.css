@@ -4,8 +4,8 @@
   --governance-text: var(--text-primary, #0f172a);
   --governance-text-muted: var(--text-secondary, #475569);
   --governance-border: var(--border-color, #e2e8f0);
-  --governance-action: #0f766e;
-  --governance-action-hover: #115e59;
+  --governance-action: var(--primary, #0f766e);
+  --governance-action-hover: var(--primary-hover, #115e59);
   --governance-action-text: #ffffff;
   --governance-focus: #0f766e;
   --governance-warning-bg: var(--warning-light, #fef3c7);
@@ -14,10 +14,16 @@
   --governance-danger-text: var(--danger-text, #991b1b);
   --governance-danger-action: #b4232b;
   --governance-danger-hover: #8e1b21;
-  width: min(100%, 1240px);
+  width: min(100%, 1320px);
   margin: 0 auto;
   padding: 1.5rem clamp(0.75rem, 3vw, 2rem) 4rem;
   color: var(--governance-text);
+  scrollbar-color: var(--governance-border) transparent;
+}
+
+.root ::selection {
+  color: var(--governance-text);
+  background: var(--primary-light, #ccfbf1);
 }
 
 .skipLink {
@@ -69,6 +75,21 @@
   gap: 0.4rem;
 }
 
+.backIcon {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 160ms ease;
+}
+
+.backLink:hover .backIcon {
+  transform: translateX(-2px);
+}
+
 .sessionActions {
   display: flex;
   align-items: center;
@@ -107,21 +128,8 @@
   margin: 0;
   font-size: clamp(2rem, 6vw, 3.25rem);
   line-height: 1.05;
-}
-
-.eyebrow,
-.sectionKicker,
-.dangerKicker {
-  margin: 0;
-  color: var(--governance-action);
-  font-size: 0.76rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.dangerKicker {
-  color: var(--governance-danger-text);
+  letter-spacing: -0.035em;
+  text-wrap: balance;
 }
 
 .intro {
@@ -136,12 +144,9 @@
   align-items: flex-start;
   gap: 0.65rem;
   max-width: 76ch;
-  padding: 0.8rem 1rem;
-  border: 1px solid var(--governance-border);
-  border-radius: 0.75rem;
-  background: var(--governance-surface-muted);
+  padding: 0.6rem 0;
   color: var(--governance-text-muted);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   line-height: 1.45;
 }
 
@@ -154,23 +159,34 @@
   background: var(--governance-action);
 }
 
+.workspaceLayout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  align-items: start;
+}
+
 .workflowNav {
   position: sticky;
   z-index: 10;
-  top: 0;
-  margin-bottom: 2rem;
-  padding: 0.55rem;
+  top: 1rem;
+  padding: 0.75rem;
   border: 1px solid var(--governance-border);
-  border-radius: 0.85rem;
-  background: color-mix(in srgb, var(--governance-surface) 94%, transparent);
-  box-shadow: 0 0.35rem 1.25rem rgb(15 23 42 / 8%);
-  backdrop-filter: blur(12px);
+  border-radius: 0.9rem;
+  background: var(--governance-surface);
+}
+
+.navTitle {
+  margin: 0;
+  padding: 0.4rem 0.55rem 0.65rem;
+  color: var(--governance-text-muted);
+  font-size: 0.74rem;
+  font-weight: 750;
 }
 
 .workflowNav ul {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+  display: grid;
+  gap: 0.15rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -178,6 +194,7 @@
 
 .workflowNav a {
   display: inline-flex;
+  width: 100%;
   min-height: 44px;
   align-items: center;
   padding: 0.55rem 0.75rem;
@@ -191,7 +208,8 @@
 
 .content {
   display: grid;
-  gap: 2.75rem;
+  min-width: 0;
+  gap: clamp(2.75rem, 6vw, 4.75rem);
 }
 
 .content:focus-visible {
@@ -201,7 +219,7 @@
 
 .section {
   min-width: 0;
-  scroll-margin-top: 5.5rem;
+  scroll-margin-top: 1rem;
 }
 
 .sectionHeading {
@@ -212,14 +230,11 @@
   margin-bottom: 1rem;
 }
 
-.sectionHeading > div {
-  display: grid;
-  gap: 0.35rem;
-}
-
 .sectionHeading h2 {
   margin: 0;
   font-size: clamp(1.5rem, 4vw, 2rem);
+  letter-spacing: -0.025em;
+  text-wrap: balance;
 }
 
 .sectionHeading > p {
@@ -239,9 +254,13 @@
 
 .metricGrid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--governance-border);
+  border-radius: 1rem;
+  background: var(--governance-surface);
 }
 
-.metricCard,
 .actionCard,
 .recordCard {
   min-width: 0;
@@ -249,7 +268,17 @@
   border: 1px solid var(--governance-border);
   border-radius: 0.9rem;
   background: var(--governance-surface);
-  box-shadow: 0 1px 2px rgb(15 23 42 / 5%);
+}
+
+.metricCard {
+  min-width: 0;
+  padding: clamp(1rem, 2.5vw, 1.35rem);
+  border-right: 1px solid var(--governance-border);
+  background: transparent;
+}
+
+.metricCard:last-child {
+  border-right: 0;
 }
 
 .metricCard h3,
@@ -263,7 +292,7 @@
 .metricValue {
   margin: 0.85rem 0 0;
   color: var(--governance-action);
-  font-size: clamp(2rem, 5vw, 2.65rem);
+  font-size: clamp(1.75rem, 4vw, 2.35rem);
   font-variant-numeric: tabular-nums;
   font-weight: 800;
   line-height: 1;
@@ -386,12 +415,13 @@
 .form textarea {
   width: 100%;
   min-width: 0;
-  min-height: 46px;
+  min-height: 48px;
   padding: 0.7rem 0.75rem;
   border: 1px solid color-mix(in srgb, var(--governance-text-muted) 55%, transparent);
-  border-radius: 0.55rem;
+  border-radius: 0.65rem;
   background: var(--governance-surface);
   color: var(--governance-text);
+  caret-color: var(--governance-action);
   font: inherit;
   line-height: 1.35;
 }
@@ -419,10 +449,10 @@
 }
 
 .form button {
-  min-height: 46px;
+  min-height: 48px;
   padding: 0.7rem 1rem;
   border: 1px solid transparent;
-  border-radius: 0.55rem;
+  border-radius: 0.65rem;
   background: var(--governance-action);
   color: var(--governance-action-text);
   font: inherit;
@@ -457,7 +487,7 @@
 .recordItem {
   min-width: 0;
   padding: 0.85rem;
-  border: 1px solid var(--governance-border);
+  border: 0;
   border-radius: 0.7rem;
   background: var(--governance-surface-muted);
 }
@@ -545,8 +575,20 @@
 .dangerWarning {
   margin: 0.9rem 0 0;
   padding: 0.8rem 0.9rem;
-  border-left: 4px solid currentColor;
-  border-radius: 0.35rem;
+  border: 1px solid currentColor;
+  border-radius: 0.65rem;
+  line-height: 1.5;
+}
+
+.privacyNotice {
+  margin: 0.9rem 0 0;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--governance-warning-text) 42%, transparent);
+  border-radius: 0.65rem;
+  background: var(--governance-warning-bg);
+  color: var(--governance-warning-text);
+  font-size: 0.84rem;
+  font-weight: 650;
   line-height: 1.5;
 }
 
@@ -661,7 +703,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  .root {
+  :global(:root:not(.light-theme)) .root {
     --governance-action: #2dd4bf;
     --governance-action-hover: #5eead4;
     --governance-action-text: #042f2e;
@@ -670,16 +712,8 @@
     --governance-danger-hover: #fecaca;
   }
 
-  .form .dangerButton {
+  :global(:root:not(.light-theme)) .root .form .dangerButton {
     color: #450a0a;
-  }
-
-  .metricCard,
-  .actionCard,
-  .recordCard,
-  .failurePanel,
-  .workflowNav {
-    box-shadow: none;
   }
 }
 
@@ -699,6 +733,53 @@
 @media (max-width: 1050px) {
   .metricGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metricCard:nth-child(2) {
+    border-right: 0;
+  }
+
+  .metricCard:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--governance-border);
+  }
+}
+
+@media (max-width: 900px) {
+  .workspaceLayout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2rem;
+  }
+
+  .workflowNav {
+    top: 0;
+    overflow-x: auto;
+    padding: 0.45rem;
+    border-radius: 0 0 0.8rem 0.8rem;
+  }
+
+  .navTitle {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .workflowNav ul {
+    display: flex;
+    width: max-content;
+    gap: 0.2rem;
+  }
+
+  .workflowNav a {
+    width: auto;
+    white-space: nowrap;
+  }
+
+  .section {
+    scroll-margin-top: 5.5rem;
   }
 }
 
@@ -723,20 +804,6 @@
     text-align: left;
   }
 
-  .workflowNav {
-    position: static;
-  }
-
-  .workflowNav ul {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .workflowNav a {
-    width: 100%;
-  }
-
-  .metricGrid,
   .workflowGrid,
   .twoColumnForm,
   .multiColumnList {
@@ -772,8 +839,19 @@
     align-self: flex-start;
   }
 
-  .workflowNav ul {
+  .metricGrid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .metricCard,
+  .metricCard:nth-child(2),
+  .metricCard:nth-child(-n + 2) {
+    border-right: 0;
+    border-bottom: 1px solid var(--governance-border);
+  }
+
+  .metricCard:last-child {
+    border-bottom: 0;
   }
 
   .metricCard,
@@ -792,6 +870,16 @@
 
   .form button {
     width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backIcon {
+    transition: none;
+  }
+
+  .backLink:hover .backIcon {
+    transform: none;
   }
 }
 
