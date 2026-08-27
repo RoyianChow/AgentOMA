@@ -15,6 +15,16 @@ const eslintConfig = defineConfig([
     // The experiment has its own strict ESLint configuration and gate. Keep
     // the production lint file set stable while the separate workspace grows.
     "apps/experiment-sandbox/**",
+    // Impeccable installs the same vendor-owned skill runtime for each agent.
+    // Its scripts are checked upstream and are not part of this application's
+    // TypeScript/ESLint boundary.
+    ".agents/skills/**",
+    ".claude/skills/**",
+    ".cursor/agents/**",
+    ".cursor/skills/**",
+    ".gemini/**",
+    ".github/agents/**",
+    ".github/skills/**",
   ]),
 ]);
 

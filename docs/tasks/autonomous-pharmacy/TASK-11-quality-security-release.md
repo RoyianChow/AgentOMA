@@ -1,14 +1,16 @@
 Task 11 — Cross-Cutting Quality, Security, Privacy, and Release Control Plane
 
-## Sprint checkpoint — 2026-08-22
+## Sprint checkpoint — 2026-08-26
 
-**Repository state:** eight CI jobs are merged and green on PR #56, including
-the raw-environment policy job. The full Task 11 control plane and promotion
-remain `BLOCKED` pending secret/dependency and remaining policy jobs,
+**Repository state:** nine CI jobs are merged, including raw-environment,
+forbidden-import, and dependency-security policy. The full Task 11 control
+plane and promotion remain `BLOCKED` pending repository-owned secret scanning,
+PHI/logging and unsafe-enable policy,
 accessibility, evidence validation, aggregate gating, required-check branch
 protection, and exact-candidate independent review.
-**Sprint slice:** review Task 01 candidate `2358570a...` and its SBX-04/SBX-13
-evidence, then complete the capability/control catalogue, evidence schema,
+**Sprint slice:** independently review the Task 01 remediation and
+dependency/invariance amendment candidates, then complete the
+capability/control catalogue, evidence schema,
 missing required jobs, aggregate gate, and branch-protection controls.
 **Exit:** independent quality/security/privacy/operations/accessibility review
 is bound to the exact candidate. Task 11 records approvals and never grants or

@@ -49,40 +49,80 @@ const OUTCOME_LABELS: Record<string, string> = {
   no_rx_otc_or_nonpharm: "OTC / Non-Pharm",
 };
 
+const ROLE_LABELS: Record<string, string> = {
+  pharmacy_admin: "Pharmacy administrator",
+  pharmacist: "Pharmacist",
+  intern: "Pharmacy intern",
+  student: "Pharmacy student",
+  technician: "Pharmacy technician",
+};
+
+function ArrowIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className={styles.arrowIcon}
+      viewBox="0 0 20 20"
+      fill="none"
+    >
+      <path d="M4 10h11M11 6l4 4-4 4" />
+    </svg>
+  );
+}
+
 function QueueRow({ intake }: { intake: PendingIntake }) {
   const expiry = expiresIn(intake.expiresAt);
   return (
-    <Link href={`/pharmacist/assessment?session=${intake.id}`} className={styles.queueRow}>
-      <div className={styles.queueMain}>
-        <div className={styles.queueAilment}>{ailmentLabel(intake.ailmentGroupCode)}</div>
-        <div className={styles.queueMeta}>
-          <span>Submitted {timeAgo(intake.createdAt)}</span>
-          <span>{intake.trailLength} triage answers</span>
-          {intake.priorCountSelfReport !== null && (
-            <span>{intake.priorCountSelfReport}× prior (self-report)</span>
-          )}
+    <li>
+      <Link
+        href={`/pharmacist/assessment?session=${intake.id}`}
+        className={styles.queueRow}
+      >
+        <span className={styles.queueMarker} aria-hidden="true" />
+        <div className={styles.queueMain}>
+          <div className={styles.queueAilment}>
+            {ailmentLabel(intake.ailmentGroupCode)}
+          </div>
+          <div className={styles.queueMeta}>
+            <span>Submitted {timeAgo(intake.createdAt)}</span>
+            <span>{intake.trailLength} triage answers</span>
+            {intake.priorCountSelfReport !== null && (
+              <span>{intake.priorCountSelfReport}× prior (self-report)</span>
+            )}
+          </div>
         </div>
-      </div>
-      <div className={styles.queueSide}>
-        <span className="badge badge-accent">Ref: {intake.code}</span>
-        <span className={`${styles.queueExpiry} ${expiry.soon ? styles.queueExpirySoon : ""}`}>
-          {expiry.label}
+        <div className={styles.queueSide}>
+          <span className={styles.referenceCode}>Ref {intake.code}</span>
+          <span
+            className={`${styles.queueExpiry} ${expiry.soon ? styles.queueExpirySoon : ""}`}
+          >
+            {expiry.label}
+          </span>
+        </div>
+        <span className={styles.rowAction}>
+          <span className={styles.rowActionLabel}>Open</span>
+          <ArrowIcon />
         </span>
-      </div>
-    </Link>
+      </Link>
+    </li>
   );
 }
 
 function RecentRow({ a }: { a: RecentAssessment }) {
   return (
     <li className={styles.recentRow}>
-      <div>
-        <div className={styles.recentName}>{a.patientName}</div>
-        <div className={styles.recentMeta}>
-          {ailmentLabel(a.ailmentGroupCode)} · {timeAgo(a.createdAt)}
+      <Link href={`/pharmacist/audit/${a.id}`} className={styles.recentLink}>
+        <div className={styles.recentMain}>
+          <div className={styles.recentName}>{a.patientName}</div>
+          <div className={styles.recentMeta}>
+            {ailmentLabel(a.ailmentGroupCode)} · {timeAgo(a.createdAt)}
+          </div>
         </div>
-      </div>
-      <span className="badge badge-accent">{OUTCOME_LABELS[a.outcome] ?? a.outcome}</span>
+        <span className={styles.outcomeBadge}>
+          {OUTCOME_LABELS[a.outcome] ?? a.outcome}
+        </span>
+        <ArrowIcon />
+      </Link>
     </li>
   );
 }
@@ -97,9 +137,32 @@ function FollowUpRow({ item }: { item: FollowUpWorkItem }) {
             {ailmentLabel(item.ailmentGroupCode)} · due {item.dueDate}
           </span>
         </span>
-        {item.isOverdue && <span className={styles.overdueBadge}>Overdue</span>}
+        <span className={styles.followUpSide}>
+          {item.isOverdue && <span className={styles.overdueBadge}>Overdue</span>}
+          <ArrowIcon />
+        </span>
       </Link>
     </li>
+  );
+}
+
+function WorkspaceLink({
+  href,
+  title,
+  description,
+}: {
+  href: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <Link href={href} className={styles.workspaceLink}>
+      <span>
+        <strong>{title}</strong>
+        <small>{description}</small>
+      </span>
+      <ArrowIcon />
+    </Link>
   );
 }
 
@@ -117,69 +180,108 @@ export default async function PharmacistDashboard() {
     getRecentAssessments(8),
     canManageFollowUps ? listFollowUps(actor, 50) : Promise.resolve([]),
   ]);
-  const openFollowUps = followUps.filter((item) => item.isOpen).slice(0, 6);
+  const activeFollowUps = followUps.filter((item) => item.isOpen);
+  const overdueFollowUps = activeFollowUps.filter((item) => item.isOverdue).length;
+  const openFollowUps = activeFollowUps.slice(0, 6);
 
   return (
-    <div className={`${styles.page} animate-fade-in`}>
-      <div className={styles.header}>
+    <main className={`${styles.page} animate-fade-in`}>
+      <a href="#dashboard-work" className={styles.skipLink}>
+        Skip to today&apos;s work
+      </a>
+
+      <header className={styles.header}>
         <div className={styles.headerTitle}>
-          <h1>Pharmacist Dashboard</h1>
+          <h1>Pharmacist dashboard</h1>
           <p className={styles.headerSub}>
-            Patient intakes appear in the queue automatically as they finish triage.
+            Review new patient handoffs, follow-up work, and today&apos;s completed
+            assessments.
           </p>
         </div>
-        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+        <div className={styles.headerActions}>
+          <span className={styles.sessionPill}>
+            <span className={styles.liveDot} aria-hidden="true" />
+            {ROLE_LABELS[actor.role] ?? actor.role}
+          </span>
           <DashboardRefresher />
           <SignOutButton />
         </div>
-      </div>
+      </header>
 
-      <div className={styles.stats}>
-        <div className={styles.statTile}>
-          <div className={styles.statLabel}>Today&apos;s Assessments</div>
-          <div className={styles.statValue}>{stats.todayAssessments}</div>
-        </div>
-        <div className={styles.statTile}>
-          <div className={styles.statLabel}>Pending Intakes</div>
-          <div className={`${styles.statValue} ${styles.statValueAccent}`}>
+      <dl className={styles.stats} aria-label="Today at a glance">
+        <div className={`${styles.statItem} ${styles.statItemPrimary}`}>
+          <dt className={styles.statLabel}>Waiting intakes</dt>
+          <dd className={`${styles.statValue} ${styles.statValueAccent}`}>
             {stats.pendingIntakes}
-          </div>
+          </dd>
+          <span className={styles.statHint}>Ready for pharmacist review</span>
         </div>
-        <div className={styles.statTile}>
-          <div className={styles.statLabel}>Est. Revenue Today</div>
-          <div className={styles.statValue}>
+        <div className={styles.statItem}>
+          <dt className={styles.statLabel}>Open follow-ups</dt>
+          <dd className={styles.statValue}>{activeFollowUps.length}</dd>
+          <span
+            className={`${styles.statHint} ${overdueFollowUps > 0 ? styles.statHintDanger : ""}`}
+          >
+            {overdueFollowUps > 0
+              ? `${overdueFollowUps} overdue`
+              : "None overdue"}
+          </span>
+        </div>
+        <div className={styles.statItem}>
+          <dt className={styles.statLabel}>Assessments today</dt>
+          <dd className={styles.statValue}>{stats.todayAssessments}</dd>
+          <span className={styles.statHint}>Completed records</span>
+        </div>
+        <div className={styles.statItem}>
+          <dt className={styles.statLabel}>Reference fee estimate</dt>
+          <dd className={styles.statValue}>
             ${(stats.todayRevenueCents / 100).toFixed(2)}
-          </div>
-          <div className={styles.statHint}>Based on current PIN fees</div>
+          </dd>
+          <span className={styles.statHint}>
+            Completed assessments · not HNS adjudication
+          </span>
         </div>
-      </div>
+      </dl>
 
-      <div className={styles.columns}>
-        <div className={styles.card}>
+      <div id="dashboard-work" className={styles.columns} tabIndex={-1}>
+        <section
+          className={`${styles.card} ${styles.queueCard}`}
+          aria-labelledby="queue-title"
+        >
           <div className={styles.cardHeader}>
-            <h2>Intake Queue</h2>
-            <span className={styles.recentMeta}>
+            <div className={styles.cardHeadingCopy}>
+              <h2 id="queue-title">Intake queue</h2>
+              <p>Select a handoff to begin the pharmacist assessment.</p>
+            </div>
+            <span className={styles.countBadge}>
               {pending.sessions.length} waiting
             </span>
           </div>
           {pending.sessions.length > 0 ? (
-            <div className={styles.queueList}>
+            <ul className={styles.queueList}>
               {pending.sessions.map((intake) => (
                 <QueueRow key={intake.id} intake={intake} />
               ))}
-            </div>
+            </ul>
           ) : (
             <div className={styles.emptyState}>
-              No pending intakes — patients appear here as they finish triage.
+              <span className={styles.emptyTitle}>No patient handoffs are waiting.</span>
+              <span>This queue refreshes automatically every 30 seconds.</span>
             </div>
           )}
-        </div>
+        </section>
 
-        <div className={styles.rightCol}>
+        <aside className={styles.rightCol} aria-label="Supporting work">
           {canManageFollowUps && (
-            <div className={styles.card}>
+            <section className={styles.card} aria-labelledby="follow-ups-title">
               <div className={styles.cardHeader}>
-                <h2>Follow-ups due</h2>
+                <div className={styles.cardHeadingCopy}>
+                  <h2 id="follow-ups-title">Follow-ups due</h2>
+                  <p>
+                    Follow-up remains owed even when a prescription is filled
+                    elsewhere.
+                  </p>
+                </div>
                 <Link href="/pharmacist/follow-ups" className={styles.cardHeaderLink}>
                   View all
                 </Link>
@@ -193,31 +295,50 @@ export default async function PharmacistDashboard() {
               ) : (
                 <div className={styles.emptyState}>No follow-ups are currently open.</div>
               )}
-            </div>
+            </section>
           )}
 
-          <div className={styles.card}>
+          <nav className={styles.card} aria-labelledby="workspace-title">
             <div className={styles.cardHeader}>
-              <h2>Quick Actions</h2>
+              <div className={styles.cardHeadingCopy}>
+                <h2 id="workspace-title">Workspace</h2>
+                <p>Records, configuration, and pharmacy administration.</p>
+              </div>
             </div>
             <div className={styles.actionsList}>
-              <Link href="/pharmacist/audit" className="btn btn-secondary">
-                Ministry Audit Log
-              </Link>
-              <Link href="/pharmacist/settings" className="btn btn-secondary">
-                Profile &amp; Settings
-              </Link>
+              <WorkspaceLink
+                href="/pharmacist/audit"
+                title="Assessment records"
+                description="Review completed records and audit history"
+              />
+              <WorkspaceLink
+                href="/pharmacist/settings"
+                title="Profile and settings"
+                description="Manage prescriber and pharmacy configuration"
+              />
               {actor.role === "pharmacy_admin" && (
-                <Link href="/pharmacist/governance" className="btn btn-secondary">
-                  Record Governance
-                </Link>
+                <>
+                  <WorkspaceLink
+                    href="/pharmacist/team"
+                    title="Pharmacy team"
+                    description="Invite team members and record orientation"
+                  />
+                  <WorkspaceLink
+                    href="/pharmacist/governance"
+                    title="Record governance"
+                    description="Retention, holds, exports, and corrections"
+                  />
+                </>
               )}
             </div>
-          </div>
+          </nav>
 
-          <div className={styles.card}>
+          <section className={styles.card} aria-labelledby="recent-title">
             <div className={styles.cardHeader}>
-              <h2>Recent Assessments</h2>
+              <div className={styles.cardHeadingCopy}>
+                <h2 id="recent-title">Recent assessments</h2>
+                <p>Latest completed records for this pharmacy.</p>
+              </div>
               <Link href="/pharmacist/audit" className={styles.cardHeaderLink}>
                 View all
               </Link>
@@ -231,9 +352,9 @@ export default async function PharmacistDashboard() {
             ) : (
               <div className={styles.emptyState}>No assessments recorded yet.</div>
             )}
-          </div>
-        </div>
+          </section>
+        </aside>
       </div>
-    </div>
+    </main>
   );
 }

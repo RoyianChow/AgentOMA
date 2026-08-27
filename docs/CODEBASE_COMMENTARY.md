@@ -1,8 +1,8 @@
 # Codebase commentary and current-state map
 
-**Snapshot reconciled:** 2026-08-20
+**Snapshot reconciled:** 2026-08-26
 **Observed branch:** `origin/main`
-**Observed baseline:** `1ce2c9ace894f5c2a745f15fa901fe2fc6acc138`
+**Observed baseline:** `02b0a5cf08a56714a2d175556557a49f8813b77f`
 
 ## Why this file exists
 
@@ -22,9 +22,12 @@ The application is an authenticated pilot foundation, not a production-ready
 pharmacy service. Exact candidate `dcaab91f9adba7457a85214d51d1614c8560f404`
 remains the last complete database-tested candidate: 211 real-PostgreSQL tests
 passed twice through migration `0018`. The current merged baseline
-`1ce2c9ac…` is TypeScript- and ESLint-clean, passes 306 pure production tests,
-builds successfully, and passes 606 non-Postgres sandbox tests. Docker was not
-rerun in this documentation pass.
+`02b0a5cf…` is TypeScript- and ESLint-clean, passes 180 pure production tests,
+builds successfully with Next.js 16.3.3, and passes 614 non-Postgres sandbox
+tests, sandbox build, evidence validation, production invariance, and the
+dependency-security gate. The current Docker suite rebuilt from zero through
+`0018` and passed 27 files / 269 tests after its preflight rejected a stale
+test container. Cleanup removed the disposable database and network.
 
 Migration `0018` remains unapplied to live Supabase, which is documented at
 `0017`. The newest preserved predecessor/restart candidates, `3a271a7d…` and
@@ -33,10 +36,39 @@ synthetic fixture writes. Use the maintained
 [`current implementation status`](tasks/autonomous-pharmacy/CURRENT-IMPLEMENTATION-STATUS.md)
 instead of this commentary file for evolving task status.
 
-The current Task 01 production-invariance check fails closed on route shape.
-Task 04's `/book` UI and Task 06's synthetic virtual-care prototype are merged,
-but sandbox runtime authority is expired and Task 04's v3 renewal is not
-granted. Task 11's first CI slice is merged; its control plane is incomplete.
+The current Task 01 production-invariance check passes, but the changed
+candidates still lack independent promotion review. Task 04's `/book` UI and
+Task 06's synthetic virtual-care prototype are merged, but sandbox runtime
+authority is expired and Task 04's v3 renewal is not granted. Task 11 now has
+raw-environment, forbidden-import, and dependency-security controls; its full
+control plane remains incomplete.
+
+## Evaluation conclusions
+
+The codebase has strong fail-closed boundaries for its current pilot stage:
+public intake remains zero-PHI, pharmacist mutations use server-side guards,
+claim values come from reference data, red-flag exits remain separated from
+claims, immutable records use supersession, and experimental code is isolated
+from production builds and data.
+
+The main risks are deployment and governance gaps rather than missing core UI:
+
+1. live Supabase is still documented at migration `0017`, so P0-C completion
+   must not be treated as deployed until the exact `0018` gates finish;
+2. Task 01 and the dependency/invariance amendment lack independent
+   exact-candidate promotion review;
+3. branch protection has no required status-check contexts and no admin
+   enforcement;
+4. Task 11 still lacks repository-owned secret scanning, PHI/logging and
+   unsafe-enable policy, accessibility automation, evidence validation, and an
+   aggregate release gate; and
+5. Task 04/06 code is synthetic and technically testable, but its runnable
+   authority is expired or incomplete.
+
+During this audit the sandbox rejected an inherited `OPENAI_API_KEY` without
+printing its value, then built successfully after the prohibited variable was
+removed from the child process and the approved synthetic build variables were
+supplied. That is the intended containment behavior.
 
 ## Route and data-flow map
 
@@ -140,8 +172,9 @@ approval/evidence. Changes there need their own lead-approved scope.
   current conservative claim-drafting refusal remains intentional.
 - Keep `/api/fhir` disabled until its authorization and pharmacist-reviewed
   mapping requirements are satisfied. Do not expand it as part of housekeeping.
-- Resolve the current Task 01 route-shape production-invariance finding without
-  weakening or casually regenerating the baseline.
+- Obtain independent Task 11 review for the Task 01 remediation and
+  dependency/invariance amendment candidates; do not transfer the historical
+  Task 01 PASS.
 - Keep Task 04 fail-closed until its v3 scope is exact, signed, unexpired, and
   independently reviewed.
 - Treat Task 06 as a merged synthetic review prototype; renew its runtime scope

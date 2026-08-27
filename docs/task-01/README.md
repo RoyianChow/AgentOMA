@@ -6,17 +6,25 @@
 **G2 hosted preview:** NOT REQUESTED; SBX-14 is NOT APPLICABLE
 **G3 production-import allowlist:** empty
 
-> **Current-candidate warning (2026-08-22):** the PASS below belongs only to
+> **Current-candidate warning (2026-08-26):** the PASS below belongs only to
 > its recorded historical candidate. CI remediation candidate
 > `2358570aa9eae45b7b4403fe0a262f06c9dc36c0` passes the local sandbox build,
 > production-invariance check, and changed-control SBX-04/SBX-13 red/green
 > tests. Its promotion remains **BLOCKED** pending exact-candidate Task 11
-> review. Do not apply the historical PASS to this candidate.
+> review. PR #64 later changed the framework/dependency baseline and again
+> passed sandbox build, evidence, and production-invariance checks; that
+> candidate also needs independent review. Do not apply the historical PASS to
+> either changed candidate.
 
 PR #56 merged the remediation as `e1c7973086a0223e72ac90e01c33cd85fa407b67`
 on 2026-08-22. All reported PR checks passed, but no independent PR review was
 recorded. Merge and CI success do not satisfy the required Task 11 promotion
 review.
+
+PR #64 merged the Next.js 16.3.3 and dependency-invariance amendment as
+`02b0a5cf08a56714a2d175556557a49f8813b77f`. Its reported technical checks all
+passed, but no independent review was recorded. This does not change G2 (not
+requested), G3 (empty), or production authorization (none).
 
 Start with:
 

@@ -2,7 +2,7 @@
 
 AgentOMA is a Next.js platform for Ontario pharmacies to conduct publicly funded minor-ailment assessments. It deliberately separates a zero-PHI patient kiosk from an authenticated pharmacist portal that handles clinical and billing records.
 
-> This is an authenticated pilot build, not a production-ready clinical service. P0-C migration `0018` remains gated, the current sandbox production-invariance check fails closed on route shape, and Task 04/06 synthetic capabilities have no production authority. Start with the status documents below.
+> This is an authenticated pilot build, not a production-ready clinical service. P0-C migration `0018` remains gated. The current sandbox build and production-invariance checks pass, but their exact candidates still require independent review; Task 04/06 synthetic capabilities have no production authority. Start with the status documents below.
 
 Visitors can explore the workflow safely at `/demo`. The guided tour uses
 synthetic, in-memory content only; it does not sign into the portal, write to

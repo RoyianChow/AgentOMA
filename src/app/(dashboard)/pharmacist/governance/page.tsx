@@ -64,7 +64,10 @@ export default async function GovernancePage() {
       <header className={styles.header}>
         <div className={styles.portalBar}>
           <Link href="/pharmacist" className={styles.backLink}>
-            <span aria-hidden="true">←</span> Pharmacist dashboard
+            <svg aria-hidden="true" className={styles.backIcon} viewBox="0 0 20 20">
+              <path d="M16 10H5M9 6l-4 4 4 4" />
+            </svg>
+            Pharmacist dashboard
           </Link>
           <div className={styles.sessionActions}>
             <span className={styles.roleBadge}>Pharmacy administrator</span>
@@ -73,7 +76,6 @@ export default async function GovernancePage() {
         </div>
 
         <div className={styles.titleBlock}>
-          <p className={styles.eyebrow}>Compliance workspace</p>
           <h1>Record governance</h1>
           <p className={styles.intro}>
             Review record health, respond to patient access and correction
@@ -91,43 +93,43 @@ export default async function GovernancePage() {
         >
           <span className={styles.statusDot} aria-hidden="true" />
           <span>
-            Current governance report loaded. Times below are shown in Ontario
-            Eastern Time.
+            Governance report loaded · Times shown in Ontario Eastern Time
           </span>
         </div>
       </header>
 
-      <nav className={styles.workflowNav} aria-label="Governance page sections">
-        <ul>
-          <li>
-            <a href="#overview">Overview</a>
-          </li>
-          <li>
-            <a href="#access-corrections">Access &amp; corrections</a>
-          </li>
-          <li>
-            <a href="#holds">Holds</a>
-          </li>
-          <li>
-            <a href="#exports">Exports</a>
-          </li>
-          <li>
-            <a href="#destruction">Destruction</a>
-          </li>
-          <li>
-            <a href="#restore">Restore evidence</a>
-          </li>
-          <li>
-            <a href="#audit-failures">Audit failures</a>
-          </li>
-        </ul>
-      </nav>
+      <div className={styles.workspaceLayout}>
+        <nav className={styles.workflowNav} aria-label="Governance page sections">
+          <p className={styles.navTitle}>Governance workflows</p>
+          <ul>
+            <li>
+              <a href="#overview">Overview</a>
+            </li>
+            <li>
+              <a href="#access-corrections">Access &amp; corrections</a>
+            </li>
+            <li>
+              <a href="#holds">Holds</a>
+            </li>
+            <li>
+              <a href="#exports">Exports</a>
+            </li>
+            <li>
+              <a href="#destruction">Destruction</a>
+            </li>
+            <li>
+              <a href="#restore">Restore evidence</a>
+            </li>
+            <li>
+              <a href="#audit-failures">Audit failures</a>
+            </li>
+          </ul>
+        </nav>
 
-      <div id="governance-content" className={styles.content} tabIndex={-1}>
+        <div id="governance-content" className={styles.content} tabIndex={-1}>
         <section id="overview" className={styles.section} aria-labelledby="overview-title">
           <div className={styles.sectionHeading}>
             <div>
-              <p className={styles.sectionKicker}>Monitor</p>
               <h2 id="overview-title">Governance overview</h2>
             </div>
             <p>Current record, retention, and request indicators.</p>
@@ -218,7 +220,6 @@ export default async function GovernancePage() {
         >
           <div className={styles.sectionHeading}>
             <div>
-              <p className={styles.sectionKicker}>Patient rights</p>
               <h2 id="access-corrections-title">Access and corrections</h2>
             </div>
             <p>
@@ -491,7 +492,6 @@ export default async function GovernancePage() {
         <section id="holds" className={styles.section} aria-labelledby="holds-title">
           <div className={styles.sectionHeading}>
             <div>
-              <p className={styles.sectionKicker}>Protect records</p>
               <h2 id="holds-title">Hold management</h2>
             </div>
             <p>Active holds prevent governed destruction until formally released.</p>
@@ -627,7 +627,6 @@ export default async function GovernancePage() {
         <section id="exports" className={styles.section} aria-labelledby="exports-title">
           <div className={styles.sectionHeading}>
             <div>
-              <p className={styles.sectionKicker}>Patient access</p>
               <h2 id="exports-title">Complete exports</h2>
             </div>
             <p>Generate a reviewed patient bundle and track its stored manifest.</p>
@@ -635,17 +634,21 @@ export default async function GovernancePage() {
 
           <div className={styles.workflowGrid}>
             <article className={styles.actionCard}>
-              <h3 id="export-title">Download a secure export</h3>
+              <h3 id="export-title">Generate a patient record export</h3>
               <p id="export-help" className={styles.cardIntro}>
                 Generates a server-assembled JSON record with a stored manifest
                 and SHA-256 hash for every artifact.
+              </p>
+              <p id="export-privacy-warning" className={styles.privacyNotice}>
+                The downloaded file contains PHI. Store and transfer it only
+                through your pharmacy&apos;s approved process.
               </p>
               <form
                 action={startExportAction}
                 className={styles.form}
                 autoComplete="off"
                 aria-labelledby="export-title"
-                aria-describedby="export-help"
+                aria-describedby="export-help export-privacy-warning"
               >
                 <div className={styles.field}>
                   <label htmlFor="export-patient-id">
@@ -659,7 +662,7 @@ export default async function GovernancePage() {
                     spellCheck={false}
                   />
                 </div>
-                <button type="submit">Download secure export</button>
+                <button type="submit">Generate and download JSON record</button>
               </form>
             </article>
 
@@ -698,7 +701,6 @@ export default async function GovernancePage() {
         >
           <div className={styles.sectionHeading}>
             <div>
-              <p className={styles.dangerKicker}>Protected operations</p>
               <h2 id="destruction-title">Reviewed destruction</h2>
             </div>
             <p>
@@ -816,7 +818,6 @@ export default async function GovernancePage() {
         <section id="restore" className={styles.section} aria-labelledby="restore-title">
           <div className={styles.sectionHeading}>
             <div>
-              <p className={styles.sectionKicker}>Recovery assurance</p>
               <h2 id="restore-title">Restore drill evidence</h2>
             </div>
             <p>Record the status and evidence location for an isolated restore exercise.</p>
@@ -935,7 +936,6 @@ export default async function GovernancePage() {
         >
           <div className={styles.sectionHeading}>
             <div>
-              <p className={styles.sectionKicker}>Operational attention</p>
               <h2 id="audit-failures-title">Recent audit write failures</h2>
             </div>
             <p>Unfiltered recent safe failure records, maximum 20.</p>
@@ -975,6 +975,7 @@ export default async function GovernancePage() {
             )}
           </div>
         </section>
+        </div>
       </div>
     </main>
   );

@@ -1,16 +1,20 @@
 # Completed work
 
-**Implementation evidence verified through:** 2026-08-02
+**Implementation evidence verified through:** 2026-08-26
 
-**Documentation/status reconciled:** 2026-08-20
+**Documentation/status reconciled:** 2026-08-26
 
 **Quality snapshot:** exact database candidate `dcaab91…` passed 211/211
 real-PostgreSQL tests twice and replayed all 19 migrations through `0018`.
-The 2026-08-20 merged baseline `1ce2c9ac…` is TypeScript- and ESLint-clean,
-passes 306/306 pure production tests, builds successfully, and passes 606
-non-Postgres sandbox tests plus boundary verification. Current production
-invariance fails closed on route shape, sandbox runtime authority is expired,
-and Docker/PostgreSQL suites were not rerun in this documentation pass.
+The 2026-08-26 merged baseline `02b0a5cf…` is TypeScript- and ESLint-clean,
+passes 180/180 pure production tests, builds successfully on Next.js 16.3.3,
+and passes 614 non-Postgres sandbox tests, boundary verification, the sandbox
+build, evidence validation, production invariance, and dependency-security
+scans. GitHub fresh-migration and constraint jobs also passed for the merged
+dependency-remediation change. Runtime authority is still expired/incomplete,
+independent promotion review is still missing. The current disposable Docker
+suite rebuilt from zero through `0018` and passed 269/269 tests; this is
+regression evidence, not Task 02 promotion authorization.
 Supabase remains live through `0017`; `0018` is not authorized or applied live.
 
 This is the implementation record requested for the project. It describes capabilities present in the repository, not planned work. Remaining items are in [`NEXT_STEPS.md`](NEXT_STEPS.md).
@@ -314,7 +318,7 @@ This is the implementation record requested for the project. It describes capabi
   fourteen tasks. These documents grant no runtime, study, clinical, billing,
   migration, or production authority.
 
-## Merged autonomous-program implementation - 2026-08-19
+## Merged autonomous-program implementation - through 2026-08-26
 
 - Merged the Task 04 synthetic `/book` experience for service catalogue,
   availability, appointment selection, administrative acknowledgements, and
@@ -326,17 +330,23 @@ This is the implementation record requested for the project. It describes capabi
   consent/location/suitability states, disconnect/fallback behavior, secure
   messaging stubs, and assessment/claim separation. It has no media vendor,
   recording, transcription, model, real identity, PHI, or external effect.
-- Merged Task 11's first CI workflow slice with stable install, TypeScript,
-  ESLint, pure-test, build, fresh-migration, and database-constraint jobs.
-  Security scanning, policy checks, accessibility, evidence validation, the
-  aggregate release gate, branch-protection evidence, and independent review
-  remain incomplete.
+- Merged Task 11's stable install, TypeScript, ESLint, pure-test, build,
+  fresh-migration, database-constraint, raw-environment, forbidden-import, and
+  dependency-security jobs. The production and sandbox workspaces now use
+  Next.js 16.3.3, and the exact advisory gate reports zero current audit
+  findings. Repository-owned secret scanning, PHI/logging policy,
+  accessibility, evidence validation, the aggregate gate, complete branch
+  protection, catalogues, and independent review remain incomplete.
 - Merged the `/check` beta UX improvements and source-level accessibility/
   privacy regressions without altering the approved triage artifact.
-- Verified the merged source with production typecheck, lint, pure tests and
-  build, plus sandbox typecheck, lint, 606 tests and boundary verification.
-  The Task 01 production-invariance route-shape failure and expired sandbox
-  lifecycle are recorded as blockers, not converted to PASS.
+- Merged the improved guided `/demo` and sign-in guest-demo navigation. The
+  tour remains synthetic, read-only, and separate from authenticated portal
+  access.
+- Verified the merged source with production typecheck, lint, 180 pure tests
+  and build, plus sandbox typecheck, lint, 614 tests, boundary verification,
+  sandbox build, evidence validation, and production invariance. Expired
+  runtime authority and missing independent review remain blockers and were
+  not converted to promotion approval.
 
 ## Verification and regression coverage
 
@@ -346,7 +356,8 @@ This is the implementation record requested for the project. It describes capabi
 - TypeScript, ESLint, and production build are clean for the recorded database
   candidate. Its suites were 123 database-free tests and 211 complete tests
   through migration `0018`, with zero skipped/focused tests. The later
-  current merged baseline passes 306 pure production tests, the production
-  build, and 606 non-Postgres sandbox tests. The current production-invariance
-  check fails on route shape, sandbox build is blocked by fail-closed
-  environment/lifecycle controls, and Docker suites were not rerun.
+  current merged baseline passes 180 pure production tests, the production
+  build, 614 non-Postgres sandbox tests, sandbox build, evidence validation,
+  production invariance, and the dependency-security gate. The current
+  from-zero Docker suite passes 27 files / 269 tests through `0018`; green
+  automation does not replace candidate-bound review.

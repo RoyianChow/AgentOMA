@@ -4,15 +4,18 @@
 is present in the maintained checkout; it is not an implementation approval or
 production release decision.
 
-**Snapshot date:** 2026-08-22
+**Snapshot date:** 2026-08-26
 
 **Observed code baseline:** `origin/main` at
-`e1c7973086a0223e72ac90e01c33cd85fa407b67`
+`02b0a5cf08a56714a2d175556557a49f8813b77f`
 
 **Task 01 remediation implementation candidate:**
 `2358570aa9eae45b7b4403fe0a262f06c9dc36c0`
 
-**Documentation branch:** `codex/update-task-docs-2026-08-22`
+**Dependency/invariance amendment implementation candidate:**
+`72b3ed6218bd2a06b03a99a7eac0d2753fe774b9`
+
+**Documentation branch:** `codex/update-project-docs-2026-08-26`
 
 **Worktree at capture:** clean before this documentation audit
 
@@ -22,13 +25,16 @@ production release decision.
 |---|---|
 | `npm run typecheck` | PASS |
 | `npm run lint` | PASS |
-| `npm run test:pure` | PASS - 15 files, 152 tests |
+| `npm run test:pure` | PASS - 20 files, 180 tests |
 | `npm run build` | PASS - production route manifest generated |
 | `npm run sandbox:verify` | PASS - typecheck, lint, 40 files / 614 non-Postgres tests, boundary verification |
 | `npm run sandbox:verify-evidence` | PASS - 18 controls accepted by the committed evidence validator |
 | `npm run sandbox:verify-production` | PASS - production runtime script hash is derived from original baseline `7737ef26...`; production routes, artifacts, dependencies, build and start scripts remain invariant |
 | `npm run sandbox:build` | PASS - `NODE_ENV=production` is accepted only during the exact Next.js build phase; startup/runtime remains denied |
-| Root and sandbox real-PostgreSQL suites | NOT RUN in this documentation pass |
+| `npm run security:dependencies` | PASS - exact advisory policy accepts the current zero-finding audit state |
+| `npm audit` / `npm audit --omit=dev` | PASS - zero current findings |
+| Root from-zero real-PostgreSQL suite | PASS - 27 files / 269 tests through `0018`; stale-container reuse denied, disposable resources removed |
+| Sandbox Task 04 real-PostgreSQL suite | NOT RUN - runnable Task 04 authority remains expired/ungranted |
 
 The Task 01 CI remediation is implemented and locally verified. Separate
 SBX-04 and SBX-13 red/green evidence is bound to candidate `2358570a...`.
@@ -38,7 +44,7 @@ review was recorded on #56, so merge is not evidence of independent review.
 The historical Task 01 manifest remains unchanged and its PASS does not
 transfer to this candidate.
 
-## Merge review - 2026-08-19
+## Merge review - through 2026-08-26
 
 | Merge | What is now present | Status consequence |
 |---|---|---|
@@ -47,12 +53,16 @@ transfer to this candidate.
 | PR #48 | Synthetic `/book` catalog, availability, booking UI, server actions, and tests | Code is merged but runtime remains blocked by expired/missing approval |
 | PR #44 | Task 06 synthetic virtual-care routes, fixtures, guards, UI, docs, and tests | Synthetic implementation is merged; production and promotion remain blocked |
 | PR #31 | First Task 11 CI workflow slice | Initially established seven stable quality/database job identities; the full control plane still does not exist |
+| PR #55 | Governance information architecture, responsive/dark-mode and accessibility slice | Low-risk UX work is merged; protected retention, audit, export, authorization and migration work remains gated |
 | PR #56 | Task 01 build-phase env boundary and production-runtime-script invariance remediation | CI is green and candidate-bound SBX-04/SBX-13 evidence exists; promotion remains blocked pending Task 11 review |
+| PR #58 | Authenticated assessment handoff recovery | Missing/expired/consumed intake identifiers fail closed without identifier disclosure |
+| PR #61 | Task 11 forbidden-import boundary | BND-01 is merged into the stable security-policy job |
+| PR #63 | Guided demo improvements | Public demo is clearer while remaining synthetic, read-only, and unable to create a session |
+| PR #64 | Next.js 16.3.3 and dependency-security remediation | Audit findings are cleared and the stable dependency gate is merged; independent candidate review remains outstanding |
 
-PR #49 subsequently merged the 2026-08-19 documentation reconciliation only.
-No additional runtime capability was introduced after the verified
-`87bdb1b9...` code candidate; today’s checks were rerun against the resulting
-`origin/main` baseline above.
+PR #49 merged the 2026-08-19 documentation reconciliation only. The later
+merges listed above are included in the current `origin/main` baseline and in
+this status review.
 
 ## Release posture
 
@@ -73,7 +83,7 @@ accounts, services, or external effects.
 | P0-D virtual/LTC fact capture | FACT CAPTURE COMPLETE / BILLING BLOCKED | LTC billing remains parked pending the recorded human decision. |
 | Follow-up tracking | PASS | Preserve required plans, immutable attempts, retention, audit, and export coverage. |
 | Public `/check` | BETA-READY IN CODE | Complete real-device/browser testing; retain zero identity, zero persistence, and no billing values. |
-| Governance remediation (Task 02A) | BRIEF ONLY | Requires exact protected-surface approval before implementation. |
+| Governance remediation (Task 02A) | LOW-RISK UX/A11Y SLICE MERGED / PROTECTED WORK OPEN | Preserve the merged presentation improvements; integrity, authorization, audit/export and migration changes still require exact protected-surface approval. |
 
 ## Autonomous task matrix
 
@@ -89,7 +99,7 @@ accounts, services, or external effects.
 | 08 - Fulfilment | NOT RUN | Contracts/state machines and approved synthetic tests only |
 | 09 - Interoperability | DISABLED / DESIGN ONLY | Keep `/api/fhir` at 403 and all allowlists empty |
 | 10 - Bounded AI | AI-RX-06 `RETIRED`; production route, navigation, runtime, config, tests and scorecard removed | Preserve retirement; any future experiment requires a new Task 10 decision and belongs in the isolated sandbox |
-| 11 - Release control | INCREMENTAL CI SLICES MERGED; DEPENDENCY REMEDIATION IN REVIEW | Complete secret scanning, PHI/logging policy, accessibility, evidence validation, aggregate release gate, independent review, and required-check branch protection |
+| 11 - Release control | INCREMENTAL CI + RAW-ENV + FORBIDDEN-IMPORT + DEPENDENCY GATES MERGED | Complete repository-owned secret scanning, PHI/logging and unsafe-enable policy, accessibility, evidence validation, aggregate release gate, catalogues, independent review, and required-check branch protection |
 | 12 - Resilience | DESIGN ONLY | Discovery and synthetic test-plan work under its task gates |
 | 13 - Human factors | DESIGN ONLY | Hazard/training/study design; no participants or pilot without approval |
 | 14 - Regulatory change | DESIGN ONLY | Source/provenance/impact design; no automated interpretation or protected-source changes |
@@ -118,20 +128,22 @@ message stubs, assessment/claim separation, and explicit prohibitions on
 recording, transcription, model use, vendors, and external transport. It is a
 synthetic review prototype, not a telehealth service.
 
-The code passes the current non-Postgres sandbox suite, but successful runtime
-build/browser evidence is blocked by the expired sandbox lifecycle and missing
-production prerequisites. No PIA, TRA, vendor approval, patient identity
+The code passes the current non-Postgres sandbox suite and the sandbox build,
+but running the capability or collecting browser evidence is blocked by the
+expired sandbox lifecycle and missing production prerequisites. No PIA, TRA,
+vendor approval, patient identity
 integration, production migration, or release approval is inferred.
 
 ## Task 11 detail
 
 `.github/workflows/ci.yml` now runs lockfile install, TypeScript, ESLint, pure
-tests, production build, raw-environment policy, fresh-migration tests, and
-database-constraint tests on pull requests and pushes to `main`. The workflow
-uses read-only repository permissions and cancels stale runs.
+tests, production build, raw-environment/forbidden-import policy,
+dependency-security scanning, fresh-migration tests, and database-constraint
+tests on pull requests and pushes to `main`. The workflow uses read-only
+repository permissions and cancels stale runs.
 
-It does not yet implement the full Task 11 contract: secret scanning,
-the remaining forbidden-import and PHI/logging policy controls, automated
+It does not yet implement the full Task 11 contract: repository-owned secret
+scanning, the remaining PHI/logging and unsafe-enable policy controls, automated
 accessibility, release-evidence validation, aggregate release gate,
 capability/control catalogues, and exact-candidate independent promotion
 review remain open.
@@ -143,8 +155,9 @@ Branch protection is therefore verified as **incomplete**, not PASS.
 
 ## Safe next order
 
-1. Obtain Task 11 review for Task 01 remediation candidate `2358570a...`;
-   production promotion remains blocked until that review is recorded.
+1. Obtain independent Task 11 review for the Task 01 remediation and
+   dependency/invariance amendment candidates; production promotion remains
+   blocked until those reviews are recorded.
 2. Keep Task 02 and the remaining Task 11 controls as release-critical lanes.
 3. Complete Task 04 v3 renewal and independent reviews before running or
    extending booking code.

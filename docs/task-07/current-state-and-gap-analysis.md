@@ -4,7 +4,9 @@
 
 **Assessment date:** 2026-08-06
 
-**Repository baseline:** `12801c7211cb6ce3286d209762d61c11b6830193` (`origin/main`)
+**Cross-task status reconciled:** 2026-08-26
+
+**Observed repository baseline:** `02b0a5cf08a56714a2d175556557a49f8813b77f` (`origin/main`)
 
 **Assessment branch:** `codex/task-07-communications-design`
 
@@ -14,11 +16,11 @@
 
 ## Decision summary
 
-The repository has no patient-communications subsystem to extend. It has a
+The repository has no production patient-communications subsystem to extend. It has a
 server-owned pharmacist follow-up workflow, staff authentication, append-only
 audit and retention foundations, and a separate synthetic sandbox. It does not
 have a patient identity/session domain on `main`, verified patient contact
-points, communication consent or preferences, appointments, a transactional
+points, communication consent or preferences, production appointments, a transactional
 communications outbox, dispatch workers, provider integrations, webhooks,
 secure patient threads, or delivery reconciliation.
 
@@ -43,7 +45,8 @@ only the relevant implementation boundaries:
   tests;
 - the Task 01 sandbox's adapters, egress denial, lifecycle, safe logger, and
   evidence manifest; and
-- the Task 04–06 and Task 11 specifications and recorded decisions.
+- the Task 04–06 and Task 11 specifications, merged synthetic prototypes, and
+  recorded decisions.
 
 No schema, migration, endpoint, queue, SDK, credential, template, or feature
 flag was added.
@@ -52,7 +55,7 @@ flag was added.
 
 | Area | Current implementation | Authority/ownership | Task 07 consequence |
 |---|---|---|---|
-| Appointments and waitlist | No production appointment, slot, booking, cancellation, rescheduling, capacity, or waitlist model exists on `main`. | Task 04 is the future authority. Its synthetic implementation is being developed elsewhere and is not an integrated dependency here. | Appointment reminders cannot be scheduled or cancelled from authoritative source events yet. |
+| Appointments and waitlist | No production appointment, slot, booking, cancellation, rescheduling, capacity, or waitlist model exists. A partial synthetic booking model is isolated under `apps/experiment-sandbox/`. | Task 04 is the authority. Its synthetic code has no production or current runnable authority and is not a production dependency. | Appointment reminders cannot be scheduled or cancelled from authoritative production events yet. |
 | Follow-up plans | `follow_up` rows support a due date, `phone` or `in_person` intended method, monitoring parameters, attempts, reached/not-reached outcomes, next steps, and immutable supersession. | `src/lib/follow-ups.ts`, `src/lib/follow-up-schema.ts`, and `src/app/(dashboard)/pharmacist/follow-ups/` remain authoritative. | A due item is a source fact, not permission to contact a patient. `phone` is an intended method, not a verified destination. |
 | Follow-up transitions | Plans and attempts use server authorization, pharmacy scope, database transactions, advisory locking, immutable correction, and atomic audit writes. | Pharmacist workflow; communications must never close or complete it. | Future notices may reference opaque work-item IDs internally, but delivery/read receipts cannot change clinical state. |
 | Assessments and claims | Assessment completion and claim derivation are existing regulated boundaries. | Task 02 and protected billing code. | Messaging cannot complete an assessment, create a referral, derive a claim, or imply adjudication. |
@@ -305,7 +308,7 @@ No Task 07 tests or evidence exist yet.
 |---|---|
 | Task 07 says synthetic implementation may proceed, but no Task 07 approval record exists. | The brief defines desired work, not authority. Documentation proceeds; runnable code waits for a task-specific approval and Task 11 checkpoint. |
 | Task 01 sandbox is approved, but its G1 excludes later capabilities. | Reuse its controls only after a versioned scope addendum; do not weaken or bypass them. |
-| Task 04 is a future source of appointment events, but no production model is on `main`. | Define a versioned consumer contract later; do not create a shadow appointment model in Task 07. |
+| Task 04 is the future production source of appointment events; only an isolated partial synthetic model exists today. | Define a versioned consumer contract later; do not create a shadow appointment model in Task 07. |
 | Task 05 designs patient identity, but only staff auth exists on `main`. | Do not reuse pharmacist cookies/roles or invent patient identity. Secure portal work waits for Task 05 integration. |
 | Task 06 owns professional secure messaging while Task 07 owns delivery mechanics. | Keep modality/suitability/clinical consent in Task 06 and channel consent/contact/outbox in Task 07; require both where applicable. |
 | Existing assessment consent contains an SDM. | It is clinical consent only and cannot be repurposed as communication authorization. |

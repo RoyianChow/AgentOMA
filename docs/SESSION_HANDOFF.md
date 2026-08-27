@@ -1,10 +1,10 @@
 # Session handoff
 
-**Updated:** 2026-08-22
+**Updated:** 2026-08-26
 
 **Observed code baseline:** `origin/main`
 
-**Observed baseline HEAD:** `e1c7973086a0223e72ac90e01c33cd85fa407b67`
+**Observed baseline HEAD:** `02b0a5cf08a56714a2d175556557a49f8813b77f`
 
 **Release status:** **BLOCKED - DO NOT PROMOTE**
 
@@ -24,7 +24,7 @@ At the observed HEAD:
 
 - `npm run typecheck`: PASS;
 - `npm run lint`: PASS;
-- `npm run test:pure`: PASS, 15 files / 152 tests;
+- `npm run test:pure`: PASS, 20 files / 180 tests;
 - `npm run build`: PASS;
 - `npm run sandbox:verify`: PASS, 40 files / 614 tests plus boundary check;
 - `npm run sandbox:verify-evidence`: PASS;
@@ -32,12 +32,21 @@ At the observed HEAD:
   candidate `2358570a...`;
 - `npm run sandbox:build`: PASS with `NODE_ENV=production` limited to the
   exact Next.js build phase; startup/runtime remains denied; and
-- real-PostgreSQL suites: NOT RUN in this pass.
+- `npm run security:dependencies`: PASS; `npm audit` and
+  `npm audit --omit=dev` report zero current findings; and
+- root from-zero PostgreSQL suite: PASS, 27 files / 269 tests through `0018`;
+  the stale-container preflight denied reuse before the clean run, and cleanup
+  removed the disposable database/network.
 
 PR #56 derived its production-runtime-script hash from original baseline
 `7737ef26...`, not the changed candidate. Its technical checks and red/green
 evidence pass, but promotion remains blocked pending exact-candidate Task 11
 review. No independent PR review was recorded on #56.
+
+PR #64 subsequently merged the Next.js 16.3.3 security remediation and stable
+dependency gate. Its implementation candidate `72b3ed62...` passed all
+reported quality, database, sandbox, audit, GitGuardian, SonarCloud, and Vercel
+checks. No independent review was recorded, so it is technical evidence only.
 
 ## Newly merged work
 
@@ -45,8 +54,8 @@ review. No independent PR review was recorded on #56.
 - Task 04's synthetic `/book` UI is merged, but its v3 renewal remains an
   unsigned draft and the previous approval expired.
 - Task 06's synthetic virtual-care prototype and documentation are merged.
-- Task 11's eight-job incremental CI workflow is merged, including the
-  raw-environment policy check.
+- Task 11's nine-job incremental CI workflow is merged, including
+  raw-environment, forbidden-import, and dependency-security policy checks.
 
 Merged code is not production authorization. Task 04 and Task 06 remain local,
 synthetic, fail-closed capabilities with no production data, credentials,
@@ -74,13 +83,13 @@ or access live Supabase under a test-only approval.
 
 | Lane | Next action |
 |---|---|
-| Task 01 | Complete Task 11 review of candidate `2358570a...` and its SBX-04/SBX-13 evidence; do not transfer the historical PASS |
+| Task 01 | Complete independent Task 11 review of the PR #56 remediation and PR #64 dependency/invariance amendment candidates; do not transfer the historical PASS |
 | Task 02 | Prepare the next exact G1-D candidate and resolve S27 |
 | Task 03 / 05 | Reconcile the existing unmerged branches before new implementation |
 | Task 04 | Complete and independently sign the v3 renewal before runtime or further code |
 | Task 06 | Obtain renewed sandbox authority and complete browser/accessibility and independent review evidence |
 | Task 10 | AI-RX-06 is retired; preserve the removal and require a new decision for any future candidate |
-| Task 11 | Complete remaining security, accessibility, evidence and aggregate-gate controls; configure required checks and admin enforcement on `main` |
+| Task 11 | Add repository-owned secret scanning, PHI/logging and unsafe-enable policy, accessibility, evidence and aggregate-gate controls; configure required checks and admin enforcement on `main` |
 
 ## Standing fences
 
