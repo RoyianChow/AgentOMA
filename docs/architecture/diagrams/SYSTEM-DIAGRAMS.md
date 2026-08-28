@@ -171,7 +171,7 @@ sequenceDiagram
   participant B as Browser
   participant P as 🔑 proxy.ts (optimistic gate)
   participant A as Server Action
-  participant G as 🔑 auth-guard.ts\n(requirePortalUser)
+  participant G as 🔑 auth-guard.ts (requirePortalUser)
   participant BA as 🔑 better-auth
   participant DB as 🔒 Postgres
 
@@ -206,7 +206,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
   participant Ph as 🔑 Pharmacist (authenticated)
-  participant A as Server Action\n(complete assessment)
+  participant A as Server Action (complete assessment)
   participant DB as 🔒 Postgres transaction
 
   Ph->>A: submit structured clinical record + eligibility evidence
