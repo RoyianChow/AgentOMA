@@ -101,8 +101,8 @@ flowchart TB
 flowchart TB
   users["Patients / pharmacists\n(browsers)"]
 
-  subgraph hostUnknown["Hosting platform — UNCONFIRMED\n(no vercel.json or hosting config\ncommitted; see SYSTEM-DESIGN-REVIEW §9)"]
-    appInstance["AgentOMA app instance(s)"]
+  subgraph host["🌐 Vercel\n(confirmed by product owner;\nno vercel.json is committed to the repo)"]
+    appInstance["AgentOMA app instance(s)\nfunction region: NOT YET PINNED\n(defaults to iad1/Washington DC)"]
   end
 
   subgraph gh["🌐 GitHub"]
@@ -119,14 +119,14 @@ flowchart TB
   appInstance -->|"pooled, TLS,\nprepare:false"| pooler --> pg
   ciPipeline -.->|"direct, TLS —\nmigration test run only,\nnever live Supabase"| direct
 
-  gh -.->|"push/merge triggers deploy —\nmechanism unconfirmed from repo"| hostUnknown
+  gh -.->|"push/merge triggers deploy —\nVercel git integration"| host
 
   classDef phi fill:#fde2e1,stroke:#97292a
   classDef ext fill:#e2e8f0,stroke:#5f726a,stroke-dasharray: 4 3
-  classDef unknown fill:#fff,stroke:#97292a,stroke-width:2px,stroke-dasharray: 6 3
+  classDef gap fill:#fff3cd,stroke:#a9701a,stroke-width:2px
   class pg,pooler,direct phi
   class gh,supa ext
-  class hostUnknown unknown
+  class host gap
 ```
 
 ## 4. PHI data-flow and trust-boundary diagram
@@ -323,7 +323,7 @@ flowchart TB
 
 Every node and boundary above traces to a specific, cited finding in
 [`../SYSTEM-DESIGN-REVIEW.md`](../SYSTEM-DESIGN-REVIEW.md) — no new architectural claim is
-introduced here that wasn't already verified there. Diagram 3 (deployment) deliberately renders
-the hosting platform as unconfirmed rather than guessing, consistent with §9 of that document.
-Diagram 10 (proposed target architecture) is in
+introduced here that wasn't already verified there. Diagram 3 (deployment) shows Vercel as the
+confirmed hosting platform (per the product owner) while flagging that region-pinning is not yet
+applied, consistent with §9 of that document. Diagram 10 (proposed target architecture) is in
 [`../TARGET-ARCHITECTURE.md`](../TARGET-ARCHITECTURE.md).

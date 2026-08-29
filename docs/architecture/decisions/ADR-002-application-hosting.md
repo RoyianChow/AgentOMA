@@ -11,12 +11,10 @@ this)
 The task brief that requested this review asserted "Vercel hosting" as part of the current
 architecture baseline. Two independent research passes during this review found **no evidence
 of this in the repository** — no `vercel.json`, no `.vercel/` directory, no hosting row in
-`docs/PROJECT_OVERVIEW.md`'s own technology table. The actual current hosting platform is
-unconfirmed. Full detail: [`../SYSTEM-DESIGN-REVIEW.md`](../SYSTEM-DESIGN-REVIEW.md) §9.
-
-Because the current platform can't be confirmed from the repository, this ADR's decision is
-necessarily conditional: it recommends what to do *once* the current platform is confirmed,
-rather than asserting a migration is or isn't needed from an unverifiable baseline.
+`docs/PROJECT_OVERVIEW.md`'s own technology table. That gap is itself a finding worth fixing
+(nothing in-repo names the deployment target). The product owner has since confirmed directly
+that Vercel is the current hosting platform. Full detail:
+[`../SYSTEM-DESIGN-REVIEW.md`](../SYSTEM-DESIGN-REVIEW.md) §9.
 
 ## Decision drivers
 
@@ -34,7 +32,7 @@ Part B.
 
 ## Options considered
 
-1. **Vercel** (the likely current platform, unconfirmed).
+1. **Vercel** (confirmed current platform).
 2. Google Cloud Run.
 3. Azure Container Apps (App Service noted as an Azure-internal alternative).
 
@@ -55,45 +53,41 @@ other two either include or make optional.
 
 ## Decision
 
-**Confirm the actual current hosting platform first.** Conditional on that platform being
-Vercel — the most likely candidate, requiring no infrastructure work to have simply been the
-default choice during initial setup — **retain it**, with one required configuration change:
-explicitly pin function execution to the Montréal region (`yul1`), since Vercel's default is
-US-based and Canadian residency is not automatic the way it is on GCP/Azure's regional model.
+**Retain Vercel**, with one required configuration change: explicitly pin function execution to
+the Montréal region (`yul1`), since Vercel's default is US-based and Canadian residency is not
+automatic the way it is on GCP/Azure's regional model.
 
-If the confirmed current platform is something other than Vercel, or if the Product Lead
-determines a change is warranted regardless, **Google Cloud Run is the recommended alternative**:
-official Next.js support, unambiguous Canadian region availability (unlike Azure Container Apps'
-less-certain Canada East status), and lower operational complexity than Azure Container Apps.
+If a future migration is ever pursued instead, **Google Cloud Run is the recommended
+alternative**: official Next.js support, unambiguous Canadian region availability (unlike Azure
+Container Apps' less-certain Canada East status), and lower operational complexity than Azure
+Container Apps.
 
 ## Rationale
 
-No migration is justified by the evidence: whichever platform is currently running this
-application already has no repository-visible defect, and Vercel — the most probable candidate —
-scores at least as well as the alternatives once the (largely moot, per the key finding above)
-private-networking advantage is set aside. The one concrete gap that *is* real regardless of which
-platform is confirmed is region pinning: nothing in this review found evidence that Canadian
-compute residency is currently guaranteed by configuration rather than by accident.
+No migration is justified by the evidence: Vercel has no repository-visible defect and scores at
+least as well as the alternatives once the (largely moot, per the key finding above)
+private-networking advantage is set aside. The one concrete gap that *is* real is region pinning:
+nothing in this review found evidence that Canadian compute residency is currently guaranteed by
+configuration rather than by accident.
 
 ## Consequences
 
 - **Positive:** no new vendor relationship, no re-platforming effort, no deployment-pipeline
   rework.
-- **Negative:** does not resolve the "what platform are we actually on" uncertainty by itself —
-  that requires an answer from whoever currently manages deployment, which this review does not
-  have access to.
+- **Negative:** region-pinning still needs to be applied — until it is, Canadian compute
+  residency is not actually guaranteed by anything in the current configuration.
 - **Neutral:** the PHI/logging-controls comparison found no vendor with an explicit PHIPA
   statement (all lean on HIPAA-equivalent framing) — this is a shared limitation across every
   option considered, not a reason to prefer one over another.
 
 ## Revisit trigger
 
-Re-open this decision if: (a) the confirmed current platform turns out not to be Vercel and no
-region-pinning equivalent exists there, (b) a background-worker or long-running-process
-requirement emerges that none of these platforms cleanly support, (c) AgentOMA's database
-migrates to a VPC-native product (re-activating the private-networking differentiation this ADR
-found largely moot today), or (d) Azure's Canada East Container Apps availability is confirmed
-and materially changes that platform's standing.
+Re-open this decision if: (a) a background-worker or long-running-process requirement emerges
+that Vercel doesn't cleanly support, (b) AgentOMA's database migrates to a VPC-native product
+(re-activating the private-networking differentiation this ADR found largely moot today), (c)
+Azure's Canada East Container Apps availability is confirmed and materially changes that
+platform's standing, or (d) Vercel's pricing, region-failover terms, or BAA product changes
+materially.
 
 ## Approval
 

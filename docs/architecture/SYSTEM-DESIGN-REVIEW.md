@@ -12,10 +12,13 @@ branch, cross-referenced against `docs/PROJECT_OVERVIEW.md`, `docs/COMPLIANCE.md
 `docker-compose.yml`, and `docs/RESTORE_DRILL.md`.
 
 **Method note, per the task's own instruction:** the task brief that requested this review
-asserted a baseline including "Vercel hosting." That claim was checked against the repository,
-not assumed — see §9. Every other baseline item in the brief was independently verified; where
-verification confirms the claim, this document says so and cites the source; where it doesn't,
-this document says that too.
+asserted a baseline including "Vercel hosting." That claim was checked against the repository —
+no `vercel.json` or hosting configuration is committed anywhere, so it could not be verified from
+code alone (see §9). The product owner has since confirmed directly that Vercel is in fact the
+current hosting platform, so §9 and downstream documents (the hosting comparison, ADR-002,
+target architecture) treat that as settled rather than open. Every other baseline item in the
+brief was independently verified against the repository; where verification confirms the claim,
+this document says so and cites the source; where it doesn't, this document says that too.
 
 ---
 
@@ -213,15 +216,15 @@ attempt to close it.
 full read — the workflow's jobs are `quality-install/typescript/eslint/pure-tests/build`,
 `security-policy`, `security-dependencies`, `database-fresh-migrations`,
 `database-constraints`; none publish or deploy anything). Deployment is therefore handled
-**entirely outside this repository's CI**, most plausibly via a platform's git-integration
-(auto-deploy-on-push), but nothing in-repo names or configures that platform. See §9 for the
-specific "Vercel" baseline claim.
+**entirely outside this repository's CI**, via Vercel's git-integration (auto-deploy-on-push) —
+confirmed directly by the product owner (see §9); nothing in-repo names or configures this,
+which is itself worth fixing (§11).
 
 **Networking:** the app connects to Supabase Postgres over TLS (`ssl: "require"`), through the
 pooler at runtime and direct for migrations. No VPC peering, private networking, or IP-allowlist
-configuration is present in the repository — if the deployment platform and Supabase project
-aren't on the same private network, traffic is public-internet-with-TLS rather than a private
-link. This can't be assessed further without knowing the actual hosting platform (§9).
+configuration is present in the repository — Vercel has no private-networking product for this
+database tier (confirmed in `DATABASE-AND-HOSTING-COMPARISON.md` Part B), so traffic is
+public-internet-with-TLS by design, not an oversight.
 
 **Secrets:** `src/env.ts` (71 lines, read in full) is the single validated source — 14 server
 variables (`DATABASE_URL`, `DIRECT_URL`, `PHARMACY_ID`, three bootstrap-admin variables,
@@ -241,10 +244,11 @@ detailed, Canadian-region-aware restore-drill runbook (`docs/RESTORE_DRILL.md`, 
 backup/recovery is explicitly out of scope until Rx/referral document storage exists (currently
 unimplemented).
 
-## 9. Vercel hosting — baseline claim checked, not confirmed
+## 9. Vercel hosting — baseline claim checked, then confirmed by the product owner
 
 The task brief that requested this review asserted "Vercel hosting" as part of the current
-baseline. Checked directly against the repository:
+baseline. Checked directly against the repository first, per the task's own instruction not to
+assume the baseline is accurate:
 
 - No `vercel.json`, no `.vercel/` directory, anywhere in the repo.
 - `docs/PROJECT_OVERVIEW.md`'s own "Technology and deployment" table (lines 56–68) — which
@@ -255,12 +259,12 @@ baseline. Checked directly against the repository:
 - No Vercel-specific adapter, edge-runtime configuration, or Vercel environment-variable pattern
   (e.g. `VERCEL_URL`) appears in `src/env.ts` or `next.config.ts`.
 
-**Conclusion: hosting platform is undetermined from repository evidence.** This review does not
-assume Vercel is correct, and does not assume it's wrong — it's simply unverifiable from what's
-committed. Workstream 3 (hosting options) treats "confirm the actual current host with the
-product/infra lead" as a prerequisite finding, not a formality, because several of that
-workstream's comparison criteria (current cost, current region configuration, current deployment
-rollback behavior) cannot be evaluated at all without first knowing the real current platform.
+**None of that is recoverable from committed code — a real gap worth fixing on its own (§11).**
+The product owner has since confirmed directly, outside the repository, that Vercel is in fact
+the current hosting platform. This document treats that as settled fact from this point forward:
+Workstream 3 (hosting options, in `DATABASE-AND-HOSTING-COMPARISON.md` Part B) evaluates Vercel
+as the confirmed current platform rather than a candidate to be verified, and ADR-002 records a
+definite decision rather than a conditional one.
 
 ## 10. Current scalability and availability assumptions
 
@@ -283,15 +287,15 @@ rollback behavior) cannot be evaluated at all without first knowing the real cur
 
 | Category | Finding |
 |---|---|
-| **Single points of failure** | (a) The unnamed hosting platform is a SPOF with no documented failover. (b) Supabase Postgres is a SPOF for both PHI storage and auth-session storage (better-auth uses the same database) — a Supabase outage takes down authentication *and* data simultaneously, with no documented fallback. |
+| **Single points of failure** | (a) Vercel is a SPOF with no documented failover configured (multi-region failover is an Enterprise-tier feature, per `DATABASE-AND-HOSTING-COMPARISON.md` Part B — not confirmed as enabled). (b) Supabase Postgres is a SPOF for both PHI storage and auth-session storage (better-auth uses the same database) — a Supabase outage takes down authentication *and* data simultaneously, with no documented fallback. |
 | **Tight coupling** | better-auth's session/account/TOTP tables live in the same database and schema as clinical data. This is operationally convenient (one connection, one transaction domain) but means an auth-schema migration and a clinical-schema migration share failure blast radius — a bad `db:migrate` run risks both simultaneously. |
 | **Missing abstractions** | The `requirePortalUser()` authorization boundary is enforced by *convention* (every new server action must remember to call it) rather than by a structural mechanism (e.g., a typed wrapper that makes an ungated server action a compile-time error). This has apparently held so far, but it is a discipline-dependent control, not a structurally guaranteed one. |
 | **Transactional consistency risks** | None found within the database boundary itself — triggers/constraints are real and tested (§4). The residual risk is at the *edge* of the transaction boundary: e.g., if Rx/referral document storage (Supabase Storage, planned but unimplemented) is added later, storage writes and database writes will not share a transaction, and that dual-write consistency problem has no design yet. |
-| **Connection-pooling risks** | The pooled/direct split (§4) is correctly designed for Supabase's pgBouncer, but the singleton-on-`globalThis` pattern is explicitly scoped to `NODE_ENV !== "production"` (dev hot-reload only) — worth confirming the production runtime's own connection-reuse behavior under the actual hosting platform's execution model (e.g., whether each invocation is a fresh serverless function instance, which would make per-invocation pool creation a real cost/limit concern that can't be assessed without knowing the host — see §9). |
+| **Connection-pooling risks** | The pooled/direct split (§4) is correctly designed for Supabase's pgBouncer, but the singleton-on-`globalThis` pattern is explicitly scoped to `NODE_ENV !== "production"` (dev hot-reload only). Now that hosting is confirmed as Vercel: each Vercel serverless function invocation is typically a fresh instance, so the `globalThis` reuse pattern likely does little in production — worth explicit confirmation of Vercel's actual function-reuse/warm-instance behavior, since per-invocation pool creation against Supabase's pooler would be a real cost/connection-limit concern at higher traffic. |
 | **Recovery and disaster-recovery gaps** | The restore-drill runbook is thorough but **has never been executed even once** (§5, §8). An untested recovery procedure is not proven to work; this is the single clearest actionable gap this review found. |
-| **Observability gaps** | No error-tracking (Sentry or equivalent), no structured logging library, and no APM tooling exists anywhere in `package.json` or `src/`. For a PHI-handling system, this means production incidents currently rely on whatever the hosting platform's own default logs capture — worth explicit confirmation of what that actually is, since it can't be determined from this repository alone. |
+| **Observability gaps** | No error-tracking (Sentry or equivalent), no structured logging library, and no APM tooling exists anywhere in `package.json` or `src/`. For a PHI-handling system, this means production incidents currently rely entirely on Vercel's own default function logs — worth confirming their retention window and where they're processed, since Vercel's log pipeline is not itself guaranteed Canadian-region by default (`DATABASE-AND-HOSTING-COMPARISON.md` Part B). |
 | **Privacy/PHIPA risks** | No new risk found beyond what `docs/COMPLIANCE.md` already tracks in detail (P0-C evidence pending migration `0018`; the platform-count limitation is disclosed, not hidden). The database-first immutability/retention design (§4–5) is a genuine strength for PHIPA posture. |
-| **Cost and vendor-lock-in concerns** | Supabase (Postgres + likely Auth-adjacent features unused, since better-auth is the identity layer, not Supabase Auth) and an unconfirmed hosting platform are the two paid dependencies. Drizzle ORM and file-based migrations are portable (not Supabase-specific), which limits lock-in on the ORM layer even if the hosting/DB vendor changes — this materially affects Workstream 2's switching-cost analysis. |
+| **Cost and vendor-lock-in concerns** | Supabase (Postgres + likely Auth-adjacent features unused, since better-auth is the identity layer, not Supabase Auth) and Vercel are the two paid dependencies. Drizzle ORM and file-based migrations are portable (not Supabase-specific), which limits lock-in on the ORM layer even if the hosting/DB vendor changes. Vercel itself carries moderate-to-high lock-in on its own config surface (`vercel.json`, cron format, region/failover settings — `DATABASE-AND-HOSTING-COMPARISON.md` Part B), though the Next.js application code stays portable. |
 | **Over-engineered for the current pilot** | The `assessment_billability_evidence` sidecar table and its full immutability/trigger apparatus (migration `0018`) are built to production-grade rigor for a single-pharmacy pilot that hasn't gone live on that schema version yet. This is arguably *appropriate* front-loading given the regulatory stakes (PHIPA, billing accuracy) rather than true over-engineering — flagged for discussion, not asserted as a defect. |
 
 ---

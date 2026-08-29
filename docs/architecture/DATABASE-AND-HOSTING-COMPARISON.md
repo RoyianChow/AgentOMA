@@ -110,14 +110,13 @@ explicit revisit trigger.
 
 ## Part B — Hosting options (Workstream 3)
 
-### Prerequisite finding, confirmed independently by this research pass
+### Current platform: confirmed as Vercel
 
 A second, independent check (not just the one in `SYSTEM-DESIGN-REVIEW.md` §9) again found **no
-`vercel.json`, no `.vercel/`, and no hosting configuration anywhere in the repository.** The
-current hosting platform cannot be determined from committed code. Every comparison below is
-therefore evaluated on its own merits, not against "what we already have" — **confirming the
-actual current platform with whoever manages deployment is a prerequisite action, not a
-formality**, before any hosting decision is finalized.
+`vercel.json`, no `.vercel/`, and no hosting configuration anywhere in the repository** — the
+platform cannot be determined from committed code alone. The product owner has since confirmed
+directly that Vercel is the current hosting platform. The comparison below evaluates Vercel as
+the confirmed incumbent against two alternatives, rather than as an unverified guess.
 
 ### Options compared
 
@@ -164,14 +163,10 @@ seriously considered for a PHI workload, not an assumption this document makes o
 
 ### Hosting recommendation (feeds ADR-002)
 
-**First, confirm the actual current hosting platform** — this review cannot respect a "keep the
-current stack" default until the current stack is actually known. **If the current platform is
-confirmed to be Vercel** (the most likely candidate, given it's the Next.js framework vendor and
-requires no infrastructure work to have simply been "the default choice" during initial setup),
-the evidence here does not support migrating away for the current pilot: it has the best-verified
-Next.js fit of the three (official first-party product), the lowest operational complexity, and a
-concrete, purchasable compliance path if PHI-handling requires a BAA. Two concrete actions apply
-regardless of who currently manages it:
+**Retain Vercel.** The evidence does not support migrating away for the current pilot: it has the
+best-verified Next.js fit of the three (official first-party product), the lowest operational
+complexity, and a concrete, purchasable compliance path if PHI-handling requires a BAA. Two
+concrete actions apply:
 
 1. **Explicitly pin function execution region to Montréal (`yul1`)** — the default is US-based,
    and Canadian residency for compute is not automatic on Vercel the way it is on GCP/Azure's
