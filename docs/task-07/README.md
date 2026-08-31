@@ -1,6 +1,6 @@
 # Task 07 — Messaging and reminders
 
-**Current phase:** Workstreams A–I complete; privacy/audit/retention design is next
+**Current phase:** Workstreams A–J complete; accessibility/language design (K) is next
 
 **Runtime implementation:** not started
 
@@ -27,7 +27,10 @@ Start with:
 15. [`reply-and-review-queue-design.md`](reply-and-review-queue-design.md)
 16. [`secure-message-authorization-matrix.md`](secure-message-authorization-matrix.md)
 17. [`appointment-follow-up-and-task-06-integration.md`](appointment-follow-up-and-task-06-integration.md)
-18. [`../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md`](../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md)
+18. [`privacy-security-and-retention-plan.md`](privacy-security-and-retention-plan.md)
+19. [`communication-audit-event-catalogue.md`](communication-audit-event-catalogue.md)
+20. [`logging-and-leakage-control.md`](logging-and-leakage-control.md)
+21. [`../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md`](../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md)
 
 Workstream A found no patient communications subsystem on `main`: there is no
 integrated patient identity, verified contact/communication consent,
@@ -120,8 +123,29 @@ occurred** — the professional duty is discharged by contact and documentation,
 not by a message leaving a queue. Every prohibition is enforced by absent
 database grants rather than by convention.
 
-The next safe slice is documentation-only Workstream J: privacy, security,
-audit, and retention. Runnable synthetic code still waits for a versioned,
-expiring Task 07 scope, owner/reviewer metadata, risk/autonomy registration,
-kill-switch authority, and Task 11 Checkpoint 1. Production remains separately
-gated.
+Workstream J now closes the privacy, security, audit, and retention design in
+three parts. The audit-event catalogue enumerates every `SafeCode<CommunicationAuditType>`
+value the brief requires, grouped by domain, with a per-type statement of what
+Contract 26 permits it to carry — no new field, no new table. The privacy,
+security, and retention plan gathers the controls already structurally
+enforced by Workstreams C–I into one inventory, names the controls that still
+need a policy or infrastructure decision, and produces the full dataset-level
+retention table the brief requires — with every period left `UNRESOLVED(T07-D27)`
+rather than invented, and secure-message content specifically flagged as
+needing professional review before any retention or deletion behaviour is
+activated, since that content may form part of the clinical record. The
+logging and leakage control document draws the line between the audit trail
+(designed to carry safe references) and application logs, metrics, and traces
+(designed to carry nothing patient- or communication-specific at all), states
+the same deny-list once instead of scattering it across four documents, and
+recommends that a future logging control follow Task 11's existing AST-based
+detector pattern (`PRV-01`, `BND-01`) rather than a runtime redaction filter —
+including elevating the "no AI urgency classification" rule to a forbidden-
+import architecture test, the same mechanism that already enforces the
+production/sandbox boundary.
+
+The next safe slice is documentation-only Workstream K: accessibility,
+language, and user experience. Runnable synthetic code still waits for a
+versioned, expiring Task 07 scope, owner/reviewer metadata, risk/autonomy
+registration, kill-switch authority, and Task 11 Checkpoint 1. Production
+remains separately gated.
