@@ -42,6 +42,18 @@ wildcard, permanent, and developer-self-approved exceptions are invalid.
 
 ## Evidence and commands
 
+### 2026-09-02 advisory-feed remediation
+
+The npm advisory feed subsequently identified
+`GHSA-c83g-rgw3-j3cx` and `GHSA-73wf-gq98-2v4g` in transitive
+`browserslist` 4.28.5. The affected package is reached through the
+development-only ESLint/Babel toolchain. The lockfile now resolves
+`browserslist` 4.28.8 and its compatible browser-data dependencies.
+
+No vulnerability exception was created. Both the complete dependency scan and
+the production-only scan must remain green; this remediation does not weaken
+the exact package-and-advisory policy above.
+
 Run from the repository root:
 
 ```powershell
