@@ -1,6 +1,6 @@
 # Task 07 — Messaging and reminders
 
-**Current phase:** Workstreams A–J complete; accessibility/language design (K) is next
+**Current phase:** Workstreams A–K complete; operational runbook design (L) is next
 
 **Runtime implementation:** not started
 
@@ -30,7 +30,8 @@ Start with:
 18. [`privacy-security-and-retention-plan.md`](privacy-security-and-retention-plan.md)
 19. [`communication-audit-event-catalogue.md`](communication-audit-event-catalogue.md)
 20. [`logging-and-leakage-control.md`](logging-and-leakage-control.md)
-21. [`../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md`](../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md)
+21. [`accessibility-language-and-responsive-design.md`](accessibility-language-and-responsive-design.md)
+22. [`../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md`](../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md)
 
 Workstream A found no patient communications subsystem on `main`: there is no
 integrated patient identity, verified contact/communication consent,
@@ -144,8 +145,23 @@ including elevating the "no AI urgency classification" rule to a forbidden-
 import architecture test, the same mechanism that already enforces the
 production/sandbox boundary.
 
-The next safe slice is documentation-only Workstream K: accessibility,
-language, and user experience. Runnable synthetic code still waits for a
-versioned, expiring Task 07 scope, owner/reviewer metadata, risk/autonomy
-registration, kill-switch authority, and Task 11 Checkpoint 1. Production
-remains separately gated.
+Workstream K now specifies every patient and staff control surface the brief
+requires, each traced to the contract it renders rather than inventing new
+authorization behaviour, plus the full accessibility requirement set (375px
+through 400% zoom, keyboard, screen-reader, reduced motion, colour
+independence, 56px targets, long-label and Bangla-script rendering) as its
+own numbered subsection. It calls out one interaction risk explicitly: a
+preference control that doesn't immediately show its consent is missing
+would visually imply a capability the account doesn't have, even though the
+backend already refuses to use it — so the preference and consent controls
+must be shown together. Bangla-script rendering is required in synthetic
+accessibility tests and is explicitly not treated as approval to use Bangla
+in any production Ontario workflow. No visual design, component library, or
+copy is approved; seventeen planned evidence items are named but none has
+run, since no interface exists yet.
+
+The next safe slice is documentation-only Workstream L: operational runbook
+and incident handling. Runnable synthetic code still waits for a versioned,
+expiring Task 07 scope, owner/reviewer metadata, risk/autonomy registration,
+kill-switch authority, and Task 11 Checkpoint 1. Production remains
+separately gated.
