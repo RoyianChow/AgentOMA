@@ -1,6 +1,6 @@
 # Task 07 — Messaging and reminders
 
-**Current phase:** Workstreams A–K complete; operational runbook design (L) is next
+**Current phase:** Workstreams A–L complete; the final validation plan and the Task 11 Checkpoint 1 submission are next
 
 **Runtime implementation:** not started
 
@@ -31,7 +31,9 @@ Start with:
 19. [`communication-audit-event-catalogue.md`](communication-audit-event-catalogue.md)
 20. [`logging-and-leakage-control.md`](logging-and-leakage-control.md)
 21. [`accessibility-language-and-responsive-design.md`](accessibility-language-and-responsive-design.md)
-22. [`../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md`](../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md)
+22. [`retry-opt-out-outage-and-reconciliation-runbook.md`](retry-opt-out-outage-and-reconciliation-runbook.md)
+23. [`communications-incident-response.md`](communications-incident-response.md)
+24. [`../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md`](../tasks/autonomous-pharmacy/TASK-07-messaging-and-reminders.md)
 
 Workstream A found no patient communications subsystem on `main`: there is no
 integrated patient identity, verified contact/communication consent,
@@ -160,8 +162,37 @@ in any production Ontario workflow. No visual design, component library, or
 copy is approved; seventeen planned evidence items are named but none has
 run, since no interface exists yet.
 
-The next safe slice is documentation-only Workstream L: operational runbook
-and incident handling. Runnable synthetic code still waits for a versioned,
-expiring Task 07 scope, owner/reviewer metadata, risk/autonomy registration,
-kill-switch authority, and Task 11 Checkpoint 1. Production remains
-separately gated.
+Workstream L now closes the operational-runbook design in two parts. The
+retry/opt-out/outage/reconciliation runbook sequences six required scenarios
+(opt-out, wrong number/recipient, bounce/complaint/failure, provider
+timeout/uncertain send, provider outage, secure-message response delay) into
+step-by-step procedures, each step citing the existing contract or state
+transition it applies rather than inventing new behaviour — the
+wrong-recipient procedure repeats, at the exact step an operator might
+otherwise treat suppression as case-closed, that the software does not
+decide reportability; the outage procedure repeats the state machine's
+"recovery is not permission" rule against a backlog flush. The incident
+response document names every phase from detection through post-incident
+review, cross-references the threat model rather than re-deriving it, and
+states the brief's central rule — the application never decides that an
+event is a legally reportable privacy breach — at the phase (scope
+assessment) where violating it by omission is easiest. Neither document
+names a specific role, threshold, or deadline; both attribute every such gap
+to its existing `T07-Dxx` owner.
+
+Every Task 07 workstream the brief requires as documentation (A through L)
+is now complete. The next safe slice is the brief's final deliverable: the
+clinical, privacy, accessibility, and operational validation plan — which
+this repository can draft, though the reviews it calls for (practising
+Ontario pharmacists, privacy, security, accessibility, and operations
+owners) remain the lead's to arrange. After that, the accumulated design is
+ready for the Task 11 Checkpoint 1 submission itself: the brief's
+fifteen-item test-plan review (bounded purpose, capability split, risk tier,
+autonomy level, actors/scope, authoritative systems, data
+classification/flow, external effects, threat model, controls/evidence
+profile, test matrix, synthetic fixture plan, accessibility plan,
+failure/rollback/reconciliation plan, feature gate/kill switch, stop
+conditions) that Task 11 itself requires before any implementation begins.
+Runnable synthetic code still waits for a versioned, expiring Task 07 scope,
+owner/reviewer metadata, risk/autonomy registration, kill-switch authority,
+and that Checkpoint 1 review. Production remains separately gated.
